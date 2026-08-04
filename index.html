@@ -191,6 +191,8 @@
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
     .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
+    .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
+    .data-grupo:first-child { margin-top:2px; }
     .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .link-obs.tem-obs { color:#9a9a9a; }
     .btn-gerenciar-contas { background:transparent; border:none; cursor:pointer; padding:0 2px; line-height:0; opacity:.55; }
@@ -297,16 +299,17 @@
     <div id="abaFaturas" class="aba-conteudo">
       <div class="card">
         <!-- Navegação de mês no topo: tudo abaixo se refere ao mês selecionado -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
           <button class="btn-mes" onclick="mudarMesFatura(-1)">‹</button>
           <h3 id="tituloMesFatura">—</h3>
           <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
         </div>
-        <div class="resumo-header" style="margin-bottom:8px;">
-          <span>Resumo do mês selecionado</span>
-          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()">👁️</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span style="width:22px;"></span>
+          <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 4 · vence dia 10</span>
+          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:0;width:22px;"></button>
         </div>
-        <div class="painel-topo" style="margin-bottom:14px;">
+        <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
             <span>Saldo do mês</span>
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
@@ -322,39 +325,50 @@
             </div>
           </div>
         </div>
-        <p style="color: #aaa; font-size: 12.5px; margin: 8px 0 12px; text-align:center;">Cartão fecha dia 4 e vence dia 10. Toque no saldo, nas receitas ou nas despesas pra ver o detalhamento — e em cada linha pra ver os lançamentos.</p>
         <div id="detalheFaturaMes" class="box-resumo-modal escondido" style="margin-bottom:12px;"></div>
         <div id="listaFaturas"></div>
       </div>
 
-      <!-- TODOS OS LANÇAMENTOS (realocado da aba Lançamentos) -->
+      <!-- LANÇAMENTOS DO MÊS SELECIONADO -->
       <div class="card">
-        <h4 style="margin-bottom: 12px; color: #aaa;">Todos os lançamentos</h4>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
+          <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
+          <button type="button" id="btnEscopoLanc" class="btn-mini" onclick="alternarEscopoLancamentos()">ver todos</button>
+        </div>
         <div class="busca-box">
-          <span class="busca-icon">🔎</span>
+          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
         </div>
         <div id="listaLancamentos"></div>
       </div>
 
+      <!-- GASTOS FIXOS (retrátil) -->
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <h3>Gastos fixos mensais</h3>
-          <button class="btn-acao" onclick="abrirFormFixo()" style="font-size:22px;">➕</button>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('fixos')">
+          <h3 style="font-size:16px;">Gastos fixos mensais</h3>
+          <span class="chevron-sec" id="chevron-fixos">▸</span>
+        </button>
+        <div id="corpo-fixos" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes. Entram sozinhas nos lançamentos todo mês.</p>
+          <div id="listaFixos"></div>
+          <button type="button" class="btn-cancelar" style="margin-top:10px;" onclick="abrirFormFixo()">+ novo gasto fixo</button>
         </div>
-        <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes, tipo Netflix, Gympass. Entram sozinhas nos lançamentos todo mês, no dia do vencimento.</p>
-        <div id="listaFixos"></div>
       </div>
 
-      <!-- BACKUP E RESTAURAÇÃO (realocado da aba Grupos) -->
+      <!-- BACKUP E RESTAURAÇÃO (retrátil) -->
       <div class="card">
-        <h3 style="margin-bottom:10px;">Backup e restauração</h3>
-        <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados.</p>
-        <div class="backup-actions">
-          <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
-          <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('backup')">
+          <h3 style="font-size:16px;">Backup e restauração</h3>
+          <span class="chevron-sec" id="chevron-backup">▸</span>
+        </button>
+        <div id="corpo-backup" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados.</p>
+          <div class="backup-actions">
+            <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
+            <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
+          </div>
+          <input type="file" id="importBackupInput" class="escondido" accept="application/json" onchange="importarBackup(event)">
         </div>
-        <input type="file" id="importBackupInput" class="escondido" accept="application/json" onchange="importarBackup(event)">
       </div>
     </div>
 
@@ -362,7 +376,7 @@
       <div class="card">
         <div class="resumo-header" style="margin-bottom:12px;">
           <span>Resumo</span>
-          <button class="btn-olho" id="btnOlho" onclick="alternarVisibilidade()">👁️</button>
+          <button class="btn-olho" id="btnOlho" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;"></button>
         </div>
         <div class="painel-topo" style="margin-bottom:16px;">
           <div class="card-saldo-destaque" onclick="abrirModalConsulta('saldo')">
@@ -462,7 +476,7 @@
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <h3>Investimentos & Poupança</h3>
-          <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:22px;">➕</button>
+          <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:24px;color:#aaa;line-height:1;" aria-label="Novo aporte">+</button>
         </div>
         <div style="text-align:center;padding:14px 0;">
           <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total acumulado</span>
@@ -493,11 +507,11 @@
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <h3>Grupos de Gastos</h3>
-          <button class="btn-acao" onclick="criarGrupoRapido()" style="font-size:22px;">➕</button>
+          <button class="btn-acao" onclick="criarGrupoRapido()" style="font-size:24px;color:#aaa;line-height:1;" aria-label="Novo grupo">+</button>
         </div>
         <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
         <div class="busca-box">
-          <span class="busca-icon">🔎</span>
+          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
         </div>
         <div id="listaGrupos"></div>
@@ -678,7 +692,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="contaFixo">Conta / Cartão</label>
-            <select id="contaFixo"></select>
+            <select id="contaFixo" onchange="atualizarFormaFixoVisibilidade()"></select>
           </div>
           <div class="form-group">
             <label for="categoriaFixo">Categoria</label>
@@ -693,7 +707,14 @@
             </select>
           </div>
         </div>
-        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos (resumo, faturas e gráficos). Dá pra editar ou excluir o lançamento de um mês específico sem afetar os próximos.</p>
+        <div class="form-group" id="grupoFormaFixo">
+          <label for="formaFixo">Forma de cobrança</label>
+          <select id="formaFixo">
+            <option value="Crédito Parcelado">Cartão de crédito (entra na fatura)</option>
+            <option value="À Vista / Débito">Débito / À vista</option>
+          </select>
+        </div>
+        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 4): cobrança até o dia 4 entra na fatura do próprio mês; depois do dia 4, na do mês seguinte.</p>
         <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
       </form>
     </div>
@@ -1115,10 +1136,7 @@
           popularSelectsContas();
           localStorage.setItem('valoresOcultos', valoresOcultos ? '1' : '0');
 
-          ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = valoresOcultos ? '🙈' : '👁️';
-          });
+          atualizarIconesOlho();
           renderizarLancamentos();
           renderizarDashboard();
           atualizarResumoEGraficos();
@@ -1196,14 +1214,21 @@
       if (inp) renderizarGrupos();
     }
 
+    // Ícones de olho (SVG discreto) para mostrar/ocultar valores
+    const SVG_OLHO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const SVG_OLHO_FECHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+    function atualizarIconesOlho() {
+      ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = valoresOcultos ? SVG_OLHO_FECHADO : SVG_OLHO;
+      });
+    }
+
     function alternarVisibilidade() {
       valoresOcultos = !valoresOcultos;
       localStorage.setItem('valoresOcultos', valoresOcultos ? '1' : '0');
-      const textos = ['btnOlho', 'btnOlhoFaturas'];
-      textos.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = valoresOcultos ? '🙈' : '👁️';
-      });
+      atualizarIconesOlho();
       renderizarDashboard();
       atualizarResumoEGraficos();
       atualizarFaturas();
@@ -1322,11 +1347,30 @@
       carregarDescricoes(tipo);
     }
 
-    /* REQUISIÇÃO 2 & 4: ORDEM CRONOLÓGICA E BALÃO DE AÇÕES SEM LIXEIRA/LÁPIS FIXOS */
+    /* LISTA DE LANÇAMENTOS: filtrada pelo mês selecionado nas Faturas, agrupada por dia */
+    let mostrarTodosLancamentos = false;
+    const DIAS_SEMANA_ABREV = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+    function alternarEscopoLancamentos() {
+      mostrarTodosLancamentos = !mostrarTodosLancamentos;
+      renderizarLancamentos();
+    }
+
     function renderizarLancamentos() {
       const container = document.getElementById('listaLancamentos');
+      if (!container) return;
       const termo = (document.getElementById('inputBusca')?.value || '').toLowerCase().trim();
       container.innerHTML = '';
+
+      const ref = getMesReferencia(faturaMesOffset);
+      const chaveMesSel = chaveMesAno(ref.getFullYear(), ref.getMonth());
+      const escopoMes = !mostrarTodosLancamentos && !termo; // busca sempre olha tudo
+
+      const titulo = document.getElementById('tituloListaLanc');
+      const btnEscopo = document.getElementById('btnEscopoLanc');
+      if (titulo) titulo.textContent = termo ? 'Resultados da busca' : (escopoMes ? 'Lançamentos de ' + NOMES_MESES[ref.getMonth()] : 'Todos os lançamentos');
+      if (btnEscopo) btnEscopo.textContent = mostrarTodosLancamentos ? 'ver só o mês' : 'ver todos';
 
       if (lancamentos.length === 0) {
         container.innerHTML = '<p style="color:#aaa; font-size:13px; padding:10px 0;">Nenhum lançamento cadastrado.</p>';
@@ -1335,42 +1379,53 @@
 
       const hoje = obterDataBrasilia();
       const filtrados = lancamentos.filter(item => {
-        // Parcelas futuras (data > hoje) não aparecem — efetivam conforme o vencimento
-        if (item.data > hoje) return false;
-        if (!termo) return true;
-        const desc = textoSeguro(item.descricao || '');
-        const conta = textoSeguro(item.conta || '');
-        const cat = textoSeguro(item.categoria || '');
-        const obs = textoSeguro(item.observacao || '');
-        const grupo = textoSeguro(item.grupoViagemNome || '');
-        return desc.includes(termo) || conta.includes(termo) || cat.includes(termo) || obs.includes(termo) || grupo.includes(termo);
+        if (termo) {
+          const desc = textoSeguro(item.descricao || '');
+          const conta = textoSeguro(item.conta || '');
+          const cat = textoSeguro(item.categoria || '');
+          const obs = textoSeguro(item.observacao || '');
+          const grupo = textoSeguro(item.grupoViagemNome || '');
+          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo) || obs.includes(termo) || grupo.includes(termo);
+        }
+        if (escopoMes) return (item.data || '').slice(0, 7) === chaveMesSel;
+        // "ver todos": parcelas futuras não aparecem — efetivam conforme o vencimento
+        return item.data <= hoje;
       });
 
       if (filtrados.length === 0) {
-        container.innerHTML = '<p style="color:#aaa; font-size:13px; padding:10px 0;">Nenhum lançamento encontrado para a pesquisa.</p>';
+        container.innerHTML = `<p style="color:#aaa; font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : 'Nenhum lançamento neste mês.'}</p>`;
         return;
       }
 
-      // REQUISIÇÃO 4: Exibir em ordem cronológica (mais recentes primeiro)
       const ordenados = filtrados.slice().sort((a, b) => (a.data < b.data ? 1 : (a.data > b.data ? -1 : 0)));
 
+      let ultimaData = null;
       ordenados.forEach(item => {
-        const dataFmt = item.data.split('-').reverse().join('/');
+        if (item.data !== ultimaData) {
+          ultimaData = item.data;
+          const d = new Date(item.data + 'T12:00:00');
+          const cab = document.createElement('div');
+          cab.className = 'data-grupo';
+          cab.textContent = `${DIAS_SEMANA_ABREV[d.getDay()]} · ${String(d.getDate()).padStart(2, '0')} ${MESES_ABREV[d.getMonth()]}${item.data > hoje ? ' · agendado' : ''}`;
+          container.appendChild(cab);
+        }
+
         const eReceita = item.tipo === 'receita';
         const numP = parseInt(item.numParcelas, 10) || 1;
 
         const div = document.createElement('div');
         div.className = 'item-lancamento';
+        if (item.data > hoje) div.style.opacity = '.6';
         div.onclick = () => abrirAcoesLancamento(item.id);
         const parcelasPendentes = contarParcelasPendentes(item);
         div.innerHTML = `
           <div class="item-info">
             <strong>${item.descricao}</strong>
             <div style="font-size: 11px; color: #888;">
-              ${dataFmt} • ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • 🧳 ' + item.grupoViagemNome : ''}
+              ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • ' + item.grupoViagemNome : ''}
             </div>
             ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
-            ${parcelasPendentes > 1 ? `<div class="badge-parcelas">⏳ ${parcelasPendentes} parcelas pendentes</div>` : ''}
+            ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
           </div>
           <div class="item-acoes">
             <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
@@ -1839,6 +1894,27 @@
     function mudarMesFatura(delta) {
       faturaMesOffset += delta;
       atualizarFaturas();
+      renderizarLancamentos();
+    }
+
+    // Legenda do fechamento: contagem regressiva quando o mês exibido é o atual
+    function textoFechamento(mes, ano) {
+      const hoje = obterDataBrasilia();
+      const hAno = parseInt(hoje.slice(0, 4), 10);
+      const hMes = parseInt(hoje.slice(5, 7), 10) - 1;
+      const hDia = parseInt(hoje.slice(8, 10), 10);
+      if (ano === hAno && mes === hMes) {
+        let dias;
+        if (hDia <= DIA_FECHAMENTO_CARTAO) {
+          dias = DIA_FECHAMENTO_CARTAO - hDia;
+        } else {
+          const diasNoMes = new Date(hAno, hMes + 1, 0).getDate();
+          dias = diasNoMes - hDia + DIA_FECHAMENTO_CARTAO;
+        }
+        const frase = dias === 0 ? 'fatura fecha hoje' : (dias === 1 ? 'fatura fecha amanhã' : `fatura fecha em ${dias} dias`);
+        return `${frase} · vence dia 10`;
+      }
+      return 'fecha dia 4 · vence dia 10';
     }
 
     function alternarDetalheFatura() {
@@ -1854,6 +1930,8 @@
       const ref = getMesReferencia(faturaMesOffset);
       const mes = ref.getMonth(), ano = ref.getFullYear();
       document.getElementById('tituloMesFatura').textContent = NOMES_MESES[mes] + ' ' + ano;
+      const cap = document.getElementById('capFatura');
+      if (cap) cap.textContent = textoFechamento(mes, ano);
 
       const porConta = {};
       let totalRecebimentos = 0, totalDebito = 0, totalCredito = 0;
@@ -1890,14 +1968,22 @@
       `;
 
       container.innerHTML = '';
-      const contas = Object.keys(porConta);
-      if (contas.length === 0) {
+      const nomesContasFatura = Object.keys(porConta);
+      if (nomesContasFatura.length === 0) {
         container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma despesa lançada neste mês.</p>';
       } else {
-        contas.forEach(conta => {
+        const rotulo = document.createElement('div');
+        rotulo.style.cssText = 'font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;';
+        rotulo.textContent = 'Fatura por conta';
+        container.appendChild(rotulo);
+        nomesContasFatura.sort((a, b) => porConta[b] - porConta[a]).forEach(nomeConta => {
+          const pct = totalDespMes > 0 ? Math.round((porConta[nomeConta] / totalDespMes) * 100) : 0;
           const div = document.createElement('div');
-          div.className = 'item-lancamento';
-          div.innerHTML = `<div class="item-info"><strong>${conta}</strong><div style="font-size:11px;color:#888;">Total do mês</div></div><span class="valor-despesa">${fmtOculto(porConta[conta])}</span>`;
+          div.className = 'barra-categoria';
+          div.innerHTML = `
+            <div class="barra-info"><span>${nomeConta}</span><span class="valor-despesa" style="font-weight:600;">${fmtOculto(porConta[nomeConta])} · ${pct}%</span></div>
+            <div class="barra-bg" style="height:6px;"><div class="barra-fill" style="width:${pct}%;background-color:rgba(239,83,80,0.6);"></div></div>
+          `;
           container.appendChild(div);
         });
       }
@@ -1922,7 +2008,7 @@
           div.innerHTML = `
             <div class="item-info">
               <strong>${f.descricao}</strong>
-              <div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:11px;color:#888;">${f.conta} • ${formaModoDoFixo(f) === 'Crédito Parcelado' ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
               <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
             </div>
             <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
@@ -2009,7 +2095,26 @@
       const selConta = document.getElementById('contaFixo');
       if (f && contas.some(c => c.nome === f.conta)) selConta.value = f.conta;
       document.getElementById('categoriaFixo').value = f ? (f.categoria || 'Outros') : 'Outros';
+      document.getElementById('formaFixo').value = f ? formaModoDoFixo(f) : 'Crédito Parcelado';
+      atualizarFormaFixoVisibilidade();
       document.getElementById('modalFixo').classList.remove('escondido');
+    }
+
+    // Cartão de crédito é o padrão dos gastos fixos; conta sem cartão cai pro débito
+    function formaModoDoFixo(f) {
+      if (f.formaModo) return f.formaModo;
+      return contaTemCredito(f.conta) ? 'Crédito Parcelado' : 'À Vista / Débito';
+    }
+
+    function atualizarFormaFixoVisibilidade() {
+      const conta = document.getElementById('contaFixo').value;
+      const grupo = document.getElementById('grupoFormaFixo');
+      if (contaTemCredito(conta)) {
+        grupo.classList.remove('escondido');
+      } else {
+        grupo.classList.add('escondido');
+        document.getElementById('formaFixo').value = 'À Vista / Débito';
+      }
     }
 
     function salvarFixoModal(e) {
@@ -2020,12 +2125,14 @@
       if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
 
       const idEdit = document.getElementById('idFixoEditando').value;
+      const contaEscolhida = document.getElementById('contaFixo').value || primeiraConta();
       const dados = {
         descricao,
         valor: valor.toFixed(2).replace('.', ','),
-        conta: document.getElementById('contaFixo').value || primeiraConta(),
+        conta: contaEscolhida,
         diaVencimento: parseInt(document.getElementById('diaFixo').value, 10) || 1,
-        categoria: document.getElementById('categoriaFixo').value || 'Outros'
+        categoria: document.getElementById('categoriaFixo').value || 'Outros',
+        formaModo: contaTemCredito(contaEscolhida) ? document.getElementById('formaFixo').value : 'À Vista / Débito'
       };
 
       if (idEdit) {
@@ -2040,6 +2147,7 @@
             lanc.valor = dados.valor;
             lanc.conta = dados.conta;
             lanc.categoria = dados.categoria;
+            lanc.formaModo = dados.formaModo;
             lanc.data = hoje.slice(0, 7) + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
             salvarLocalStorage();
           }
@@ -2117,7 +2225,7 @@
               tipo: 'despesa',
               descricao: f.descricao,
               conta: f.conta || primeiraConta(),
-              formaModo: 'À Vista / Débito',
+              formaModo: formaModoDoFixo(f),
               numParcelas: '1',
               categoria: f.categoria || 'Outros',
               observacao: 'Gasto fixo mensal',
@@ -2594,13 +2702,12 @@ function confirmarLancamentoVoz() {
     carregarUiPrefs();
     aplicarSecao('indicadores');
     aplicarSecao('metas');
+    aplicarSecao('fixos');
+    aplicarSecao('backup');
     gerarLancamentosFixos();
 
     valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
-    ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = valoresOcultos ? '🙈' : '👁️';
-    });
+    atualizarIconesOlho();
 
     alternarTipo('receita');
     document.getElementById('dataCompra').value = obterDataBrasilia();
