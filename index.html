@@ -188,6 +188,14 @@
     .badge-parcelas { display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:10.5px; color:#ffd166; background:rgba(255,209,102,0.08); border:1px solid rgba(255,209,102,0.18); border-radius:999px; padding:3px 8px; }
     .observacao-mini { margin-top:3px; font-size:10.5px; color:#8c8c8c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+    /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
+    .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
+    .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
+    .btn-toggle-obs { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; background:#1a1a1a; border:1px dashed #444; border-radius:8px; padding:10px 12px; color:#aaa; font-size:13px; cursor:pointer; text-align:left; }
+    .btn-gerenciar-contas { background:transparent; border:none; cursor:pointer; font-size:15px; padding:0 4px; line-height:1; }
+    .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:#ccc; margin-bottom:14px; cursor:pointer; }
+    .check-credito input { width:auto; accent-color:#4caf50; }
+
     .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .backup-actions .btn-cancelar { flex:1; margin-top:0; }
     .btn-backup { width:100%; padding:12px; border:1px solid #333; border-radius:10px; background:#1a1a1a; color:#fff; font-weight:700; cursor:pointer; }
@@ -221,19 +229,16 @@
             <datalist id="listaDescricoes"></datalist>
           </div>
           <div class="form-group">
-            <label for="observacao">Observação (opcional)</label>
-            <textarea id="observacao" name="observacao" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..." rows="3"></textarea>
+            <button type="button" class="btn-toggle-obs" onclick="alternarObservacao()"><span>📝 Adicionar observação (opcional)</span><span id="setaObs">▸</span></button>
+            <textarea id="observacao" name="observacao" class="escondido" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..." rows="3"></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="conta">Conta / Cartão</label>
-              <select id="conta" name="conta" onchange="atualizarVisibilidadeForma()">
-                <option value="Itaú">Itaú</option>
-                <option value="PicPay">PicPay</option>
-                <option value="Tíquete Alimentação">Tíquete Alimentação</option>
-                <option value="Caixa">Caixa</option>
-                <option value="Banco do Brasil">Banco do Brasil</option>
-              </select>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <label for="conta">Conta / Cartão</label>
+                <button type="button" class="btn-gerenciar-contas" onclick="abrirModalContas()" title="Gerenciar contas">⚙️</button>
+              </div>
+              <select id="conta" name="conta" onchange="atualizarVisibilidadeForma()"></select>
             </div>
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
@@ -291,9 +296,14 @@
 
     <div id="abaFaturas" class="aba-conteudo">
       <div class="card">
-        <!-- Resumo do mês (espelha os cards dos Gráficos) -->
+        <!-- Navegação de mês no topo: tudo abaixo se refere ao mês selecionado -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <button class="btn-mes" onclick="mudarMesFatura(-1)">‹</button>
+          <h3 id="tituloMesFatura" onclick="alternarDetalheFatura()" style="cursor:pointer;">—</h3>
+          <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
+        </div>
         <div class="resumo-header" style="margin-bottom:8px;">
-          <span>Resumo do mês</span>
+          <span>Resumo do mês selecionado</span>
           <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()">👁️</button>
         </div>
         <div class="painel-topo" style="margin-bottom:14px;">
@@ -311,11 +321,6 @@
               <h4 class="val-despesa" id="faturaDespesa">R$ 0,00</h4>
             </div>
           </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <button class="btn-mes" onclick="mudarMesFatura(-1)">‹</button>
-          <h3 id="tituloMesFatura" onclick="alternarDetalheFatura()" style="cursor:pointer;">—</h3>
-          <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
         </div>
         <p style="color: #aaa; font-size: 12.5px; margin: 8px 0 12px; text-align:center;">Cartão fecha dia 4 e vence dia 10. Toque no mês pra ver o detalhamento — e em cada linha pra ver os lançamentos.</p>
         <div id="detalheFaturaMes" class="box-resumo-modal escondido" style="margin-bottom:12px;"></div>
@@ -337,7 +342,7 @@
           <h3>Gastos fixos mensais</h3>
           <button class="btn-acao" onclick="abrirFormFixo()" style="font-size:22px;">➕</button>
         </div>
-        <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes, tipo Netflix, Gympass.</p>
+        <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes, tipo Netflix, Gympass. Entram sozinhas nos lançamentos todo mês, no dia do vencimento.</p>
         <div id="listaFixos"></div>
       </div>
 
@@ -402,54 +407,67 @@
         </div>
       </div>
 
-      <!-- INDICADORES E INSIGHTS (realocado da antiga aba Dashboard) -->
+      <!-- INDICADORES E INSIGHTS (retrátil) -->
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;">
-          <h3 style="color:#ffd166;">Indicadores do período</h3>
-          <span style="font-size:11px;color:#aaa;">mesmo período do resumo acima</span>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Indicadores do período</h3>
+            <span style="font-size:11px;color:#aaa;">mesmo período do resumo acima</span>
+          </div>
+          <span class="chevron-sec" id="chevron-indicadores">▸</span>
+        </button>
+        <div id="corpo-indicadores" class="escondido" style="margin-top:12px;">
+          <div class="dashboard-kpis">
+            <div class="dashboard-kpi">
+              <span>Média diária</span>
+              <strong id="dashMediaDiaria">R$ 0,00</strong>
+            </div>
+            <div class="dashboard-kpi">
+              <span>Lançamentos</span>
+              <strong id="dashQtdLancamentos">0</strong>
+            </div>
+            <div class="dashboard-kpi">
+              <span>Maior gasto</span>
+              <strong id="dashMaiorGasto">—</strong>
+            </div>
+            <div class="dashboard-kpi">
+              <span>Categoria líder</span>
+              <strong id="dashCategoriaLider">—</strong>
+            </div>
+          </div>
+          <div class="insight-list" id="listaInsights"></div>
         </div>
-        <div class="dashboard-kpis">
-          <div class="dashboard-kpi">
-            <span>Média diária</span>
-            <strong id="dashMediaDiaria">R$ 0,00</strong>
-          </div>
-          <div class="dashboard-kpi">
-            <span>Lançamentos</span>
-            <strong id="dashQtdLancamentos">0</strong>
-          </div>
-          <div class="dashboard-kpi">
-            <span>Maior gasto</span>
-            <strong id="dashMaiorGasto">—</strong>
-          </div>
-          <div class="dashboard-kpi">
-            <span>Categoria líder</span>
-            <strong id="dashCategoriaLider">—</strong>
-          </div>
-        </div>
-        <div class="insight-list" id="listaInsights"></div>
       </div>
 
+      <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <h3 style="color: #ef5350;">Gastos por Categoria</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;gap:6px;">
+            <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
+            <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
+          </div>
+          <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
             <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
             <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
           </div>
         </div>
+        <h3 id="tituloGraficoUnico" style="color:#ef5350;margin-bottom:14px;">Gastos por Categoria</h3>
         <div id="containerGraficoCategorias"></div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom: 16px; color: #4caf50;">Receitas por Fonte</h3>
-        <div id="containerGraficoReceitas"></div>
+        <div id="containerGraficoReceitas" class="escondido"></div>
       </div>
 
+      <!-- METAS POR CATEGORIA (retrátil) -->
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;">
-          <h3 style="color:#ffd166;">Metas por categoria</h3>
-          <span style="font-size:11px;color:#aaa;">com base no período selecionado</span>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Metas por categoria</h3>
+            <span style="font-size:11px;color:#aaa;">com base no período selecionado</span>
+          </div>
+          <span class="chevron-sec" id="chevron-metas">▸</span>
+        </button>
+        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
+          <div id="listaMetasCategoria" class="meta-lista"></div>
         </div>
-        <div id="listaMetasCategoria" class="meta-lista"></div>
       </div>
     </div>
 
@@ -576,15 +594,78 @@
         </div>
         <div class="form-group">
           <label for="origemAporte">Origem dos Recursos</label>
-          <select id="origemAporte">
-            <option value="Itaú">Itaú</option>
-            <option value="PicPay">PicPay</option>
-            <option value="Tíquete Alimentação">Tíquete Alimentação</option>
-            <option value="Caixa">Caixa</option>
-            <option value="Banco do Brasil">Banco do Brasil</option>
-          </select>
+          <select id="origemAporte"></select>
         </div>
         <button type="submit" class="btn-salvar">Confirmar Aporte</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE GERENCIAR CONTAS / CARTÕES -->
+  <div id="modalContas" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalContas')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Gerenciar contas</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalContas')">&times;</button>
+      </div>
+      <div id="listaContasGerenciar"></div>
+      <div style="border-top:1px solid #333;margin-top:14px;padding-top:14px;">
+        <h4 id="tituloFormConta" style="margin-bottom:10px;color:#aaa;font-size:13px;">Adicionar nova conta</h4>
+        <input type="hidden" id="idContaEditando" value="">
+        <div class="form-group">
+          <label for="nomeConta">Nome da conta / cartão</label>
+          <input type="text" id="nomeConta" placeholder="Ex: Nubank, Carteira, Vale Refeição...">
+        </div>
+        <label class="check-credito"><input type="checkbox" id="contaTemCreditoChk"> Tem cartão de crédito (permite parcelar)</label>
+        <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
+        <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE GASTO FIXO MENSAL -->
+  <div id="modalFixo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalFixo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloModalFixo">Novo gasto fixo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalFixo')">&times;</button>
+      </div>
+      <form onsubmit="salvarFixoModal(event)">
+        <input type="hidden" id="idFixoEditando" value="">
+        <div class="form-group">
+          <label for="descFixo">Descrição</label>
+          <input type="text" id="descFixo" placeholder="Ex: Netflix, Gympass, Aluguel..." required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="valorFixo">Valor mensal</label>
+            <input type="text" id="valorFixo" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" required>
+          </div>
+          <div class="form-group">
+            <label for="diaFixo">Vencimento</label>
+            <select id="diaFixo"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contaFixo">Conta / Cartão</label>
+            <select id="contaFixo"></select>
+          </div>
+          <div class="form-group">
+            <label for="categoriaFixo">Categoria</label>
+            <select id="categoriaFixo">
+              <option value="Alimentação">Alimentação</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Viagens ✈️">Viagens ✈️</option>
+              <option value="Lazer">Lazer</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Investimento">Investimento</option>
+              <option value="Outros" selected>Outros</option>
+            </select>
+          </div>
+        </div>
+        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos (resumo, faturas e gráficos). Dá pra editar ou excluir o lançamento de um mês específico sem afetar os próximos.</p>
+        <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
       </form>
     </div>
   </div>
@@ -601,6 +682,9 @@
     let lancamentoSelecionadoId = null;
     let grupoModalAtualId = null;
     let orcamentosCategoria = {};
+    let contas = [];
+    let uiPrefs = {};
+    let visaoGraficoAtual = 'despesas';
 
     // Variáveis de estado da consulta no modal
     let tipoModalAtual = 'saldo';
@@ -614,6 +698,8 @@
     const STORAGE_KEY_INVEST = "meu_financeiro_investimentos_v1";
     const STORAGE_KEY_GRUPOS = "meu_financeiro_grupos_v1";
     const STORAGE_KEY_ORCAMENTOS = "meu_financeiro_orcamentos_categoria_v1";
+    const STORAGE_KEY_CONTAS = "meu_financeiro_contas_v1";
+    const STORAGE_KEY_UI = "meu_financeiro_ui_v1";
 
     const NOMES_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const PALETA = ['#ef5350','#ffa726','#ffca28','#66bb6a','#42a5f5','#ab47bc','#8d6e63','#26a69a'];
@@ -648,6 +734,192 @@
     function carregarOrcamentos() {
       const d = localStorage.getItem(STORAGE_KEY_ORCAMENTOS);
       if (d) { try { orcamentosCategoria = JSON.parse(d) || {}; } catch (e) { orcamentosCategoria = {}; } }
+    }
+
+    // CONTAS / CARTÕES DINÂMICOS
+    const CONTAS_PADRAO = [
+      { id: 'c1', nome: 'Itaú', temCredito: true },
+      { id: 'c2', nome: 'PicPay', temCredito: true },
+      { id: 'c3', nome: 'Tíquete Alimentação', temCredito: false },
+      { id: 'c4', nome: 'Caixa', temCredito: false },
+      { id: 'c5', nome: 'Banco do Brasil', temCredito: false }
+    ];
+
+    function salvarContas() { localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(contas)); }
+    function carregarContas() {
+      const d = localStorage.getItem(STORAGE_KEY_CONTAS);
+      if (d) { try { contas = JSON.parse(d) || []; } catch (e) { contas = []; } }
+      if (!Array.isArray(contas) || contas.length === 0) contas = CONTAS_PADRAO.map(c => ({ ...c }));
+    }
+
+    function contaTemCredito(nome) {
+      const c = contas.find(x => x.nome === nome);
+      return !!(c && c.temCredito);
+    }
+
+    function primeiraConta() {
+      return (contas[0] && contas[0].nome) || 'Itaú';
+    }
+
+    function popularSelectsContas() {
+      ['conta', 'origemAporte', 'contaFixo'].forEach(idSel => {
+        const sel = document.getElementById(idSel);
+        if (!sel) return;
+        const atual = sel.value;
+        sel.innerHTML = '';
+        contas.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.nome;
+          opt.textContent = c.nome;
+          sel.appendChild(opt);
+        });
+        if (atual && contas.some(c => c.nome === atual)) sel.value = atual;
+      });
+    }
+
+    // PREFERÊNCIAS DE INTERFACE (seções retráteis)
+    function salvarUiPrefs() { localStorage.setItem(STORAGE_KEY_UI, JSON.stringify(uiPrefs)); }
+    function carregarUiPrefs() {
+      const d = localStorage.getItem(STORAGE_KEY_UI);
+      if (d) { try { uiPrefs = JSON.parse(d) || {}; } catch (e) { uiPrefs = {}; } }
+    }
+
+    function aplicarSecao(nome) {
+      const corpo = document.getElementById('corpo-' + nome);
+      const chev = document.getElementById('chevron-' + nome);
+      if (!corpo) return;
+      const aberto = uiPrefs['secao_' + nome] === true; // padrão: recolhido
+      corpo.classList.toggle('escondido', !aberto);
+      if (chev) chev.textContent = aberto ? '▾' : '▸';
+    }
+
+    function alternarSecao(nome) {
+      uiPrefs['secao_' + nome] = !(uiPrefs['secao_' + nome] === true);
+      salvarUiPrefs();
+      aplicarSecao(nome);
+    }
+
+    // CAMPO OBSERVAÇÃO RETRÁTIL
+    function definirObservacaoVisivel(visivel) {
+      const ta = document.getElementById('observacao');
+      const seta = document.getElementById('setaObs');
+      if (!ta) return;
+      ta.classList.toggle('escondido', !visivel);
+      if (seta) seta.textContent = visivel ? '▾' : '▸';
+    }
+
+    function alternarObservacao() {
+      const ta = document.getElementById('observacao');
+      const vaiAbrir = ta.classList.contains('escondido');
+      definirObservacaoVisivel(vaiAbrir);
+      if (vaiAbrir) ta.focus();
+    }
+
+    // CARD ÚNICO DE GRÁFICOS: ALTERNAR DESPESAS / RECEITAS
+    function setVisaoGrafico(visao) {
+      visaoGraficoAtual = visao;
+      const eDesp = visao === 'despesas';
+      document.getElementById('btnVerDespesas').classList.toggle('ativo', eDesp);
+      document.getElementById('btnVerReceitas').classList.toggle('ativo', !eDesp);
+      document.getElementById('containerGraficoCategorias').classList.toggle('escondido', !eDesp);
+      document.getElementById('containerGraficoReceitas').classList.toggle('escondido', eDesp);
+      document.getElementById('boxTipoGraficoDespesas').classList.toggle('escondido', !eDesp);
+      const t = document.getElementById('tituloGraficoUnico');
+      t.textContent = eDesp ? 'Gastos por Categoria' : 'Receitas por Fonte';
+      t.style.color = eDesp ? '#ef5350' : '#4caf50';
+    }
+
+    // GERENCIAMENTO DE CONTAS
+    function abrirModalContas() {
+      cancelarEdicaoConta();
+      renderizarListaContas();
+      document.getElementById('modalContas').classList.remove('escondido');
+    }
+
+    function renderizarListaContas() {
+      const box = document.getElementById('listaContasGerenciar');
+      box.innerHTML = '';
+      contas.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.style.cursor = 'default';
+        div.innerHTML = `
+          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 tem cartão de crédito' : 'sem cartão de crédito'}</div></div>
+          <div class="item-acoes">
+            <button class="btn-acao" onclick="editarConta('${c.id}')" title="Editar">✏️</button>
+            <button class="btn-acao" onclick="excluirConta('${c.id}')" title="Excluir">🗑️</button>
+          </div>`;
+        box.appendChild(div);
+      });
+    }
+
+    function editarConta(id) {
+      const c = contas.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById('idContaEditando').value = c.id;
+      document.getElementById('nomeConta').value = c.nome;
+      document.getElementById('contaTemCreditoChk').checked = !!c.temCredito;
+      document.getElementById('tituloFormConta').textContent = 'Editar conta';
+      document.getElementById('btnCancelarConta').classList.remove('escondido');
+    }
+
+    function cancelarEdicaoConta() {
+      document.getElementById('idContaEditando').value = '';
+      document.getElementById('nomeConta').value = '';
+      document.getElementById('contaTemCreditoChk').checked = false;
+      document.getElementById('tituloFormConta').textContent = 'Adicionar nova conta';
+      document.getElementById('btnCancelarConta').classList.add('escondido');
+    }
+
+    function salvarConta() {
+      const nome = document.getElementById('nomeConta').value.trim();
+      if (!nome) { alert('Digite o nome da conta.'); return; }
+      const temCredito = document.getElementById('contaTemCreditoChk').checked;
+      const idEdit = document.getElementById('idContaEditando').value;
+      const duplicada = contas.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== idEdit);
+      if (duplicada) { alert('Já existe uma conta com esse nome.'); return; }
+
+      if (idEdit) {
+        const c = contas.find(x => x.id === idEdit);
+        if (!c) return;
+        const nomeAntigo = c.nome;
+        if (nomeAntigo !== nome) {
+          const qtd = lancamentos.filter(l => l.conta === nomeAntigo).length
+            + fixos.filter(f => f.conta === nomeAntigo).length
+            + investimentos.filter(i => i.origem === nomeAntigo).length;
+          if (qtd > 0 && confirm(`Atualizar também os ${qtd} registros já lançados de "${nomeAntigo}" para "${nome}"?`)) {
+            lancamentos.forEach(l => { if (l.conta === nomeAntigo) l.conta = nome; });
+            fixos.forEach(f => { if (f.conta === nomeAntigo) f.conta = nome; });
+            investimentos.forEach(i => { if (i.origem === nomeAntigo) i.origem = nome; });
+            salvarLocalStorage(); salvarFixos(); salvarInvest();
+          }
+        }
+        c.nome = nome;
+        c.temCredito = temCredito;
+      } else {
+        contas.push({ id: 'c' + Date.now(), nome, temCredito });
+      }
+
+      salvarContas();
+      popularSelectsContas();
+      atualizarVisibilidadeForma();
+      renderizarListaContas();
+      cancelarEdicaoConta();
+      renderizarLancamentos();
+      atualizarFaturas();
+      renderizarInvestimentos();
+    }
+
+    function excluirConta(id) {
+      if (contas.length <= 1) { alert('É preciso ter pelo menos uma conta.'); return; }
+      const c = contas.find(x => x.id === id);
+      if (!c) return;
+      if (!confirm(`Excluir a conta "${c.nome}"? Os lançamentos antigos continuam com esse nome no histórico.`)) return;
+      contas = contas.filter(x => x.id !== id);
+      salvarContas();
+      popularSelectsContas();
+      atualizarVisibilidadeForma();
+      renderizarListaContas();
     }
 
     const opcoesReceita = ["Salário", "Reembolso", "Outros"];
@@ -762,7 +1034,8 @@
         investimentos,
         grupos,
         valoresOcultos,
-        orcamentosCategoria
+        orcamentosCategoria,
+        contas
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -787,12 +1060,15 @@
           grupos = Array.isArray(data.grupos) ? data.grupos : [];
           valoresOcultos = !!data.valoresOcultos;
           orcamentosCategoria = data.orcamentosCategoria && typeof data.orcamentosCategoria === 'object' ? data.orcamentosCategoria : {};
+          if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
 
           salvarLocalStorage();
           salvarFixos();
           salvarInvest();
           salvarGrupos();
           salvarOrcamentos();
+          salvarContas();
+          popularSelectsContas();
           localStorage.setItem('valoresOcultos', valoresOcultos ? '1' : '0');
 
           ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
@@ -969,7 +1245,7 @@
       const conta = document.getElementById('conta').value;
       const gF = document.getElementById('grupoFormaModo');
       const gP = document.getElementById('grupoParcelas');
-      if (tipoAtual === 'despesa' && (conta === 'Itaú' || conta === 'PicPay')) {
+      if (tipoAtual === 'despesa' && contaTemCredito(conta)) {
         gF.classList.remove('escondido');
         verificarParcelamento(document.getElementById('formaModo').value);
       } else {
@@ -1091,7 +1367,7 @@
 
       const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
       const conta = document.getElementById('conta').value;
-      const formaModo = (tipoAtual === 'despesa' && (conta === 'Itaú' || conta === 'PicPay')) ? document.getElementById('formaModo').value : 'À Vista / Débito';
+      const formaModo = (tipoAtual === 'despesa' && contaTemCredito(conta)) ? document.getElementById('formaModo').value : 'À Vista / Débito';
       const numParcelas = (tipoAtual === 'despesa' && formaModo === 'Crédito Parcelado') ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
       const observacao = document.getElementById('observacao').value.trim();
@@ -1169,12 +1445,13 @@
       document.getElementById('conta').value = item.conta;
       document.getElementById('dataCompra').value = item.data;
       document.getElementById('observacao').value = item.observacao || '';
+      definirObservacaoVisivel(!!(item.observacao || '').trim());
       document.getElementById('valor').value = 'R$ ' + item.valor;
       popularSelectGrupos(item.grupoViagemId || '');
 
       if (item.tipo === 'despesa') {
         atualizarVisibilidadeForma();
-        if (item.conta === 'Itaú' || item.conta === 'PicPay') {
+        if (contaTemCredito(item.conta)) {
           document.getElementById('formaModo').value = item.formaModo || 'À Vista / Débito';
           verificarParcelamento(item.formaModo);
           document.getElementById('numParcelas').value = item.numParcelas || '1';
@@ -1192,6 +1469,8 @@
       document.getElementById('idEditando').value = '';
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
+      definirObservacaoVisivel(false);
+      popularSelectsContas();
       document.getElementById('dataCompra').value = obterDataBrasilia();
       document.getElementById('tituloFormulario').textContent = 'Novo lançamento';
       document.getElementById('btnSubmit').textContent = 'Salvar';
@@ -1587,12 +1866,23 @@
       if (fixosAtivos.length === 0) {
         containerFixos.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto fixo cadastrado ainda.</p>';
       } else {
+        const chaveMesExibido = chaveMesAno(ano, mes);
         fixosAtivos.forEach(f => {
+          const lancado = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
           const div = document.createElement('div');
           div.className = 'item-lancamento';
+          div.style.cursor = 'default';
           div.innerHTML = `
-            <div class="item-info"><strong>${f.descricao}</strong><div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}</div></div>
-            <div class="item-acoes"><span class="valor-despesa">${fmtVal(parseVal(f.valor))}</span><button class="btn-acao" onclick="excluirFixo('${f.id}')" title="Remover">🗑️</button></div>
+            <div class="item-info">
+              <strong>${f.descricao}</strong>
+              <div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? '✓ lançado neste mês' : '⏳ ainda não lançado neste mês'}</div>
+            </div>
+            <div class="item-acoes">
+              <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
+              <button class="btn-acao" onclick="abrirFormFixo('${f.id}')" title="Editar" style="font-size:16px;padding:8px 4px;">✏️</button>
+              <button class="btn-acao" onclick="excluirFixo('${f.id}')" title="Remover" style="font-size:16px;padding:8px 4px;">🗑️</button>
+            </div>
           `;
           containerFixos.appendChild(div);
         });
@@ -1655,33 +1945,130 @@
       modal.classList.remove('escondido');
     }
 
-    function abrirFormFixo() {
-      const nome = prompt('Nome do gasto fixo (ex: Netflix, Gympass):');
-      if (!nome) return;
-      const valorStr = prompt('Valor mensal (ex: 39,90):');
-      if (!valorStr) return;
-      const valor = parseVal(valorStr);
-      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
-      const conta = prompt('Conta/cartão (Itaú, PicPay, Tíquete Alimentação, Caixa, Banco do Brasil):', 'Itaú');
-      const dia = prompt('Dia do vencimento (1 a 28):', '10');
+    function abrirFormFixo(id) {
+      popularSelectsContas();
+      const selDia = document.getElementById('diaFixo');
+      if (!selDia.options.length) {
+        for (let d = 1; d <= 28; d++) {
+          const o = document.createElement('option');
+          o.value = String(d);
+          o.textContent = 'dia ' + d;
+          selDia.appendChild(o);
+        }
+      }
 
-      fixos.push({
-        id: 'f' + Date.now(),
-        descricao: nome,
+      const f = id ? fixos.find(x => x.id === id) : null;
+      document.getElementById('idFixoEditando').value = f ? f.id : '';
+      document.getElementById('tituloModalFixo').textContent = f ? 'Editar gasto fixo' : 'Novo gasto fixo';
+      document.getElementById('descFixo').value = f ? f.descricao : '';
+      document.getElementById('valorFixo').value = f ? 'R$ ' + f.valor : '';
+      selDia.value = f ? String(Math.min(parseInt(f.diaVencimento, 10) || 1, 28)) : '10';
+      const selConta = document.getElementById('contaFixo');
+      if (f && contas.some(c => c.nome === f.conta)) selConta.value = f.conta;
+      document.getElementById('categoriaFixo').value = f ? (f.categoria || 'Outros') : 'Outros';
+      document.getElementById('modalFixo').classList.remove('escondido');
+    }
+
+    function salvarFixoModal(e) {
+      e.preventDefault();
+      const descricao = document.getElementById('descFixo').value.trim();
+      if (!descricao) { alert('Digite a descrição.'); return; }
+      const valor = parseVal(document.getElementById('valorFixo').value.replace('R$', '').trim());
+      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
+
+      const idEdit = document.getElementById('idFixoEditando').value;
+      const dados = {
+        descricao,
         valor: valor.toFixed(2).replace('.', ','),
-        conta: conta || 'Itaú',
-        diaVencimento: parseInt(dia, 10) || 1,
-        dataInicio: obterDataBrasilia()
-      });
+        conta: document.getElementById('contaFixo').value || primeiraConta(),
+        diaVencimento: parseInt(document.getElementById('diaFixo').value, 10) || 1,
+        categoria: document.getElementById('categoriaFixo').value || 'Outros'
+      };
+
+      if (idEdit) {
+        const f = fixos.find(x => x.id === idEdit);
+        if (f) {
+          Object.assign(f, dados);
+          // Se o lançamento deste mês ainda não venceu, atualiza ele também
+          const hoje = obterDataBrasilia();
+          const lanc = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === hoje.slice(0, 7));
+          if (lanc && lanc.data >= hoje) {
+            lanc.descricao = dados.descricao;
+            lanc.valor = dados.valor;
+            lanc.conta = dados.conta;
+            lanc.categoria = dados.categoria;
+            lanc.data = hoje.slice(0, 7) + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+            salvarLocalStorage();
+          }
+        }
+      } else {
+        fixos.push({ id: 'f' + Date.now(), ...dados, dataInicio: obterDataBrasilia() });
+      }
+
+      salvarFixos();
+      gerarLancamentosFixos();
+      fecharModal('modalFixo');
+      atualizarFaturas();
+      renderizarLancamentos();
+      atualizarResumoEGraficos();
+    }
+
+    function excluirFixo(id) {
+      if (!confirm('Remover este gasto fixo? Os lançamentos já criados nos meses passados permanecem; ele só deixa de entrar nos próximos meses.')) return;
+      fixos = fixos.filter(f => f.id !== id);
       salvarFixos();
       atualizarFaturas();
     }
 
-    function excluirFixo(id) {
-      if (!confirm('Remover este gasto fixo?')) return;
-      fixos = fixos.filter(f => f.id !== id);
+    // Gera automaticamente o lançamento mensal de cada gasto fixo,
+    // do mês de cadastro (ou do último mês já gerado) até o mês atual.
+    function chaveMesAno(ano, mes) { return ano + '-' + String(mes + 1).padStart(2, '0'); }
+
+    function gerarLancamentosFixos() {
+      if (!fixos.length) return;
+      const hoje = obterDataBrasilia();
+      const anoAtual = parseInt(hoje.slice(0, 4), 10);
+      const mesAtual = parseInt(hoje.slice(5, 7), 10) - 1;
+      let houveNovo = false, contador = 0;
+
+      fixos.forEach(f => {
+        const inicio = f.dataInicio || hoje;
+        let ano = parseInt(inicio.slice(0, 4), 10);
+        let mes = parseInt(inicio.slice(5, 7), 10) - 1;
+        if (f.ultimoMesGerado) {
+          ano = parseInt(f.ultimoMesGerado.slice(0, 4), 10);
+          mes = parseInt(f.ultimoMesGerado.slice(5, 7), 10) - 1 + 1;
+          if (mes > 11) { mes = 0; ano++; }
+        }
+
+        while (ano < anoAtual || (ano === anoAtual && mes <= mesAtual)) {
+          const chave = chaveMesAno(ano, mes);
+          const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
+          const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chave);
+          if (!jaExiste) {
+            lancamentos.push({
+              id: Date.now() + (contador++),
+              tipo: 'despesa',
+              descricao: f.descricao,
+              conta: f.conta || primeiraConta(),
+              formaModo: 'À Vista / Débito',
+              numParcelas: '1',
+              categoria: f.categoria || 'Outros',
+              observacao: '🔁 Gasto fixo mensal',
+              data: chave + '-' + String(dia).padStart(2, '0'),
+              valor: f.valor,
+              fixoId: f.id
+            });
+            houveNovo = true;
+          }
+          f.ultimoMesGerado = chave;
+          mes++;
+          if (mes > 11) { mes = 0; ano++; }
+        }
+      });
+
       salvarFixos();
-      atualizarFaturas();
+      if (houveNovo) salvarLocalStorage();
     }
 
     function renderizarInvestimentos() {
@@ -1725,7 +2112,7 @@
       investimentos.push({
         id: 'i' + Date.now(),
         valor: valor.toFixed(2).replace('.', ','),
-        origem: origem || 'Itaú',
+        origem: origem || primeiraConta(),
         data
       });
       salvarInvest();
@@ -1734,7 +2121,7 @@
         id: Date.now(),
         tipo: 'despesa',
         descricao: 'Aporte - poupança/investimento',
-        conta: origem || 'Itaú',
+        conta: origem || primeiraConta(),
         formaModo: 'À Vista / Débito',
         numParcelas: '1',
         categoria: 'Investimento',
@@ -2054,7 +2441,7 @@ function interpretarFala(fala) {
   else if (/(festa|cinema|jogo|ingresso|show)/.test(texto)) categoria = 'Lazer';
 
   // 4. Identificar Forma de Pagamento / Conta
-  let conta = 'Itaú'; // Sua conta default do select
+  let conta = primeiraConta(); // conta default: a primeira da lista
   let formaModo = 'À Vista / Débito';
 
   if (/(crédito|parcelado)/.test(texto)) {
@@ -2064,6 +2451,8 @@ function interpretarFala(fala) {
   } else if (texto.includes('picpay')) {
     conta = 'PicPay';
   }
+  // Se a conta mapeada não existe mais na lista do usuário, volta pra default
+  if (!contas.some(c => c.nome === conta)) conta = primeiraConta();
 
   // 5. Isolar a Descrição (remove o trecho do valor e palavras de conexão/verbos)
   let descricao = texto
@@ -2108,7 +2497,7 @@ function confirmarLancamentoVoz() {
     atualizarVisibilidadeForma();
 
     // Configura o pagamento se for cartão
-    if (lancamentoVozPendente.conta === 'Itaú' || lancamentoVozPendente.conta === 'PicPay') {
+    if (contaTemCredito(lancamentoVozPendente.conta)) {
       document.getElementById('formaModo').value = lancamentoVozPendente.formaModo;
       verificarParcelamento(lancamentoVozPendente.formaModo);
       if (lancamentoVozPendente.formaModo === 'Crédito Parcelado') {
@@ -2134,6 +2523,12 @@ function confirmarLancamentoVoz() {
     carregarInvest();
     carregarGrupos();
     carregarOrcamentos();
+    carregarContas();
+    popularSelectsContas();
+    carregarUiPrefs();
+    aplicarSecao('indicadores');
+    aplicarSecao('metas');
+    gerarLancamentosFixos();
 
     valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
     ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
