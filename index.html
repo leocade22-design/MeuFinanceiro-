@@ -191,6 +191,12 @@
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
     .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
+    /* TROCA DE ABA POR GESTO (deslizar o dedo) */
+    @keyframes abaSlideEsq { from { opacity:.35; transform:translateX(16px); } to { opacity:1; transform:none; } }
+    @keyframes abaSlideDir { from { opacity:.35; transform:translateX(-16px); } to { opacity:1; transform:none; } }
+    .aba-conteudo.anim-esq { animation: abaSlideEsq .18s ease-out; }
+    .aba-conteudo.anim-dir { animation: abaSlideDir .18s ease-out; }
+
     .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
     .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1437,6 +1443,45 @@
       atualizarFaturas();
       renderizarLancamentos();
     }
+
+    // TROCA DE ABA POR GESTO: deslizar o dedo pra esquerda avança, pra direita volta
+    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos'];
+    let toqueIniX = 0, toqueIniY = 0, toqueValido = false;
+
+    function algumModalAberto() {
+      return Array.from(document.querySelectorAll('.modal-overlay')).some(m => !m.classList.contains('escondido'));
+    }
+
+    document.addEventListener('touchstart', (e) => {
+      toqueValido = !algumModalAberto() && !e.target.closest('.nav-tabs, input, select, textarea');
+      if (!toqueValido) return;
+      toqueIniX = e.touches[0].clientX;
+      toqueIniY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!toqueValido || algumModalAberto()) return;
+      const dx = e.changedTouches[0].clientX - toqueIniX;
+      const dy = e.changedTouches[0].clientY - toqueIniY;
+      // só conta como troca de aba se o gesto for claramente horizontal
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      const idxAtual = ORDEM_ABAS.findIndex(id => {
+        const el = document.getElementById(id);
+        return el && el.classList.contains('ativo');
+      });
+      const destino = dx < 0 ? idxAtual + 1 : idxAtual - 1;
+      if (idxAtual === -1 || destino < 0 || destino >= ORDEM_ABAS.length) return;
+      const idAba = ORDEM_ABAS[destino];
+      const btn = document.querySelector(`.nav-tab[onclick*="${idAba}"]`);
+      mudarAba(idAba, btn);
+      if (btn && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      const alvo = document.getElementById(idAba);
+      if (alvo) {
+        alvo.classList.remove('anim-esq', 'anim-dir');
+        void alvo.offsetWidth; // reinicia a animação
+        alvo.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
+      }
+    }, { passive: true });
 
     function mudarAba(idAba, elemento) {
       document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('ativo'));
