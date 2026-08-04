@@ -678,7 +678,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="contaFixo">Conta / Cartão</label>
-            <select id="contaFixo"></select>
+            <select id="contaFixo" onchange="atualizarFormaFixoVisibilidade()"></select>
           </div>
           <div class="form-group">
             <label for="categoriaFixo">Categoria</label>
@@ -693,7 +693,14 @@
             </select>
           </div>
         </div>
-        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos (resumo, faturas e gráficos). Dá pra editar ou excluir o lançamento de um mês específico sem afetar os próximos.</p>
+        <div class="form-group" id="grupoFormaFixo">
+          <label for="formaFixo">Forma de cobrança</label>
+          <select id="formaFixo">
+            <option value="Crédito Parcelado">Cartão de crédito (entra na fatura)</option>
+            <option value="À Vista / Débito">Débito / À vista</option>
+          </select>
+        </div>
+        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 4): cobrança até o dia 4 entra na fatura do próprio mês; depois do dia 4, na do mês seguinte.</p>
         <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
       </form>
     </div>
@@ -1922,7 +1929,7 @@
           div.innerHTML = `
             <div class="item-info">
               <strong>${f.descricao}</strong>
-              <div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:11px;color:#888;">${f.conta} • ${formaModoDoFixo(f) === 'Crédito Parcelado' ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
               <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
             </div>
             <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
@@ -2009,7 +2016,26 @@
       const selConta = document.getElementById('contaFixo');
       if (f && contas.some(c => c.nome === f.conta)) selConta.value = f.conta;
       document.getElementById('categoriaFixo').value = f ? (f.categoria || 'Outros') : 'Outros';
+      document.getElementById('formaFixo').value = f ? formaModoDoFixo(f) : 'Crédito Parcelado';
+      atualizarFormaFixoVisibilidade();
       document.getElementById('modalFixo').classList.remove('escondido');
+    }
+
+    // Cartão de crédito é o padrão dos gastos fixos; conta sem cartão cai pro débito
+    function formaModoDoFixo(f) {
+      if (f.formaModo) return f.formaModo;
+      return contaTemCredito(f.conta) ? 'Crédito Parcelado' : 'À Vista / Débito';
+    }
+
+    function atualizarFormaFixoVisibilidade() {
+      const conta = document.getElementById('contaFixo').value;
+      const grupo = document.getElementById('grupoFormaFixo');
+      if (contaTemCredito(conta)) {
+        grupo.classList.remove('escondido');
+      } else {
+        grupo.classList.add('escondido');
+        document.getElementById('formaFixo').value = 'À Vista / Débito';
+      }
     }
 
     function salvarFixoModal(e) {
@@ -2020,12 +2046,14 @@
       if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
 
       const idEdit = document.getElementById('idFixoEditando').value;
+      const contaEscolhida = document.getElementById('contaFixo').value || primeiraConta();
       const dados = {
         descricao,
         valor: valor.toFixed(2).replace('.', ','),
-        conta: document.getElementById('contaFixo').value || primeiraConta(),
+        conta: contaEscolhida,
         diaVencimento: parseInt(document.getElementById('diaFixo').value, 10) || 1,
-        categoria: document.getElementById('categoriaFixo').value || 'Outros'
+        categoria: document.getElementById('categoriaFixo').value || 'Outros',
+        formaModo: contaTemCredito(contaEscolhida) ? document.getElementById('formaFixo').value : 'À Vista / Débito'
       };
 
       if (idEdit) {
@@ -2040,6 +2068,7 @@
             lanc.valor = dados.valor;
             lanc.conta = dados.conta;
             lanc.categoria = dados.categoria;
+            lanc.formaModo = dados.formaModo;
             lanc.data = hoje.slice(0, 7) + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
             salvarLocalStorage();
           }
@@ -2117,7 +2146,7 @@
               tipo: 'despesa',
               descricao: f.descricao,
               conta: f.conta || primeiraConta(),
-              formaModo: 'À Vista / Débito',
+              formaModo: formaModoDoFixo(f),
               numParcelas: '1',
               categoria: f.categoria || 'Outros',
               observacao: 'Gasto fixo mensal',
