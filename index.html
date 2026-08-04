@@ -197,8 +197,8 @@
     /* TROCA DE ABA POR GESTO (deslizar o dedo) — transição suave */
     @keyframes abaSlideEsq { from { opacity:.6; transform:translateX(8px); } to { opacity:1; transform:none; } }
     @keyframes abaSlideDir { from { opacity:.6; transform:translateX(-8px); } to { opacity:1; transform:none; } }
-    .aba-conteudo.anim-esq { animation: abaSlideEsq .35s cubic-bezier(.25,.6,.35,1); }
-    .aba-conteudo.anim-dir { animation: abaSlideDir .35s cubic-bezier(.25,.6,.35,1); }
+    .aba-conteudo.anim-esq, .card.anim-esq { animation: abaSlideEsq .35s cubic-bezier(.25,.6,.35,1); }
+    .aba-conteudo.anim-dir, .card.anim-dir { animation: abaSlideDir .35s cubic-bezier(.25,.6,.35,1); }
 
     .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
@@ -298,17 +298,17 @@
     </div>
 
     <div id="abaFaturas" class="aba-conteudo">
-      <div class="card">
-        <!-- Navegação de mês no topo: tudo abaixo se refere ao mês selecionado -->
-        <div style="display:flex;justify-content:flex-end;margin-bottom:4px;">
-          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+      <!-- Deslizar o dedo dentro deste card muda o mês (sem trocar de aba) -->
+      <div class="card" id="cardResumoFaturas">
+        <div class="resumo-header" style="margin-bottom:8px;">
+          <span>Resumo</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button type="button" id="btnMesAtual" class="btn-mini escondido" onclick="voltarMesAtual()">mês atual</button>
+            <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-          <button class="btn-mes" onclick="mudarMesFatura(-1)">‹</button>
-          <h3 id="tituloMesFatura">—</h3>
-          <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
-        </div>
-        <div style="text-align:center;margin-bottom:12px;">
+        <h3 id="tituloMesFatura" style="text-align:center;">—</h3>
+        <div style="text-align:center;margin:2px 0 12px;">
           <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 3 · vence dia 10</span>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
@@ -663,11 +663,14 @@
         <h3 id="tituloResumoMes">Resumo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalResumoMes')">&times;</button>
       </div>
+      <div id="chipsContasResumo" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>
       <div style="text-align:center;margin-bottom:16px;">
         <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total do mês</span>
         <h2 id="totalResumoMes" style="font-size:26px;margin-top:4px;">R$ 0,00</h2>
       </div>
+      <p style="font-size:11px;color:#666;margin-bottom:8px;">Toque numa linha pra ver os lançamentos dela.</p>
       <div id="corpoResumoMes"></div>
+      <div id="listaResumoMes"></div>
     </div>
   </div>
 
@@ -1494,7 +1497,8 @@
     }
 
     document.addEventListener('touchstart', (e) => {
-      toqueValido = !algumModalAberto() && !e.target.closest('.nav-tabs, input, select, textarea');
+      // dentro do card de resumo das Faturas o gesto muda o MÊS, não a aba
+      toqueValido = !algumModalAberto() && !e.target.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas');
       if (!toqueValido) return;
       toqueIniX = e.touches[0].clientX;
       toqueIniY = e.touches[0].clientY;
@@ -2234,6 +2238,33 @@
       renderizarLancamentos();
     }
 
+    function voltarMesAtual() {
+      faturaMesOffset = 0;
+      atualizarFaturas();
+      renderizarLancamentos();
+    }
+
+    // Gesto de deslizar dentro do card de resumo das Faturas: muda o mês
+    (function () {
+      const card = document.getElementById('cardResumoFaturas');
+      if (!card) return;
+      let iniX = 0, iniY = 0;
+      card.addEventListener('touchstart', (e) => {
+        iniX = e.touches[0].clientX;
+        iniY = e.touches[0].clientY;
+      }, { passive: true });
+      card.addEventListener('touchend', (e) => {
+        if (algumModalAberto()) return;
+        const dx = e.changedTouches[0].clientX - iniX;
+        const dy = e.changedTouches[0].clientY - iniY;
+        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 2) return;
+        mudarMesFatura(dx < 0 ? 1 : -1);
+        card.classList.remove('anim-esq', 'anim-dir');
+        void card.offsetWidth;
+        card.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
+      }, { passive: true });
+    })();
+
     // Legenda do fechamento: contagem regressiva quando o mês exibido é o atual
     function textoFechamento(mes, ano) {
       const hoje = obterDataBrasilia();
@@ -2258,44 +2289,127 @@
       document.getElementById('detalheFaturaMes').classList.toggle('escondido');
     }
 
-    // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria
+    // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria,
+    // com filtro por conta (segue as contas cadastradas) e toque na linha
+    // pra ver os lançamentos daquela categoria/fonte
+    let resumoMesTipo = 'despesa';
+    let resumoMesConta = '';       // '' = todas as contas
+    let resumoMesGrupoSel = null;  // categoria/fonte selecionada pro detalhe
+
     function abrirResumoMes(tipo) {
+      resumoMesTipo = tipo;
+      resumoMesConta = '';
+      resumoMesGrupoSel = null;
+      renderizarChipsContasResumo();
+      renderizarResumoMes();
+      document.getElementById('modalResumoMes').classList.remove('escondido');
+    }
+
+    function renderizarChipsContasResumo() {
+      const box = document.getElementById('chipsContasResumo');
+      box.innerHTML = '';
+      ['', ...contas.map(c => c.nome)].forEach(nome => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini' + (resumoMesConta === nome ? ' ativo' : '');
+        b.textContent = nome === '' ? 'Todas as contas' : nome;
+        b.onclick = () => {
+          resumoMesConta = nome;
+          resumoMesGrupoSel = null;
+          renderizarChipsContasResumo();
+          renderizarResumoMes();
+        };
+        box.appendChild(b);
+      });
+    }
+
+    function itensResumoMes() {
       const ref = getMesReferencia(faturaMesOffset);
       const mes = ref.getMonth(), ano = ref.getFullYear();
+      return lancamentos.filter(l => {
+        if (resumoMesConta && l.conta !== resumoMesConta) return false;
+        if (resumoMesTipo === 'receita') {
+          if (l.tipo !== 'receita') return false;
+          const d = new Date(l.data + 'T12:00:00');
+          return d.getMonth() === mes && d.getFullYear() === ano;
+        }
+        if (l.tipo !== 'despesa') return false;
+        const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+        return m === mes && a === ano;
+      });
+    }
+
+    function chaveGrupoResumo(l) {
+      return resumoMesTipo === 'receita' ? (l.descricao || 'Outras') : (l.categoria || 'Outros');
+    }
+
+    function renderizarResumoMes() {
+      const ref = getMesReferencia(faturaMesOffset);
+      const eReceita = resumoMesTipo === 'receita';
+      const cor = eReceita ? '#4caf50' : '#ef5350';
+      const itens = itensResumoMes();
       const porGrupo = {};
       let total = 0;
-
-      lancamentos.forEach(l => {
+      itens.forEach(l => {
         const v = parseVal(l.valor);
-        if (tipo === 'receita') {
-          if (l.tipo !== 'receita') return;
-          const d = new Date(l.data + 'T12:00:00');
-          if (d.getMonth() !== mes || d.getFullYear() !== ano) return;
-          const chave = l.descricao || 'Outras';
-          porGrupo[chave] = (porGrupo[chave] || 0) + v;
-          total += v;
-        } else {
-          if (l.tipo !== 'despesa') return;
-          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
-          if (m !== mes || a !== ano) return;
-          const chave = l.categoria || 'Outros';
-          porGrupo[chave] = (porGrupo[chave] || 0) + v;
-          total += v;
-        }
+        const chave = chaveGrupoResumo(l);
+        porGrupo[chave] = (porGrupo[chave] || 0) + v;
+        total += v;
       });
 
-      const eReceita = tipo === 'receita';
-      document.getElementById('tituloResumoMes').textContent = (eReceita ? 'Receitas de ' : 'Despesas de ') + NOMES_MESES[mes];
+      document.getElementById('tituloResumoMes').textContent = (eReceita ? 'Receitas de ' : 'Despesas de ') + NOMES_MESES[ref.getMonth()];
       const totalEl = document.getElementById('totalResumoMes');
       totalEl.textContent = fmtOculto(total);
-      totalEl.style.color = eReceita ? '#4caf50' : '#ef5350';
+      totalEl.style.color = cor;
+
       const corpo = document.getElementById('corpoResumoMes');
+      corpo.innerHTML = '';
       if (total === 0) {
-        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">Nenhuma ${eReceita ? 'receita' : 'despesa'} neste mês.</p>`;
+        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">Nenhuma ${eReceita ? 'receita' : 'despesa'} neste mês${resumoMesConta ? ' nessa conta' : ''}.</p>`;
       } else {
-        renderizarBarras(corpo, porGrupo, eReceita ? '#4caf50' : '#ef5350');
+        Object.entries(porGrupo).sort((a, b) => b[1] - a[1]).forEach(([nome, valor]) => {
+          const pct = Math.round((valor / total) * 100);
+          const sel = resumoMesGrupoSel === nome;
+          const div = document.createElement('div');
+          div.className = 'barra-categoria';
+          div.style.cursor = 'pointer';
+          div.onclick = () => {
+            resumoMesGrupoSel = sel ? null : nome;
+            renderizarResumoMes();
+          };
+          div.innerHTML = `
+            <div class="barra-info"><span style="${sel ? 'color:#fff;font-weight:700;' : ''}">${nome} ${sel ? '▾' : '▸'}</span><span>${fmtVal(valor)} · ${pct}%</span></div>
+            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:${cor};${sel ? '' : 'opacity:.7;'}"></div></div>
+          `;
+          corpo.appendChild(div);
+        });
       }
-      document.getElementById('modalResumoMes').classList.remove('escondido');
+
+      // detalhe: lançamentos da categoria/fonte selecionada
+      const lista = document.getElementById('listaResumoMes');
+      lista.innerHTML = '';
+      if (resumoMesGrupoSel) {
+        const doGrupo = itens.filter(l => chaveGrupoResumo(l) === resumoMesGrupoSel)
+          .sort((a, b) => (a.data < b.data ? 1 : -1));
+        const cab = document.createElement('div');
+        cab.style.cssText = 'font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.6px;margin:14px 0 2px;';
+        cab.textContent = `${resumoMesGrupoSel} · ${doGrupo.length} lançamento${doGrupo.length !== 1 ? 's' : ''}`;
+        lista.appendChild(cab);
+        doGrupo.forEach(item => {
+          const dataFmt = item.data.split('-').reverse().join('/');
+          const div = document.createElement('div');
+          div.className = 'item-lancamento';
+          div.onclick = () => abrirAcoesLancamento(item.id);
+          div.innerHTML = `
+            <div class="item-info">
+              <strong>${item.descricao}</strong>
+              <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
+            </div>
+            <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
+          `;
+          lista.appendChild(div);
+        });
+      }
     }
 
     /* REQUISIÇÃO 6: DETALHAMENTO NO SEGUNDO CLIQUE EM DÉBITO, CRÉDITO OU RECEBÍVEIS NAS FATURAS */
@@ -2309,6 +2423,8 @@
       document.getElementById('tituloMesFatura').textContent = NOMES_MESES[mes] + ' ' + ano;
       const cap = document.getElementById('capFatura');
       if (cap) cap.textContent = textoFechamento(mes, ano);
+      const btnAtual = document.getElementById('btnMesAtual');
+      if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
 
       const porConta = {};
       let totalRecebimentos = 0, totalDebito = 0, totalCredito = 0;
