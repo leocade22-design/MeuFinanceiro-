@@ -270,6 +270,7 @@
               <option value="7">7x</option><option value="8">8x</option><option value="9">9x</option>
               <option value="10">10x</option><option value="11">11x</option><option value="12">12x</option>
             </select>
+            <p id="avisoParcelaGrupo" class="escondido" style="font-size:11.5px;color:#ffd166;margin-top:6px;line-height:1.4;">Esta é uma parcela de uma compra parcelada — o número de parcelas não pode ser alterado aqui. Ao salvar, você poderá aplicar descrição/conta/categoria/grupo a todas as parcelas de uma vez.</p>
           </div>
           <div class="form-row">
             <div class="form-group" id="grupoCategoria">
@@ -1807,15 +1808,49 @@
       if (idEditando) {
         const idx = lancamentos.findIndex(l => l.id === parseInt(idEditando, 10));
         if (idx !== -1) {
+          const itemOriginal = lancamentos[idx];
+          // sufixo "(n/N)" da descrição original, se houver, pra poder trocar só a base ao propagar
+          const matchSufixo = (itemOriginal.descricao || '').match(/\s\(\d+\/\d+\)$/);
+          const descricaoBase = matchSufixo ? descricao.replace(/\s\(\d+\/\d+\)$/, '') : descricao;
+
           lancamentos[idx] = {
-            ...lancamentos[idx],
+            ...itemOriginal,
             tipo: tipoAtual,
             descricao, conta, formaModo,
-            numParcelas: String(numParcelas),
+            numParcelas: itemOriginal.numParcelas, // nº de parcelas não muda por aqui (ver aviso no form)
             categoria, observacao, data: dataBase,
             valor: valorTotal.toFixed(2).replace('.', ','),
             grupoViagemId, grupoViagemNome
           };
+
+          // Propagação para as parcelas irmãs (mesma compra parcelada)
+          const irmas = itemOriginal.grupoId
+            ? lancamentos.filter(l => l.grupoId === itemOriginal.grupoId && l.id !== itemOriginal.id)
+            : [];
+
+          if (irmas.length > 0) {
+            const aplicarATodas = confirm(
+              'Esta é uma parcela de uma compra parcelada.\n\n' +
+              'OK = aplicar descrição, conta, categoria, observação, grupo e valor da parcela a TODAS as ' + (irmas.length + 1) + ' parcelas dessa compra\n' +
+              'Cancelar = alterar somente esta parcela'
+            );
+            if (aplicarATodas) {
+              const valorParcelaStr = valorTotal.toFixed(2).replace('.', ',');
+              irmas.forEach(irma => {
+                const irmaIdx = lancamentos.findIndex(l => l.id === irma.id);
+                if (irmaIdx === -1) return;
+                const sufixoIrma = (irma.descricao || '').match(/\s\(\d+\/\d+\)$/);
+                lancamentos[irmaIdx] = {
+                  ...irma,
+                  descricao: descricaoBase + (sufixoIrma ? sufixoIrma[0] : ''),
+                  conta, formaModo, categoria, observacao,
+                  grupoViagemId, grupoViagemNome,
+                  valor: valorParcelaStr
+                  // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
+                };
+              });
+            }
+          }
         }
       } else if (numParcelas > 1) {
         const grupoId = 'g' + Date.now();
@@ -1857,8 +1892,19 @@
       salvarLocalStorage();
       if (!idEditando && tipoAtual === 'receita') tocarSomReceita();
       cancelarEdicao();
+      atualizarTudo();
+    }
+
+    // Recalcula TODAS as visões (Dashboard, Lançamentos, Faturas, Gráficos, Grupos)
+    // de uma vez. Como as abas ficam todas no DOM (só escondidas por CSS), é seguro
+    // chamar isso a qualquer momento — garante que editar/salvar/excluir um lançamento
+    // nunca deixe outra aba com dado desatualizado, mesmo sem trocar de aba.
+    function atualizarTudo() {
       renderizarDashboard();
       renderizarLancamentos();
+      atualizarFaturas();
+      atualizarResumoEGraficos();
+      renderizarGrupos();
     }
 
     function prepararEdicao(id) {
@@ -1887,6 +1933,18 @@
         selCat.value = item.categoria || categoriaPadrao();
       }
 
+      // Parcela já pertencente a uma compra parcelada: nº de parcelas fica travado
+      // (mudar isso exigiria refazer o cronograma inteiro); mostra aviso explicando.
+      const selNumParcelas = document.getElementById('numParcelas');
+      const avisoParcela = document.getElementById('avisoParcelaGrupo');
+      if (item.grupoId) {
+        if (selNumParcelas) selNumParcelas.disabled = true;
+        if (avisoParcela) avisoParcela.classList.remove('escondido');
+      } else {
+        if (selNumParcelas) selNumParcelas.disabled = false;
+        if (avisoParcela) avisoParcela.classList.add('escondido');
+      }
+
       document.getElementById('tituloFormulario').textContent = 'Editar Lançamento';
       document.getElementById('btnSubmit').textContent = 'Atualizar Lançamento';
       document.getElementById('btnCancelarEdit').classList.remove('escondido');
@@ -1898,6 +1956,10 @@
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
+      const selNumParcelas = document.getElementById('numParcelas');
+      const avisoParcela = document.getElementById('avisoParcelaGrupo');
+      if (selNumParcelas) selNumParcelas.disabled = false;
+      if (avisoParcela) avisoParcela.classList.add('escondido');
       // o select de grupo agora vive fora do form: limpa o vínculo manualmente
       const selGrupo = document.getElementById('grupoViagem');
       if (selGrupo) selGrupo.value = '';
@@ -1910,11 +1972,30 @@
     }
 
     function excluirLancamento(id) {
-      if (!confirm('Excluir este lançamento?')) return;
-      lancamentos = lancamentos.filter(l => l.id !== id);
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+
+      const irmas = item.grupoId ? lancamentos.filter(l => l.grupoId === item.grupoId && l.id !== id) : [];
+
+      if (irmas.length > 0) {
+        const excluirTudo = confirm(
+          'Esta é uma parcela de uma compra parcelada (' + (irmas.length + 1) + ' parcelas no total).\n\n' +
+          'OK = excluir TODAS as parcelas dessa compra\n' +
+          'Cancelar = excluir somente esta parcela'
+        );
+        if (excluirTudo) {
+          lancamentos = lancamentos.filter(l => l.grupoId !== item.grupoId);
+        } else {
+          if (!confirm('Excluir somente esta parcela?')) return;
+          lancamentos = lancamentos.filter(l => l.id !== id);
+        }
+      } else {
+        if (!confirm('Excluir este lançamento?')) return;
+        lancamentos = lancamentos.filter(l => l.id !== id);
+      }
+
       salvarLocalStorage();
-      renderizarDashboard();
-      renderizarLancamentos();
+      atualizarTudo();
     }
 
     /* SISTEMA DE CONSULTA & FILTROS DE PERÍODO NO RESUMO DO TOPO */
