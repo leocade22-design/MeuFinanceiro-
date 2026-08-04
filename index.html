@@ -342,7 +342,7 @@
           <h3>Gastos fixos mensais</h3>
           <button class="btn-acao" onclick="abrirFormFixo()" style="font-size:22px;">➕</button>
         </div>
-        <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes, tipo Netflix, Gympass.</p>
+        <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes, tipo Netflix, Gympass. Entram sozinhas nos lançamentos todo mês, no dia do vencimento.</p>
         <div id="listaFixos"></div>
       </div>
 
@@ -623,6 +623,53 @@
     </div>
   </div>
 
+  <!-- MODAL DE GASTO FIXO MENSAL -->
+  <div id="modalFixo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalFixo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloModalFixo">Novo gasto fixo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalFixo')">&times;</button>
+      </div>
+      <form onsubmit="salvarFixoModal(event)">
+        <input type="hidden" id="idFixoEditando" value="">
+        <div class="form-group">
+          <label for="descFixo">Descrição</label>
+          <input type="text" id="descFixo" placeholder="Ex: Netflix, Gympass, Aluguel..." required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="valorFixo">Valor mensal</label>
+            <input type="text" id="valorFixo" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" required>
+          </div>
+          <div class="form-group">
+            <label for="diaFixo">Vencimento</label>
+            <select id="diaFixo"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contaFixo">Conta / Cartão</label>
+            <select id="contaFixo"></select>
+          </div>
+          <div class="form-group">
+            <label for="categoriaFixo">Categoria</label>
+            <select id="categoriaFixo">
+              <option value="Alimentação">Alimentação</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Viagens ✈️">Viagens ✈️</option>
+              <option value="Lazer">Lazer</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Investimento">Investimento</option>
+              <option value="Outros" selected>Outros</option>
+            </select>
+          </div>
+        </div>
+        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos (resumo, faturas e gráficos). Dá pra editar ou excluir o lançamento de um mês específico sem afetar os próximos.</p>
+        <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     let tipoAtual = 'receita';
     let lancamentos = [];
@@ -715,7 +762,7 @@
     }
 
     function popularSelectsContas() {
-      ['conta', 'origemAporte'].forEach(idSel => {
+      ['conta', 'origemAporte', 'contaFixo'].forEach(idSel => {
         const sel = document.getElementById(idSel);
         if (!sel) return;
         const atual = sel.value;
@@ -1819,12 +1866,23 @@
       if (fixosAtivos.length === 0) {
         containerFixos.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto fixo cadastrado ainda.</p>';
       } else {
+        const chaveMesExibido = chaveMesAno(ano, mes);
         fixosAtivos.forEach(f => {
+          const lancado = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
           const div = document.createElement('div');
           div.className = 'item-lancamento';
+          div.style.cursor = 'default';
           div.innerHTML = `
-            <div class="item-info"><strong>${f.descricao}</strong><div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}</div></div>
-            <div class="item-acoes"><span class="valor-despesa">${fmtVal(parseVal(f.valor))}</span><button class="btn-acao" onclick="excluirFixo('${f.id}')" title="Remover">🗑️</button></div>
+            <div class="item-info">
+              <strong>${f.descricao}</strong>
+              <div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? '✓ lançado neste mês' : '⏳ ainda não lançado neste mês'}</div>
+            </div>
+            <div class="item-acoes">
+              <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
+              <button class="btn-acao" onclick="abrirFormFixo('${f.id}')" title="Editar" style="font-size:16px;padding:8px 4px;">✏️</button>
+              <button class="btn-acao" onclick="excluirFixo('${f.id}')" title="Remover" style="font-size:16px;padding:8px 4px;">🗑️</button>
+            </div>
           `;
           containerFixos.appendChild(div);
         });
@@ -1887,33 +1945,130 @@
       modal.classList.remove('escondido');
     }
 
-    function abrirFormFixo() {
-      const nome = prompt('Nome do gasto fixo (ex: Netflix, Gympass):');
-      if (!nome) return;
-      const valorStr = prompt('Valor mensal (ex: 39,90):');
-      if (!valorStr) return;
-      const valor = parseVal(valorStr);
-      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
-      const conta = prompt('Conta/cartão (' + contas.map(c => c.nome).join(', ') + '):', primeiraConta());
-      const dia = prompt('Dia do vencimento (1 a 28):', '10');
+    function abrirFormFixo(id) {
+      popularSelectsContas();
+      const selDia = document.getElementById('diaFixo');
+      if (!selDia.options.length) {
+        for (let d = 1; d <= 28; d++) {
+          const o = document.createElement('option');
+          o.value = String(d);
+          o.textContent = 'dia ' + d;
+          selDia.appendChild(o);
+        }
+      }
 
-      fixos.push({
-        id: 'f' + Date.now(),
-        descricao: nome,
+      const f = id ? fixos.find(x => x.id === id) : null;
+      document.getElementById('idFixoEditando').value = f ? f.id : '';
+      document.getElementById('tituloModalFixo').textContent = f ? 'Editar gasto fixo' : 'Novo gasto fixo';
+      document.getElementById('descFixo').value = f ? f.descricao : '';
+      document.getElementById('valorFixo').value = f ? 'R$ ' + f.valor : '';
+      selDia.value = f ? String(Math.min(parseInt(f.diaVencimento, 10) || 1, 28)) : '10';
+      const selConta = document.getElementById('contaFixo');
+      if (f && contas.some(c => c.nome === f.conta)) selConta.value = f.conta;
+      document.getElementById('categoriaFixo').value = f ? (f.categoria || 'Outros') : 'Outros';
+      document.getElementById('modalFixo').classList.remove('escondido');
+    }
+
+    function salvarFixoModal(e) {
+      e.preventDefault();
+      const descricao = document.getElementById('descFixo').value.trim();
+      if (!descricao) { alert('Digite a descrição.'); return; }
+      const valor = parseVal(document.getElementById('valorFixo').value.replace('R$', '').trim());
+      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
+
+      const idEdit = document.getElementById('idFixoEditando').value;
+      const dados = {
+        descricao,
         valor: valor.toFixed(2).replace('.', ','),
-        conta: conta || primeiraConta(),
-        diaVencimento: parseInt(dia, 10) || 1,
-        dataInicio: obterDataBrasilia()
-      });
+        conta: document.getElementById('contaFixo').value || primeiraConta(),
+        diaVencimento: parseInt(document.getElementById('diaFixo').value, 10) || 1,
+        categoria: document.getElementById('categoriaFixo').value || 'Outros'
+      };
+
+      if (idEdit) {
+        const f = fixos.find(x => x.id === idEdit);
+        if (f) {
+          Object.assign(f, dados);
+          // Se o lançamento deste mês ainda não venceu, atualiza ele também
+          const hoje = obterDataBrasilia();
+          const lanc = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === hoje.slice(0, 7));
+          if (lanc && lanc.data >= hoje) {
+            lanc.descricao = dados.descricao;
+            lanc.valor = dados.valor;
+            lanc.conta = dados.conta;
+            lanc.categoria = dados.categoria;
+            lanc.data = hoje.slice(0, 7) + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+            salvarLocalStorage();
+          }
+        }
+      } else {
+        fixos.push({ id: 'f' + Date.now(), ...dados, dataInicio: obterDataBrasilia() });
+      }
+
+      salvarFixos();
+      gerarLancamentosFixos();
+      fecharModal('modalFixo');
+      atualizarFaturas();
+      renderizarLancamentos();
+      atualizarResumoEGraficos();
+    }
+
+    function excluirFixo(id) {
+      if (!confirm('Remover este gasto fixo? Os lançamentos já criados nos meses passados permanecem; ele só deixa de entrar nos próximos meses.')) return;
+      fixos = fixos.filter(f => f.id !== id);
       salvarFixos();
       atualizarFaturas();
     }
 
-    function excluirFixo(id) {
-      if (!confirm('Remover este gasto fixo?')) return;
-      fixos = fixos.filter(f => f.id !== id);
+    // Gera automaticamente o lançamento mensal de cada gasto fixo,
+    // do mês de cadastro (ou do último mês já gerado) até o mês atual.
+    function chaveMesAno(ano, mes) { return ano + '-' + String(mes + 1).padStart(2, '0'); }
+
+    function gerarLancamentosFixos() {
+      if (!fixos.length) return;
+      const hoje = obterDataBrasilia();
+      const anoAtual = parseInt(hoje.slice(0, 4), 10);
+      const mesAtual = parseInt(hoje.slice(5, 7), 10) - 1;
+      let houveNovo = false, contador = 0;
+
+      fixos.forEach(f => {
+        const inicio = f.dataInicio || hoje;
+        let ano = parseInt(inicio.slice(0, 4), 10);
+        let mes = parseInt(inicio.slice(5, 7), 10) - 1;
+        if (f.ultimoMesGerado) {
+          ano = parseInt(f.ultimoMesGerado.slice(0, 4), 10);
+          mes = parseInt(f.ultimoMesGerado.slice(5, 7), 10) - 1 + 1;
+          if (mes > 11) { mes = 0; ano++; }
+        }
+
+        while (ano < anoAtual || (ano === anoAtual && mes <= mesAtual)) {
+          const chave = chaveMesAno(ano, mes);
+          const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
+          const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chave);
+          if (!jaExiste) {
+            lancamentos.push({
+              id: Date.now() + (contador++),
+              tipo: 'despesa',
+              descricao: f.descricao,
+              conta: f.conta || primeiraConta(),
+              formaModo: 'À Vista / Débito',
+              numParcelas: '1',
+              categoria: f.categoria || 'Outros',
+              observacao: '🔁 Gasto fixo mensal',
+              data: chave + '-' + String(dia).padStart(2, '0'),
+              valor: f.valor,
+              fixoId: f.id
+            });
+            houveNovo = true;
+          }
+          f.ultimoMesGerado = chave;
+          mes++;
+          if (mes > 11) { mes = 0; ano++; }
+        }
+      });
+
       salvarFixos();
-      atualizarFaturas();
+      if (houveNovo) salvarLocalStorage();
     }
 
     function renderizarInvestimentos() {
@@ -2373,6 +2528,7 @@ function confirmarLancamentoVoz() {
     carregarUiPrefs();
     aplicarSecao('indicadores');
     aplicarSecao('metas');
+    gerarLancamentosFixos();
 
     valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
     ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
