@@ -102,13 +102,13 @@
     .val-despesa { color: #ef5350; }
     
     .nav-tabs { display: flex; background-color: #1a1a1a; border-radius: 12px; padding: 4px; margin-bottom: 16px; border: 1px solid #333; overflow-x: auto; }
-    .nav-tab { flex: 1 0 auto; min-width: 68px; padding: 9px 2px; border: none; background: transparent; color: #888; font-size: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; line-height: 1.2; }
+    .nav-tab { flex: 1 0 auto; min-width: 72px; padding: 10px 4px; border: none; background: transparent; color: #888; font-size: 12.5px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; line-height: 1.2; }
     .nav-tab.ativo { background-color: #242424; color: #fff; }
     .aba-conteudo { display: none; }
     .aba-conteudo.ativo { display: block; }
     .card { background-color: #242424; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
     .tipo-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
-    .btn-tipo { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; font-weight: bold; cursor: pointer; }
+    .btn-tipo { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; font-weight: bold; font-size: 15px; cursor: pointer; }
     .btn-tipo.ativo-receita { border-color: #2e7d32; color: #4caf50; background-color: rgba(46, 125, 50, 0.15); }
     .btn-tipo.ativo-despesa { border-color: #c62828; color: #ef5350; background-color: rgba(198, 40, 40, 0.15); }
     .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
@@ -191,11 +191,11 @@
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
     .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
-    /* TROCA DE ABA POR GESTO (deslizar o dedo) */
-    @keyframes abaSlideEsq { from { opacity:.35; transform:translateX(16px); } to { opacity:1; transform:none; } }
-    @keyframes abaSlideDir { from { opacity:.35; transform:translateX(-16px); } to { opacity:1; transform:none; } }
-    .aba-conteudo.anim-esq { animation: abaSlideEsq .18s ease-out; }
-    .aba-conteudo.anim-dir { animation: abaSlideDir .18s ease-out; }
+    /* TROCA DE ABA POR GESTO (deslizar o dedo) — transição suave */
+    @keyframes abaSlideEsq { from { opacity:.6; transform:translateX(8px); } to { opacity:1; transform:none; } }
+    @keyframes abaSlideDir { from { opacity:.6; transform:translateX(-8px); } to { opacity:1; transform:none; } }
+    .aba-conteudo.anim-esq { animation: abaSlideEsq .35s cubic-bezier(.25,.6,.35,1); }
+    .aba-conteudo.anim-dir { animation: abaSlideDir .35s cubic-bezier(.25,.6,.35,1); }
 
     .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
@@ -237,7 +237,10 @@
             <label for="descricao" style="margin-bottom:3px;">Descrição</label>
             <input list="listaDescricoes" id="descricao" name="descricao" placeholder="Ex: Mercado, Uber...">
             <datalist id="listaDescricoes"></datalist>
-            <button type="button" id="linkObs" class="link-obs" onclick="abrirModalObs()">adicionar observação</button>
+            <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;">
+              <button type="button" id="linkObs" class="link-obs" onclick="abrirModalObs()">adicionar observação</button>
+              <button type="button" id="linkGrupo" class="link-obs escondido" onclick="abrirModalGrupoVinculo()">vincular a um grupo</button>
+            </div>
             <textarea id="observacao" name="observacao" class="escondido"></textarea>
           </div>
           <div class="form-row">
@@ -278,12 +281,6 @@
               <input type="date" id="dataCompra" name="dataCompra">
             </div>
           </div>
-          <div class="form-group" id="grupoGrupoViagemWrap">
-            <label for="grupoViagem">Vincular a um grupo (opcional)</label>
-            <select id="grupoViagem" onchange="onMudarGrupoSelect()"></select>
-            <span style="font-size:11px;color:#777;">Funciona pra despesas e também pra receitas (ex: reembolso de uma viagem).</span>
-          </div>
-
           <div class="form-group">
             <label for="valor">Valor</label>
             <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
@@ -300,15 +297,16 @@
     <div id="abaFaturas" class="aba-conteudo">
       <div class="card">
         <!-- Navegação de mês no topo: tudo abaixo se refere ao mês selecionado -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:4px;">
+          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
           <button class="btn-mes" onclick="mudarMesFatura(-1)">‹</button>
           <h3 id="tituloMesFatura">—</h3>
           <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:0;width:22px;text-align:left;"></button>
+        <div style="text-align:center;margin-bottom:12px;">
           <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 3 · vence dia 10</span>
-          <span style="width:22px;"></span>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
@@ -460,6 +458,7 @@
           <div style="display:flex;gap:6px;">
             <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
             <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
+            <button class="btn-mini" id="btnVerContas" onclick="setVisaoGrafico('contas')">Contas</button>
           </div>
           <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
             <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
@@ -469,6 +468,7 @@
         <h3 id="tituloGraficoUnico" style="color:#ef5350;margin-bottom:14px;">Gastos por Categoria</h3>
         <div id="containerGraficoCategorias"></div>
         <div id="containerGraficoReceitas" class="escondido"></div>
+        <div id="containerGraficoContas" class="escondido"></div>
       </div>
 
     </div>
@@ -653,6 +653,22 @@
     </div>
   </div>
 
+  <!-- MODAL DE VÍNCULO A GRUPO -->
+  <div id="modalGrupoVinculo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalGrupoVinculo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Vincular a um grupo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalGrupoVinculo')">&times;</button>
+      </div>
+      <div class="form-group" id="grupoGrupoViagemWrap">
+        <label for="grupoViagem">Grupo</label>
+        <select id="grupoViagem" onchange="onMudarGrupoSelect()"></select>
+        <span style="font-size:11px;color:#777;">Funciona pra despesas e também pra receitas (ex: reembolso de uma viagem).</span>
+      </div>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarGrupoVinculo()">OK</button>
+    </div>
+  </div>
+
   <!-- MODAL DE OBSERVAÇÃO -->
   <div id="modalObs" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalObs')">
     <div class="modal-content">
@@ -751,6 +767,7 @@
     let uiPrefs = {};
     let visaoGraficoAtual = 'despesas';
     let tipoGraficoReceita = 'barras';
+    let tipoGraficoConta = 'barras';
 
     // Variáveis de estado da consulta no modal
     let tipoModalAtual = 'saldo';
@@ -935,18 +952,24 @@
     // CARD ÚNICO DE GRÁFICOS: ALTERNAR DESPESAS / RECEITAS
     function setVisaoGrafico(visao) {
       visaoGraficoAtual = visao;
-      const eDesp = visao === 'despesas';
-      document.getElementById('btnVerDespesas').classList.toggle('ativo', eDesp);
-      document.getElementById('btnVerReceitas').classList.toggle('ativo', !eDesp);
-      document.getElementById('containerGraficoCategorias').classList.toggle('escondido', !eDesp);
-      document.getElementById('containerGraficoReceitas').classList.toggle('escondido', eDesp);
-      // Botões Barras/Pizza valem pras duas visões; refletem o tipo salvo de cada uma
-      const tipoDaVisao = eDesp ? tipoGraficoCategoria : tipoGraficoReceita;
-      document.getElementById('btnBarras').className = 'btn-mini' + (tipoDaVisao === 'barras' ? ' ativo' : '');
-      document.getElementById('btnPizza').className = 'btn-mini' + (tipoDaVisao === 'pizza' ? ' ativo' : '');
+      const VISOES = {
+        despesas: { container: 'containerGraficoCategorias', titulo: 'Gastos por Categoria', cor: '#ef5350', tipo: tipoGraficoCategoria },
+        receitas: { container: 'containerGraficoReceitas', titulo: 'Receitas por Fonte', cor: '#4caf50', tipo: tipoGraficoReceita },
+        contas: { container: 'containerGraficoContas', titulo: 'Gastos por Conta / Cartão', cor: '#42a5f5', tipo: tipoGraficoConta }
+      };
+      document.getElementById('btnVerDespesas').classList.toggle('ativo', visao === 'despesas');
+      document.getElementById('btnVerReceitas').classList.toggle('ativo', visao === 'receitas');
+      document.getElementById('btnVerContas').classList.toggle('ativo', visao === 'contas');
+      Object.entries(VISOES).forEach(([nome, v]) => {
+        document.getElementById(v.container).classList.toggle('escondido', nome !== visao);
+      });
+      // Botões Barras/Pizza valem pra todas as visões; refletem o tipo salvo de cada uma
+      const atual = VISOES[visao];
+      document.getElementById('btnBarras').className = 'btn-mini' + (atual.tipo === 'barras' ? ' ativo' : '');
+      document.getElementById('btnPizza').className = 'btn-mini' + (atual.tipo === 'pizza' ? ' ativo' : '');
       const t = document.getElementById('tituloGraficoUnico');
-      t.textContent = eDesp ? 'Gastos por Categoria' : 'Receitas por Fonte';
-      t.style.color = eDesp ? '#ef5350' : '#4caf50';
+      t.textContent = atual.titulo;
+      t.style.color = atual.cor;
     }
 
     // GERENCIAMENTO DE CONTAS
@@ -1506,10 +1529,11 @@
       // Filtra apenas os grupos abertos
       const gruposAbertos = grupos.filter(g => g.status === 'aberto');
 
-      // Se não tiver nenhum grupo em aberto, oculta totalmente o elemento
+      // Se não tiver nenhum grupo em aberto, oculta totalmente o elemento (e o link no formulário)
       if (gruposAbertos.length === 0) {
         wrap.classList.add('escondido');
         sel.value = '';
+        atualizarLinkGrupo();
         return;
       }
 
@@ -1526,6 +1550,38 @@
       oNovo.textContent = '+ Criar novo grupo...';
       sel.appendChild(oNovo);
       sel.value = selecionado || '';
+      atualizarLinkGrupo();
+    }
+
+    // LINK DISCRETO DE VÍNCULO A GRUPO (abaixo da descrição, como a observação)
+    function atualizarLinkGrupo() {
+      const link = document.getElementById('linkGrupo');
+      if (!link) return;
+      const gruposAbertos = grupos.filter(g => g.status === 'aberto');
+      if (gruposAbertos.length === 0) {
+        link.classList.add('escondido');
+        return;
+      }
+      link.classList.remove('escondido');
+      const val = document.getElementById('grupoViagem').value;
+      const g = grupos.find(x => x.id === val);
+      if (g) {
+        link.textContent = 'grupo: ' + g.nome;
+        link.classList.add('tem-obs');
+      } else {
+        link.textContent = 'vincular a um grupo';
+        link.classList.remove('tem-obs');
+      }
+    }
+
+    function abrirModalGrupoVinculo() {
+      popularSelectGrupos(document.getElementById('grupoViagem').value);
+      document.getElementById('modalGrupoVinculo').classList.remove('escondido');
+    }
+
+    function salvarGrupoVinculo() {
+      atualizarLinkGrupo();
+      fecharModal('modalGrupoVinculo');
     }
 
     function onMudarGrupoSelect() {
@@ -1820,6 +1876,9 @@
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
+      // o select de grupo agora vive fora do form: limpa o vínculo manualmente
+      const selGrupo = document.getElementById('grupoViagem');
+      if (selGrupo) selGrupo.value = '';
       popularSelectsContas();
       document.getElementById('dataCompra').value = obterDataBrasilia();
       document.getElementById('tituloFormulario').textContent = 'Novo lançamento';
@@ -2087,7 +2146,8 @@
 
     function setTipoGrafico(tipo) {
       if (visaoGraficoAtual === 'despesas') tipoGraficoCategoria = tipo;
-      else tipoGraficoReceita = tipo;
+      else if (visaoGraficoAtual === 'receitas') tipoGraficoReceita = tipo;
+      else tipoGraficoConta = tipo;
       document.getElementById('btnBarras').className = 'btn-mini' + (tipo === 'barras' ? ' ativo' : '');
       document.getElementById('btnPizza').className = 'btn-mini' + (tipo === 'pizza' ? ' ativo' : '');
       atualizarResumoEGraficos();
@@ -2101,11 +2161,17 @@
       });
 
       let rec = 0, desp = 0;
-      const porFonte = {}, porCategoria = {};
+      const porFonte = {}, porCategoria = {}, porContaGrafico = {};
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
         if (l.tipo === 'receita') { rec += v; porFonte[l.descricao] = (porFonte[l.descricao] || 0) + v; }
-        else { desp += v; const cat = l.categoria || 'Outros'; porCategoria[cat] = (porCategoria[cat] || 0) + v; }
+        else {
+          desp += v;
+          const cat = l.categoria || 'Outros';
+          porCategoria[cat] = (porCategoria[cat] || 0) + v;
+          const cta = l.conta || 'Outros';
+          porContaGrafico[cta] = (porContaGrafico[cta] || 0) + v;
+        }
       });
       const saldo = rec - desp;
 
@@ -2124,6 +2190,8 @@
       else renderizarBarras(document.getElementById('containerGraficoReceitas'), porFonte, '#4caf50');
       if (tipoGraficoCategoria === 'pizza') renderizarPizza(document.getElementById('containerGraficoCategorias'), porCategoria);
       else renderizarBarras(document.getElementById('containerGraficoCategorias'), porCategoria, '#ef5350');
+      if (tipoGraficoConta === 'pizza') renderizarPizza(document.getElementById('containerGraficoContas'), porContaGrafico);
+      else renderizarBarras(document.getElementById('containerGraficoContas'), porContaGrafico, '#42a5f5');
       renderizarMetasCategorias();
       renderizarDashboard();
     }
