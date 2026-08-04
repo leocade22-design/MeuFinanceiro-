@@ -191,8 +191,10 @@
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
     .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
-    .btn-toggle-obs { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; background:#1a1a1a; border:1px dashed #444; border-radius:8px; padding:10px 12px; color:#aaa; font-size:13px; cursor:pointer; text-align:left; }
-    .btn-gerenciar-contas { background:transparent; border:none; cursor:pointer; font-size:15px; padding:0 4px; line-height:1; }
+    .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .link-obs.tem-obs { color:#9a9a9a; }
+    .btn-gerenciar-contas { background:transparent; border:none; cursor:pointer; padding:0 2px; line-height:0; opacity:.55; }
+    .btn-gerenciar-contas:active { opacity:1; }
     .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:#ccc; margin-bottom:14px; cursor:pointer; }
     .check-credito input { width:auto; accent-color:#4caf50; }
 
@@ -223,20 +225,18 @@
         </div>
         <form id="formLancamento" onsubmit="salvarLancamento(event)">
           <input type="hidden" id="idEditando" value="">
-          <div class="form-group">
-            <label for="descricao">Descrição</label>
+          <div class="form-group" style="gap:3px;">
+            <label for="descricao" style="margin-bottom:3px;">Descrição</label>
             <input list="listaDescricoes" id="descricao" name="descricao" placeholder="Ex: Mercado, Uber...">
             <datalist id="listaDescricoes"></datalist>
-          </div>
-          <div class="form-group">
-            <button type="button" class="btn-toggle-obs" onclick="alternarObservacao()"><span>📝 Adicionar observação (opcional)</span><span id="setaObs">▸</span></button>
-            <textarea id="observacao" name="observacao" class="escondido" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..." rows="3"></textarea>
+            <button type="button" id="linkObs" class="link-obs" onclick="abrirModalObs()">adicionar observação</button>
+            <textarea id="observacao" name="observacao" class="escondido"></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
               <div style="display:flex;align-items:center;justify-content:space-between;">
                 <label for="conta">Conta / Cartão</label>
-                <button type="button" class="btn-gerenciar-contas" onclick="abrirModalContas()" title="Gerenciar contas">⚙️</button>
+                <button type="button" class="btn-gerenciar-contas" onclick="abrirModalContas()" title="Gerenciar contas" aria-label="Gerenciar contas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
               </div>
               <select id="conta" name="conta" onchange="atualizarVisibilidadeForma()"></select>
             </div>
@@ -287,7 +287,7 @@
           </div>
           <div class="row-botoes-form">
             <button type="submit" id="btnSubmit" class="btn-salvar">Salvar</button>
-            <button type="button" id="btnMic" class="btn-mic" onclick="iniciarReconhecimentoVoz()" title="Lançar por voz">🎙️</button>
+            <button type="button" id="btnMic" class="btn-mic" onclick="iniciarReconhecimentoVoz()" title="Lançar por voz" aria-label="Lançar por voz"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
           </div>
           <button type="button" id="btnCancelarEdit" class="btn-cancelar escondido" onclick="cancelarEdicao()">Cancelar Edição</button>
         </form>
@@ -299,7 +299,7 @@
         <!-- Navegação de mês no topo: tudo abaixo se refere ao mês selecionado -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <button class="btn-mes" onclick="mudarMesFatura(-1)">‹</button>
-          <h3 id="tituloMesFatura" onclick="alternarDetalheFatura()" style="cursor:pointer;">—</h3>
+          <h3 id="tituloMesFatura">—</h3>
           <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
         </div>
         <div class="resumo-header" style="margin-bottom:8px;">
@@ -307,22 +307,22 @@
           <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()">👁️</button>
         </div>
         <div class="painel-topo" style="margin-bottom:14px;">
-          <div class="card-saldo-destaque" style="cursor:default;">
+          <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
             <span>Saldo do mês</span>
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
           </div>
           <div class="painel-direita">
-            <div class="card-mini" style="cursor:default;">
+            <div class="card-mini" onclick="alternarDetalheFatura()">
               <span>Receitas</span>
               <h4 class="val-receita" id="faturaReceita">R$ 0,00</h4>
             </div>
-            <div class="card-mini" style="cursor:default;">
+            <div class="card-mini" onclick="alternarDetalheFatura()">
               <span>Despesas</span>
               <h4 class="val-despesa" id="faturaDespesa">R$ 0,00</h4>
             </div>
           </div>
         </div>
-        <p style="color: #aaa; font-size: 12.5px; margin: 8px 0 12px; text-align:center;">Cartão fecha dia 4 e vence dia 10. Toque no mês pra ver o detalhamento — e em cada linha pra ver os lançamentos.</p>
+        <p style="color: #aaa; font-size: 12.5px; margin: 8px 0 12px; text-align:center;">Cartão fecha dia 4 e vence dia 10. Toque no saldo, nas receitas ou nas despesas pra ver o detalhamento — e em cada linha pra ver os lançamentos.</p>
         <div id="detalheFaturaMes" class="box-resumo-modal escondido" style="margin-bottom:12px;"></div>
         <div id="listaFaturas"></div>
       </div>
@@ -456,19 +456,6 @@
         <div id="containerGraficoReceitas" class="escondido"></div>
       </div>
 
-      <!-- METAS POR CATEGORIA (retrátil) -->
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Metas por categoria</h3>
-            <span style="font-size:11px;color:#aaa;">com base no período selecionado</span>
-          </div>
-          <span class="chevron-sec" id="chevron-metas">▸</span>
-        </button>
-        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
-          <div id="listaMetasCategoria" class="meta-lista"></div>
-        </div>
-      </div>
     </div>
 
     <div id="abaInvestimentos" class="aba-conteudo">
@@ -485,6 +472,20 @@
       <div class="card">
         <h4 style="margin-bottom: 12px; color: #aaa;">Aportes</h4>
         <div id="listaInvestimentos"></div>
+      </div>
+
+      <!-- METAS POR CATEGORIA (retrátil, realocado da aba Gráficos) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Metas por categoria</h3>
+            <span style="font-size:11px;color:#aaa;">período selecionado na aba Gráficos</span>
+          </div>
+          <span class="chevron-sec" id="chevron-metas">▸</span>
+        </button>
+        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
+          <div id="listaMetasCategoria" class="meta-lista"></div>
+        </div>
       </div>
     </div>
 
@@ -545,8 +546,8 @@
 
       <!-- Rodapé de ações (visível só no modal de grupo) -->
       <div id="rodapeGrupo" class="escondido" style="margin-top:20px;padding-top:16px;border-top:1px solid #333;display:flex;gap:10px;">
-        <button type="button" class="btn-cancelar" style="flex:1;" onclick="abrirRenomearGrupo()">✏️ Renomear</button>
-        <button type="button" class="btn-cancelar" style="flex:1;color:#ef5350;border-color:rgba(239,83,80,0.35);" onclick="excluirGrupoAtual()">🗑️ Excluir grupo</button>
+        <button type="button" class="btn-cancelar" style="flex:1;" onclick="abrirRenomearGrupo()">Renomear</button>
+        <button type="button" class="btn-cancelar" style="flex:1;color:#ef5350;border-color:rgba(239,83,80,0.35);" onclick="excluirGrupoAtual()">Excluir grupo</button>
       </div>
     </div>
   </div>
@@ -574,8 +575,8 @@
         <button class="btn-fechar" onclick="fecharModal('modalAcoes')">&times;</button>
       </div>
       <div class="balao-acoes">
-        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">✏️ Editar Lançamento</button>
-        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">🗑️ Excluir Lançamento</button>
+        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar lançamento</button>
+        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir lançamento</button>
       </div>
     </div>
   </div>
@@ -620,6 +621,34 @@
         <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
         <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE OPÇÕES DO GASTO FIXO -->
+  <div id="modalAcoesFixo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAcoesFixo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalAcoesFixoTitulo">Opções do gasto fixo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAcoesFixo')">&times;</button>
+      </div>
+      <div class="balao-acoes">
+        <button class="btn-opcao-balao" onclick="executarEditarFixo()">Editar gasto fixo</button>
+        <button class="btn-opcao-balao danger" onclick="executarExcluirFixo()">Remover gasto fixo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE OBSERVAÇÃO -->
+  <div id="modalObs" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalObs')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Observação</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalObs')">&times;</button>
+      </div>
+      <div class="form-group">
+        <textarea id="obsTemp" rows="3" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..."></textarea>
+      </div>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarObsModal()">OK</button>
     </div>
   </div>
 
@@ -685,6 +714,7 @@
     let contas = [];
     let uiPrefs = {};
     let visaoGraficoAtual = 'despesas';
+    let tipoGraficoReceita = 'barras';
 
     // Variáveis de estado da consulta no modal
     let tipoModalAtual = 'saldo';
@@ -703,6 +733,7 @@
 
     const NOMES_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const PALETA = ['#ef5350','#ffa726','#ffca28','#66bb6a','#42a5f5','#ab47bc','#8d6e63','#26a69a'];
+    const PALETA_RECEITAS = ['#66bb6a','#26a69a','#42a5f5','#ffca28','#ab47bc','#ffa726','#8d6e63','#ef5350'];
 
     function salvarLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(lancamentos)); }
     function carregarLocalStorage() {
@@ -799,20 +830,30 @@
       aplicarSecao(nome);
     }
 
-    // CAMPO OBSERVAÇÃO RETRÁTIL
-    function definirObservacaoVisivel(visivel) {
-      const ta = document.getElementById('observacao');
-      const seta = document.getElementById('setaObs');
-      if (!ta) return;
-      ta.classList.toggle('escondido', !visivel);
-      if (seta) seta.textContent = visivel ? '▾' : '▸';
+    // OBSERVAÇÃO DISCRETA (link abaixo da descrição + janelinha)
+    function atualizarLinkObs() {
+      const link = document.getElementById('linkObs');
+      if (!link) return;
+      const v = document.getElementById('observacao').value.trim();
+      if (v) {
+        link.textContent = 'obs: ' + v;
+        link.classList.add('tem-obs');
+      } else {
+        link.textContent = 'adicionar observação';
+        link.classList.remove('tem-obs');
+      }
     }
 
-    function alternarObservacao() {
-      const ta = document.getElementById('observacao');
-      const vaiAbrir = ta.classList.contains('escondido');
-      definirObservacaoVisivel(vaiAbrir);
-      if (vaiAbrir) ta.focus();
+    function abrirModalObs() {
+      document.getElementById('obsTemp').value = document.getElementById('observacao').value;
+      document.getElementById('modalObs').classList.remove('escondido');
+      document.getElementById('obsTemp').focus();
+    }
+
+    function salvarObsModal() {
+      document.getElementById('observacao').value = document.getElementById('obsTemp').value.trim();
+      atualizarLinkObs();
+      fecharModal('modalObs');
     }
 
     // CARD ÚNICO DE GRÁFICOS: ALTERNAR DESPESAS / RECEITAS
@@ -823,7 +864,10 @@
       document.getElementById('btnVerReceitas').classList.toggle('ativo', !eDesp);
       document.getElementById('containerGraficoCategorias').classList.toggle('escondido', !eDesp);
       document.getElementById('containerGraficoReceitas').classList.toggle('escondido', eDesp);
-      document.getElementById('boxTipoGraficoDespesas').classList.toggle('escondido', !eDesp);
+      // Botões Barras/Pizza valem pras duas visões; refletem o tipo salvo de cada uma
+      const tipoDaVisao = eDesp ? tipoGraficoCategoria : tipoGraficoReceita;
+      document.getElementById('btnBarras').className = 'btn-mini' + (tipoDaVisao === 'barras' ? ' ativo' : '');
+      document.getElementById('btnPizza').className = 'btn-mini' + (tipoDaVisao === 'pizza' ? ' ativo' : '');
       const t = document.getElementById('tituloGraficoUnico');
       t.textContent = eDesp ? 'Gastos por Categoria' : 'Receitas por Fonte';
       t.style.color = eDesp ? '#ef5350' : '#4caf50';
@@ -846,8 +890,8 @@
         div.innerHTML = `
           <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 tem cartão de crédito' : 'sem cartão de crédito'}</div></div>
           <div class="item-acoes">
-            <button class="btn-acao" onclick="editarConta('${c.id}')" title="Editar">✏️</button>
-            <button class="btn-acao" onclick="excluirConta('${c.id}')" title="Excluir">🗑️</button>
+            <button class="btn-acao" onclick="editarConta('${c.id}')" title="Editar" aria-label="Editar" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+            <button class="btn-acao" onclick="excluirConta('${c.id}')" title="Excluir" aria-label="Excluir" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>`;
         box.appendChild(div);
       });
@@ -1140,7 +1184,7 @@
           <div class="meta-barra"><div class="meta-barra-fill" style="width:${pct}%;background:${pct >= 100 ? '#ef5350' : '#4caf50'};"></div></div>
           <div class="meta-config">
             <input type="number" min="0" step="0.01" value="${meta > 0 ? String(meta).replace('.', '.') : ''}" placeholder="Meta mensal" onchange="salvarMetaCategoria('${cat.replace(/'/g, "\'")}', Number(this.value) || 0)">
-            <button type="button" class="btn-acao" onclick="salvarMetaCategoria('${cat.replace(/'/g, "\'")}', 0)" title="Remover meta">🗑️</button>
+            <button type="button" class="btn-acao" onclick="salvarMetaCategoria('${cat.replace(/'/g, "\'")}', 0)" title="Remover meta" aria-label="Remover meta" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>
         `;
         lista.appendChild(div);
@@ -1325,7 +1369,7 @@
             <div style="font-size: 11px; color: #888;">
               ${dataFmt} • ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • 🧳 ' + item.grupoViagemNome : ''}
             </div>
-            ${item.observacao ? `<div class="observacao-mini">📝 ${item.observacao}</div>` : ''}
+            ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
             ${parcelasPendentes > 1 ? `<div class="badge-parcelas">⏳ ${parcelasPendentes} parcelas pendentes</div>` : ''}
           </div>
           <div class="item-acoes">
@@ -1445,7 +1489,7 @@
       document.getElementById('conta').value = item.conta;
       document.getElementById('dataCompra').value = item.data;
       document.getElementById('observacao').value = item.observacao || '';
-      definirObservacaoVisivel(!!(item.observacao || '').trim());
+      atualizarLinkObs();
       document.getElementById('valor').value = 'R$ ' + item.valor;
       popularSelectGrupos(item.grupoViagemId || '');
 
@@ -1469,7 +1513,7 @@
       document.getElementById('idEditando').value = '';
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
-      definirObservacaoVisivel(false);
+      atualizarLinkObs();
       popularSelectsContas();
       document.getElementById('dataCompra').value = obterDataBrasilia();
       document.getElementById('tituloFormulario').textContent = 'Novo lançamento';
@@ -1669,7 +1713,7 @@
           <div class="item-info">
             <strong>${item.descricao}</strong>
             <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
-            ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">📝 ${item.observacao}</div>` : ''}
+            ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">${item.observacao}</div>` : ''}
           </div>
           <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
         `;
@@ -1697,7 +1741,8 @@
       });
     }
 
-    function renderizarPizza(container, dados) {
+    function renderizarPizza(container, dados, paleta) {
+      const cores = paleta || PALETA;
       container.innerHTML = '';
       const entradas = Object.entries(dados).sort((a, b) => b[1] - a[1]);
       const total = entradas.reduce((s, [, v]) => s + v, 0);
@@ -1710,7 +1755,7 @@
         const pct = (valor / total) * 100;
         const inicio = acc;
         acc += pct;
-        return `${PALETA[i % PALETA.length]} ${inicio}% ${acc}%`;
+        return `${cores[i % cores.length]} ${inicio}% ${acc}%`;
       }).join(', ');
 
       const wrap = document.createElement('div');
@@ -1725,7 +1770,7 @@
         const pct = Math.round((valor / total) * 100);
         const linha = document.createElement('div');
         linha.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;';
-        linha.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${PALETA[i % PALETA.length]};display:inline-block;"></span> ${nome} · ${pct}%`;
+        linha.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${cores[i % cores.length]};display:inline-block;"></span> ${nome} · ${pct}%`;
         legenda.appendChild(linha);
       });
 
@@ -1735,7 +1780,8 @@
     }
 
     function setTipoGrafico(tipo) {
-      tipoGraficoCategoria = tipo;
+      if (visaoGraficoAtual === 'despesas') tipoGraficoCategoria = tipo;
+      else tipoGraficoReceita = tipo;
       document.getElementById('btnBarras').className = 'btn-mini' + (tipo === 'barras' ? ' ativo' : '');
       document.getElementById('btnPizza').className = 'btn-mini' + (tipo === 'pizza' ? ' ativo' : '');
       atualizarResumoEGraficos();
@@ -1768,7 +1814,8 @@
         }
       }
 
-      renderizarBarras(document.getElementById('containerGraficoReceitas'), porFonte, '#4caf50');
+      if (tipoGraficoReceita === 'pizza') renderizarPizza(document.getElementById('containerGraficoReceitas'), porFonte, PALETA_RECEITAS);
+      else renderizarBarras(document.getElementById('containerGraficoReceitas'), porFonte, '#4caf50');
       if (tipoGraficoCategoria === 'pizza') renderizarPizza(document.getElementById('containerGraficoCategorias'), porCategoria);
       else renderizarBarras(document.getElementById('containerGraficoCategorias'), porCategoria, '#ef5350');
       renderizarMetasCategorias();
@@ -1871,18 +1918,14 @@
           const lancado = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
           const div = document.createElement('div');
           div.className = 'item-lancamento';
-          div.style.cursor = 'default';
+          div.onclick = () => abrirAcoesFixo(f.id);
           div.innerHTML = `
             <div class="item-info">
               <strong>${f.descricao}</strong>
               <div style="font-size:11px;color:#888;">${f.conta} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
-              <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? '✓ lançado neste mês' : '⏳ ainda não lançado neste mês'}</div>
+              <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
             </div>
-            <div class="item-acoes">
-              <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
-              <button class="btn-acao" onclick="abrirFormFixo('${f.id}')" title="Editar" style="font-size:16px;padding:8px 4px;">✏️</button>
-              <button class="btn-acao" onclick="excluirFixo('${f.id}')" title="Remover" style="font-size:16px;padding:8px 4px;">🗑️</button>
-            </div>
+            <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
           `;
           containerFixos.appendChild(div);
         });
@@ -1934,7 +1977,7 @@
             <div class="item-info">
               <strong>${item.descricao}</strong>
               <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
-              ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">📝 ${item.observacao}</div>` : ''}
+              ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">${item.observacao}</div>` : ''}
             </div>
             <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
           `;
@@ -2020,6 +2063,29 @@
       atualizarFaturas();
     }
 
+    // Opções do gasto fixo (toque na linha)
+    let fixoSelecionadoId = null;
+
+    function abrirAcoesFixo(id) {
+      const f = fixos.find(x => x.id === id);
+      if (!f) return;
+      fixoSelecionadoId = id;
+      document.getElementById('modalAcoesFixoTitulo').textContent = f.descricao;
+      document.getElementById('modalAcoesFixo').classList.remove('escondido');
+    }
+
+    function executarEditarFixo() {
+      if (!fixoSelecionadoId) return;
+      fecharModal('modalAcoesFixo');
+      abrirFormFixo(fixoSelecionadoId);
+    }
+
+    function executarExcluirFixo() {
+      if (!fixoSelecionadoId) return;
+      fecharModal('modalAcoesFixo');
+      excluirFixo(fixoSelecionadoId);
+    }
+
     // Gera automaticamente o lançamento mensal de cada gasto fixo,
     // do mês de cadastro (ou do último mês já gerado) até o mês atual.
     function chaveMesAno(ano, mes) { return ano + '-' + String(mes + 1).padStart(2, '0'); }
@@ -2054,7 +2120,7 @@
               formaModo: 'À Vista / Débito',
               numParcelas: '1',
               categoria: f.categoria || 'Outros',
-              observacao: '🔁 Gasto fixo mensal',
+              observacao: 'Gasto fixo mensal',
               data: chave + '-' + String(dia).padStart(2, '0'),
               valor: f.valor,
               fixoId: f.id
@@ -2248,7 +2314,7 @@
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                   <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
-                  ${item.observacao ? `<span style="font-size:10px;color:#8c8c8c;max-width:150px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📝 ${item.observacao}</span>` : ''}
+                  ${item.observacao ? `<span style="font-size:10px;color:#8c8c8c;max-width:150px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.observacao}</span>` : ''}
                 </div>
               </div>
             `;
@@ -2507,7 +2573,7 @@ function confirmarLancamentoVoz() {
   }
 
   document.getElementById('dataCompra').value = obterDataBrasilia();
-  document.getElementById('observacao').value = '🎙️ Lançamento via voz';
+  document.getElementById('observacao').value = 'Lançamento via voz';
 
   fecharModal('modalVoz');
 
