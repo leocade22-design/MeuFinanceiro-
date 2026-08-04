@@ -191,6 +191,12 @@
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
     .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
+    /* TROCA DE ABA POR GESTO (deslizar o dedo) */
+    @keyframes abaSlideEsq { from { opacity:.35; transform:translateX(16px); } to { opacity:1; transform:none; } }
+    @keyframes abaSlideDir { from { opacity:.35; transform:translateX(-16px); } to { opacity:1; transform:none; } }
+    .aba-conteudo.anim-esq { animation: abaSlideEsq .18s ease-out; }
+    .aba-conteudo.anim-dir { animation: abaSlideDir .18s ease-out; }
+
     .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
     .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -300,9 +306,9 @@
           <button class="btn-mes" onclick="mudarMesFatura(1)">›</button>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:0;width:22px;text-align:left;"></button>
+          <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 3 · vence dia 10</span>
           <span style="width:22px;"></span>
-          <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 4 · vence dia 10</span>
-          <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:0;width:22px;"></button>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
@@ -722,7 +728,7 @@
             <option value="À Vista / Débito">Débito / À vista</option>
           </select>
         </div>
-        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 4): cobrança até o dia 4 entra na fatura do próprio mês; depois do dia 4, na do mês seguinte.</p>
+        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 3): cobrança até o dia 3 entra na fatura do próprio mês; depois do dia 3, na do mês seguinte.</p>
         <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
       </form>
     </div>
@@ -751,7 +757,7 @@
     let periodoModalAtual = '30';
     let periodoGraficosAtual = '30';
 
-    const DIA_FECHAMENTO_CARTAO = 4; // cartão vira (fecha) todo dia 4, fatura vence dia 10
+    const DIA_FECHAMENTO_CARTAO = 3; // cartão vira (fecha) todo dia 3, fatura vence dia 10
 
     const STORAGE_KEY = "meu_financeiro_v1";
     const STORAGE_KEY_FIXOS = "meu_financeiro_fixos_v1";
@@ -1370,6 +1376,64 @@
       });
     }
 
+    // SONS DE CELEBRAÇÃO DE RECEITA
+    // 24 variações curtas (todas abaixo de 2,5s), sintetizadas no aparelho com Web Audio —
+    // sem arquivos de áudio, funciona offline. Uma é sorteada a cada receita salva.
+    // base = frequência da tônica; notas = semitons acima da base; passo = intervalo entre notas.
+    const SONS_RECEITA = [
+      { base: 523.25, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.09, dur: 0.30, vol: 0.16 }, // arpejo Dó maior
+      { base: 587.33, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.08, dur: 0.28, vol: 0.16 }, // arpejo Ré maior
+      { base: 659.25, onda: 'triangle', notas: [0, 4, 7, 12],        passo: 0.10, dur: 0.32, vol: 0.18 }, // arpejo Mi maior
+      { base: 440.00, onda: 'triangle', notas: [0, 4, 7, 12, 16],    passo: 0.09, dur: 0.30, vol: 0.18 }, // arpejo Lá estendido
+      { base: 493.88, onda: 'sine',     notas: [0, 7, 12, 19],       passo: 0.10, dur: 0.35, vol: 0.16 }, // quintas ascendentes
+      { base: 523.25, onda: 'triangle', notas: [0, 5, 9, 12],        passo: 0.11, dur: 0.33, vol: 0.18 }, // arpejo suspenso
+      { base: 523.25, onda: 'sine',     notas: [0, 2, 4, 7, 9, 12],  passo: 0.07, dur: 0.22, vol: 0.15 }, // escala pentatônica rápida
+      { base: 587.33, onda: 'triangle', notas: [0, 2, 4, 7, 12],     passo: 0.08, dur: 0.25, vol: 0.16 }, // pentatônica Ré
+      { base: 783.99, onda: 'square',   notas: [0, 5],               passo: 0.09, dur: 0.40, vol: 0.07 }, // moeda clássica
+      { base: 880.00, onda: 'square',   notas: [0, 7],               passo: 0.08, dur: 0.35, vol: 0.06 }, // moeda aguda
+      { base: 659.25, onda: 'square',   notas: [0, 12],              passo: 0.10, dur: 0.40, vol: 0.06 }, // moeda em oitava
+      { base: 523.25, onda: 'sine',     notas: [0, 0, 7],            passo: 0.14, dur: 0.45, vol: 0.17 }, // fanfarra curta
+      { base: 587.33, onda: 'triangle', notas: [0, 0, 5, 9],         passo: 0.13, dur: 0.40, vol: 0.17 }, // fanfarra dupla
+      { base: 440.00, onda: 'sine',     notas: [0, 5, 9, 14],        passo: 0.12, dur: 0.42, vol: 0.16 }, // subida brilhante
+      { base: 1046.5, onda: 'sine',     notas: [0],                  passo: 0.00, dur: 1.40, vol: 0.15 }, // sino agudo
+      { base: 880.00, onda: 'triangle', notas: [0],                  passo: 0.00, dur: 1.30, vol: 0.16 }, // sino médio
+      { base: 659.25, onda: 'sine',     notas: [0, 12],              passo: 0.30, dur: 0.90, vol: 0.14 }, // dois sinos
+      { base: 523.25, onda: 'sine',     notas: [12, 7, 12, 16],      passo: 0.10, dur: 0.30, vol: 0.15 }, // saltinho alegre
+      { base: 587.33, onda: 'triangle', notas: [7, 12, 16, 19],      passo: 0.09, dur: 0.28, vol: 0.15 }, // subida ao topo
+      { base: 493.88, onda: 'sine',     notas: [0, 4, 7, 4, 7, 12],  passo: 0.08, dur: 0.24, vol: 0.14 }, // trinado
+      { base: 523.25, onda: 'triangle', notas: [0, 4, 7],            passo: 0.00, dur: 1.00, vol: 0.10 }, // acorde maior (junto)
+      { base: 587.33, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.00, dur: 1.10, vol: 0.09 }, // acorde com oitava
+      { base: 698.46, onda: 'sine',     notas: [0, 9, 16],           passo: 0.11, dur: 0.50, vol: 0.15 }, // brilho em Fá
+      { base: 523.25, onda: 'sine',     notas: [0, 7, 16, 24],       passo: 0.10, dur: 0.38, vol: 0.13 }  // foguetinho
+    ];
+    let audioCtxReceita = null;
+
+    function tocarSomReceita() {
+      try {
+        if (!audioCtxReceita) audioCtxReceita = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = audioCtxReceita;
+        if (ctx.state === 'suspended') ctx.resume();
+        const s = SONS_RECEITA[Math.floor(Math.random() * SONS_RECEITA.length)];
+        const t0 = ctx.currentTime + 0.02;
+        s.notas.forEach((semitons, i) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = s.onda;
+          osc.frequency.value = s.base * Math.pow(2, semitons / 12);
+          const ini = t0 + i * s.passo;
+          const fim = ini + s.dur;
+          g.gain.setValueAtTime(0, ini);
+          g.gain.linearRampToValueAtTime(s.vol, ini + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.001, fim);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(ini);
+          osc.stop(fim + 0.05);
+        });
+        window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1;
+      } catch (e) { /* sem áudio disponível, segue o jogo em silêncio */ }
+    }
+
     function alternarVisibilidade() {
       valoresOcultos = !valoresOcultos;
       localStorage.setItem('valoresOcultos', valoresOcultos ? '1' : '0');
@@ -1379,6 +1443,45 @@
       atualizarFaturas();
       renderizarLancamentos();
     }
+
+    // TROCA DE ABA POR GESTO: deslizar o dedo pra esquerda avança, pra direita volta
+    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos'];
+    let toqueIniX = 0, toqueIniY = 0, toqueValido = false;
+
+    function algumModalAberto() {
+      return Array.from(document.querySelectorAll('.modal-overlay')).some(m => !m.classList.contains('escondido'));
+    }
+
+    document.addEventListener('touchstart', (e) => {
+      toqueValido = !algumModalAberto() && !e.target.closest('.nav-tabs, input, select, textarea');
+      if (!toqueValido) return;
+      toqueIniX = e.touches[0].clientX;
+      toqueIniY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!toqueValido || algumModalAberto()) return;
+      const dx = e.changedTouches[0].clientX - toqueIniX;
+      const dy = e.changedTouches[0].clientY - toqueIniY;
+      // só conta como troca de aba se o gesto for claramente horizontal
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      const idxAtual = ORDEM_ABAS.findIndex(id => {
+        const el = document.getElementById(id);
+        return el && el.classList.contains('ativo');
+      });
+      const destino = dx < 0 ? idxAtual + 1 : idxAtual - 1;
+      if (idxAtual === -1 || destino < 0 || destino >= ORDEM_ABAS.length) return;
+      const idAba = ORDEM_ABAS[destino];
+      const btn = document.querySelector(`.nav-tab[onclick*="${idAba}"]`);
+      mudarAba(idAba, btn);
+      if (btn && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      const alvo = document.getElementById(idAba);
+      if (alvo) {
+        alvo.classList.remove('anim-esq', 'anim-dir');
+        void alvo.offsetWidth; // reinicia a animação
+        alvo.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
+      }
+    }, { passive: true });
 
     function mudarAba(idAba, elemento) {
       document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('ativo'));
@@ -1640,7 +1743,7 @@
         const grupoId = 'g' + Date.now();
         const valorParcela = valorTotal / numParcelas;
         
-        // Regra de faturamento: se a compra for efetuada após o dia do fechamento (dia 4), a 1ª parcela rola pro mês seguinte
+        // Regra de faturamento: se a compra for efetuada após o dia do fechamento (dia 3), a 1ª parcela rola pro mês seguinte
         let dtCompra = new Date(dataBase + 'T12:00:00');
         let mesOffsetInicial = 0;
         if (dtCompra.getDate() > DIA_FECHAMENTO_CARTAO) {
@@ -1674,6 +1777,7 @@
       }
 
       salvarLocalStorage();
+      if (!idEditando && tipoAtual === 'receita') tocarSomReceita();
       cancelarEdicao();
       renderizarDashboard();
       renderizarLancamentos();
@@ -2029,7 +2133,7 @@
       return new Date(hoje.getFullYear(), hoje.getMonth() + offset, 1);
     }
 
-    // Compras no crédito feitas DEPOIS do fechamento (dia 4) caem na fatura do mês seguinte
+    // Compras no crédito feitas DEPOIS do fechamento (dia 3) caem na fatura do mês seguinte
     function getMesFatura(dataStr, formaModo) {
       const d = new Date(dataStr + 'T12:00:00');
       if (formaModo === 'Crédito Parcelado' && d.getDate() > DIA_FECHAMENTO_CARTAO) {
@@ -2061,7 +2165,7 @@
         const frase = dias === 0 ? 'fatura fecha hoje' : (dias === 1 ? 'fatura fecha amanhã' : `fatura fecha em ${dias} dias`);
         return `${frase} · vence dia 10`;
       }
-      return 'fecha dia 4 · vence dia 10';
+      return 'fecha dia 3 · vence dia 10';
     }
 
     function alternarDetalheFatura() {
