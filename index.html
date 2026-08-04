@@ -65,9 +65,10 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: flex-start;
-      cursor: pointer; 
-      transition: transform 0.1s ease, border-color 0.2s; 
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, border-color 0.2s;
     }
     .card-saldo-destaque:active { transform: scale(0.98); }
     .card-saldo-destaque span { display: block; font-size: 11px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -89,6 +90,8 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      align-items: center;
+      text-align: center;
       cursor: pointer;
       transition: transform 0.1s ease, border-color 0.2s;
     }
@@ -314,11 +317,11 @@
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
           </div>
           <div class="painel-direita">
-            <div class="card-mini" onclick="alternarDetalheFatura()">
+            <div class="card-mini" onclick="abrirResumoMes('receita')">
               <span>Receitas</span>
               <h4 class="val-receita" id="faturaReceita">R$ 0,00</h4>
             </div>
-            <div class="card-mini" onclick="alternarDetalheFatura()">
+            <div class="card-mini" onclick="abrirResumoMes('despesa')">
               <span>Despesas</span>
               <h4 class="val-despesa" id="faturaDespesa">R$ 0,00</h4>
             </div>
@@ -650,6 +653,21 @@
         <button class="btn-opcao-balao" onclick="executarEditarFixo()">Editar gasto fixo</button>
         <button class="btn-opcao-balao danger" onclick="executarExcluirFixo()">Remover gasto fixo</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE RESUMO DO MÊS (receitas por fonte / despesas por categoria) -->
+  <div id="modalResumoMes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalResumoMes')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloResumoMes">Resumo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalResumoMes')">&times;</button>
+      </div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total do mês</span>
+        <h2 id="totalResumoMes" style="font-size:26px;margin-top:4px;">R$ 0,00</h2>
+      </div>
+      <div id="corpoResumoMes"></div>
     </div>
   </div>
 
@@ -2240,6 +2258,46 @@
       document.getElementById('detalheFaturaMes').classList.toggle('escondido');
     }
 
+    // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria
+    function abrirResumoMes(tipo) {
+      const ref = getMesReferencia(faturaMesOffset);
+      const mes = ref.getMonth(), ano = ref.getFullYear();
+      const porGrupo = {};
+      let total = 0;
+
+      lancamentos.forEach(l => {
+        const v = parseVal(l.valor);
+        if (tipo === 'receita') {
+          if (l.tipo !== 'receita') return;
+          const d = new Date(l.data + 'T12:00:00');
+          if (d.getMonth() !== mes || d.getFullYear() !== ano) return;
+          const chave = l.descricao || 'Outras';
+          porGrupo[chave] = (porGrupo[chave] || 0) + v;
+          total += v;
+        } else {
+          if (l.tipo !== 'despesa') return;
+          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+          if (m !== mes || a !== ano) return;
+          const chave = l.categoria || 'Outros';
+          porGrupo[chave] = (porGrupo[chave] || 0) + v;
+          total += v;
+        }
+      });
+
+      const eReceita = tipo === 'receita';
+      document.getElementById('tituloResumoMes').textContent = (eReceita ? 'Receitas de ' : 'Despesas de ') + NOMES_MESES[mes];
+      const totalEl = document.getElementById('totalResumoMes');
+      totalEl.textContent = fmtOculto(total);
+      totalEl.style.color = eReceita ? '#4caf50' : '#ef5350';
+      const corpo = document.getElementById('corpoResumoMes');
+      if (total === 0) {
+        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">Nenhuma ${eReceita ? 'receita' : 'despesa'} neste mês.</p>`;
+      } else {
+        renderizarBarras(corpo, porGrupo, eReceita ? '#4caf50' : '#ef5350');
+      }
+      document.getElementById('modalResumoMes').classList.remove('escondido');
+    }
+
     /* REQUISIÇÃO 6: DETALHAMENTO NO SEGUNDO CLIQUE EM DÉBITO, CRÉDITO OU RECEBÍVEIS NAS FATURAS */
     function atualizarFaturas() {
       const container = document.getElementById('listaFaturas');
@@ -2319,7 +2377,7 @@
         containerFixos.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto fixo cadastrado ainda.</p>';
       } else {
         const chaveMesExibido = chaveMesAno(ano, mes);
-        fixosAtivos.forEach(f => {
+        fixosAtivos.slice().sort((a, b) => (a.descricao || '').localeCompare(b.descricao || '', 'pt-BR', { sensitivity: 'base' })).forEach(f => {
           const lancado = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
           const div = document.createElement('div');
           div.className = 'item-lancamento';
