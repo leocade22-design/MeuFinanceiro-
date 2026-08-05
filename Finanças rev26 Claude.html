@@ -1,0 +1,3626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121212">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Financeiro">
+  <title>Meu Financeiro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #121212; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; display: flex; justify-content: center; }
+    .app-container { width: 100%; max-width: 480px; }
+    
+    .resumo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
+    .resumo-header span { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .5px; }
+    .btn-olho { background: transparent; border: none; color: #aaa; font-size: 17px; cursor: pointer; padding: 4px; }
+    /* BOTÃO DE VOZ E MODAL */
+.row-botoes-form { display: flex; gap: 10px; margin-top: 10px; }
+.row-botoes-form .btn-salvar { margin-top: 0; flex: 1; }
+.btn-mic { 
+  width: 52px; 
+  border: none; 
+  border-radius: 8px; 
+  background-color: #2196f3; 
+  color: #fff; 
+  font-size: 20px; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  transition: transform 0.2s, background-color 0.2s;
+}
+.mic-animando { 
+  animation: pulseMic 1.5s infinite; 
+  background-color: #ef5350 !important; 
+}
+@keyframes pulseMic { 
+  0% { transform: scale(1); } 
+  50% { transform: scale(1.08); } 
+  100% { transform: scale(1); } 
+}
+.resumo-voz { background:#1a1a1a; padding:16px; border-radius:10px; margin-bottom:16px; font-size: 14px; border: 1px solid #333; }
+.resumo-voz p { margin-bottom: 8px; color: #ddd; }
+.resumo-voz p:last-child { margin-bottom: 0; }
+.resumo-voz strong { color: #888; display: inline-block; width: 85px; }
+
+    /* PAINEL TOPO */
+    .painel-topo { 
+      display: flex; 
+      gap: 8px; 
+      margin-bottom: 16px; 
+    }
+    
+    .card-saldo-destaque { 
+      flex: 1; 
+      background-color: #1a1a1a; 
+      border: 1px solid #2196f3; 
+      border-radius: 12px; 
+      padding: 16px 12px; 
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, border-color 0.2s;
+    }
+    .card-saldo-destaque:active { transform: scale(0.98); }
+    .card-saldo-destaque span { display: block; font-size: 11px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-saldo-destaque h4 { font-size: 20px; font-weight: bold; }
+
+    .painel-direita {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-mini {
+      flex: 1;
+      background-color: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, border-color 0.2s;
+    }
+    .card-mini:active { transform: scale(0.98); }
+    .card-mini:hover { border-color: #555; }
+    .card-mini span { display: block; font-size: 10px; color: #aaa; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-mini h4 { font-size: 14px; font-weight: bold; }
+
+    .val-saldo { color: #2196f3; }
+    .val-receita { color: #4caf50; }
+    .val-despesa { color: #ef5350; }
+    
+    .nav-tabs { display: flex; background-color: #1a1a1a; border-radius: 12px; padding: 4px; margin-bottom: 16px; border: 1px solid #333; overflow-x: auto; }
+    .nav-tab { flex: 1 0 auto; min-width: 72px; padding: 10px 4px; border: none; background: transparent; color: #888; font-size: 12.5px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; line-height: 1.2; }
+    .nav-tab.ativo { background-color: #242424; color: #fff; }
+    .aba-conteudo { display: none; }
+    .aba-conteudo.ativo { display: block; }
+    .card { background-color: #242424; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .tipo-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+    .btn-tipo { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn-tipo.ativo-receita { border-color: #2e7d32; color: #4caf50; background-color: rgba(46, 125, 50, 0.15); }
+    .btn-tipo.ativo-despesa { border-color: #c62828; color: #ef5350; background-color: rgba(198, 40, 40, 0.15); }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    label { font-size: 12px; color: #aaa; }
+    select, input { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; }
+    select:focus, input:focus { border-color: #555; }
+    .btn-salvar { width: 100%; padding: 14px; border: none; border-radius: 8px; background-color: #d7ccc8; color: #121212; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+    .btn-cancelar { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 8px; background-color: transparent; color: #aaa; font-size: 13px; cursor: pointer; margin-top: 6px; }
+    .escondido { display: none !important; }
+    .item-lancamento { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer; }
+    .item-lancamento:last-child { border-bottom: none; }
+    .item-info { flex: 1; min-width: 0; padding-right: 8px; }
+    .item-acoes { display: flex; align-items: center; gap: 8px; }
+    .btn-acao { background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 14px; padding: 4px; }
+    .valor-receita { color: #4caf50; font-weight: bold; white-space: nowrap; }
+    .valor-despesa { color: #ef5350; font-weight: bold; white-space: nowrap; }
+    .barra-categoria { margin-bottom: 12px; }
+    .barra-info { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+    .barra-bg { background-color: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden; }
+    .barra-fill { height: 100%; border-radius: 4px; }
+    .btn-mini { padding: 6px 12px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 11px; cursor: pointer; }
+    .btn-mini.ativo { background: #333; color: #fff; border-color: #666; }
+    .btn-mes { background: #1a1a1a; border: 1px solid #333; color: #fff; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; }
+    .modal-content { background: #242424; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; border-top: 1px solid #444; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 12px; }
+    .btn-fechar { background: transparent; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
+
+    /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
+    .grid-periodos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .btn-periodo { padding: 8px; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; color: #aaa; font-size: 12px; cursor: pointer; text-align: center; }
+    .btn-periodo.ativo { background: #333; color: #fff; border-color: #666; font-weight: bold; }
+    .box-resumo-modal { background: #1a1a1a; border-radius: 10px; padding: 12px; margin-bottom: 16px; border: 1px solid #333; }
+    .linha-subtotal { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #ccc; cursor: pointer; }
+    .linha-subtotal:last-child { margin-bottom: 0; }
+    .busca-box { position: relative; margin-bottom: 16px; }
+    .busca-box input { padding-left: 36px; }
+    .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
+
+    /* BOTÃO SELEÇÃO CLEAN DOS GRÁFICOS */
+    .btn-toggle-filtro { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #2196f3; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    
+    /* MODAL DE AÇÕES (BALÃO SUSPENSO) */
+    .balao-acoes { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+    .btn-opcao-balao { padding: 14px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 15px; }
+    .btn-opcao-balao.danger { color: #ef5350; border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
+    textarea { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
+    textarea:focus { border-color: #555; }
+
+    .dashboard-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+    .dashboard-kpi { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 12px; }
+    .dashboard-kpi span { display:block; font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .dashboard-kpi strong { font-size:15px; }
+    .insight-list { display:flex; flex-direction:column; gap:8px; }
+    .insight-item { background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:12px; font-size:13px; color:#ddd; line-height:1.4; }
+    textarea:focus { border-color: #555; }
+
+    .busca-box { position: relative; margin-bottom: 12px; }
+    .busca-box input { padding-left: 36px; }
+    .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
+
+    .grupo-meta-topo { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+    .grupo-meta-topo input { flex:1; }
+
+    .meta-lista { display:flex; flex-direction:column; gap:10px; }
+    .meta-item { background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:12px; }
+    .meta-item-topo { display:flex; justify-content:space-between; gap:10px; align-items:baseline; margin-bottom:8px; }
+    .meta-item-topo strong { font-size:13px; }
+    .meta-item-topo span { font-size:12px; color:#aaa; }
+    .meta-barra { height:8px; background:#111; border-radius:999px; overflow:hidden; margin-top:8px; }
+    .meta-barra-fill { height:100%; border-radius:999px; }
+    .meta-config { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    .meta-config input { width:100%; }
+
+    .badge-parcelas { display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:10.5px; color:#ffd166; background:rgba(255,209,102,0.08); border:1px solid rgba(255,209,102,0.18); border-radius:999px; padding:3px 8px; }
+    .observacao-mini { margin-top:3px; font-size:10.5px; color:#8c8c8c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
+    .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
+    .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
+    /* TROCA DE ABA POR GESTO (deslizar o dedo) — transição suave */
+    @keyframes abaSlideEsq { from { opacity:.6; transform:translateX(8px); } to { opacity:1; transform:none; } }
+    @keyframes abaSlideDir { from { opacity:.6; transform:translateX(-8px); } to { opacity:1; transform:none; } }
+    .aba-conteudo.anim-esq, .card.anim-esq { animation: abaSlideEsq .35s cubic-bezier(.25,.6,.35,1); }
+    .aba-conteudo.anim-dir, .card.anim-dir { animation: abaSlideDir .35s cubic-bezier(.25,.6,.35,1); }
+
+    .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
+    .data-grupo:first-child { margin-top:2px; }
+    .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .link-obs.tem-obs { color:#9a9a9a; }
+    .btn-gerenciar-txt { background:transparent; border:none; cursor:pointer; padding:0 2px; color:#666; font-size:11px; }
+    .btn-gerenciar-txt:active { color:#aaa; }
+    .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:#ccc; margin-bottom:14px; cursor:pointer; }
+    .check-credito input { width:auto; accent-color:#4caf50; }
+
+    .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .backup-actions .btn-cancelar { flex:1; margin-top:0; }
+    .btn-backup { width:100%; padding:12px; border:1px solid #333; border-radius:10px; background:#1a1a1a; color:#fff; font-weight:700; cursor:pointer; }
+    .btn-backup.primary { background:#d7ccc8; color:#121212; border-color:transparent; }
+    .btn-backup.danger { color:#ef5350; border-color:rgba(239,83,80,0.3); background:rgba(239,83,80,0.05); }
+
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="nav-tabs">
+      <button class="nav-tab ativo" onclick="mudarAba('abaLancamentos', this)">Lançamentos</button>
+      <button class="nav-tab" onclick="mudarAba('abaFaturas', this)">Faturas</button>
+      <button class="nav-tab" onclick="mudarAba('abaGraficos', this)">Gráficos</button>
+      <button class="nav-tab" onclick="mudarAba('abaGrupos', this)">Grupos</button>
+      <button class="nav-tab" onclick="mudarAba('abaInvestimentos', this)">Investim.</button>
+    </div>
+
+    <div id="abaLancamentos" class="aba-conteudo ativo">
+      <div class="card">
+        <h3 id="tituloFormulario" style="margin-bottom: 16px;">Novo lançamento</h3>
+        <div class="tipo-toggle">
+          <button type="button" id="btnReceita" class="btn-tipo ativo-receita" onclick="alternarTipo('receita')">+ Receita</button>
+          <button type="button" id="btnDespesa" class="btn-tipo" onclick="alternarTipo('despesa')">- Despesa</button>
+        </div>
+        <form id="formLancamento" onsubmit="salvarLancamento(event)">
+          <input type="hidden" id="idEditando" value="">
+          <div class="form-group" style="gap:3px;">
+            <label for="descricao" style="margin-bottom:3px;">Descrição</label>
+            <input list="listaDescricoes" id="descricao" name="descricao" placeholder="Ex: Mercado, Uber...">
+            <datalist id="listaDescricoes"></datalist>
+            <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;">
+              <button type="button" id="linkObs" class="link-obs" onclick="abrirModalObs()">adicionar observação</button>
+              <button type="button" id="linkGrupo" class="link-obs escondido" onclick="abrirModalGrupoVinculo()">vincular a um grupo</button>
+            </div>
+            <textarea id="observacao" name="observacao" class="escondido"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                <label for="conta">Conta / Cartão</label>
+                <button type="button" class="btn-gerenciar-txt" onclick="abrirModalContas()">gerenciar</button>
+              </div>
+              <select id="conta" name="conta" onchange="atualizarVisibilidadeForma()"></select>
+            </div>
+            <div class="form-group" id="grupoFormaModo">
+              <label for="formaModo">Forma / Modo</label>
+              <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
+                <option value="À Vista / Débito">À Vista / Débito</option>
+                <option value="Crédito Parcelado">Crédito Parcelado</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group escondido" id="grupoParcelas">
+            <label for="numParcelas">Número de Parcelas</label>
+            <select id="numParcelas" name="numParcelas">
+              <option value="1">1x</option><option value="2">2x</option><option value="3">3x</option>
+              <option value="4">4x</option><option value="5">5x</option><option value="6">6x</option>
+              <option value="7">7x</option><option value="8">8x</option><option value="9">9x</option>
+              <option value="10">10x</option><option value="11">11x</option><option value="12">12x</option>
+            </select>
+            <p id="avisoParcelaGrupo" class="escondido" style="font-size:11.5px;color:#ffd166;margin-top:6px;line-height:1.4;">Esta é uma parcela de uma compra parcelada — o número de parcelas não pode ser alterado aqui. Ao salvar, você poderá aplicar descrição/conta/categoria/grupo a todas as parcelas de uma vez.</p>
+          </div>
+          <div class="form-row">
+            <div class="form-group" id="grupoCategoria">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                <label for="categoria">Categoria</label>
+                <button type="button" class="btn-gerenciar-txt" onclick="abrirModalCategorias()">gerenciar</button>
+              </div>
+              <select id="categoria" name="categoria"></select>
+            </div>
+            <div class="form-group">
+              <label for="dataCompra">Data da Compra</label>
+              <input type="date" id="dataCompra" name="dataCompra">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="valor">Valor</label>
+            <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+          </div>
+          <div class="row-botoes-form">
+            <button type="submit" id="btnSubmit" class="btn-salvar">Salvar</button>
+            <button type="button" id="btnMic" class="btn-mic" onclick="iniciarReconhecimentoVoz()" title="Lançar por voz" aria-label="Lançar por voz"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+          </div>
+          <button type="button" id="btnCancelarEdit" class="btn-cancelar escondido" onclick="cancelarEdicao()">Cancelar Edição</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:8px;font-size:14px;">Pergunte sobre seus gastos</h3>
+        <p style="font-size:11px;color:#666;margin-bottom:10px;">Ex: "quanto gastei de Uber no mês passado", "fatura do mês que vem", "total de fixos no cartão"</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="inputPergunta" placeholder="Digite sua pergunta..." style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
+          <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
+        </div>
+        <p id="respostaPergunta" style="font-size:13px;margin-top:10px;color:#aaa;"></p>
+      </div>
+    </div>
+
+    <div id="abaFaturas" class="aba-conteudo">
+      <!-- Deslizar o dedo dentro deste card muda o mês (sem trocar de aba) -->
+      <div class="card" id="cardResumoFaturas">
+        <div class="resumo-header" style="margin-bottom:8px;">
+          <span>Resumo</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button type="button" id="btnMesAtual" class="btn-mini escondido" onclick="voltarMesAtual()">mês atual</button>
+            <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+          </div>
+        </div>
+        <h3 id="tituloMesFatura" style="text-align:center;">—</h3>
+        <div style="text-align:center;margin:2px 0 12px;">
+          <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 3 · vence dia 10</span>
+        </div>
+        <div class="painel-topo" style="margin-bottom:12px;">
+          <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
+            <span>Saldo do mês</span>
+            <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
+          </div>
+          <div class="painel-direita">
+            <div class="card-mini" onclick="abrirResumoMes('receita')">
+              <span>Receitas</span>
+              <h4 class="val-receita" id="faturaReceita">R$ 0,00</h4>
+            </div>
+            <div class="card-mini" onclick="abrirResumoMes('despesa')">
+              <span>Despesas</span>
+              <h4 class="val-despesa" id="faturaDespesa">R$ 0,00</h4>
+            </div>
+          </div>
+        </div>
+        <div id="detalheFaturaMes" class="box-resumo-modal escondido" style="margin-bottom:12px;"></div>
+        <div id="listaFaturas"></div>
+      </div>
+
+      <!-- LANÇAMENTOS DO MÊS SELECIONADO -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
+          <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
+          <button type="button" id="btnEscopoLanc" class="btn-mini" onclick="alternarEscopoLancamentos()">ver todos</button>
+        </div>
+        <div class="busca-box">
+          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
+        </div>
+        <div id="listaLancamentos"></div>
+      </div>
+
+      <!-- GASTOS FIXOS (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('fixos')">
+          <h3 style="font-size:16px;">Gastos fixos mensais</h3>
+          <span class="chevron-sec" id="chevron-fixos">▸</span>
+        </button>
+        <div id="corpo-fixos" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes. Entram sozinhas nos lançamentos todo mês.</p>
+          <div id="listaFixos"></div>
+          <button type="button" class="btn-cancelar" style="margin-top:10px;" onclick="abrirFormFixo()">+ novo gasto fixo</button>
+        </div>
+      </div>
+
+      <!-- BACKUP E RESTAURAÇÃO (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('backup')">
+          <h3 style="font-size:16px;">Backup e restauração</h3>
+          <span class="chevron-sec" id="chevron-backup">▸</span>
+        </button>
+        <div id="corpo-backup" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados.</p>
+          <div class="backup-actions">
+            <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
+            <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
+          </div>
+          <input type="file" id="importBackupInput" class="escondido" accept="application/json" onchange="importarBackup(event)">
+        </div>
+      </div>
+    </div>
+
+    <div id="abaGraficos" class="aba-conteudo">
+      <div class="card">
+        <div class="resumo-header" style="margin-bottom:12px;">
+          <span>Resumo</span>
+          <button class="btn-olho" id="btnOlho" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;"></button>
+        </div>
+        <div class="painel-topo" style="margin-bottom:16px;">
+          <div class="card-saldo-destaque" onclick="abrirModalConsulta('saldo')">
+            <span>Saldo</span>
+            <h4 class="val-saldo" id="graficoSaldo">R$ 0,00</h4>
+          </div>
+          <div class="painel-direita">
+            <div class="card-mini" onclick="abrirModalConsulta('receita')">
+              <span>Receitas</span>
+              <h4 class="val-receita" id="graficoReceita">R$ 0,00</h4>
+            </div>
+            <div class="card-mini" onclick="abrirModalConsulta('despesa')">
+              <span>Despesas</span>
+              <h4 class="val-despesa" id="graficoDespesa">R$ 0,00</h4>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-toggle-filtro" onclick="alternarFiltroPeriodoGraficos()">
+          <span id="labelPeriodoGraficoAtual">Período: Últimos 30 dias</span>
+          <span id="setaPeriodoGrafico">▼</span>
+        </button>
+
+        <div class="grid-periodos escondido" id="filtrosPeriodoGraficos">
+          <button type="button" class="btn-periodo ativo" onclick="setFiltroPeriodoGraficos('30', this, 'Últimos 30 dias')">Últimos 30 dias</button>
+          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('90', this, 'Últimos 90 dias')">Últimos 90 dias</button>
+          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('mesAtual', this, 'Este mês')">Este mês</button>
+          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('mesPassado', this, 'Mês passado')">Mês passado</button>
+          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('anoAtual', this, 'Este ano')">Este ano</button>
+          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('tudo', this, 'Desde o início')">Desde o início</button>
+          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('custom', this, 'Personalizado')" style="grid-column: span 2;">Personalizado</button>
+        </div>
+        <div id="boxDataCustomGraficos" class="form-row escondido" style="margin-top:8px;">
+          <div class="form-group">
+            <label>Data inicial</label>
+            <input type="date" id="filtroGraficoDataIni" onchange="atualizarResumoEGraficos()">
+          </div>
+          <div class="form-group">
+            <label>Data final</label>
+            <input type="date" id="filtroGraficoDataFim" onchange="atualizarResumoEGraficos()">
+          </div>
+        </div>
+      </div>
+
+      <!-- INDICADORES E INSIGHTS (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Indicadores do período</h3>
+            <span style="font-size:11px;color:#aaa;">mesmo período do resumo acima</span>
+          </div>
+          <span class="chevron-sec" id="chevron-indicadores">▸</span>
+        </button>
+        <div id="corpo-indicadores" class="escondido" style="margin-top:12px;">
+          <div class="dashboard-kpis">
+            <div class="dashboard-kpi">
+              <span>Média diária</span>
+              <strong id="dashMediaDiaria">R$ 0,00</strong>
+            </div>
+            <div class="dashboard-kpi">
+              <span>Lançamentos</span>
+              <strong id="dashQtdLancamentos">0</strong>
+            </div>
+            <div class="dashboard-kpi">
+              <span>Maior gasto</span>
+              <strong id="dashMaiorGasto">—</strong>
+            </div>
+            <div class="dashboard-kpi">
+              <span>Categoria líder</span>
+              <strong id="dashCategoriaLider">—</strong>
+            </div>
+          </div>
+          <div class="insight-list" id="listaInsights"></div>
+        </div>
+      </div>
+
+      <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;gap:6px;">
+            <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
+            <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
+            <button class="btn-mini" id="btnVerContas" onclick="setVisaoGrafico('contas')">Contas</button>
+          </div>
+          <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
+            <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
+            <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
+          </div>
+        </div>
+        <h3 id="tituloGraficoUnico" style="color:#ef5350;margin-bottom:14px;">Gastos por Categoria</h3>
+        <div id="containerGraficoCategorias"></div>
+        <div id="containerGraficoReceitas" class="escondido"></div>
+        <div id="containerGraficoContas" class="escondido"></div>
+      </div>
+
+      <!-- EVOLUÇÃO MENSAL (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('evolucaoMensal')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Evolução mensal</h3>
+            <span style="font-size:11px;color:#aaa;">últimos 6 meses</span>
+          </div>
+          <span class="chevron-sec" id="chevron-evolucaoMensal">▸</span>
+        </button>
+        <div id="corpo-evolucaoMensal" class="escondido" style="margin-top:12px;">
+          <div id="containerEvolucaoMensal"></div>
+        </div>
+      </div>
+
+      <!-- COMPROMETIDO FUTURO (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('comprometidoFuturo')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Comprometido nos próximos meses</h3>
+            <span style="font-size:11px;color:#aaa;">parcelas + fixos</span>
+          </div>
+          <span class="chevron-sec" id="chevron-comprometidoFuturo">▸</span>
+        </button>
+        <div id="corpo-comprometidoFuturo" class="escondido" style="margin-top:12px;">
+          <p style="font-size:11px;color:#666;margin-bottom:10px;">Quanto já está previsto de despesa fixa + parcelas em aberto pra cada um dos próximos meses.</p>
+          <div id="containerComprometidoFuturo"></div>
+        </div>
+      </div>
+
+      <!-- RANKING DE MAIORES GASTOS (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('rankingGastos')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Maiores gastos</h3>
+            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+          </div>
+          <span class="chevron-sec" id="chevron-rankingGastos">▸</span>
+        </button>
+        <div id="corpo-rankingGastos" class="escondido" style="margin-top:12px;">
+          <div id="containerRankingGastos"></div>
+        </div>
+      </div>
+
+      <!-- GASTO POR DIA DA SEMANA (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('gastoDiaSemana')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Gasto por dia da semana</h3>
+            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+          </div>
+          <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
+        </button>
+        <div id="corpo-gastoDiaSemana" class="escondido" style="margin-top:12px;">
+          <div id="containerGastoDiaSemana"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="abaInvestimentos" class="aba-conteudo">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h3>Investimentos & Poupança</h3>
+          <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:24px;color:#aaa;line-height:1;" aria-label="Novo aporte">+</button>
+        </div>
+        <div style="text-align:center;padding:14px 0;">
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total acumulado</span>
+          <h2 style="color:#42a5f5;font-size:28px;margin-top:4px;" id="totalInvestido">R$ 0,00</h2>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom: 12px; color: #aaa;">Aportes</h4>
+        <div id="listaInvestimentos"></div>
+      </div>
+
+      <!-- METAS POR CATEGORIA (retrátil, realocado da aba Gráficos) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Metas por categoria</h3>
+            <span style="font-size:11px;color:#aaa;">período selecionado na aba Gráficos</span>
+          </div>
+          <span class="chevron-sec" id="chevron-metas">▸</span>
+        </button>
+        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
+          <div id="listaMetasCategoria" class="meta-lista"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="abaGrupos" class="aba-conteudo">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h3>Grupos de Gastos</h3>
+          <button class="btn-acao" onclick="criarGrupoRapido()" style="font-size:24px;color:#aaa;line-height:1;" aria-label="Novo grupo">+</button>
+        </div>
+        <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
+        <div class="busca-box">
+          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
+        </div>
+        <div id="listaGrupos"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONSULTA E FILTROS -->
+  <div id="modalPanorama" class="modal-overlay escondido">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitulo">Consulta</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalPanorama')">&times;</button>
+      </div>
+
+      <!-- PAINEL DE FILTROS DE PERÍODO -->
+      <div id="wrapFiltrosModal" style="margin-bottom:16px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold;">Período</label>
+        <div class="grid-periodos" id="filtrosPeriodoModal">
+          <button type="button" class="btn-periodo ativo" id="p30" onclick="setFiltroPeriodo('30', this)">Últimos 30 dias</button>
+          <button type="button" class="btn-periodo" id="p90" onclick="setFiltroPeriodo('90', this)">Últimos 90 dias</button>
+          <button type="button" class="btn-periodo" id="pMesAtual" onclick="setFiltroPeriodo('mesAtual', this)">Este mês</button>
+          <button type="button" class="btn-periodo" id="pMesPassado" onclick="setFiltroPeriodo('mesPassado', this)">Mês passado</button>
+          <button type="button" class="btn-periodo" id="pAnoAtual" onclick="setFiltroPeriodo('anoAtual', this)">Este ano</button>
+          <button type="button" class="btn-periodo" id="pTudo" onclick="setFiltroPeriodo('tudo', this)">Desde o início</button>
+          <button type="button" class="btn-periodo" id="pCustom" onclick="setFiltroPeriodo('custom', this)" style="grid-column: span 2;">Personalizado</button>
+        </div>
+
+        <div id="boxDataCustom" class="form-row escondido" style="margin-top:8px;">
+          <div class="form-group">
+            <label>Data inicial</label>
+            <input type="date" id="filtroDataIni" onchange="atualizarModalConsulta()">
+          </div>
+          <div class="form-group">
+            <label>Data final</label>
+            <input type="date" id="filtroDataFim" onchange="atualizarModalConsulta()">
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBTOTALIZADORES DINÂMICOS DA CONSULTA -->
+      <div class="box-resumo-modal" id="boxSubtotaisModal"></div>
+
+      <h4 id="subtituloModal" style="margin-bottom:10px; color:#aaa; font-size:13px;">Lançamentos do período</h4>
+      <div id="modalCorpo"></div>
+
+      <!-- Rodapé de ações (visível só no modal de grupo) -->
+      <div id="rodapeGrupo" class="escondido" style="margin-top:20px;padding-top:16px;border-top:1px solid #333;display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;" onclick="abrirRenomearGrupo()">Renomear</button>
+        <button type="button" class="btn-cancelar" style="flex:1;color:#ef5350;border-color:rgba(239,83,80,0.35);" onclick="excluirGrupoAtual()">Excluir grupo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE RENOMEAR GRUPO -->
+  <div id="modalRenomearGrupo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalRenomearGrupo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Renomear grupo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalRenomearGrupo')">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="inputNovoNomeGrupo">Novo nome</label>
+        <input type="text" id="inputNovoNomeGrupo" placeholder="Ex: Viagem Ubatuba, Show X">
+      </div>
+      <button type="button" class="btn-salvar" onclick="salvarRenomearGrupo()">Salvar</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE BALÃO DE AÇÕES (EDITAR / EXCLUIR) -->
+  <div id="modalAcoes" class="modal-overlay escondido">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalAcoesTitulo">Opções do Lançamento</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAcoes')">&times;</button>
+      </div>
+      <div class="balao-acoes">
+        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar lançamento</button>
+        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE NOVO APORTE (INVESTIMENTOS) -->
+  <div id="modalAporte" class="modal-overlay escondido">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Novo Aporte</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAporte')">&times;</button>
+      </div>
+      <form onsubmit="salvarAporteModal(event)">
+        <div class="form-group">
+          <label for="valorAporte">Valor do Aporte</label>
+          <input type="text" id="valorAporte" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" required>
+        </div>
+        <div class="form-group">
+          <label for="origemAporte">Origem dos Recursos</label>
+          <select id="origemAporte"></select>
+        </div>
+        <button type="submit" class="btn-salvar">Confirmar Aporte</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE GERENCIAR CONTAS / CARTÕES -->
+  <div id="modalContas" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalContas')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Gerenciar contas</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalContas')">&times;</button>
+      </div>
+      <div id="listaContasGerenciar"></div>
+      <div style="border-top:1px solid #333;margin-top:14px;padding-top:14px;">
+        <h4 id="tituloFormConta" style="margin-bottom:10px;color:#aaa;font-size:13px;">Adicionar nova conta</h4>
+        <input type="hidden" id="idContaEditando" value="">
+        <div class="form-group">
+          <label for="nomeConta">Nome da conta / cartão</label>
+          <input type="text" id="nomeConta" placeholder="Ex: Nubank, Carteira, Vale Refeição...">
+        </div>
+        <label class="check-credito"><input type="checkbox" id="contaTemCreditoChk"> Tem cartão de crédito (permite parcelar)</label>
+        <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
+        <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE OPÇÕES DO GASTO FIXO -->
+  <div id="modalAcoesFixo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAcoesFixo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalAcoesFixoTitulo">Opções do gasto fixo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAcoesFixo')">&times;</button>
+      </div>
+      <div class="balao-acoes">
+        <button class="btn-opcao-balao" onclick="executarEditarFixo()">Editar gasto fixo</button>
+        <button class="btn-opcao-balao danger" onclick="executarExcluirFixo()">Remover gasto fixo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE RESUMO DO MÊS (receitas por fonte / despesas por categoria) -->
+  <div id="modalResumoMes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalResumoMes')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloResumoMes">Resumo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalResumoMes')">&times;</button>
+      </div>
+      <div id="chipsContasResumo" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total do mês</span>
+        <h2 id="totalResumoMes" style="font-size:26px;margin-top:4px;">R$ 0,00</h2>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <p style="font-size:11px;color:#666;margin:0;">Toque numa categoria pra ver os lançamentos dela.</p>
+        <button type="button" class="btn-mini" onclick="alternarTodosGruposResumo()" id="btnExpandirTudoResumo">Expandir tudo</button>
+      </div>
+      <div id="corpoResumoMes"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE VÍNCULO A GRUPO -->
+  <div id="modalGrupoVinculo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalGrupoVinculo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Vincular a um grupo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalGrupoVinculo')">&times;</button>
+      </div>
+      <div class="form-group" id="grupoGrupoViagemWrap">
+        <label for="grupoViagem">Grupo</label>
+        <select id="grupoViagem" onchange="onMudarGrupoSelect()"></select>
+        <span style="font-size:11px;color:#777;">Funciona pra despesas e também pra receitas (ex: reembolso de uma viagem).</span>
+      </div>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarGrupoVinculo()">OK</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE OBSERVAÇÃO -->
+  <div id="modalObs" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalObs')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Observação</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalObs')">&times;</button>
+      </div>
+      <div class="form-group">
+        <textarea id="obsTemp" rows="3" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..."></textarea>
+      </div>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarObsModal()">OK</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE GERENCIAR CATEGORIAS -->
+  <div id="modalCategorias" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalCategorias')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Gerenciar categorias</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalCategorias')">&times;</button>
+      </div>
+      <div id="listaCategoriasGerenciar"></div>
+      <div style="border-top:1px solid #333;margin-top:14px;padding-top:14px;">
+        <h4 id="tituloFormCategoria" style="margin-bottom:10px;color:#aaa;font-size:13px;">Adicionar nova categoria</h4>
+        <input type="hidden" id="idxCategoriaEditando" value="">
+        <div class="form-group">
+          <label for="nomeCategoria">Nome da categoria</label>
+          <input type="text" id="nomeCategoria" placeholder="Ex: Educação, Pets, Casa...">
+        </div>
+        <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarCategoria()">Salvar categoria</button>
+        <button type="button" id="btnCancelarCategoria" class="btn-cancelar escondido" onclick="cancelarEdicaoCategoria()">Cancelar edição</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE GASTO FIXO MENSAL -->
+  <div id="modalFixo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalFixo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloModalFixo">Novo gasto fixo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalFixo')">&times;</button>
+      </div>
+      <form onsubmit="salvarFixoModal(event)">
+        <input type="hidden" id="idFixoEditando" value="">
+        <div class="form-group">
+          <label for="descFixo">Descrição</label>
+          <input type="text" id="descFixo" placeholder="Ex: Netflix, Gympass, Aluguel..." required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="valorFixo">Valor mensal</label>
+            <input type="text" id="valorFixo" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" required>
+          </div>
+          <div class="form-group">
+            <label for="diaFixo">Vencimento</label>
+            <select id="diaFixo"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contaFixo">Conta / Cartão</label>
+            <select id="contaFixo" onchange="atualizarFormaFixoVisibilidade()"></select>
+          </div>
+          <div class="form-group">
+            <label for="categoriaFixo">Categoria</label>
+            <select id="categoriaFixo"></select>
+          </div>
+        </div>
+        <div class="form-group" id="grupoFormaFixo">
+          <label for="formaFixo">Forma de cobrança</label>
+          <select id="formaFixo">
+            <option value="Crédito Parcelado">Cartão de crédito (entra na fatura)</option>
+            <option value="À Vista / Débito">Débito / À vista</option>
+          </select>
+        </div>
+        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 3): cobrança até o dia 3 entra na fatura do próprio mês; depois do dia 3, na do mês seguinte.</p>
+        <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let tipoAtual = 'receita';
+    let lancamentos = [];
+    let fixos = [];
+    let investimentos = [];
+    let grupos = [];
+    let valoresOcultos = false;
+    let faturaMesOffset = 0;
+    let tipoGraficoCategoria = 'barras';
+    let lancamentoSelecionadoId = null;
+    let grupoModalAtualId = null;
+    let orcamentosCategoria = {};
+    let contas = [];
+    let categorias = [];
+    let uiPrefs = {};
+    let visaoGraficoAtual = 'despesas';
+    let tipoGraficoReceita = 'barras';
+    let tipoGraficoConta = 'barras';
+
+    // Variáveis de estado da consulta no modal
+    let tipoModalAtual = 'saldo';
+    let periodoModalAtual = '30';
+    let periodoGraficosAtual = '30';
+
+    const DIA_FECHAMENTO_CARTAO = 3; // cartão vira (fecha) todo dia 3, fatura vence dia 10
+
+    const STORAGE_KEY = "meu_financeiro_v1";
+    const STORAGE_KEY_FIXOS = "meu_financeiro_fixos_v1";
+    const STORAGE_KEY_INVEST = "meu_financeiro_investimentos_v1";
+    const STORAGE_KEY_GRUPOS = "meu_financeiro_grupos_v1";
+    const STORAGE_KEY_ORCAMENTOS = "meu_financeiro_orcamentos_categoria_v1";
+    const STORAGE_KEY_CONTAS = "meu_financeiro_contas_v1";
+    const STORAGE_KEY_CATEGORIAS = "meu_financeiro_categorias_v1";
+    const STORAGE_KEY_UI = "meu_financeiro_ui_v1";
+
+    const NOMES_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const PALETA = ['#ef5350','#ffa726','#ffca28','#66bb6a','#42a5f5','#ab47bc','#8d6e63','#26a69a'];
+    const PALETA_RECEITAS = ['#66bb6a','#26a69a','#42a5f5','#ffca28','#ab47bc','#ffa726','#8d6e63','#ef5350'];
+
+    function salvarLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(lancamentos)); }
+    function carregarLocalStorage() {
+      const dados = localStorage.getItem(STORAGE_KEY);
+      if (dados) {
+        try { lancamentos = JSON.parse(dados) || []; } catch (e) { lancamentos = []; }
+      }
+    }
+
+    function salvarFixos() { localStorage.setItem(STORAGE_KEY_FIXOS, JSON.stringify(fixos)); }
+    function carregarFixos() {
+      const d = localStorage.getItem(STORAGE_KEY_FIXOS);
+      if (d) { try { fixos = JSON.parse(d) || []; } catch (e) { fixos = []; } }
+    }
+
+    function salvarInvest() { localStorage.setItem(STORAGE_KEY_INVEST, JSON.stringify(investimentos)); }
+    function carregarInvest() {
+      const d = localStorage.getItem(STORAGE_KEY_INVEST);
+      if (d) { try { investimentos = JSON.parse(d) || []; } catch (e) { investimentos = []; } }
+    }
+
+    function salvarGrupos() { localStorage.setItem(STORAGE_KEY_GRUPOS, JSON.stringify(grupos)); }
+    function carregarGrupos() {
+      const d = localStorage.getItem(STORAGE_KEY_GRUPOS);
+      if (d) { try { grupos = JSON.parse(d) || []; } catch (e) { grupos = []; } }
+    }
+
+    function salvarOrcamentos() { localStorage.setItem(STORAGE_KEY_ORCAMENTOS, JSON.stringify(orcamentosCategoria)); }
+    function carregarOrcamentos() {
+      const d = localStorage.getItem(STORAGE_KEY_ORCAMENTOS);
+      if (d) { try { orcamentosCategoria = JSON.parse(d) || {}; } catch (e) { orcamentosCategoria = {}; } }
+    }
+
+    // CONTAS / CARTÕES DINÂMICOS
+    const CONTAS_PADRAO = [
+      { id: 'c1', nome: 'Itaú', temCredito: true },
+      { id: 'c2', nome: 'PicPay', temCredito: true },
+      { id: 'c3', nome: 'Tíquete Alimentação', temCredito: false },
+      { id: 'c4', nome: 'Caixa', temCredito: false },
+      { id: 'c5', nome: 'Banco do Brasil', temCredito: false }
+    ];
+
+    function salvarContas() { localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(contas)); }
+    function carregarContas() {
+      const d = localStorage.getItem(STORAGE_KEY_CONTAS);
+      if (d) { try { contas = JSON.parse(d) || []; } catch (e) { contas = []; } }
+      if (!Array.isArray(contas) || contas.length === 0) contas = CONTAS_PADRAO.map(c => ({ ...c }));
+    }
+
+    function contaTemCredito(nome) {
+      const c = contas.find(x => x.nome === nome);
+      return !!(c && c.temCredito);
+    }
+
+    function primeiraConta() {
+      return (contas[0] && contas[0].nome) || 'Itaú';
+    }
+
+    function popularSelectsContas() {
+      ['conta', 'origemAporte', 'contaFixo'].forEach(idSel => {
+        const sel = document.getElementById(idSel);
+        if (!sel) return;
+        const atual = sel.value;
+        sel.innerHTML = '';
+        contas.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.nome;
+          opt.textContent = c.nome;
+          sel.appendChild(opt);
+        });
+        if (atual && contas.some(c => c.nome === atual)) sel.value = atual;
+      });
+    }
+
+    // CATEGORIAS DINÂMICAS
+    const CATEGORIAS_PADRAO = ['Alimentação', 'Transporte', 'Viagens ✈️', 'Lazer', 'Saúde', 'Investimento', 'Outros'];
+
+    function salvarCategorias() { localStorage.setItem(STORAGE_KEY_CATEGORIAS, JSON.stringify(categorias)); }
+    function carregarCategorias() {
+      const d = localStorage.getItem(STORAGE_KEY_CATEGORIAS);
+      if (d) { try { categorias = JSON.parse(d) || []; } catch (e) { categorias = []; } }
+      if (!Array.isArray(categorias) || categorias.length === 0) categorias = CATEGORIAS_PADRAO.slice();
+    }
+
+    function categoriaPadrao() {
+      return categorias.includes('Outros') ? 'Outros' : (categorias[0] || 'Outros');
+    }
+
+    function popularSelectsCategorias() {
+      ['categoria', 'categoriaFixo'].forEach(idSel => {
+        const sel = document.getElementById(idSel);
+        if (!sel) return;
+        const atual = sel.value;
+        sel.innerHTML = '';
+        categorias.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          sel.appendChild(opt);
+        });
+        sel.value = (atual && categorias.includes(atual)) ? atual : categoriaPadrao();
+      });
+    }
+
+    // Ao editar um lançamento de categoria já removida, mantém a opção no select
+    function garantirOpcaoCategoria(sel, nome) {
+      if (!nome || categorias.includes(nome)) return;
+      const opt = document.createElement('option');
+      opt.value = nome;
+      opt.textContent = nome;
+      sel.appendChild(opt);
+    }
+
+    // PREFERÊNCIAS DE INTERFACE (seções retráteis)
+    function salvarUiPrefs() { localStorage.setItem(STORAGE_KEY_UI, JSON.stringify(uiPrefs)); }
+    function carregarUiPrefs() {
+      const d = localStorage.getItem(STORAGE_KEY_UI);
+      if (d) { try { uiPrefs = JSON.parse(d) || {}; } catch (e) { uiPrefs = {}; } }
+    }
+
+    function aplicarSecao(nome) {
+      const corpo = document.getElementById('corpo-' + nome);
+      const chev = document.getElementById('chevron-' + nome);
+      if (!corpo) return;
+      const aberto = uiPrefs['secao_' + nome] === true; // padrão: recolhido
+      corpo.classList.toggle('escondido', !aberto);
+      if (chev) chev.textContent = aberto ? '▾' : '▸';
+    }
+
+    function alternarSecao(nome) {
+      uiPrefs['secao_' + nome] = !(uiPrefs['secao_' + nome] === true);
+      salvarUiPrefs();
+      aplicarSecao(nome);
+    }
+
+    // OBSERVAÇÃO DISCRETA (link abaixo da descrição + janelinha)
+    function atualizarLinkObs() {
+      const link = document.getElementById('linkObs');
+      if (!link) return;
+      const v = document.getElementById('observacao').value.trim();
+      if (v) {
+        link.textContent = 'obs: ' + v;
+        link.classList.add('tem-obs');
+      } else {
+        link.textContent = 'adicionar observação';
+        link.classList.remove('tem-obs');
+      }
+    }
+
+    function abrirModalObs() {
+      document.getElementById('obsTemp').value = document.getElementById('observacao').value;
+      document.getElementById('modalObs').classList.remove('escondido');
+      document.getElementById('obsTemp').focus();
+    }
+
+    function salvarObsModal() {
+      document.getElementById('observacao').value = document.getElementById('obsTemp').value.trim();
+      atualizarLinkObs();
+      fecharModal('modalObs');
+    }
+
+    // CARD ÚNICO DE GRÁFICOS: ALTERNAR DESPESAS / RECEITAS
+    function setVisaoGrafico(visao) {
+      visaoGraficoAtual = visao;
+      const VISOES = {
+        despesas: { container: 'containerGraficoCategorias', titulo: 'Gastos por Categoria', cor: '#ef5350', tipo: tipoGraficoCategoria },
+        receitas: { container: 'containerGraficoReceitas', titulo: 'Receitas por Fonte', cor: '#4caf50', tipo: tipoGraficoReceita },
+        contas: { container: 'containerGraficoContas', titulo: 'Gastos por Conta / Cartão', cor: '#42a5f5', tipo: tipoGraficoConta }
+      };
+      document.getElementById('btnVerDespesas').classList.toggle('ativo', visao === 'despesas');
+      document.getElementById('btnVerReceitas').classList.toggle('ativo', visao === 'receitas');
+      document.getElementById('btnVerContas').classList.toggle('ativo', visao === 'contas');
+      Object.entries(VISOES).forEach(([nome, v]) => {
+        document.getElementById(v.container).classList.toggle('escondido', nome !== visao);
+      });
+      // Botões Barras/Pizza valem pra todas as visões; refletem o tipo salvo de cada uma
+      const atual = VISOES[visao];
+      document.getElementById('btnBarras').className = 'btn-mini' + (atual.tipo === 'barras' ? ' ativo' : '');
+      document.getElementById('btnPizza').className = 'btn-mini' + (atual.tipo === 'pizza' ? ' ativo' : '');
+      const t = document.getElementById('tituloGraficoUnico');
+      t.textContent = atual.titulo;
+      t.style.color = atual.cor;
+    }
+
+    // GERENCIAMENTO DE CONTAS
+    function abrirModalContas() {
+      cancelarEdicaoConta();
+      renderizarListaContas();
+      document.getElementById('modalContas').classList.remove('escondido');
+    }
+
+    function renderizarListaContas() {
+      const box = document.getElementById('listaContasGerenciar');
+      box.innerHTML = '';
+      contas.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.style.cursor = 'default';
+        div.innerHTML = `
+          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 tem cartão de crédito' : 'sem cartão de crédito'}</div></div>
+          <div class="item-acoes">
+            <button class="btn-acao" onclick="editarConta('${c.id}')" title="Editar" aria-label="Editar" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+            <button class="btn-acao" onclick="excluirConta('${c.id}')" title="Excluir" aria-label="Excluir" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          </div>`;
+        box.appendChild(div);
+      });
+    }
+
+    function editarConta(id) {
+      const c = contas.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById('idContaEditando').value = c.id;
+      document.getElementById('nomeConta').value = c.nome;
+      document.getElementById('contaTemCreditoChk').checked = !!c.temCredito;
+      document.getElementById('tituloFormConta').textContent = 'Editar conta';
+      document.getElementById('btnCancelarConta').classList.remove('escondido');
+    }
+
+    function cancelarEdicaoConta() {
+      document.getElementById('idContaEditando').value = '';
+      document.getElementById('nomeConta').value = '';
+      document.getElementById('contaTemCreditoChk').checked = false;
+      document.getElementById('tituloFormConta').textContent = 'Adicionar nova conta';
+      document.getElementById('btnCancelarConta').classList.add('escondido');
+    }
+
+    function salvarConta() {
+      const nome = document.getElementById('nomeConta').value.trim();
+      if (!nome) { alert('Digite o nome da conta.'); return; }
+      const temCredito = document.getElementById('contaTemCreditoChk').checked;
+      const idEdit = document.getElementById('idContaEditando').value;
+      const duplicada = contas.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== idEdit);
+      if (duplicada) { alert('Já existe uma conta com esse nome.'); return; }
+
+      if (idEdit) {
+        const c = contas.find(x => x.id === idEdit);
+        if (!c) return;
+        const nomeAntigo = c.nome;
+        if (nomeAntigo !== nome) {
+          const qtd = lancamentos.filter(l => l.conta === nomeAntigo).length
+            + fixos.filter(f => f.conta === nomeAntigo).length
+            + investimentos.filter(i => i.origem === nomeAntigo).length;
+          if (qtd > 0 && confirm(`Atualizar também os ${qtd} registros já lançados de "${nomeAntigo}" para "${nome}"?`)) {
+            lancamentos.forEach(l => { if (l.conta === nomeAntigo) l.conta = nome; });
+            fixos.forEach(f => { if (f.conta === nomeAntigo) f.conta = nome; });
+            investimentos.forEach(i => { if (i.origem === nomeAntigo) i.origem = nome; });
+            salvarLocalStorage(); salvarFixos(); salvarInvest();
+          }
+        }
+        c.nome = nome;
+        c.temCredito = temCredito;
+      } else {
+        contas.push({ id: 'c' + Date.now(), nome, temCredito });
+      }
+
+      salvarContas();
+      popularSelectsContas();
+      atualizarVisibilidadeForma();
+      renderizarListaContas();
+      cancelarEdicaoConta();
+      renderizarLancamentos();
+      atualizarFaturas();
+      renderizarInvestimentos();
+    }
+
+    function excluirConta(id) {
+      if (contas.length <= 1) { alert('É preciso ter pelo menos uma conta.'); return; }
+      const c = contas.find(x => x.id === id);
+      if (!c) return;
+      if (!confirm(`Excluir a conta "${c.nome}"? Os lançamentos antigos continuam com esse nome no histórico.`)) return;
+      contas = contas.filter(x => x.id !== id);
+      salvarContas();
+      popularSelectsContas();
+      atualizarVisibilidadeForma();
+      renderizarListaContas();
+    }
+
+    // GERENCIAMENTO DE CATEGORIAS
+    function abrirModalCategorias() {
+      cancelarEdicaoCategoria();
+      renderizarListaCategorias();
+      document.getElementById('modalCategorias').classList.remove('escondido');
+    }
+
+    function renderizarListaCategorias() {
+      const box = document.getElementById('listaCategoriasGerenciar');
+      box.innerHTML = '';
+      categorias.forEach((nome, idx) => {
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.style.cursor = 'default';
+        div.innerHTML = `
+          <div class="item-info"><strong>${nome}</strong></div>
+          <div class="item-acoes">
+            <button class="btn-acao" onclick="editarCategoria(${idx})" title="Editar" aria-label="Editar" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+            <button class="btn-acao" onclick="excluirCategoria(${idx})" title="Excluir" aria-label="Excluir" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          </div>`;
+        box.appendChild(div);
+      });
+    }
+
+    function editarCategoria(idx) {
+      const nome = categorias[idx];
+      if (nome === undefined) return;
+      document.getElementById('idxCategoriaEditando').value = String(idx);
+      document.getElementById('nomeCategoria').value = nome;
+      document.getElementById('tituloFormCategoria').textContent = 'Editar categoria';
+      document.getElementById('btnCancelarCategoria').classList.remove('escondido');
+    }
+
+    function cancelarEdicaoCategoria() {
+      document.getElementById('idxCategoriaEditando').value = '';
+      document.getElementById('nomeCategoria').value = '';
+      document.getElementById('tituloFormCategoria').textContent = 'Adicionar nova categoria';
+      document.getElementById('btnCancelarCategoria').classList.add('escondido');
+    }
+
+    function salvarCategoria() {
+      const nome = document.getElementById('nomeCategoria').value.trim();
+      if (!nome) { alert('Digite o nome da categoria.'); return; }
+      const idxEdit = document.getElementById('idxCategoriaEditando').value;
+      const duplicada = categorias.some((c, i) => c.toLowerCase() === nome.toLowerCase() && String(i) !== idxEdit);
+      if (duplicada) { alert('Já existe uma categoria com esse nome.'); return; }
+
+      if (idxEdit !== '') {
+        const idx = parseInt(idxEdit, 10);
+        const nomeAntigo = categorias[idx];
+        if (nomeAntigo !== undefined && nomeAntigo !== nome) {
+          const qtd = lancamentos.filter(l => l.categoria === nomeAntigo).length
+            + fixos.filter(f => f.categoria === nomeAntigo).length;
+          if (qtd > 0 && confirm(`Atualizar também os ${qtd} registros já lançados de "${nomeAntigo}" para "${nome}"?`)) {
+            lancamentos.forEach(l => { if (l.categoria === nomeAntigo) l.categoria = nome; });
+            fixos.forEach(f => { if (f.categoria === nomeAntigo) f.categoria = nome; });
+            salvarLocalStorage(); salvarFixos();
+          }
+          if (orcamentosCategoria[nomeAntigo] !== undefined) {
+            orcamentosCategoria[nome] = orcamentosCategoria[nomeAntigo];
+            delete orcamentosCategoria[nomeAntigo];
+            salvarOrcamentos();
+          }
+          categorias[idx] = nome;
+        }
+      } else {
+        categorias.push(nome);
+      }
+
+      salvarCategorias();
+      popularSelectsCategorias();
+      renderizarListaCategorias();
+      cancelarEdicaoCategoria();
+      renderizarLancamentos();
+      atualizarFaturas();
+      atualizarResumoEGraficos();
+    }
+
+    function excluirCategoria(idx) {
+      if (categorias.length <= 1) { alert('É preciso ter pelo menos uma categoria.'); return; }
+      const nome = categorias[idx];
+      if (nome === undefined) return;
+      if (!confirm(`Excluir a categoria "${nome}"? Os lançamentos antigos continuam com esse nome no histórico.`)) return;
+      categorias.splice(idx, 1);
+      delete orcamentosCategoria[nome];
+      salvarOrcamentos();
+      salvarCategorias();
+      popularSelectsCategorias();
+      renderizarListaCategorias();
+      atualizarResumoEGraficos();
+    }
+
+    const opcoesReceita = ["Salário", "Reembolso", "Outros"];
+    const opcoesDespesa = ["Alimentação", "Supermercado", "Transporte", "Lazer", "Outros"];
+
+    function mascaraMoeda(campo) {
+      let valor = campo.value.replace(/\D/g, '');
+      if (!valor) { campo.value = ''; return; }
+      valor = (parseInt(valor, 10) / 100).toFixed(2) + '';
+      valor = valor.replace('.', ',');
+      valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+      campo.value = 'R$ ' + valor;
+    }
+
+    function obterDataBrasilia() {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date());
+    }
+
+    function parseVal(vStr) {
+      if (!vStr) return 0;
+      if (typeof vStr === 'number') return vStr;
+      return parseFloat(String(vStr).replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
+    function fmtVal(num) {
+      return 'R$ ' + num.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    }
+
+    function fmtOculto(valor) {
+      return valoresOcultos ? '••••••' : fmtVal(valor);
+    }
+
+    function renderizarDashboard() {
+      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
+      const itensPeriodo = lancamentos.filter(l => {
+        const d = new Date(l.data + 'T12:00:00');
+        return d >= ini && d <= fim;
+      });
+
+      let rec = 0, desp = 0;
+      const porCategoria = {}, porConta = {};
+      let maiorGasto = null;
+      itensPeriodo.forEach(l => {
+        const v = parseVal(l.valor);
+        if (l.tipo === 'receita') {
+          rec += v;
+        } else {
+          desp += v;
+          const cat = l.categoria || 'Outros';
+          porCategoria[cat] = (porCategoria[cat] || 0) + v;
+          porConta[l.conta || 'Outros'] = (porConta[l.conta || 'Outros'] || 0) + v;
+          if (!maiorGasto || v > maiorGasto.valor) maiorGasto = { valor: v, descricao: l.descricao || cat };
+        }
+      });
+
+      const saldo = rec - desp;
+      const diasPeriodo = Math.max(1, Math.round((fim - ini) / 86400000) + 1);
+      const mediaDiaria = desp / diasPeriodo;
+      const categoriaLider = Object.entries(porCategoria).sort((a, b) => b[1] - a[1])[0];
+      const totalLancamentos = itensPeriodo.length;
+
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+
+      setText('dashMediaDiaria', fmtOculto(mediaDiaria));
+      setText('dashQtdLancamentos', totalLancamentos.toString());
+      setText('dashMaiorGasto', maiorGasto ? (valoresOcultos ? '••••••' : `${maiorGasto.descricao} · ${fmtVal(maiorGasto.valor)}`) : '—');
+      setText('dashCategoriaLider', categoriaLider ? `${categoriaLider[0]} · ${Math.round((categoriaLider[1] / (desp || 1)) * 100)}%` : '—');
+
+      const insights = [];
+      insights.push(saldo >= 0
+        ? `Você fechou o período com resultado positivo de ${fmtOculto(saldo)}.`
+        : `Você fechou o período com resultado negativo de ${fmtOculto(Math.abs(saldo))}.`);
+      if (categoriaLider) insights.push(`Categoria que mais pesou no período: ${categoriaLider[0]} (${fmtOculto(categoriaLider[1])}).`);
+      if (maiorGasto) insights.push(`Maior gasto: ${maiorGasto.descricao} por ${fmtOculto(maiorGasto.valor)}.`);
+      insights.push(`Média de gasto por dia no período: ${fmtOculto(mediaDiaria)}.`);
+
+      const insightBox = document.getElementById('listaInsights');
+      if (insightBox) {
+        insightBox.innerHTML = insights.map(i => `<div class="insight-item">${i}</div>`).join('');
+      }
+    }
+
+    function textoSeguro(v) {
+      return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function contarParcelasPendentes(item) {
+      const total = parseInt(item.numParcelas, 10) || 1;
+      if (!item.grupoId || total <= 1) return 0;
+      const hoje = obterDataBrasilia();
+      return lancamentos.filter(l => l.grupoId === item.grupoId && l.tipo === 'despesa' && l.data >= hoje).length;
+    }
+
+    function abrirEdicaoLancamentoGlobal(id) {
+      const btnLanc = document.querySelector('.nav-tab[onclick*="abaLancamentos"]');
+      if (btnLanc) mudarAba('abaLancamentos', btnLanc);
+      prepararEdicao(id);
+    }
+
+    function exportarBackup() {
+      const payload = {
+        versao: 2,
+        exportadoEm: new Date().toISOString(),
+        lancamentos,
+        fixos,
+        investimentos,
+        grupos,
+        valoresOcultos,
+        orcamentosCategoria,
+        contas,
+        categorias
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    function importarBackup(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data || typeof data !== 'object') throw new Error('backup inválido');
+          lancamentos = Array.isArray(data.lancamentos) ? data.lancamentos : [];
+          fixos = Array.isArray(data.fixos) ? data.fixos : [];
+          investimentos = Array.isArray(data.investimentos) ? data.investimentos : [];
+          grupos = Array.isArray(data.grupos) ? data.grupos : [];
+          valoresOcultos = !!data.valoresOcultos;
+          orcamentosCategoria = data.orcamentosCategoria && typeof data.orcamentosCategoria === 'object' ? data.orcamentosCategoria : {};
+          if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
+          if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
+
+          salvarLocalStorage();
+          salvarFixos();
+          salvarInvest();
+          salvarGrupos();
+          salvarOrcamentos();
+          salvarContas();
+          popularSelectsContas();
+          salvarCategorias();
+          popularSelectsCategorias();
+          localStorage.setItem('valoresOcultos', valoresOcultos ? '1' : '0');
+
+          atualizarIconesOlho();
+          renderizarLancamentos();
+          renderizarDashboard();
+          atualizarResumoEGraficos();
+          atualizarFaturas();
+          renderizarInvestimentos();
+          renderizarGrupos();
+          popularSelectGrupos(document.getElementById('grupoViagem') ? document.getElementById('grupoViagem').value : '');
+          alert('Backup importado com sucesso.');
+        } catch (err) {
+          alert('Não foi possível importar o backup.');
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function obterCategoriasDespesas() {
+      const base = new Set(categorias);
+      lancamentos.forEach(l => { if (l.tipo === 'despesa' && l.categoria) base.add(l.categoria); });
+      return Array.from(base);
+    }
+
+    function obterGastoCategoriaPeriodo(categoria) {
+      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
+      return lancamentos.filter(l => {
+        const d = new Date(l.data + 'T12:00:00');
+        return l.tipo === 'despesa' && (l.categoria || 'Outros') === categoria && d >= ini && d <= fim;
+      }).reduce((s, l) => s + parseVal(l.valor), 0);
+    }
+
+    function salvarMetaCategoria(categoria, valor) {
+      if (!valor || valor <= 0) {
+        delete orcamentosCategoria[categoria];
+      } else {
+        orcamentosCategoria[categoria] = valor;
+      }
+      salvarOrcamentos();
+      renderizarMetasCategorias();
+    }
+
+    function renderizarMetasCategorias() {
+      const lista = document.getElementById('listaMetasCategoria');
+      if (!lista) return;
+      const cats = obterCategoriasDespesas();
+      lista.innerHTML = '';
+      cats.forEach(cat => {
+        const gasto = obterGastoCategoriaPeriodo(cat);
+        const meta = parseVal(orcamentosCategoria[cat]);
+        const pct = meta > 0 ? Math.min(100, (gasto / meta) * 100) : 0;
+        const restante = meta > 0 ? meta - gasto : null;
+
+        const div = document.createElement('div');
+        div.className = 'meta-item';
+        div.innerHTML = `
+          <div class="meta-item-topo">
+            <div>
+              <strong>${cat}</strong>
+              <span>${fmtOculto(gasto)} no período</span>
+            </div>
+            <span>${meta > 0 ? 'Meta: ' + fmtOculto(meta) : 'Sem meta'}</span>
+          </div>
+          <div class="meta-barra"><div class="meta-barra-fill" style="width:${pct}%;background:${pct >= 100 ? '#ef5350' : '#4caf50'};"></div></div>
+          <div class="meta-config">
+            <input type="number" min="0" step="0.01" value="${meta > 0 ? String(meta).replace('.', '.') : ''}" placeholder="Meta mensal" onchange="salvarMetaCategoria('${cat.replace(/'/g, "\'")}', Number(this.value) || 0)">
+            <button type="button" class="btn-acao" onclick="salvarMetaCategoria('${cat.replace(/'/g, "\'")}', 0)" title="Remover meta" aria-label="Remover meta" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    function abrirEdicaoGrupoSearch() {
+      const inp = document.getElementById('inputBuscaGrupo');
+      if (inp) renderizarGrupos();
+    }
+
+    // Ícones de olho (SVG discreto) para mostrar/ocultar valores
+    const SVG_OLHO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const SVG_OLHO_FECHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+    function atualizarIconesOlho() {
+      ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = valoresOcultos ? SVG_OLHO_FECHADO : SVG_OLHO;
+      });
+    }
+
+    // SONS DE CELEBRAÇÃO DE RECEITA
+    // 24 variações curtas (todas abaixo de 2,5s), sintetizadas no aparelho com Web Audio —
+    // sem arquivos de áudio, funciona offline. Uma é sorteada a cada receita salva.
+    // base = frequência da tônica; notas = semitons acima da base; passo = intervalo entre notas.
+    const SONS_RECEITA = [
+      { base: 523.25, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.09, dur: 0.30, vol: 0.16 }, // arpejo Dó maior
+      { base: 587.33, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.08, dur: 0.28, vol: 0.16 }, // arpejo Ré maior
+      { base: 659.25, onda: 'triangle', notas: [0, 4, 7, 12],        passo: 0.10, dur: 0.32, vol: 0.18 }, // arpejo Mi maior
+      { base: 440.00, onda: 'triangle', notas: [0, 4, 7, 12, 16],    passo: 0.09, dur: 0.30, vol: 0.18 }, // arpejo Lá estendido
+      { base: 493.88, onda: 'sine',     notas: [0, 7, 12, 19],       passo: 0.10, dur: 0.35, vol: 0.16 }, // quintas ascendentes
+      { base: 523.25, onda: 'triangle', notas: [0, 5, 9, 12],        passo: 0.11, dur: 0.33, vol: 0.18 }, // arpejo suspenso
+      { base: 523.25, onda: 'sine',     notas: [0, 2, 4, 7, 9, 12],  passo: 0.07, dur: 0.22, vol: 0.15 }, // escala pentatônica rápida
+      { base: 587.33, onda: 'triangle', notas: [0, 2, 4, 7, 12],     passo: 0.08, dur: 0.25, vol: 0.16 }, // pentatônica Ré
+      { base: 783.99, onda: 'square',   notas: [0, 5],               passo: 0.09, dur: 0.40, vol: 0.07 }, // moeda clássica
+      { base: 880.00, onda: 'square',   notas: [0, 7],               passo: 0.08, dur: 0.35, vol: 0.06 }, // moeda aguda
+      { base: 659.25, onda: 'square',   notas: [0, 12],              passo: 0.10, dur: 0.40, vol: 0.06 }, // moeda em oitava
+      { base: 523.25, onda: 'sine',     notas: [0, 0, 7],            passo: 0.14, dur: 0.45, vol: 0.17 }, // fanfarra curta
+      { base: 587.33, onda: 'triangle', notas: [0, 0, 5, 9],         passo: 0.13, dur: 0.40, vol: 0.17 }, // fanfarra dupla
+      { base: 440.00, onda: 'sine',     notas: [0, 5, 9, 14],        passo: 0.12, dur: 0.42, vol: 0.16 }, // subida brilhante
+      { base: 1046.5, onda: 'sine',     notas: [0],                  passo: 0.00, dur: 1.40, vol: 0.15 }, // sino agudo
+      { base: 880.00, onda: 'triangle', notas: [0],                  passo: 0.00, dur: 1.30, vol: 0.16 }, // sino médio
+      { base: 659.25, onda: 'sine',     notas: [0, 12],              passo: 0.30, dur: 0.90, vol: 0.14 }, // dois sinos
+      { base: 523.25, onda: 'sine',     notas: [12, 7, 12, 16],      passo: 0.10, dur: 0.30, vol: 0.15 }, // saltinho alegre
+      { base: 587.33, onda: 'triangle', notas: [7, 12, 16, 19],      passo: 0.09, dur: 0.28, vol: 0.15 }, // subida ao topo
+      { base: 493.88, onda: 'sine',     notas: [0, 4, 7, 4, 7, 12],  passo: 0.08, dur: 0.24, vol: 0.14 }, // trinado
+      { base: 523.25, onda: 'triangle', notas: [0, 4, 7],            passo: 0.00, dur: 1.00, vol: 0.10 }, // acorde maior (junto)
+      { base: 587.33, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.00, dur: 1.10, vol: 0.09 }, // acorde com oitava
+      { base: 698.46, onda: 'sine',     notas: [0, 9, 16],           passo: 0.11, dur: 0.50, vol: 0.15 }, // brilho em Fá
+      { base: 523.25, onda: 'sine',     notas: [0, 7, 16, 24],       passo: 0.10, dur: 0.38, vol: 0.13 }  // foguetinho
+    ];
+    let audioCtxReceita = null;
+
+    function tocarSomReceita() {
+      try {
+        if (!audioCtxReceita) audioCtxReceita = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = audioCtxReceita;
+        if (ctx.state === 'suspended') ctx.resume();
+        const s = SONS_RECEITA[Math.floor(Math.random() * SONS_RECEITA.length)];
+        const t0 = ctx.currentTime + 0.02;
+        s.notas.forEach((semitons, i) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = s.onda;
+          osc.frequency.value = s.base * Math.pow(2, semitons / 12);
+          const ini = t0 + i * s.passo;
+          const fim = ini + s.dur;
+          g.gain.setValueAtTime(0, ini);
+          g.gain.linearRampToValueAtTime(s.vol, ini + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.001, fim);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(ini);
+          osc.stop(fim + 0.05);
+        });
+        window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1;
+      } catch (e) { /* sem áudio disponível, segue o jogo em silêncio */ }
+    }
+
+    function alternarVisibilidade() {
+      valoresOcultos = !valoresOcultos;
+      localStorage.setItem('valoresOcultos', valoresOcultos ? '1' : '0');
+      atualizarIconesOlho();
+      renderizarDashboard();
+      atualizarResumoEGraficos();
+      atualizarFaturas();
+      renderizarLancamentos();
+    }
+
+    // TROCA DE ABA POR GESTO: deslizar o dedo pra esquerda avança, pra direita volta
+    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos'];
+    let toqueIniX = 0, toqueIniY = 0, toqueValido = false;
+
+    function algumModalAberto() {
+      return Array.from(document.querySelectorAll('.modal-overlay')).some(m => !m.classList.contains('escondido'));
+    }
+
+    document.addEventListener('touchstart', (e) => {
+      // dentro do card de resumo das Faturas o gesto muda o MÊS, não a aba
+      toqueValido = !algumModalAberto() && !e.target.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas');
+      if (!toqueValido) return;
+      toqueIniX = e.touches[0].clientX;
+      toqueIniY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!toqueValido || algumModalAberto()) return;
+      const dx = e.changedTouches[0].clientX - toqueIniX;
+      const dy = e.changedTouches[0].clientY - toqueIniY;
+      // só conta como troca de aba se o gesto for claramente horizontal
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      const idxAtual = ORDEM_ABAS.findIndex(id => {
+        const el = document.getElementById(id);
+        return el && el.classList.contains('ativo');
+      });
+      const destino = dx < 0 ? idxAtual + 1 : idxAtual - 1;
+      if (idxAtual === -1 || destino < 0 || destino >= ORDEM_ABAS.length) return;
+      const idAba = ORDEM_ABAS[destino];
+      const btn = document.querySelector(`.nav-tab[onclick*="${idAba}"]`);
+      mudarAba(idAba, btn);
+      if (btn && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      const alvo = document.getElementById(idAba);
+      if (alvo) {
+        alvo.classList.remove('anim-esq', 'anim-dir');
+        void alvo.offsetWidth; // reinicia a animação
+        alvo.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
+      }
+    }, { passive: true });
+
+    function mudarAba(idAba, elemento) {
+      document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('ativo'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('ativo'));
+      const alvo = document.getElementById(idAba);
+      if (alvo) alvo.classList.add('ativo');
+      if (elemento) elemento.classList.add('ativo');
+
+      if (idAba === 'abaGraficos') atualizarResumoEGraficos();
+      if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); }
+      if (idAba === 'abaInvestimentos') renderizarInvestimentos();
+      if (idAba === 'abaGrupos') renderizarGrupos();
+      if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
+    }
+
+    /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
+    function popularSelectGrupos(selecionado) {
+      const wrap = document.getElementById('grupoGrupoViagemWrap');
+      const sel = document.getElementById('grupoViagem');
+      sel.innerHTML = '<option value="">Nenhum</option>';
+
+      // Filtra apenas os grupos abertos
+      const gruposAbertos = grupos.filter(g => g.status === 'aberto');
+
+      // Se não tiver nenhum grupo em aberto, oculta totalmente o elemento (e o link no formulário)
+      if (gruposAbertos.length === 0) {
+        wrap.classList.add('escondido');
+        sel.value = '';
+        atualizarLinkGrupo();
+        return;
+      }
+
+      wrap.classList.remove('escondido');
+      gruposAbertos.forEach(g => {
+        const o = document.createElement('option');
+        o.value = g.id;
+        o.textContent = g.nome;
+        sel.appendChild(o);
+      });
+
+      const oNovo = document.createElement('option');
+      oNovo.value = '__novo__';
+      oNovo.textContent = '+ Criar novo grupo...';
+      sel.appendChild(oNovo);
+      sel.value = selecionado || '';
+      atualizarLinkGrupo();
+    }
+
+    // LINK DISCRETO DE VÍNCULO A GRUPO (abaixo da descrição, como a observação)
+    function atualizarLinkGrupo() {
+      const link = document.getElementById('linkGrupo');
+      if (!link) return;
+      const gruposAbertos = grupos.filter(g => g.status === 'aberto');
+      if (gruposAbertos.length === 0) {
+        link.classList.add('escondido');
+        return;
+      }
+      link.classList.remove('escondido');
+      const val = document.getElementById('grupoViagem').value;
+      const g = grupos.find(x => x.id === val);
+      if (g) {
+        link.textContent = 'grupo: ' + g.nome;
+        link.classList.add('tem-obs');
+      } else {
+        link.textContent = 'vincular a um grupo';
+        link.classList.remove('tem-obs');
+      }
+    }
+
+    function abrirModalGrupoVinculo() {
+      popularSelectGrupos(document.getElementById('grupoViagem').value);
+      document.getElementById('modalGrupoVinculo').classList.remove('escondido');
+    }
+
+    function salvarGrupoVinculo() {
+      atualizarLinkGrupo();
+      fecharModal('modalGrupoVinculo');
+    }
+
+    function onMudarGrupoSelect() {
+      const sel = document.getElementById('grupoViagem');
+      if (sel.value === '__novo__') {
+        const nome = prompt('Nome do grupo (ex: Viagem Ubatuba, Show X):');
+        if (!nome) { sel.value = ''; return; }
+        const novo = { id: 'gr' + Date.now(), nome, status: 'aberto', dataCriacao: obterDataBrasilia() };
+        grupos.push(novo);
+        salvarGrupos();
+        popularSelectGrupos(novo.id);
+      }
+    }
+
+    function carregarDescricoes(tipo) {
+      const dl = document.getElementById('listaDescricoes');
+      dl.innerHTML = '';
+      const lista = tipo === 'receita' ? opcoesReceita : opcoesDespesa;
+      lista.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt;
+        dl.appendChild(o);
+      });
+      document.getElementById('descricao').placeholder = tipo === 'receita' ? 'Ex: Salário, Reembolso...' : 'Ex: Mercado, Uber...';
+    }
+
+    function verificarParcelamento(val) {
+      const g = document.getElementById('grupoParcelas');
+      if (val === 'Crédito Parcelado' && tipoAtual === 'despesa') g.classList.remove('escondido');
+      else g.classList.add('escondido');
+    }
+
+    function atualizarVisibilidadeForma() {
+      const conta = document.getElementById('conta').value;
+      const gF = document.getElementById('grupoFormaModo');
+      const gP = document.getElementById('grupoParcelas');
+      if (tipoAtual === 'despesa' && contaTemCredito(conta)) {
+        gF.classList.remove('escondido');
+        verificarParcelamento(document.getElementById('formaModo').value);
+      } else {
+        gF.classList.add('escondido');
+        gP.classList.add('escondido');
+        document.getElementById('formaModo').value = 'À Vista / Débito';
+      }
+    }
+
+    function alternarTipo(tipo) {
+      tipoAtual = tipo;
+      const btnR = document.getElementById('btnReceita');
+      const btnD = document.getElementById('btnDespesa');
+      const gC = document.getElementById('grupoCategoria');
+
+      popularSelectGrupos(document.getElementById('grupoViagem') ? document.getElementById('grupoViagem').value : '');
+
+      if (tipo === 'receita') {
+        btnR.className = 'btn-tipo ativo-receita';
+        btnD.className = 'btn-tipo';
+        gC.classList.add('escondido');
+        document.getElementById('grupoFormaModo').classList.add('escondido');
+        document.getElementById('grupoParcelas').classList.add('escondido');
+      } else {
+        btnD.className = 'btn-tipo ativo-despesa';
+        btnR.className = 'btn-tipo';
+        gC.classList.remove('escondido');
+        atualizarVisibilidadeForma();
+      }
+      carregarDescricoes(tipo);
+    }
+
+    /* LISTA DE LANÇAMENTOS: filtrada pelo mês selecionado nas Faturas, agrupada por dia */
+    let mostrarTodosLancamentos = false;
+    const DIAS_SEMANA_ABREV = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+    function alternarEscopoLancamentos() {
+      mostrarTodosLancamentos = !mostrarTodosLancamentos;
+      renderizarLancamentos();
+    }
+
+    function renderizarLancamentos() {
+      const container = document.getElementById('listaLancamentos');
+      if (!container) return;
+      const termo = (document.getElementById('inputBusca')?.value || '').toLowerCase().trim();
+      container.innerHTML = '';
+
+      const ref = getMesReferencia(faturaMesOffset);
+      const chaveMesSel = chaveMesAno(ref.getFullYear(), ref.getMonth());
+      const escopoMes = !mostrarTodosLancamentos && !termo; // busca sempre olha tudo
+
+      const titulo = document.getElementById('tituloListaLanc');
+      const btnEscopo = document.getElementById('btnEscopoLanc');
+      if (titulo) titulo.textContent = termo ? 'Resultados da busca' : (escopoMes ? 'Lançamentos de ' + NOMES_MESES[ref.getMonth()] : 'Todos os lançamentos');
+      if (btnEscopo) btnEscopo.textContent = mostrarTodosLancamentos ? 'ver só o mês' : 'ver todos';
+
+      if (lancamentos.length === 0) {
+        container.innerHTML = '<p style="color:#aaa; font-size:13px; padding:10px 0;">Nenhum lançamento cadastrado.</p>';
+        return;
+      }
+
+      const hoje = obterDataBrasilia();
+      const filtrados = lancamentos.filter(item => {
+        if (termo) {
+          const desc = textoSeguro(item.descricao || '');
+          const conta = textoSeguro(item.conta || '');
+          const cat = textoSeguro(item.categoria || '');
+          const obs = textoSeguro(item.observacao || '');
+          const grupo = textoSeguro(item.grupoViagemNome || '');
+          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo) || obs.includes(termo) || grupo.includes(termo);
+        }
+        if (escopoMes) return (item.data || '').slice(0, 7) === chaveMesSel;
+        // "ver todos": parcelas futuras não aparecem — efetivam conforme o vencimento
+        return item.data <= hoje;
+      });
+
+      if (filtrados.length === 0) {
+        container.innerHTML = `<p style="color:#aaa; font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : 'Nenhum lançamento neste mês.'}</p>`;
+        return;
+      }
+
+      const ordenados = filtrados.slice().sort((a, b) => (a.data < b.data ? 1 : (a.data > b.data ? -1 : 0)));
+
+      let ultimaData = null;
+      ordenados.forEach(item => {
+        if (item.data !== ultimaData) {
+          ultimaData = item.data;
+          const d = new Date(item.data + 'T12:00:00');
+          const cab = document.createElement('div');
+          cab.className = 'data-grupo';
+          cab.textContent = `${DIAS_SEMANA_ABREV[d.getDay()]} · ${String(d.getDate()).padStart(2, '0')} ${MESES_ABREV[d.getMonth()]}${item.data > hoje ? ' · agendado' : ''}`;
+          container.appendChild(cab);
+        }
+
+        const eReceita = item.tipo === 'receita';
+        const numP = parseInt(item.numParcelas, 10) || 1;
+
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        if (item.data > hoje) div.style.opacity = '.6';
+        div.onclick = () => abrirAcoesLancamento(item.id);
+        const parcelasPendentes = contarParcelasPendentes(item);
+        div.innerHTML = `
+          <div class="item-info">
+            <strong>${item.descricao}</strong>
+            <div style="font-size: 11px; color: #888;">
+              ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • ' + item.grupoViagemNome : ''}
+            </div>
+            ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
+            ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
+          </div>
+          <div class="item-acoes">
+            <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function abrirAcoesLancamento(id) {
+      lancamentoSelecionadoId = id;
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+      document.getElementById('modalAcoesTitulo').textContent = item.descricao;
+      document.getElementById('modalAcoes').classList.remove('escondido');
+    }
+
+    function executarAcaoEditar() {
+      if (!lancamentoSelecionadoId) return;
+      fecharModal('modalAcoes');
+      abrirEdicaoLancamentoGlobal(lancamentoSelecionadoId);
+    }
+
+    function executarAcaoExcluir() {
+      if (!lancamentoSelecionadoId) return;
+      excluirLancamento(lancamentoSelecionadoId);
+      fecharModal('modalAcoes');
+    }
+
+    /* REQUISIÇÃO 3: PROCESSAR LANÇAMENTO COM RESPEITO AO VENCIMENTO/FECHAMENTO DO CARTÃO */
+    function salvarLancamento(event) {
+      event.preventDefault();
+      const idEditando = document.getElementById('idEditando').value;
+      const valorBruto = document.getElementById('valor').value.replace('R$', '').trim();
+      if (!valorBruto) { alert('Digite um valor.'); return; }
+      const valorTotal = parseVal(valorBruto);
+      if (!valorTotal || valorTotal <= 0) { alert('Digite um valor válido.'); return; }
+
+      const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
+      const conta = document.getElementById('conta').value;
+      const formaModo = (tipoAtual === 'despesa' && contaTemCredito(conta)) ? document.getElementById('formaModo').value : 'À Vista / Débito';
+      const numParcelas = (tipoAtual === 'despesa' && formaModo === 'Crédito Parcelado') ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
+      const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
+      const observacao = document.getElementById('observacao').value.trim();
+      const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
+
+      let grupoViagemId = '';
+      const selGrupo = document.getElementById('grupoViagem').value;
+      grupoViagemId = (selGrupo && selGrupo !== '__novo__') ? selGrupo : '';
+      const grupoObj = grupos.find(g => g.id === grupoViagemId);
+      const grupoViagemNome = grupoObj ? grupoObj.nome : '';
+
+      if (idEditando) {
+        const idx = lancamentos.findIndex(l => l.id === parseInt(idEditando, 10));
+        if (idx !== -1) {
+          const itemOriginal = lancamentos[idx];
+          // sufixo "(n/N)" da descrição original, se houver, pra poder trocar só a base ao propagar
+          const matchSufixo = (itemOriginal.descricao || '').match(/\s\(\d+\/\d+\)$/);
+          const descricaoBase = matchSufixo ? descricao.replace(/\s\(\d+\/\d+\)$/, '') : descricao;
+
+          lancamentos[idx] = {
+            ...itemOriginal,
+            tipo: tipoAtual,
+            descricao, conta, formaModo,
+            numParcelas: itemOriginal.numParcelas, // nº de parcelas não muda por aqui (ver aviso no form)
+            categoria, observacao, data: dataBase,
+            valor: valorTotal.toFixed(2).replace('.', ','),
+            grupoViagemId, grupoViagemNome
+          };
+
+          // Propagação para as parcelas irmãs (mesma compra parcelada)
+          const irmas = itemOriginal.grupoId
+            ? lancamentos.filter(l => l.grupoId === itemOriginal.grupoId && l.id !== itemOriginal.id)
+            : [];
+
+          if (irmas.length > 0) {
+            const aplicarATodas = confirm(
+              'Esta é uma parcela de uma compra parcelada.\n\n' +
+              'OK = aplicar descrição, conta, categoria, observação, grupo e valor da parcela a TODAS as ' + (irmas.length + 1) + ' parcelas dessa compra\n' +
+              'Cancelar = alterar somente esta parcela'
+            );
+            if (aplicarATodas) {
+              const valorParcelaStr = valorTotal.toFixed(2).replace('.', ',');
+              irmas.forEach(irma => {
+                const irmaIdx = lancamentos.findIndex(l => l.id === irma.id);
+                if (irmaIdx === -1) return;
+                const sufixoIrma = (irma.descricao || '').match(/\s\(\d+\/\d+\)$/);
+                lancamentos[irmaIdx] = {
+                  ...irma,
+                  descricao: descricaoBase + (sufixoIrma ? sufixoIrma[0] : ''),
+                  conta, formaModo, categoria, observacao,
+                  grupoViagemId, grupoViagemNome,
+                  valor: valorParcelaStr
+                  // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
+                };
+              });
+            }
+          }
+        }
+      } else if (numParcelas > 1) {
+        const grupoId = 'g' + Date.now();
+        const valorParcela = valorTotal / numParcelas;
+        
+        // Regra de faturamento: se a compra for efetuada após o dia do fechamento (dia 3), a 1ª parcela rola pro mês seguinte
+        let dtCompra = new Date(dataBase + 'T12:00:00');
+        let mesOffsetInicial = 0;
+        if (dtCompra.getDate() > DIA_FECHAMENTO_CARTAO) {
+          mesOffsetInicial = 1;
+        }
+
+        for (let n = 0; n < numParcelas; n++) {
+          const d = new Date(dataBase + 'T12:00:00');
+          d.setMonth(d.getMonth() + n + mesOffsetInicial);
+          const dataParcela = d.toISOString().slice(0, 10);
+          lancamentos.push({
+            id: Date.now() + n,
+            tipo: 'despesa',
+            descricao: descricao + ' (' + (n + 1) + '/' + numParcelas + ')',
+            conta, formaModo, numParcelas: String(numParcelas),
+            grupoId, categoria, observacao, data: dataParcela,
+            valor: valorParcela.toFixed(2).replace('.', ','),
+            grupoViagemId, grupoViagemNome
+          });
+        }
+      } else {
+        lancamentos.unshift({
+          id: Date.now(),
+          tipo: tipoAtual,
+          descricao, conta, formaModo,
+          numParcelas: '1', categoria, observacao,
+          data: dataBase,
+          valor: valorTotal.toFixed(2).replace('.', ','),
+          grupoViagemId, grupoViagemNome
+        });
+      }
+
+      salvarLocalStorage();
+      if (!idEditando && tipoAtual === 'receita') tocarSomReceita();
+      cancelarEdicao();
+      atualizarTudo();
+    }
+
+    // Recalcula TODAS as visões (Dashboard, Lançamentos, Faturas, Gráficos, Grupos)
+    // de uma vez. Como as abas ficam todas no DOM (só escondidas por CSS), é seguro
+    // chamar isso a qualquer momento — garante que editar/salvar/excluir um lançamento
+    // nunca deixe outra aba com dado desatualizado, mesmo sem trocar de aba.
+    function atualizarTudo() {
+      renderizarDashboard();
+      renderizarLancamentos();
+      atualizarFaturas();
+      atualizarResumoEGraficos();
+      renderizarGrupos();
+    }
+
+    function prepararEdicao(id) {
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+
+      document.getElementById('idEditando').value = item.id;
+      alternarTipo(item.tipo);
+      document.getElementById('descricao').value = item.descricao;
+      document.getElementById('conta').value = item.conta;
+      document.getElementById('dataCompra').value = item.data;
+      document.getElementById('observacao').value = item.observacao || '';
+      atualizarLinkObs();
+      document.getElementById('valor').value = 'R$ ' + item.valor;
+      popularSelectGrupos(item.grupoViagemId || '');
+
+      if (item.tipo === 'despesa') {
+        atualizarVisibilidadeForma();
+        if (contaTemCredito(item.conta)) {
+          document.getElementById('formaModo').value = item.formaModo || 'À Vista / Débito';
+          verificarParcelamento(item.formaModo);
+          document.getElementById('numParcelas').value = item.numParcelas || '1';
+        }
+        const selCat = document.getElementById('categoria');
+        garantirOpcaoCategoria(selCat, item.categoria);
+        selCat.value = item.categoria || categoriaPadrao();
+      }
+
+      // Parcela já pertencente a uma compra parcelada: nº de parcelas fica travado
+      // (mudar isso exigiria refazer o cronograma inteiro); mostra aviso explicando.
+      const selNumParcelas = document.getElementById('numParcelas');
+      const avisoParcela = document.getElementById('avisoParcelaGrupo');
+      if (item.grupoId) {
+        if (selNumParcelas) selNumParcelas.disabled = true;
+        if (avisoParcela) avisoParcela.classList.remove('escondido');
+      } else {
+        if (selNumParcelas) selNumParcelas.disabled = false;
+        if (avisoParcela) avisoParcela.classList.add('escondido');
+      }
+
+      document.getElementById('tituloFormulario').textContent = 'Editar Lançamento';
+      document.getElementById('btnSubmit').textContent = 'Atualizar Lançamento';
+      document.getElementById('btnCancelarEdit').classList.remove('escondido');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelarEdicao() {
+      document.getElementById('idEditando').value = '';
+      document.getElementById('formLancamento').reset();
+      document.getElementById('observacao').value = '';
+      atualizarLinkObs();
+      const selNumParcelas = document.getElementById('numParcelas');
+      const avisoParcela = document.getElementById('avisoParcelaGrupo');
+      if (selNumParcelas) selNumParcelas.disabled = false;
+      if (avisoParcela) avisoParcela.classList.add('escondido');
+      // o select de grupo agora vive fora do form: limpa o vínculo manualmente
+      const selGrupo = document.getElementById('grupoViagem');
+      if (selGrupo) selGrupo.value = '';
+      popularSelectsContas();
+      document.getElementById('dataCompra').value = obterDataBrasilia();
+      document.getElementById('tituloFormulario').textContent = 'Novo lançamento';
+      document.getElementById('btnSubmit').textContent = 'Salvar';
+      document.getElementById('btnCancelarEdit').classList.add('escondido');
+      alternarTipo('receita');
+    }
+
+    function excluirLancamento(id) {
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+
+      const irmas = item.grupoId ? lancamentos.filter(l => l.grupoId === item.grupoId && l.id !== id) : [];
+
+      if (irmas.length > 0) {
+        const excluirTudo = confirm(
+          'Esta é uma parcela de uma compra parcelada (' + (irmas.length + 1) + ' parcelas no total).\n\n' +
+          'OK = excluir TODAS as parcelas dessa compra\n' +
+          'Cancelar = excluir somente esta parcela'
+        );
+        if (excluirTudo) {
+          lancamentos = lancamentos.filter(l => l.grupoId !== item.grupoId);
+        } else {
+          if (!confirm('Excluir somente esta parcela?')) return;
+          lancamentos = lancamentos.filter(l => l.id !== id);
+        }
+      } else {
+        if (!confirm('Excluir este lançamento?')) return;
+        lancamentos = lancamentos.filter(l => l.id !== id);
+      }
+
+      salvarLocalStorage();
+      atualizarTudo();
+    }
+
+    /* SISTEMA DE CONSULTA & FILTROS DE PERÍODO NO RESUMO DO TOPO */
+    function abrirModalConsulta(tipo) {
+      tipoModalAtual = tipo;
+      grupoModalAtualId = null;
+      document.getElementById('wrapFiltrosModal').classList.remove('escondido');
+      document.getElementById('rodapeGrupo').classList.add('escondido');
+      document.getElementById('modalPanorama').classList.remove('escondido');
+      atualizarModalConsulta();
+    }
+
+    function fecharModal(modalId) {
+      document.getElementById(modalId).classList.add('escondido');
+    }
+
+    function setFiltroPeriodo(periodo, el) {
+      periodoModalAtual = periodo;
+      document.querySelectorAll('#filtrosPeriodoModal .btn-periodo').forEach(b => b.classList.remove('ativo'));
+      el.classList.add('ativo');
+
+      const boxCustom = document.getElementById('boxDataCustom');
+      if (periodo === 'custom') {
+        boxCustom.classList.remove('escondido');
+      } else {
+        boxCustom.classList.add('escondido');
+      }
+      atualizarModalConsulta();
+    }
+
+    /* REQUISIÇÃO 5: ALTERNAR EXIBIÇÃO RECOLHÍVEL DO PERÍODO NOS GRÁFICOS */
+    function alternarFiltroPeriodoGraficos() {
+      const grid = document.getElementById('filtrosPeriodoGraficos');
+      const seta = document.getElementById('setaPeriodoGrafico');
+      grid.classList.toggle('escondido');
+      seta.textContent = grid.classList.contains('escondido') ? '▼' : '▲';
+    }
+
+    function setFiltroPeriodoGraficos(periodo, el, labelTexto) {
+      periodoGraficosAtual = periodo;
+      document.querySelectorAll('#filtrosPeriodoGraficos .btn-periodo').forEach(b => b.classList.remove('ativo'));
+      el.classList.add('ativo');
+
+      document.getElementById('labelPeriodoGraficoAtual').textContent = 'Período: ' + labelTexto;
+      document.getElementById('filtrosPeriodoGraficos').classList.add('escondido');
+      document.getElementById('setaPeriodoGrafico').textContent = '▼';
+
+      const boxCustom = document.getElementById('boxDataCustomGraficos');
+      if (periodo === 'custom') {
+        boxCustom.classList.remove('escondido');
+      } else {
+        boxCustom.classList.add('escondido');
+      }
+      renderizarDashboard();
+      atualizarResumoEGraficos();
+    }
+
+    function obterIntervaloDatas(periodo, idIni, idFim) {
+      idIni = idIni || 'filtroDataIni';
+      idFim = idFim || 'filtroDataFim';
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      let ini = new Date(hoje), fim = new Date(hoje);
+
+      if (periodo === '30') {
+        ini.setDate(hoje.getDate() - 30);
+      } else if (periodo === '90') {
+        ini.setDate(hoje.getDate() - 90);
+      } else if (periodo === 'mesAtual') {
+        ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      } else if (periodo === 'mesPassado') {
+        ini = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+        fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+      } else if (periodo === 'anoAtual') {
+        ini = new Date(hoje.getFullYear(), 0, 1);
+        fim = new Date(hoje.getFullYear(), 11, 31);
+      } else if (periodo === 'custom') {
+        const elIni = document.getElementById(idIni);
+        const elFim = document.getElementById(idFim);
+        const dIni = elIni ? elIni.value : '';
+        const dFim = elFim ? elFim.value : '';
+        ini = dIni ? new Date(dIni + 'T00:00:00') : new Date('2000-01-01');
+        fim = dFim ? new Date(dFim + 'T23:59:59') : new Date('2099-12-31');
+      } else {
+        ini = new Date('2000-01-01');
+        fim = new Date('2099-12-31');
+      }
+      return { ini, fim };
+    }
+
+    function atualizarModalConsulta() {
+      const titulo = document.getElementById('modalTitulo');
+      const boxSubtotais = document.getElementById('boxSubtotaisModal');
+      const corpo = document.getElementById('modalCorpo');
+      
+      const { ini, fim } = obterIntervaloDatas(periodoModalAtual);
+
+      let itensPeriodo = lancamentos.filter(l => {
+        const d = new Date(l.data + 'T12:00:00');
+        return d >= ini && d <= fim;
+      });
+
+      if (tipoModalAtual === 'receita') {
+        titulo.textContent = 'Consulta: Receitas';
+        itensPeriodo = itensPeriodo.filter(l => l.tipo === 'receita');
+      } else if (tipoModalAtual === 'despesa') {
+        titulo.textContent = 'Consulta: Despesas';
+        itensPeriodo = itensPeriodo.filter(l => l.tipo === 'despesa');
+      } else {
+        titulo.textContent = 'Consulta: Saldo & Contas';
+      }
+
+      boxSubtotais.innerHTML = '';
+      if (tipoModalAtual === 'receita') {
+        const total = itensPeriodo.reduce((s, l) => s + parseVal(l.valor), 0);
+        const porDesc = {};
+        itensPeriodo.forEach(l => { porDesc[l.descricao] = (porDesc[l.descricao] || 0) + parseVal(l.valor); });
+
+        let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total no Período</span><h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        Object.entries(porDesc).sort((a,b) => b[1]-a[1]).forEach(([desc, val]) => {
+          html += `<div class="linha-subtotal"><span>${desc}</span><strong style="color:#4caf50;">${fmtOculto(val)}</strong></div>`;
+        });
+        boxSubtotais.innerHTML = html;
+      } 
+      else if (tipoModalAtual === 'despesa') {
+        const total = itensPeriodo.reduce((s, l) => s + parseVal(l.valor), 0);
+        const porCat = {};
+        itensPeriodo.forEach(l => { 
+          const c = l.categoria || 'Outros'; 
+          porCat[c] = (porCat[c] || 0) + parseVal(l.valor); 
+        });
+
+        let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total Gasto</span><h3 style="color:#ef5350;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        Object.entries(porCat).sort((a,b) => b[1]-a[1]).forEach(([cat, val]) => {
+          html += `<div class="linha-subtotal"><span>${cat}</span><strong style="color:#ef5350;">${fmtOculto(val)}</strong></div>`;
+        });
+        boxSubtotais.innerHTML = html;
+      } 
+      else {
+        let totalRec = 0, totalDesp = 0;
+        const porConta = {};
+
+        itensPeriodo.forEach(l => {
+          const v = parseVal(l.valor);
+          if (l.tipo === 'receita') {
+            totalRec += v;
+            porConta[l.conta] = (porConta[l.conta] || 0) + v;
+          } else {
+            totalDesp += v;
+            porConta[l.conta] = (porConta[l.conta] || 0) - v;
+          }
+        });
+
+        const saldoFinal = totalRec - totalDesp;
+
+        let html = `
+          <div class="linha-subtotal"><span>(+) Receitas no período:</span><strong style="color:#4caf50;">${fmtOculto(totalRec)}</strong></div>
+          <div class="linha-subtotal"><span>(-) Despesas no período:</span><strong style="color:#ef5350;">${fmtOculto(totalDesp)}</strong></div>
+          <div class="linha-subtotal" style="border-top:1px solid #333; padding-top:6px; margin-top:6px;"><span>(=) Resultado do período:</span><strong style="color:#2196f3; font-size:15px;">${fmtOculto(saldoFinal)}</strong></div>
+          <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #333;">
+            <span style="font-size:11px;color:#aaa;text-transform:uppercase;display:block;margin-bottom:4px;">Balanço por Conta (no período):</span>
+        `;
+        Object.entries(porConta).forEach(([c, val]) => {
+          html += `<div class="linha-subtotal"><span>${c}</span><strong style="color:${val >= 0 ? '#4caf50' : '#ef5350'};">${fmtOculto(val)}</strong></div>`;
+        });
+        html += `</div>`;
+        boxSubtotais.innerHTML = html;
+      }
+
+      corpo.innerHTML = '';
+      if (itensPeriodo.length === 0) {
+        corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum lançamento encontrado para este período.</p>';
+        return;
+      }
+
+      itensPeriodo.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(item => {
+        const dataFmt = item.data.split('-').reverse().join('/');
+        const eReceita = item.tipo === 'receita';
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.onclick = () => abrirAcoesLancamento(item.id);
+        div.innerHTML = `
+          <div class="item-info">
+            <strong>${item.descricao}</strong>
+            <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">${item.observacao}</div>` : ''}
+          </div>
+          <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
+        `;
+        corpo.appendChild(div);
+      });
+    }
+
+    /* OUTRAS ABAS E GRÁFICOS */
+    function renderizarBarras(container, dados, corBase) {
+      container.innerHTML = '';
+      const total = Object.values(dados).reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        return;
+      }
+      Object.entries(dados).sort((a, b) => b[1] - a[1]).forEach(([nome, valor]) => {
+        const pct = Math.round((valor / total) * 100);
+        const div = document.createElement('div');
+        div.className = 'barra-categoria';
+        div.innerHTML = `
+          <div class="barra-info"><span>${nome}</span><span>${fmtVal(valor)} · ${pct}%</span></div>
+          <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:${corBase};"></div></div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Igual à de cima, mas preserva a ordem das chaves em vez de ordenar por valor
+    // (útil pra dia da semana / linha do tempo, onde a ordem cronológica importa).
+    // Escala cada barra pelo MAIOR valor do conjunto, não por %-do-total.
+    function renderizarBarrasOrdem(container, dados, corBase) {
+      container.innerHTML = '';
+      const entradas = Object.entries(dados);
+      const max = Math.max(...entradas.map(([, v]) => v), 0);
+      if (max === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        return;
+      }
+      entradas.forEach(([nome, valor]) => {
+        const pct = Math.round((valor / max) * 100);
+        const div = document.createElement('div');
+        div.className = 'barra-categoria';
+        div.innerHTML = `
+          <div class="barra-info"><span>${nome}</span><span>${fmtVal(valor)}</span></div>
+          <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:${corBase};"></div></div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderizarPizza(container, dados, paleta) {
+      const cores = paleta || PALETA;
+      container.innerHTML = '';
+      const entradas = Object.entries(dados).sort((a, b) => b[1] - a[1]);
+      const total = entradas.reduce((s, [, v]) => s + v, 0);
+      if (total === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        return;
+      }
+      let acc = 0;
+      const stops = entradas.map(([nome, valor], i) => {
+        const pct = (valor / total) * 100;
+        const inicio = acc;
+        acc += pct;
+        return `${cores[i % cores.length]} ${inicio}% ${acc}%`;
+      }).join(', ');
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;gap:18px;align-items:center;';
+
+      const pizza = document.createElement('div');
+      pizza.style.cssText = `width:110px;height:110px;border-radius:50%;flex-shrink:0;background:conic-gradient(${stops});`;
+
+      const legenda = document.createElement('div');
+      legenda.style.flex = '1';
+      entradas.forEach(([nome, valor], i) => {
+        const pct = Math.round((valor / total) * 100);
+        const linha = document.createElement('div');
+        linha.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;';
+        linha.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${cores[i % cores.length]};display:inline-block;"></span> ${nome} · ${pct}%`;
+        legenda.appendChild(linha);
+      });
+
+      wrap.appendChild(pizza);
+      wrap.appendChild(legenda);
+      container.appendChild(wrap);
+    }
+
+    function setTipoGrafico(tipo) {
+      if (visaoGraficoAtual === 'despesas') tipoGraficoCategoria = tipo;
+      else if (visaoGraficoAtual === 'receitas') tipoGraficoReceita = tipo;
+      else tipoGraficoConta = tipo;
+      document.getElementById('btnBarras').className = 'btn-mini' + (tipo === 'barras' ? ' ativo' : '');
+      document.getElementById('btnPizza').className = 'btn-mini' + (tipo === 'pizza' ? ' ativo' : '');
+      atualizarResumoEGraficos();
+    }
+
+    function atualizarResumoEGraficos() {
+      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
+      const itensPeriodo = lancamentos.filter(l => {
+        const d = new Date(l.data + 'T12:00:00');
+        return d >= ini && d <= fim;
+      });
+
+      let rec = 0, desp = 0;
+      const porFonte = {}, porCategoria = {}, porContaGrafico = {};
+      itensPeriodo.forEach(l => {
+        const v = parseVal(l.valor);
+        if (l.tipo === 'receita') { rec += v; porFonte[l.descricao] = (porFonte[l.descricao] || 0) + v; }
+        else {
+          desp += v;
+          const cat = l.categoria || 'Outros';
+          porCategoria[cat] = (porCategoria[cat] || 0) + v;
+          const cta = l.conta || 'Outros';
+          porContaGrafico[cta] = (porContaGrafico[cta] || 0) + v;
+        }
+      });
+      const saldo = rec - desp;
+
+      const elS = document.getElementById('graficoSaldo');
+      const elR = document.getElementById('graficoReceita');
+      const elD = document.getElementById('graficoDespesa');
+      if (elS) {
+        if (valoresOcultos) {
+          elS.textContent = '••••••'; elR.textContent = '••••••'; elD.textContent = '••••••';
+        } else {
+          elS.textContent = fmtVal(saldo); elR.textContent = fmtVal(rec); elD.textContent = fmtVal(desp);
+        }
+      }
+
+      if (tipoGraficoReceita === 'pizza') renderizarPizza(document.getElementById('containerGraficoReceitas'), porFonte, PALETA_RECEITAS);
+      else renderizarBarras(document.getElementById('containerGraficoReceitas'), porFonte, '#4caf50');
+      if (tipoGraficoCategoria === 'pizza') renderizarPizza(document.getElementById('containerGraficoCategorias'), porCategoria);
+      else renderizarBarras(document.getElementById('containerGraficoCategorias'), porCategoria, '#ef5350');
+      if (tipoGraficoConta === 'pizza') renderizarPizza(document.getElementById('containerGraficoContas'), porContaGrafico);
+      else renderizarBarras(document.getElementById('containerGraficoContas'), porContaGrafico, '#42a5f5');
+      renderizarMetasCategorias();
+      renderizarRankingGastos(itensPeriodo);
+      renderizarGastoPorDiaSemana(itensPeriodo);
+      renderizarEvolucaoMensal();
+      renderizarComprometidoFuturo();
+      renderizarDashboard();
+    }
+
+    // Top 5 maiores despesas individuais do período selecionado no resumo
+    function renderizarRankingGastos(itensPeriodo) {
+      const container = document.getElementById('containerRankingGastos');
+      if (!container) return;
+      const despesas = itensPeriodo.filter(l => l.tipo === 'despesa').sort((a, b) => parseVal(b.valor) - parseVal(a.valor)).slice(0, 5);
+      container.innerHTML = '';
+      if (!despesas.length) { container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem despesas nesse período.</p>'; return; }
+      despesas.forEach((item, i) => {
+        const dataFmt = item.data.split('-').reverse().join('/');
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.onclick = () => abrirAcoesLancamento(item.id);
+        div.innerHTML = `
+          <div class="item-info">
+            <strong>${i + 1}. ${item.descricao}</strong>
+            <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+          </div>
+          <span class="valor-despesa">${fmtOculto(parseVal(item.valor))}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Soma das despesas do período por dia da semana (domingo a sábado, nessa ordem)
+    function renderizarGastoPorDiaSemana(itensPeriodo) {
+      const container = document.getElementById('containerGastoDiaSemana');
+      if (!container) return;
+      const NOMES_DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      const porDia = {};
+      NOMES_DIAS.forEach(n => porDia[n] = 0);
+      itensPeriodo.filter(l => l.tipo === 'despesa').forEach(l => {
+        const d = new Date(l.data + 'T12:00:00');
+        porDia[NOMES_DIAS[d.getDay()]] += parseVal(l.valor);
+      });
+      renderizarBarrasOrdem(container, porDia, '#ab47bc');
+    }
+
+    // Receita/despesa/saldo dos últimos 6 meses (por data do lançamento, mês calendário)
+    function renderizarEvolucaoMensal() {
+      const container = document.getElementById('containerEvolucaoMensal');
+      if (!container) return;
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      const dadosMeses = [];
+      for (let i = 5; i >= 0; i--) {
+        const ref = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        let rec = 0, desp = 0;
+        lancamentos.forEach(l => {
+          const d = new Date(l.data + 'T12:00:00');
+          if (d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear()) {
+            const v = parseVal(l.valor);
+            if (l.tipo === 'receita') rec += v; else desp += v;
+          }
+        });
+        dadosMeses.push({ label: NOMES_MESES[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2), rec, desp, saldo: rec - desp });
+      }
+      const max = Math.max(...dadosMeses.map(m => Math.max(m.rec, m.desp)), 0.01);
+
+      container.innerHTML = '';
+      dadosMeses.forEach(m => {
+        const pctRec = Math.round((m.rec / max) * 100);
+        const pctDesp = Math.round((m.desp / max) * 100);
+        const div = document.createElement('div');
+        div.style.cssText = 'margin-bottom:14px;';
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <strong>${m.label}</strong>
+            <span style="color:${m.saldo >= 0 ? '#4caf50' : '#ef5350'};">saldo ${fmtOculto(m.saldo)}</span>
+          </div>
+          <div class="barra-bg" style="margin-bottom:3px;"><div class="barra-fill" style="width:${pctRec}%;background-color:#4caf50;"></div></div>
+          <div class="barra-bg"><div class="barra-fill" style="width:${pctDesp}%;background-color:#ef5350;"></div></div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Quanto já está previsto pros próximos 6 meses: parcelas já agendadas com
+    // data futura (via fatura) + gastos fixos recorrentes (assume mesmo valor
+    // se repetindo todo mês — ainda não materializados como lançamento futuro)
+    function renderizarComprometidoFuturo() {
+      const container = document.getElementById('containerComprometidoFuturo');
+      if (!container) return;
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      const totalFixos = fixos.reduce((s, f) => s + parseVal(f.valor), 0);
+      const dados = {};
+      for (let i = 1; i <= 6; i++) {
+        const ref = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+        const label = NOMES_MESES[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2);
+        const parcelasFuturas = lancamentos
+          .filter(l => l.tipo === 'despesa' && !l.fixoId)
+          .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === ref.getMonth() && f.ano === ref.getFullYear(); })
+          .reduce((s, l) => s + parseVal(l.valor), 0);
+        dados[label] = parcelasFuturas + totalFixos;
+      }
+      renderizarBarrasOrdem(container, dados, '#ffa726');
+    }
+
+    function getMesReferencia(offset) {
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      return new Date(hoje.getFullYear(), hoje.getMonth() + offset, 1);
+    }
+
+    // Compras no crédito feitas DEPOIS do fechamento (dia 3) caem na fatura do mês seguinte
+    function getMesFatura(dataStr, formaModo) {
+      const d = new Date(dataStr + 'T12:00:00');
+      if (formaModo === 'Crédito Parcelado' && d.getDate() > DIA_FECHAMENTO_CARTAO) {
+        d.setMonth(d.getMonth() + 1);
+      }
+      return { mes: d.getMonth(), ano: d.getFullYear() };
+    }
+
+    /* CAIXA DE PERGUNTAS (sem IA — reconhece um conjunto de perguntas comuns
+       e calcula a resposta com os dados que já estão salvos no aparelho) */
+    const PALAVRAS_IGNORAR_PERGUNTA = new Set(['quanto','eu','gastei','de','com','em','no','na','nos','nas','esse','este','essa','mês','mes','passado','que','vem','próximo','proximo','do','da','cartão','cartao','crédito','credito','total','fatura','tenho','aberto','pra','para','o','a','os','as','é','qual','quanto?']);
+
+    function extrairMesPergunta(texto) {
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      let mes = hoje.getMonth(), ano = hoje.getFullYear();
+      if (/mês passado|mes passado/.test(texto)) {
+        mes -= 1; if (mes < 0) { mes = 11; ano -= 1; }
+      } else if (/mês que vem|mes que vem|próximo mês|proximo mes/.test(texto)) {
+        mes += 1; if (mes > 11) { mes = 0; ano += 1; }
+      } else {
+        const idxMes = NOMES_MESES.findIndex(m => texto.includes(m.toLowerCase()));
+        if (idxMes !== -1) mes = idxMes;
+      }
+      return { mes, ano };
+    }
+
+    function responderPergunta() {
+      const input = document.getElementById('inputPergunta');
+      const respEl = document.getElementById('respostaPergunta');
+      if (!input || !respEl) return;
+      const texto = (input.value || '').toLowerCase().trim();
+      if (!texto) return;
+
+      const { mes, ano } = extrairMesPergunta(texto);
+      const nomeMes = NOMES_MESES[mes];
+      let resposta = null;
+
+      if (/fatura/.test(texto)) {
+        const total = lancamentos
+          .filter(l => l.tipo === 'despesa' && l.formaModo === 'Crédito Parcelado')
+          .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === mes && f.ano === ano; })
+          .reduce((s, l) => s + parseVal(l.valor), 0);
+        resposta = `Fatura de ${nomeMes}: ${fmtOculto(total)}`;
+      } else if (/fixo/.test(texto)) {
+        const noCartao = /cart[ãa]o|cr[ée]dito/.test(texto);
+        const lista = noCartao ? fixos.filter(f => f.formaModo === 'Crédito Parcelado' || contaTemCredito(f.conta)) : fixos;
+        const total = lista.reduce((s, f) => s + parseVal(f.valor), 0);
+        resposta = `Total de gastos fixos${noCartao ? ' no cartão' : ''}: ${fmtOculto(total)} (${lista.length} ${lista.length === 1 ? 'item' : 'itens'})`;
+      } else if (/gast/.test(texto)) {
+        const catAchada = categorias.find(c => texto.includes(c.toLowerCase()));
+        let termo = catAchada ? catAchada.toLowerCase() : null;
+        if (!termo) {
+          const palavras = texto.replace(/[?.,!]/g, '').split(/\s+/).filter(p => p && !PALAVRAS_IGNORAR_PERGUNTA.has(p));
+          termo = palavras.length ? palavras[palavras.length - 1] : null;
+        }
+        if (termo) {
+          const total = lancamentos
+            .filter(l => l.tipo === 'despesa')
+            .filter(l => (l.categoria || '').toLowerCase().includes(termo) || (l.descricao || '').toLowerCase().includes(termo))
+            .filter(l => { const d = new Date(l.data + 'T12:00:00'); return d.getMonth() === mes && d.getFullYear() === ano; })
+            .reduce((s, l) => s + parseVal(l.valor), 0);
+          resposta = `Gasto com "${termo}" em ${nomeMes}: ${fmtOculto(total)}`;
+        }
+      }
+
+      respEl.textContent = resposta || 'Não entendi essa pergunta ainda. Tente algo como: "quanto gastei de Uber no mês passado", "fatura do mês que vem" ou "total de fixos no cartão".';
+      respEl.style.color = resposta ? '#4caf50' : '#aaa';
+    }
+
+    function mudarMesFatura(delta) {
+      faturaMesOffset += delta;
+      atualizarFaturas();
+      renderizarLancamentos();
+    }
+
+    function voltarMesAtual() {
+      faturaMesOffset = 0;
+      atualizarFaturas();
+      renderizarLancamentos();
+    }
+
+    // Gesto de deslizar dentro do card de resumo das Faturas: muda o mês
+    (function () {
+      const card = document.getElementById('cardResumoFaturas');
+      if (!card) return;
+      let iniX = 0, iniY = 0;
+      card.addEventListener('touchstart', (e) => {
+        iniX = e.touches[0].clientX;
+        iniY = e.touches[0].clientY;
+      }, { passive: true });
+      card.addEventListener('touchend', (e) => {
+        if (algumModalAberto()) return;
+        const dx = e.changedTouches[0].clientX - iniX;
+        const dy = e.changedTouches[0].clientY - iniY;
+        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 2) return;
+        mudarMesFatura(dx < 0 ? 1 : -1);
+        card.classList.remove('anim-esq', 'anim-dir');
+        void card.offsetWidth;
+        card.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
+      }, { passive: true });
+    })();
+
+    // Legenda do fechamento: contagem regressiva quando o mês exibido é o atual
+    function textoFechamento(mes, ano) {
+      const hoje = obterDataBrasilia();
+      const hAno = parseInt(hoje.slice(0, 4), 10);
+      const hMes = parseInt(hoje.slice(5, 7), 10) - 1;
+      const hDia = parseInt(hoje.slice(8, 10), 10);
+      if (ano === hAno && mes === hMes) {
+        let dias;
+        if (hDia <= DIA_FECHAMENTO_CARTAO) {
+          dias = DIA_FECHAMENTO_CARTAO - hDia;
+        } else {
+          const diasNoMes = new Date(hAno, hMes + 1, 0).getDate();
+          dias = diasNoMes - hDia + DIA_FECHAMENTO_CARTAO;
+        }
+        const frase = dias === 0 ? 'fatura fecha hoje' : (dias === 1 ? 'fatura fecha amanhã' : `fatura fecha em ${dias} dias`);
+        return `${frase} · vence dia 10`;
+      }
+      return 'fecha dia 3 · vence dia 10';
+    }
+
+    function alternarDetalheFatura() {
+      document.getElementById('detalheFaturaMes').classList.toggle('escondido');
+    }
+
+    // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria,
+    // com filtro por conta (segue as contas cadastradas) e toque na linha
+    // pra ver os lançamentos daquela categoria/fonte
+    let resumoMesTipo = 'despesa';
+    let resumoMesConta = '';       // '' = todas as contas
+    let resumoMesGruposAbertos = new Set(); // categorias/fontes expandidas no momento (pode ser mais de uma)
+
+    function abrirResumoMes(tipo) {
+      resumoMesTipo = tipo;
+      resumoMesConta = '';
+      resumoMesGruposAbertos = new Set();
+      renderizarChipsContasResumo();
+      renderizarResumoMes();
+      document.getElementById('modalResumoMes').classList.remove('escondido');
+    }
+
+    function renderizarChipsContasResumo() {
+      const box = document.getElementById('chipsContasResumo');
+      box.innerHTML = '';
+      ['', ...contas.map(c => c.nome)].forEach(nome => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini' + (resumoMesConta === nome ? ' ativo' : '');
+        b.textContent = nome === '' ? 'Todas as contas' : nome;
+        b.onclick = () => {
+          resumoMesConta = nome;
+          resumoMesGruposAbertos = new Set();
+          renderizarChipsContasResumo();
+          renderizarResumoMes();
+        };
+        box.appendChild(b);
+      });
+    }
+
+    function itensResumoMes() {
+      const ref = getMesReferencia(faturaMesOffset);
+      const mes = ref.getMonth(), ano = ref.getFullYear();
+      return lancamentos.filter(l => {
+        if (resumoMesConta && l.conta !== resumoMesConta) return false;
+        if (resumoMesTipo === 'receita') {
+          if (l.tipo !== 'receita') return false;
+          const d = new Date(l.data + 'T12:00:00');
+          return d.getMonth() === mes && d.getFullYear() === ano;
+        }
+        if (l.tipo !== 'despesa') return false;
+        const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+        return m === mes && a === ano;
+      });
+    }
+
+    function chaveGrupoResumo(l) {
+      return resumoMesTipo === 'receita' ? (l.descricao || 'Outras') : (l.categoria || 'Outros');
+    }
+
+    function renderizarResumoMes() {
+      const ref = getMesReferencia(faturaMesOffset);
+      const eReceita = resumoMesTipo === 'receita';
+      const cor = eReceita ? '#4caf50' : '#ef5350';
+      const itens = itensResumoMes();
+      const porGrupo = {};
+      let total = 0;
+      itens.forEach(l => {
+        const v = parseVal(l.valor);
+        const chave = chaveGrupoResumo(l);
+        porGrupo[chave] = (porGrupo[chave] || 0) + v;
+        total += v;
+      });
+
+      document.getElementById('tituloResumoMes').textContent = (eReceita ? 'Receitas de ' : 'Despesas de ') + NOMES_MESES[ref.getMonth()];
+      const totalEl = document.getElementById('totalResumoMes');
+      totalEl.textContent = fmtOculto(total);
+      totalEl.style.color = cor;
+
+      const corpo = document.getElementById('corpoResumoMes');
+      corpo.innerHTML = '';
+      const nomesGrupos = Object.keys(porGrupo);
+      const btnTudo = document.getElementById('btnExpandirTudoResumo');
+      if (btnTudo) {
+        const tudoAberto = nomesGrupos.length > 0 && nomesGrupos.every(n => resumoMesGruposAbertos.has(n));
+        btnTudo.textContent = tudoAberto ? 'Recolher tudo' : 'Expandir tudo';
+      }
+      if (total === 0) {
+        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">Nenhuma ${eReceita ? 'receita' : 'despesa'} neste mês${resumoMesConta ? ' nessa conta' : ''}.</p>`;
+      } else {
+        Object.entries(porGrupo).sort((a, b) => b[1] - a[1]).forEach(([nome, valor]) => {
+          const pct = Math.round((valor / total) * 100);
+          const sel = resumoMesGruposAbertos.has(nome);
+          const div = document.createElement('div');
+          div.className = 'barra-categoria';
+          div.style.cursor = 'pointer';
+          div.onclick = () => {
+            if (sel) resumoMesGruposAbertos.delete(nome); else resumoMesGruposAbertos.add(nome);
+            renderizarResumoMes();
+          };
+          div.innerHTML = `
+            <div class="barra-info"><span style="${sel ? 'color:#fff;font-weight:700;' : ''}">${nome} ${sel ? '▾' : '▸'}</span><span>${fmtVal(valor)} · ${pct}%</span></div>
+            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:${cor};${sel ? '' : 'opacity:.7;'}"></div></div>
+          `;
+          corpo.appendChild(div);
+
+          // lançamentos dessa categoria, logo abaixo dela (não lá embaixo de tudo)
+          if (sel) {
+            const doGrupo = itens.filter(l => chaveGrupoResumo(l) === nome).sort((a, b) => (a.data < b.data ? 1 : -1));
+            const listaGrupo = document.createElement('div');
+            listaGrupo.style.cssText = 'margin:2px 0 12px 4px;padding-left:8px;border-left:2px solid #333;';
+            doGrupo.forEach(item => {
+              const dataFmt = item.data.split('-').reverse().join('/');
+              const linha = document.createElement('div');
+              linha.className = 'item-lancamento';
+              linha.onclick = (ev) => { ev.stopPropagation(); abrirAcoesLancamento(item.id); };
+              linha.innerHTML = `
+                <div class="item-info">
+                  <strong>${item.descricao}</strong>
+                  <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
+                </div>
+                <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
+              `;
+              listaGrupo.appendChild(linha);
+            });
+            corpo.appendChild(listaGrupo);
+          }
+        });
+      }
+    }
+
+    function alternarTodosGruposResumo() {
+      const itens = itensResumoMes();
+      const nomesGrupos = [...new Set(itens.map(chaveGrupoResumo))];
+      const tudoAberto = nomesGrupos.length > 0 && nomesGrupos.every(n => resumoMesGruposAbertos.has(n));
+      resumoMesGruposAbertos = tudoAberto ? new Set() : new Set(nomesGrupos);
+      renderizarResumoMes();
+    }
+
+    /* REQUISIÇÃO 6: DETALHAMENTO NO SEGUNDO CLIQUE EM DÉBITO, CRÉDITO OU RECEBÍVEIS NAS FATURAS */
+    function atualizarFaturas() {
+      const container = document.getElementById('listaFaturas');
+      const containerFixos = document.getElementById('listaFixos');
+      if (!container) return;
+
+      const ref = getMesReferencia(faturaMesOffset);
+      const mes = ref.getMonth(), ano = ref.getFullYear();
+      document.getElementById('tituloMesFatura').textContent = NOMES_MESES[mes] + ' ' + ano;
+      const cap = document.getElementById('capFatura');
+      if (cap) cap.textContent = textoFechamento(mes, ano);
+      const btnAtual = document.getElementById('btnMesAtual');
+      if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
+
+      const porConta = {};
+      let totalRecebimentos = 0, totalDebito = 0, totalCredito = 0;
+      lancamentos.forEach(l => {
+        const v = parseVal(l.valor);
+        if (l.tipo === 'receita') {
+          const d = new Date(l.data + 'T12:00:00');
+          if (d.getMonth() === mes && d.getFullYear() === ano) totalRecebimentos += v;
+          return;
+        }
+        const { mes: mFat, ano: aFat } = getMesFatura(l.data, l.formaModo);
+        if (mFat === mes && aFat === ano) {
+          porConta[l.conta] = (porConta[l.conta] || 0) + v;
+          if (l.formaModo === 'Crédito Parcelado') totalCredito += v;
+          else totalDebito += v;
+        }
+      });
+
+      // Atualizar cards de resumo do mês
+      const totalDespMes = totalDebito + totalCredito;
+      const saldoMes = totalRecebimentos - totalDespMes;
+      const elFS = document.getElementById('faturaSaldo');
+      const elFR = document.getElementById('faturaReceita');
+      const elFD = document.getElementById('faturaDespesa');
+      if (elFS) {
+        if (valoresOcultos) { elFS.textContent = '••••••'; elFR.textContent = '••••••'; elFD.textContent = '••••••'; }
+        else { elFS.textContent = fmtVal(saldoMes); elFR.textContent = fmtVal(totalRecebimentos); elFD.textContent = fmtVal(totalDespMes); }
+      }
+
+      document.getElementById('detalheFaturaMes').innerHTML = `
+        <div class="linha-subtotal" onclick="exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebimentos do mês</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
+        <div class="linha-subtotal" onclick="exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Gastos em débito/à vista</span><strong style="color:#ef5350;">${fmtOculto(totalDebito)}</strong></div>
+        <div class="linha-subtotal" onclick="exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Gastos no cartão de crédito</span><strong style="color:#ef5350;">${fmtOculto(totalCredito)}</strong></div>
+      `;
+
+      container.innerHTML = '';
+      const nomesContasFatura = Object.keys(porConta);
+      if (nomesContasFatura.length === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma despesa lançada neste mês.</p>';
+      } else {
+        const rotulo = document.createElement('div');
+        rotulo.style.cssText = 'font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;';
+        rotulo.textContent = 'Fatura por conta';
+        container.appendChild(rotulo);
+        nomesContasFatura.sort((a, b) => porConta[b] - porConta[a]).forEach(nomeConta => {
+          const pct = totalDespMes > 0 ? Math.round((porConta[nomeConta] / totalDespMes) * 100) : 0;
+          const div = document.createElement('div');
+          div.className = 'barra-categoria';
+          div.innerHTML = `
+            <div class="barra-info"><span>${nomeConta}</span><span class="valor-despesa" style="font-weight:600;">${fmtOculto(porConta[nomeConta])} · ${pct}%</span></div>
+            <div class="barra-bg" style="height:6px;"><div class="barra-fill" style="width:${pct}%;background-color:rgba(239,83,80,0.6);"></div></div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      containerFixos.innerHTML = '';
+      const refCompare = new Date(ano, mes, 1);
+      const fixosAtivos = fixos.filter(f => {
+        if (!f.dataInicio) return true;
+        const ini = new Date(f.dataInicio + 'T12:00:00');
+        return new Date(ini.getFullYear(), ini.getMonth(), 1) <= refCompare;
+      });
+
+      if (fixosAtivos.length === 0) {
+        containerFixos.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto fixo cadastrado ainda.</p>';
+      } else {
+        const chaveMesExibido = chaveMesAno(ano, mes);
+        fixosAtivos.slice().sort((a, b) => (a.descricao || '').localeCompare(b.descricao || '', 'pt-BR', { sensitivity: 'base' })).forEach(f => {
+          const lancado = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
+          const div = document.createElement('div');
+          div.className = 'item-lancamento';
+          div.onclick = () => abrirAcoesFixo(f.id);
+          div.innerHTML = `
+            <div class="item-info">
+              <strong>${f.descricao}</strong>
+              <div style="font-size:11px;color:#888;">${f.conta} • ${formaModoDoFixo(f) === 'Crédito Parcelado' ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
+            </div>
+            <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
+          `;
+          containerFixos.appendChild(div);
+        });
+      }
+    }
+
+    function exibirLancamentosDetalhadosFatura(tipoFiltro, mes, ano) {
+      const modal = document.getElementById('modalPanorama');
+      const titulo = document.getElementById('modalTitulo');
+      const corpo = document.getElementById('modalCorpo');
+      
+      document.getElementById('wrapFiltrosModal').classList.add('escondido');
+      document.getElementById('rodapeGrupo').classList.add('escondido');
+      document.getElementById('boxSubtotaisModal').innerHTML = '';
+      grupoModalAtualId = null;
+
+      let filtrados = [];
+      if (tipoFiltro === 'receita') {
+        titulo.textContent = 'Recebimentos de ' + NOMES_MESES[mes];
+        filtrados = lancamentos.filter(l => {
+          const d = new Date(l.data + 'T12:00:00');
+          return l.tipo === 'receita' && d.getMonth() === mes && d.getFullYear() === ano;
+        });
+      } else if (tipoFiltro === 'debito') {
+        titulo.textContent = 'Débito / À Vista de ' + NOMES_MESES[mes];
+        filtrados = lancamentos.filter(l => {
+          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+          return l.tipo === 'despesa' && l.formaModo !== 'Crédito Parcelado' && m === mes && a === ano;
+        });
+      } else {
+        titulo.textContent = 'Fatura Crédito de ' + NOMES_MESES[mes];
+        filtrados = lancamentos.filter(l => {
+          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+          return l.tipo === 'despesa' && l.formaModo === 'Crédito Parcelado' && m === mes && a === ano;
+        });
+      }
+
+      corpo.innerHTML = '';
+      if (filtrados.length === 0) {
+        corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum lançamento nesta categoria.</p>';
+      } else {
+        filtrados.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(item => {
+          const dataFmt = item.data.split('-').reverse().join('/');
+          const eReceita = item.tipo === 'receita';
+          const div = document.createElement('div');
+          div.className = 'item-lancamento';
+          div.onclick = () => abrirAcoesLancamento(item.id);
+          div.innerHTML = `
+            <div class="item-info">
+              <strong>${item.descricao}</strong>
+              <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
+              ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">${item.observacao}</div>` : ''}
+            </div>
+            <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
+          `;
+          corpo.appendChild(div);
+        });
+      }
+
+      modal.classList.remove('escondido');
+    }
+
+    function abrirFormFixo(id) {
+      popularSelectsContas();
+      const selDia = document.getElementById('diaFixo');
+      if (!selDia.options.length) {
+        for (let d = 1; d <= 28; d++) {
+          const o = document.createElement('option');
+          o.value = String(d);
+          o.textContent = 'dia ' + d;
+          selDia.appendChild(o);
+        }
+      }
+
+      const f = id ? fixos.find(x => x.id === id) : null;
+      document.getElementById('idFixoEditando').value = f ? f.id : '';
+      document.getElementById('tituloModalFixo').textContent = f ? 'Editar gasto fixo' : 'Novo gasto fixo';
+      document.getElementById('descFixo').value = f ? f.descricao : '';
+      document.getElementById('valorFixo').value = f ? 'R$ ' + f.valor : '';
+      selDia.value = f ? String(Math.min(parseInt(f.diaVencimento, 10) || 1, 28)) : '10';
+      const selConta = document.getElementById('contaFixo');
+      if (f && contas.some(c => c.nome === f.conta)) selConta.value = f.conta;
+      const selCatFixo = document.getElementById('categoriaFixo');
+      if (f) garantirOpcaoCategoria(selCatFixo, f.categoria);
+      selCatFixo.value = f ? (f.categoria || categoriaPadrao()) : categoriaPadrao();
+      document.getElementById('formaFixo').value = f ? formaModoDoFixo(f) : 'Crédito Parcelado';
+      atualizarFormaFixoVisibilidade();
+      document.getElementById('modalFixo').classList.remove('escondido');
+    }
+
+    // Cartão de crédito é o padrão dos gastos fixos; conta sem cartão cai pro débito
+    function formaModoDoFixo(f) {
+      if (f.formaModo) return f.formaModo;
+      return contaTemCredito(f.conta) ? 'Crédito Parcelado' : 'À Vista / Débito';
+    }
+
+    function atualizarFormaFixoVisibilidade() {
+      const conta = document.getElementById('contaFixo').value;
+      const grupo = document.getElementById('grupoFormaFixo');
+      if (contaTemCredito(conta)) {
+        grupo.classList.remove('escondido');
+      } else {
+        grupo.classList.add('escondido');
+        document.getElementById('formaFixo').value = 'À Vista / Débito';
+      }
+    }
+
+    function salvarFixoModal(e) {
+      e.preventDefault();
+      const descricao = document.getElementById('descFixo').value.trim();
+      if (!descricao) { alert('Digite a descrição.'); return; }
+      const valor = parseVal(document.getElementById('valorFixo').value.replace('R$', '').trim());
+      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
+
+      const idEdit = document.getElementById('idFixoEditando').value;
+      const contaEscolhida = document.getElementById('contaFixo').value || primeiraConta();
+      const dados = {
+        descricao,
+        valor: valor.toFixed(2).replace('.', ','),
+        conta: contaEscolhida,
+        diaVencimento: parseInt(document.getElementById('diaFixo').value, 10) || 1,
+        categoria: document.getElementById('categoriaFixo').value || 'Outros',
+        formaModo: contaTemCredito(contaEscolhida) ? document.getElementById('formaFixo').value : 'À Vista / Débito'
+      };
+
+      if (idEdit) {
+        const f = fixos.find(x => x.id === idEdit);
+        if (f) {
+          Object.assign(f, dados);
+          // Se o lançamento deste mês ainda não venceu, atualiza ele também
+          const hoje = obterDataBrasilia();
+          const lanc = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === hoje.slice(0, 7));
+          if (lanc && lanc.data >= hoje) {
+            lanc.descricao = dados.descricao;
+            lanc.valor = dados.valor;
+            lanc.conta = dados.conta;
+            lanc.categoria = dados.categoria;
+            lanc.formaModo = dados.formaModo;
+            lanc.data = hoje.slice(0, 7) + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+            salvarLocalStorage();
+          }
+        }
+      } else {
+        fixos.push({ id: 'f' + Date.now(), ...dados, dataInicio: obterDataBrasilia() });
+      }
+
+      salvarFixos();
+      gerarLancamentosFixos();
+      fecharModal('modalFixo');
+      atualizarFaturas();
+      renderizarLancamentos();
+      atualizarResumoEGraficos();
+    }
+
+    function excluirFixo(id) {
+      if (!confirm('Remover este gasto fixo? Os lançamentos já criados nos meses passados permanecem; ele só deixa de entrar nos próximos meses.')) return;
+      fixos = fixos.filter(f => f.id !== id);
+      salvarFixos();
+      atualizarFaturas();
+    }
+
+    // Opções do gasto fixo (toque na linha)
+    let fixoSelecionadoId = null;
+
+    function abrirAcoesFixo(id) {
+      const f = fixos.find(x => x.id === id);
+      if (!f) return;
+      fixoSelecionadoId = id;
+      document.getElementById('modalAcoesFixoTitulo').textContent = f.descricao;
+      document.getElementById('modalAcoesFixo').classList.remove('escondido');
+    }
+
+    function executarEditarFixo() {
+      if (!fixoSelecionadoId) return;
+      fecharModal('modalAcoesFixo');
+      abrirFormFixo(fixoSelecionadoId);
+    }
+
+    function executarExcluirFixo() {
+      if (!fixoSelecionadoId) return;
+      fecharModal('modalAcoesFixo');
+      excluirFixo(fixoSelecionadoId);
+    }
+
+    // Gera automaticamente o lançamento mensal de cada gasto fixo,
+    // do mês de cadastro (ou do último mês já gerado) até o mês atual.
+    function chaveMesAno(ano, mes) { return ano + '-' + String(mes + 1).padStart(2, '0'); }
+
+    function gerarLancamentosFixos() {
+      if (!fixos.length) return;
+      const hoje = obterDataBrasilia();
+      const anoAtual = parseInt(hoje.slice(0, 4), 10);
+      const mesAtual = parseInt(hoje.slice(5, 7), 10) - 1;
+      let houveNovo = false, contador = 0;
+
+      fixos.forEach(f => {
+        const inicio = f.dataInicio || hoje;
+        let ano = parseInt(inicio.slice(0, 4), 10);
+        let mes = parseInt(inicio.slice(5, 7), 10) - 1;
+        if (f.ultimoMesGerado) {
+          ano = parseInt(f.ultimoMesGerado.slice(0, 4), 10);
+          mes = parseInt(f.ultimoMesGerado.slice(5, 7), 10) - 1 + 1;
+          if (mes > 11) { mes = 0; ano++; }
+        }
+
+        while (ano < anoAtual || (ano === anoAtual && mes <= mesAtual)) {
+          const chave = chaveMesAno(ano, mes);
+          const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
+          const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chave);
+          if (!jaExiste) {
+            lancamentos.push({
+              id: Date.now() + (contador++),
+              tipo: 'despesa',
+              descricao: f.descricao,
+              conta: f.conta || primeiraConta(),
+              formaModo: formaModoDoFixo(f),
+              numParcelas: '1',
+              categoria: f.categoria || 'Outros',
+              observacao: 'Gasto fixo mensal',
+              data: chave + '-' + String(dia).padStart(2, '0'),
+              valor: f.valor,
+              fixoId: f.id
+            });
+            houveNovo = true;
+          }
+          f.ultimoMesGerado = chave;
+          mes++;
+          if (mes > 11) { mes = 0; ano++; }
+        }
+      });
+
+      salvarFixos();
+      if (houveNovo) salvarLocalStorage();
+    }
+
+    function renderizarInvestimentos() {
+      const totalEl = document.getElementById('totalInvestido');
+      const lista = document.getElementById('listaInvestimentos');
+      if (!totalEl) return;
+
+      const total = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
+      totalEl.textContent = fmtVal(total);
+
+      lista.innerHTML = '';
+      if (investimentos.length === 0) {
+        lista.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum aporte registrado ainda.</p>';
+        return;
+      }
+
+      investimentos.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(inv => {
+        const dataFmt = inv.data.split('-').reverse().join('/');
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:#888;">${dataFmt} • de ${inv.origem}</div></div><span class="valor-receita">${fmtVal(parseVal(inv.valor))}</span>`;
+        lista.appendChild(div);
+      });
+    }
+
+    /* REQUISIÇÃO 7: TECLADO NUMÉRICO E FORMATAÇÃO DE CENTAVOS NO MODAL DE INVESTIMENTO */
+    function abrirFormAporte() {
+      document.getElementById('valorAporte').value = '';
+      document.getElementById('modalAporte').classList.remove('escondido');
+    }
+
+    function salvarAporteModal(e) {
+      e.preventDefault();
+      const valorStr = document.getElementById('valorAporte').value.replace('R$', '').trim();
+      const valor = parseVal(valorStr);
+      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
+
+      const origem = document.getElementById('origemAporte').value;
+      const data = obterDataBrasilia();
+
+      investimentos.push({
+        id: 'i' + Date.now(),
+        valor: valor.toFixed(2).replace('.', ','),
+        origem: origem || primeiraConta(),
+        data
+      });
+      salvarInvest();
+
+      lancamentos.unshift({
+        id: Date.now(),
+        tipo: 'despesa',
+        descricao: 'Aporte - poupança/investimento',
+        conta: origem || primeiraConta(),
+        formaModo: 'À Vista / Débito',
+        numParcelas: '1',
+        categoria: 'Investimento',
+        data,
+        valor: valor.toFixed(2).replace('.', ',')
+      });
+      salvarLocalStorage();
+
+      fecharModal('modalAporte');
+      renderizarInvestimentos();
+      renderizarLancamentos();
+    }
+
+    /* REQUISIÇÃO 8: REMOVER LIXEIRA DA LISTA DE GRUPOS E EXIBIR DETALHAMENTO DIRETO/CATEGORIZADO */
+    function renderizarGrupos() {
+      const container = document.getElementById('listaGrupos');
+      const termo = textoSeguro(document.getElementById('inputBuscaGrupo')?.value || '');
+      container.innerHTML = '';
+      const listaBase = grupos.slice().sort((a, b) => (a.status === b.status ? 0 : (a.status === 'aberto' ? -1 : 1)));
+      const listaFiltrada = termo ? listaBase.filter(g => textoSeguro(g.nome).includes(termo)) : listaBase;
+
+      if (listaFiltrada.length === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum grupo encontrado com esse nome.</p>';
+        return;
+      }
+
+      listaFiltrada.forEach(g => {
+        const vinculados = lancamentos.filter(l => l.grupoViagemId === g.id);
+        const totalDespesas = vinculados.filter(l => l.tipo === 'despesa').reduce((s, l) => s + parseVal(l.valor), 0);
+        const totalReceitas = vinculados.filter(l => l.tipo === 'receita').reduce((s, l) => s + parseVal(l.valor), 0);
+        const total = totalDespesas - totalReceitas;
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.addEventListener('click', (e) => { if (e.target.closest('.btn-acao')) return; abrirModalGrupo(g.id); });
+        div.innerHTML = `
+          <div class="item-info">
+            <strong>${g.nome}</strong>
+            <div style="font-size:11px;color:#888;">${g.status === 'aberto' ? '🟢 Em aberto' : '⚪ Encerrado'}</div>
+          </div>
+          <div class="item-acoes">
+            <span class="${total >= 0 ? 'valor-despesa' : 'valor-receita'}">${fmtVal(total)}</span>
+            <button class="btn-acao" onclick="event.stopPropagation(); alternarStatusGrupo('${g.id}')" title="${g.status === 'aberto' ? 'Encerrar grupo' : 'Reabrir grupo'}">${g.status === 'aberto' ? '🔒 Encerrar' : '🔓 Reabrir'}</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function criarGrupoRapido() {
+      const nome = prompt('Nome do novo grupo (ex: Viagem Ubatuba, Show X):');
+      if (!nome) return;
+      grupos.push({ id: 'gr' + Date.now(), nome, status: 'aberto', dataCriacao: obterDataBrasilia() });
+      salvarGrupos();
+      renderizarGrupos();
+      if (document.getElementById('grupoViagem')) popularSelectGrupos(document.getElementById('grupoViagem').value);
+    }
+
+    function alternarStatusGrupo(id) {
+      const g = grupos.find(x => x.id === id);
+      if (!g) return;
+      g.status = g.status === 'aberto' ? 'fechado' : 'aberto';
+      salvarGrupos();
+      renderizarGrupos();
+      popularSelectGrupos();
+    }
+
+    function abrirModalGrupo(id) {
+      const g = grupos.find(x => x.id === id);
+      if (!g) return;
+      grupoModalAtualId = id;
+      const modal = document.getElementById('modalPanorama');
+      const titulo = document.getElementById('modalTitulo');
+      const corpo = document.getElementById('modalCorpo');
+      
+      // Oculta filtro de período, mostra rodapé de ações do grupo
+      document.getElementById('wrapFiltrosModal').classList.add('escondido');
+      document.getElementById('rodapeGrupo').classList.remove('escondido');
+      document.getElementById('boxSubtotaisModal').innerHTML = '';
+      
+      titulo.textContent = g.nome;
+      corpo.innerHTML = '';
+      const itens = lancamentos.filter(l => l.grupoViagemId === id);
+      
+      if (itens.length === 0) {
+        corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto vinculado a este grupo ainda.</p>';
+      } else {
+        const totalDespesas = itens.filter(l => l.tipo === 'despesa').reduce((s, l) => s + parseVal(l.valor), 0);
+        const totalReceitas = itens.filter(l => l.tipo === 'receita').reduce((s, l) => s + parseVal(l.valor), 0);
+        const totalLíquido = totalDespesas - totalReceitas;
+
+        // Agrupamento por Categoria
+        const porCategoria = {};
+        itens.forEach(item => {
+          const cat = item.categoria || (item.tipo === 'receita' ? 'Receita/Reembolso' : 'Outros');
+          if (!porCategoria[cat]) porCategoria[cat] = [];
+          porCategoria[cat].push(item);
+        });
+
+        let html = `
+          <div style="text-align:center;padding:10px 0 16px;border-bottom:1px solid #333;margin-bottom:16px;">
+            <span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total do Grupo</span>
+            <h3 style="color:${totalLíquido >= 0 ? '#ef5350' : '#4caf50'};font-size:24px;margin-top:4px;">${fmtVal(totalLíquido)}</h3>
+          </div>
+        `;
+
+        Object.entries(porCategoria).forEach(([cat, listaItens]) => {
+          const totCat = listaItens.reduce((s, item) => s + (item.tipo === 'receita' ? -parseVal(item.valor) : parseVal(item.valor)), 0);
+          html += `
+            <div style="margin-bottom:14px; background:#1a1a1a; padding:10px; border-radius:10px; border:1px solid #333;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px;">
+                <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
+                <strong style="font-size:13px;">${fmtVal(totCat)}</strong>
+              </div>
+          `;
+
+          listaItens.forEach(item => {
+            const dataFmt = item.data.split('-').reverse().join('/');
+            const eReceita = item.tipo === 'receita';
+            html += `
+              <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
+                <div class="item-info">
+                  <span style="font-size:13px;">${item.descricao}</span>
+                  <div style="font-size:10px;color:#888;">${dataFmt} • ${item.conta}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                  <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+                  ${item.observacao ? `<span style="font-size:10px;color:#8c8c8c;max-width:150px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.observacao}</span>` : ''}
+                </div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        });
+
+        corpo.innerHTML = html;
+      }
+      modal.classList.remove('escondido');
+    }
+
+    /* RENOMEAR E EXCLUIR GRUPO (VIA MODAL DO GRUPO) */
+    function abrirRenomearGrupo() {
+      const g = grupos.find(x => x.id === grupoModalAtualId);
+      if (!g) return;
+      document.getElementById('inputNovoNomeGrupo').value = g.nome;
+      document.getElementById('modalRenomearGrupo').classList.remove('escondido');
+    }
+
+    function salvarRenomearGrupo() {
+      const novoNome = document.getElementById('inputNovoNomeGrupo').value.trim();
+      if (!novoNome) { alert('Digite um nome.'); return; }
+      const g = grupos.find(x => x.id === grupoModalAtualId);
+      if (!g) return;
+      g.nome = novoNome;
+      // Atualiza o nome nos lançamentos vinculados
+      lancamentos.forEach(l => { if (l.grupoViagemId === g.id) l.grupoViagemNome = novoNome; });
+      salvarGrupos();
+      salvarLocalStorage();
+      fecharModal('modalRenomearGrupo');
+      fecharModal('modalPanorama');
+      renderizarDashboard();
+      renderizarGrupos();
+      renderizarLancamentos();
+    }
+
+    function excluirGrupoAtual() {
+      const g = grupos.find(x => x.id === grupoModalAtualId);
+      if (!g) return;
+      if (!confirm('Excluir o grupo "' + g.nome + '"? Os lançamentos continuam salvos, só perdem o vínculo com ele.')) return;
+      grupos = grupos.filter(x => x.id !== grupoModalAtualId);
+      lancamentos.forEach(l => {
+        if (l.grupoViagemId === grupoModalAtualId) { l.grupoViagemId = ''; l.grupoViagemNome = ''; }
+      });
+      salvarGrupos();
+      salvarLocalStorage();
+      fecharModal('modalPanorama');
+      renderizarDashboard();
+      renderizarGrupos();
+      renderizarLancamentos();
+      popularSelectGrupos('');
+    }
+/* =========================================
+   SISTEMA DE LANÇAMENTO POR VOZ (NLP Simples)
+   ========================================= */
+let lancamentoVozPendente = null;
+
+function iniciarReconhecimentoVoz() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('O seu navegador não suporta reconhecimento de voz nativo (recomendado usar Chrome ou Safari atualizados).');
+    return;
+  }
+
+  const btnMic = document.getElementById('btnMic');
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    btnMic.classList.add('mic-animando');
+  };
+
+  recognition.onspeechend = () => {
+    recognition.stop();
+  };
+
+  recognition.onresult = (event) => {
+    btnMic.classList.remove('mic-animando');
+    const fala = event.results[0][0].transcript;
+    interpretarFala(fala);
+  };
+
+  recognition.onerror = (event) => {
+    btnMic.classList.remove('mic-animando');
+    alert('Não foi possível reconhecer a voz. Tente novamente.');
+  };
+
+  recognition.start();
+}
+
+/* Conversor de números por extenso (pt-BR) — o reconhecimento de voz às vezes
+   transcreve o valor em palavras ("cinquenta reais") em vez de dígitos ("50 reais") */
+// "Aprendizado" simples de padrões de uso: quando a fala contém uma dessas
+// palavras-chave, já aplica categoria/conta/forma de pagamento certas, em vez
+// de cair no fallback genérico. Ajuste ou adicione linhas aqui conforme seu uso.
+const REGRAS_VOZ_COMBINADAS = [
+  { chaves: ['uber', '99', '99pop', 'taxi', 'táxi'], categoria: 'Transporte', conta: 'Itaú', formaModo: 'Crédito Parcelado', numParcelas: '1' }
+];
+
+const NUM_EXTENSO = {
+  'zero':0,'um':1,'uma':1,'dois':2,'duas':2,'tres':3,'quatro':4,'cinco':5,'seis':6,'sete':7,'oito':8,'nove':9,
+  'dez':10,'onze':11,'doze':12,'treze':13,'catorze':14,'quatorze':14,'quinze':15,'dezesseis':16,'dezessete':17,'dezoito':18,'dezenove':19,
+  'vinte':20,'trinta':30,'quarenta':40,'cinquenta':50,'sessenta':60,'setenta':70,'oitenta':80,'noventa':90,
+  'cem':100,'cento':100,'duzentos':200,'trezentos':300,'quatrocentos':400,'quinhentos':500,'seiscentos':600,'setecentos':700,'oitocentos':800,'novecentos':900
+};
+
+function extenseParaNumero(palavras) {
+  let total = 0, atual = 0;
+  palavras.forEach(p => {
+    if (p === 'e') return;
+    if (p === 'mil') { atual = (atual === 0 ? 1 : atual) * 1000; total += atual; atual = 0; return; }
+    if (NUM_EXTENSO[p] !== undefined) atual += NUM_EXTENSO[p];
+  });
+  return total + atual;
+}
+
+function extrairValorPorExtenso(texto) {
+  const tokens = [];
+  const re = /[a-z0-9]+/g;
+  let mm;
+  while ((mm = re.exec(texto)) !== null) tokens.push({ p: mm[0], ini: mm.index, fim: mm.index + mm[0].length });
+
+  const vocabulario = new Set([...Object.keys(NUM_EXTENSO), 'mil', 'e']);
+
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].p !== 'real' && tokens[i].p !== 'reais') continue;
+
+    let j = i - 1;
+    const seq = [];
+    while (j >= 0 && vocabulario.has(tokens[j].p)) { seq.unshift(tokens[j]); j--; }
+    while (seq.length && seq[0].p === 'e') seq.shift();
+    if (seq.length === 0) continue;
+
+    const valor = extenseParaNumero(seq.map(s => s.p));
+    if (!valor) continue;
+
+    let idxIni = seq[0].ini;
+    let idxFim = tokens[i].fim;
+    let centavos = 0;
+
+    if (tokens[i + 1] && tokens[i + 1].p === 'e') {
+      let k = i + 2;
+      const seqCent = [];
+      while (tokens[k] && vocabulario.has(tokens[k].p) && tokens[k].p !== 'mil') { seqCent.push(tokens[k].p); k++; }
+      if (tokens[k] && (tokens[k].p === 'centavos' || tokens[k].p === 'centavo') && seqCent.length) {
+        centavos = extenseParaNumero(seqCent);
+        idxFim = tokens[k].fim;
+      }
+    }
+    return { valor: valor + centavos / 100, idxIni, idxFim };
+  }
+  return null;
+}
+
+function interpretarFala(fala) {
+  const texto = fala.toLowerCase();
+
+  // 1. Identificar Tipo
+  let tipo = 'despesa';
+  if (texto.includes('recebi') || texto.includes('ganhei') || texto.includes('salário') || texto.includes('reembolso')) {
+    tipo = 'receita';
+  }
+
+  // 2. Identificar Valor: tenta dígitos primeiro ("50 reais"); se a fala veio
+  // toda em palavras ("cinquenta reais"), cai pro parser por extenso
+  let valorFormatoPadrao = null;
+  let trechoValor = '';
+
+  const matchValor = texto.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:,\d{2})?)/);
+  if (matchValor) {
+    let extraido = matchValor[1];
+    if (!extraido.includes(',')) extraido += ',00'; // Adiciona centavos se for número inteiro
+    valorFormatoPadrao = extraido;
+    trechoValor = matchValor[0];
+  } else {
+    const porExtenso = extrairValorPorExtenso(texto);
+    if (porExtenso && porExtenso.valor > 0) {
+      valorFormatoPadrao = porExtenso.valor.toFixed(2).replace('.', ',');
+      trechoValor = texto.slice(porExtenso.idxIni, porExtenso.idxFim);
+    }
+  }
+
+  if (!valorFormatoPadrao) {
+    alert('Não consegui identificar um valor em reais no que você falou. Tente de novo, por exemplo: "cinquenta reais na cerveja".');
+    return;
+  }
+
+  // 3. Identificar Categoria via palavras-chave
+  let categoria = 'Outros';
+  if (/(mercado|cerveja|comida|almoço|jantar|lanche|ifood|padaria)/.test(texto)) categoria = 'Alimentação';
+  else if (/(uber|99|ônibus|gasolina|estacionamento|pedágio|carro)/.test(texto)) categoria = 'Transporte';
+  else if (/(farmácia|remédio|médico|saúde|consulta)/.test(texto)) categoria = 'Saúde';
+  else if (/(viagem|hotel|passagem|aeroporto)/.test(texto)) categoria = 'Viagens ✈️';
+  else if (/(festa|cinema|jogo|ingresso|show)/.test(texto)) categoria = 'Lazer';
+  // Se a categoria mapeada não existe mais na lista do usuário, volta pra padrão
+  if (!categorias.includes(categoria)) categoria = categoriaPadrao();
+
+  // 4. Identificar Forma de Pagamento / Conta
+  let conta = primeiraConta(); // conta default: a primeira da lista
+  let formaModo = 'À Vista / Débito';
+  let numParcelasVoz = '1';
+
+  if (/(crédito|parcelado)/.test(texto)) {
+    formaModo = 'Crédito Parcelado';
+  } else if (/(tíquete|alimentação|vr|va)/.test(texto)) {
+    conta = 'Tíquete Alimentação';
+  } else if (texto.includes('picpay')) {
+    conta = 'PicPay';
+  }
+
+  // 4b. "Aprendizado": padrões de uso frequentes que você mesmo descreveu —
+  // essas regras sobrepõem categoria/conta/forma quando a fala bate com o padrão.
+  // Fácil de ajustar/estender depois, é só editar REGRAS_VOZ_COMBINADAS ali em cima.
+  REGRAS_VOZ_COMBINADAS.forEach(regra => {
+    if (regra.chaves.some(k => texto.includes(k))) {
+      if (regra.categoria) categoria = categorias.includes(regra.categoria) ? regra.categoria : categoriaPadrao();
+      if (regra.conta && contas.some(c => c.nome === regra.conta)) conta = regra.conta;
+      if (regra.formaModo) formaModo = regra.formaModo;
+      if (regra.numParcelas) numParcelasVoz = regra.numParcelas;
+    }
+  });
+
+  // Se a conta mapeada não existe mais na lista do usuário, volta pra default
+  if (!contas.some(c => c.nome === conta)) conta = primeiraConta();
+
+  // 5. Isolar a Descrição (remove o trecho do valor e palavras de conexão/verbos)
+  let descricao = texto
+    .replace(trechoValor, '') // Remove o valor falado (em dígitos ou por extenso)
+    .replace(/\b(gastei|comprei|recebi|ganhei|paguei|reais|real|conto|mangos|centavos?|no crédito|no débito|no pix|com|de|em|um|uma|o|a)\b/gi, '') // Remove conectivos
+    .trim();
+
+  // Letra maiúscula na primeira palavra
+  if (descricao.length > 0) {
+    descricao = descricao.charAt(0).toUpperCase() + descricao.slice(1);
+  } else {
+    descricao = tipo === 'receita' ? 'Receita extra' : 'Lançamento rápido';
+  }
+
+  // 6. Montar o objeto temporário e exibir na tela
+  lancamentoVozPendente = { tipo, valor: valorFormatoPadrao, descricao, categoria, conta, formaModo, numParcelas: numParcelasVoz };
+
+  document.getElementById('vozTipo').textContent = tipo === 'receita' ? 'RECEITA 📈' : 'DESPESA 📉';
+  document.getElementById('vozTipo').style.color = tipo === 'receita' ? '#4caf50' : '#ef5350';
+  document.getElementById('vozDescricao').textContent = descricao;
+  document.getElementById('vozValor').textContent = 'R$ ' + valorFormatoPadrao;
+  document.getElementById('vozCategoria').textContent = tipo === 'receita' ? '-' : categoria;
+  document.getElementById('vozForma').textContent = tipo === 'receita' ? conta : `${conta} (${formaModo})`;
+
+  document.getElementById('modalVoz').classList.remove('escondido');
+}
+
+function confirmarLancamentoVoz() {
+  if (!lancamentoVozPendente) return;
+
+  // 1. Simular a alteração da interface para o tipo correto (Receita ou Despesa)
+  alternarTipo(lancamentoVozPendente.tipo);
+
+  // 2. Preencher os inputs do formulário original
+  document.getElementById('descricao').value = lancamentoVozPendente.descricao;
+  document.getElementById('valor').value = 'R$ ' + lancamentoVozPendente.valor;
+  document.getElementById('conta').value = lancamentoVozPendente.conta;
+  document.getElementById('grupoViagem').value = ''; // lançamento por voz não vincula a grupo
+
+  if (lancamentoVozPendente.tipo === 'despesa') {
+    document.getElementById('categoria').value = lancamentoVozPendente.categoria;
+    atualizarVisibilidadeForma();
+
+    // Configura o pagamento se for cartão
+    if (contaTemCredito(lancamentoVozPendente.conta)) {
+      document.getElementById('formaModo').value = lancamentoVozPendente.formaModo;
+      verificarParcelamento(lancamentoVozPendente.formaModo);
+      if (lancamentoVozPendente.formaModo === 'Crédito Parcelado') {
+        document.getElementById('numParcelas').value = lancamentoVozPendente.numParcelas || '1';
+      }
+    }
+  }
+
+  document.getElementById('dataCompra').value = obterDataBrasilia();
+  document.getElementById('observacao').value = 'Lançamento via voz';
+
+  fecharModal('modalVoz');
+
+  // Não salva sozinho: deixa o formulário preenchido e visível pra você conferir/ajustar
+  // e tocar em "Salvar" quando estiver certo — assim dá pra corrigir sem refazer tudo.
+  const form = document.getElementById('formLancamento');
+  if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('descricao').focus();
+
+  lancamentoVozPendente = null;
+}
+
+    // Inicialização
+    carregarLocalStorage();
+    carregarFixos();
+    carregarInvest();
+    carregarGrupos();
+    carregarOrcamentos();
+    carregarContas();
+    popularSelectsContas();
+    carregarCategorias();
+    popularSelectsCategorias();
+    carregarUiPrefs();
+    aplicarSecao('indicadores');
+    aplicarSecao('metas');
+    aplicarSecao('fixos');
+    aplicarSecao('backup');
+    aplicarSecao('evolucaoMensal');
+    aplicarSecao('comprometidoFuturo');
+    aplicarSecao('rankingGastos');
+    aplicarSecao('gastoDiaSemana');
+    gerarLancamentosFixos();
+
+    valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
+    atualizarIconesOlho();
+
+    alternarTipo('receita');
+    document.getElementById('dataCompra').value = obterDataBrasilia();
+    renderizarLancamentos();
+    atualizarFaturas();
+    atualizarResumoEGraficos();
+    renderizarGrupos();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    // Pede ao navegador para marcar o armazenamento como persistente,
+    // reduzindo o risco de os dados serem apagados por limpeza automática.
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(() => {});
+    }
+  </script>
+<!-- MODAL DE CONFIRMAÇÃO DE VOZ -->
+<div id="modalVoz" class="modal-overlay escondido">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Confira seu lançamento</h3>
+      <button class="btn-fechar" onclick="fecharModal('modalVoz')">&times;</button>
+    </div>
+    <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Entendemos o seguinte da sua fala. Confira e, na próxima tela, você pode ajustar qualquer campo antes de salvar:</p>
+    <div class="resumo-voz">
+      <p><strong>Tipo:</strong> <span id="vozTipo" style="font-weight:bold;"></span></p>
+      <p><strong>Descrição:</strong> <span id="vozDescricao"></span></p>
+      <p><strong>Valor:</strong> <span id="vozValor" style="color:#2196f3; font-weight:bold;"></span></p>
+      <p><strong>Categoria:</strong> <span id="vozCategoria"></span></p>
+      <p><strong>Forma:</strong> <span id="vozForma"></span></p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="btn-cancelar" style="flex:1; margin:0;" onclick="fecharModal('modalVoz')">Cancelar</button>
+      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:#4caf50; color:#fff;" onclick="confirmarLancamentoVoz()">Revisar e Salvar</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
+
