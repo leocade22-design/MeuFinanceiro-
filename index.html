@@ -243,8 +243,10 @@
             <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;">
               <button type="button" id="linkObs" class="link-obs" onclick="abrirModalObs()">adicionar observação</button>
               <button type="button" id="linkGrupo" class="link-obs escondido" onclick="abrirModalGrupoVinculo()">vincular a um grupo</button>
+              <button type="button" id="linkEmprestimo" class="link-obs escondido" onclick="abrirModalEmprestimo()">isso foi um empréstimo?</button>
             </div>
             <textarea id="observacao" name="observacao" class="escondido"></textarea>
+            <input type="hidden" id="emprestimoPara" value="">
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -353,6 +355,18 @@
           <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
         </div>
         <div id="listaLancamentos"></div>
+      </div>
+
+      <!-- EMPRÉSTIMOS (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('emprestimos')">
+          <h3 style="font-size:16px;">Empréstimos</h3>
+          <span class="chevron-sec" id="chevron-emprestimos">▸</span>
+        </button>
+        <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Despesas marcadas como "empréstimo" no formulário. Continuam contando normalmente no cartão/conta — isso é só um lembrete de cobrança.</p>
+          <div id="listaEmprestimos"></div>
+        </div>
       </div>
 
       <!-- GASTOS FIXOS (retrátil) -->
@@ -662,7 +676,25 @@
       </div>
       <div class="balao-acoes">
         <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar lançamento</button>
+        <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas desta compra</button>
         <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE GERENCIAR PARCELAS -->
+  <div id="modalParcelas" class="modal-overlay escondido">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloGerenciarParcelas">Parcelas</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalParcelas')">&times;</button>
+      </div>
+      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Ajuste a data de qualquer parcela individualmente, ou empurre de uma vez todas as que ainda não venceram (pra pular um mês, por exemplo).</p>
+      <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as parcelas restantes</button>
+      <div id="listaGerenciarParcelas"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalParcelas')">Fechar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarDatasParcelas()">Salvar datas</button>
       </div>
     </div>
   </div>
@@ -771,6 +803,25 @@
         <textarea id="obsTemp" rows="3" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..."></textarea>
       </div>
       <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarObsModal()">OK</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE EMPRÉSTIMO -->
+  <div id="modalEmprestimo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalEmprestimo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Empréstimo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
+      </div>
+      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.</p>
+      <div class="form-group">
+        <label for="emprestimoTemp">Nome de quem deve</label>
+        <input type="text" id="emprestimoTemp" placeholder="Ex: Dudu">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="limparEmprestimoModal()">Não é empréstimo</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarEmprestimoModal()">OK</button>
+      </div>
     </div>
   </div>
 
@@ -1038,6 +1089,40 @@
       document.getElementById('observacao').value = document.getElementById('obsTemp').value.trim();
       atualizarLinkObs();
       fecharModal('modalObs');
+    }
+
+    // EMPRÉSTIMO DISCRETO (link abaixo da descrição, igual observação): marca a despesa
+    // como um valor emprestado a alguém, sem tirá-la do total normal do cartão/conta.
+    function atualizarLinkEmprestimo() {
+      const link = document.getElementById('linkEmprestimo');
+      if (!link) return;
+      const v = document.getElementById('emprestimoPara').value.trim();
+      if (v) {
+        link.textContent = 'empréstimo: ' + v;
+        link.classList.add('tem-obs');
+      } else {
+        link.textContent = 'isso foi um empréstimo?';
+        link.classList.remove('tem-obs');
+      }
+    }
+
+    function abrirModalEmprestimo() {
+      document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
+      document.getElementById('modalEmprestimo').classList.remove('escondido');
+      document.getElementById('emprestimoTemp').focus();
+    }
+
+    function salvarEmprestimoModal() {
+      document.getElementById('emprestimoPara').value = document.getElementById('emprestimoTemp').value.trim();
+      atualizarLinkEmprestimo();
+      fecharModal('modalEmprestimo');
+    }
+
+    function limparEmprestimoModal() {
+      document.getElementById('emprestimoTemp').value = '';
+      document.getElementById('emprestimoPara').value = '';
+      atualizarLinkEmprestimo();
+      fecharModal('modalEmprestimo');
     }
 
     // CARD ÚNICO DE GRÁFICOS: ALTERNAR DESPESAS / RECEITAS
@@ -1734,10 +1819,14 @@
         gC.classList.add('escondido');
         document.getElementById('grupoFormaModo').classList.add('escondido');
         document.getElementById('grupoParcelas').classList.add('escondido');
+        document.getElementById('linkEmprestimo').classList.add('escondido');
+        document.getElementById('emprestimoPara').value = '';
+        atualizarLinkEmprestimo();
       } else {
         btnD.className = 'btn-tipo ativo-despesa';
         btnR.className = 'btn-tipo';
         gC.classList.remove('escondido');
+        document.getElementById('linkEmprestimo').classList.remove('escondido');
         atualizarVisibilidadeForma();
       }
       carregarDescricoes(tipo);
@@ -1793,42 +1882,60 @@
         return;
       }
 
-      const ordenados = filtrados.slice().sort((a, b) => (a.data < b.data ? 1 : (a.data > b.data ? -1 : 0)));
+      // Separa o que já aconteceu do que ainda está agendado (data futura), pra não
+      // misturar os dois no topo — o que já é passado vem primeiro, mais recente primeiro;
+      // o que ainda vai acontecer fica numa seção própria depois, mais próximo primeiro.
+      const passados = filtrados.filter(item => item.data <= hoje)
+        .sort((a, b) => (a.data < b.data ? 1 : (a.data > b.data ? -1 : 0)));
+      const futuros = filtrados.filter(item => item.data > hoje)
+        .sort((a, b) => (a.data > b.data ? 1 : (a.data < b.data ? -1 : 0)));
 
       let ultimaData = null;
-      ordenados.forEach(item => {
-        if (item.data !== ultimaData) {
-          ultimaData = item.data;
-          const d = new Date(item.data + 'T12:00:00');
-          const cab = document.createElement('div');
-          cab.className = 'data-grupo';
-          cab.textContent = `${DIAS_SEMANA_ABREV[d.getDay()]} · ${String(d.getDate()).padStart(2, '0')} ${MESES_ABREV[d.getMonth()]}${item.data > hoje ? ' · agendado' : ''}`;
-          container.appendChild(cab);
-        }
+      const renderizarBloco = (lista) => {
+        lista.forEach(item => {
+          if (item.data !== ultimaData) {
+            ultimaData = item.data;
+            const d = new Date(item.data + 'T12:00:00');
+            const cab = document.createElement('div');
+            cab.className = 'data-grupo';
+            cab.textContent = `${DIAS_SEMANA_ABREV[d.getDay()]} · ${String(d.getDate()).padStart(2, '0')} ${MESES_ABREV[d.getMonth()]}${item.data > hoje ? ' · agendado' : ''}`;
+            container.appendChild(cab);
+          }
 
-        const eReceita = item.tipo === 'receita';
-        const numP = parseInt(item.numParcelas, 10) || 1;
+          const eReceita = item.tipo === 'receita';
+          const numP = parseInt(item.numParcelas, 10) || 1;
 
-        const div = document.createElement('div');
-        div.className = 'item-lancamento';
-        if (item.data > hoje) div.style.opacity = '.6';
-        div.onclick = () => abrirAcoesLancamento(item.id);
-        const parcelasPendentes = contarParcelasPendentes(item);
-        div.innerHTML = `
-          <div class="item-info">
-            <strong>${item.descricao}</strong>
-            <div style="font-size: 11px; color: #888;">
-              ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • ' + item.grupoViagemNome : ''}
+          const div = document.createElement('div');
+          div.className = 'item-lancamento';
+          if (item.data > hoje) div.style.opacity = '.6';
+          div.onclick = () => abrirAcoesLancamento(item.id);
+          const parcelasPendentes = contarParcelasPendentes(item);
+          div.innerHTML = `
+            <div class="item-info">
+              <strong>${item.descricao}</strong>
+              <div style="font-size: 11px; color: #888;">
+                ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • ' + item.grupoViagemNome : ''}
+              </div>
+              ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
+              ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
             </div>
-            ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
-            ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
-          </div>
-          <div class="item-acoes">
-            <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+            <div class="item-acoes">
+              <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      };
+
+      renderizarBloco(passados);
+      if (futuros.length > 0) {
+        ultimaData = null; // força o próximo cabeçalho de data a aparecer, mesmo repetindo um dia já usado acima
+        const divisor = document.createElement('div');
+        divisor.style.cssText = 'font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 4px;border-top:1px solid #333;padding-top:12px;';
+        divisor.textContent = `Próximos dias · ainda não efetivado${futuros.length > 1 ? 's' : ''}`;
+        container.appendChild(divisor);
+        renderizarBloco(futuros);
+      }
     }
 
     function abrirAcoesLancamento(id) {
@@ -1836,6 +1943,8 @@
       const item = lancamentos.find(l => l.id === id);
       if (!item) return;
       document.getElementById('modalAcoesTitulo').textContent = item.descricao;
+      const btnParcelas = document.getElementById('btnGerenciarParcelas');
+      if (btnParcelas) btnParcelas.classList.toggle('escondido', !item.grupoId);
       document.getElementById('modalAcoes').classList.remove('escondido');
     }
 
@@ -1851,6 +1960,73 @@
       fecharModal('modalAcoes');
     }
 
+    // GERENCIAR PARCELAS: ver/ajustar as datas de todas as parcelas de uma mesma compra
+    let parcelasGrupoAtual = null;
+
+    function abrirGerenciarParcelas() {
+      if (!lancamentoSelecionadoId) return;
+      const item = lancamentos.find(l => l.id === lancamentoSelecionadoId);
+      if (!item || !item.grupoId) return;
+      parcelasGrupoAtual = item.grupoId;
+      fecharModal('modalAcoes');
+      renderizarGerenciarParcelas();
+      document.getElementById('modalParcelas').classList.remove('escondido');
+    }
+
+    function renderizarGerenciarParcelas() {
+      const container = document.getElementById('listaGerenciarParcelas');
+      if (!container || !parcelasGrupoAtual) return;
+      const grupo = lancamentos.filter(l => l.grupoId === parcelasGrupoAtual).sort((a, b) => (a.data < b.data ? -1 : 1));
+      if (!grupo.length) { container.innerHTML = '<p style="color:#aaa;font-size:13px;">Parcelas não encontradas.</p>'; return; }
+      const base = (grupo[0].descricao || '').replace(/\s\(\d+\/\d+\)$/, '');
+      document.getElementById('tituloGerenciarParcelas').textContent = base;
+      const hoje = obterDataBrasilia();
+      container.innerHTML = '';
+      grupo.forEach(item => {
+        const numMatch = (item.descricao || '').match(/\(\d+\/\d+\)$/);
+        const label = numMatch ? numMatch[0] : '';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #2a2a2a;';
+        row.innerHTML = `
+          <div style="flex:1;">
+            <strong style="font-size:13px;">${label}</strong>
+            <div style="font-size:11px;color:#888;">R$ ${item.valor}${item.data > hoje ? ' · agendado' : ' · já efetivado'}</div>
+          </div>
+          <input type="date" value="${item.data}" data-id="${item.id}" style="width:145px;">
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function salvarDatasParcelas() {
+      const container = document.getElementById('listaGerenciarParcelas');
+      if (!container) return;
+      container.querySelectorAll('input[type="date"]').forEach(inp => {
+        const id = parseInt(inp.dataset.id, 10);
+        const idx = lancamentos.findIndex(l => l.id === id);
+        if (idx !== -1 && inp.value) lancamentos[idx].data = inp.value;
+      });
+      salvarLocalStorage();
+      atualizarTudo();
+      fecharModal('modalParcelas');
+    }
+
+    function adiarParcelasRestantes() {
+      if (!parcelasGrupoAtual) return;
+      const hoje = obterDataBrasilia();
+      if (!confirm('Isso empurra 1 mês pra frente todas as parcelas dessa compra que ainda não venceram. Continuar?')) return;
+      lancamentos.forEach(l => {
+        if (l.grupoId === parcelasGrupoAtual && l.data > hoje) {
+          const d = new Date(l.data + 'T12:00:00');
+          d.setMonth(d.getMonth() + 1);
+          l.data = d.toISOString().slice(0, 10);
+        }
+      });
+      salvarLocalStorage();
+      renderizarGerenciarParcelas();
+      atualizarTudo();
+    }
+
     /* REQUISIÇÃO 3: PROCESSAR LANÇAMENTO COM RESPEITO AO VENCIMENTO/FECHAMENTO DO CARTÃO */
     function salvarLancamento(event) {
       event.preventDefault();
@@ -1860,6 +2036,42 @@
       const valorTotal = parseVal(valorBruto);
       if (!valorTotal || valorTotal <= 0) { alert('Digite um valor válido.'); return; }
 
+      if (!idEditando) {
+        abrirConfirmacaoLancamento(valorTotal);
+        return;
+      }
+      executarSalvarLancamento(valorTotal);
+    }
+
+    // Prévia de confirmação — só pra lançamento NOVO (edição já passou pela revisão do form)
+    function abrirConfirmacaoLancamento(valorTotal) {
+      const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
+      const conta = document.getElementById('conta').value;
+      const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
+      const temCredito = tipoAtual === 'despesa' && contaTemCredito(conta);
+      const formaModo = temCredito ? document.getElementById('formaModo').value : 'À Vista / Débito';
+      const numParcelas = (temCredito && formaModo === 'Crédito Parcelado') ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
+
+      const elTipo = document.getElementById('confirmLancTipo');
+      elTipo.textContent = tipoAtual === 'receita' ? 'Receita' : 'Despesa';
+      elTipo.className = tipoAtual === 'receita' ? 'valor-receita' : 'valor-despesa';
+      document.getElementById('confirmLancDescricao').textContent = descricao;
+      document.getElementById('confirmLancValor').textContent = numParcelas > 1
+        ? numParcelas + 'x de R$ ' + (valorTotal / numParcelas).toFixed(2).replace('.', ',') + ' (total R$ ' + valorTotal.toFixed(2).replace('.', ',') + ')'
+        : 'R$ ' + valorTotal.toFixed(2).replace('.', ',');
+      document.getElementById('confirmLancDetalhe').textContent = conta + (categoria ? ' • ' + categoria : '') + (temCredito ? ' • ' + formaModo : '');
+
+      document.getElementById('modalConfirmarLancamento').classList.remove('escondido');
+    }
+
+    function confirmarSalvarLancamento() {
+      fecharModal('modalConfirmarLancamento');
+      const valorBruto = document.getElementById('valor').value.replace('R$', '').trim();
+      executarSalvarLancamento(parseVal(valorBruto));
+    }
+
+    function executarSalvarLancamento(valorTotal) {
+      const idEditando = document.getElementById('idEditando').value;
       const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
       const conta = document.getElementById('conta').value;
       const formaModo = (tipoAtual === 'despesa' && contaTemCredito(conta)) ? document.getElementById('formaModo').value : 'À Vista / Débito';
@@ -1867,6 +2079,7 @@
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
       const observacao = document.getElementById('observacao').value.trim();
       const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
+      const emprestimoPara = tipoAtual === 'despesa' ? document.getElementById('emprestimoPara').value.trim() : '';
 
       let grupoViagemId = '';
       const selGrupo = document.getElementById('grupoViagem').value;
@@ -1889,7 +2102,8 @@
             numParcelas: itemOriginal.numParcelas, // nº de parcelas não muda por aqui (ver aviso no form)
             categoria, observacao, data: dataBase,
             valor: valorTotal.toFixed(2).replace('.', ','),
-            grupoViagemId, grupoViagemNome
+            grupoViagemId, grupoViagemNome,
+            emprestimoPara, emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
 
           // Propagação para as parcelas irmãs (mesma compra parcelada)
@@ -1900,7 +2114,7 @@
           if (irmas.length > 0) {
             const aplicarATodas = confirm(
               'Esta é uma parcela de uma compra parcelada.\n\n' +
-              'OK = aplicar descrição, conta, categoria, observação, grupo e valor da parcela a TODAS as ' + (irmas.length + 1) + ' parcelas dessa compra\n' +
+              'OK = aplicar descrição, conta, categoria, observação, grupo, empréstimo e valor da parcela a TODAS as ' + (irmas.length + 1) + ' parcelas dessa compra\n' +
               'Cancelar = alterar somente esta parcela'
             );
             if (aplicarATodas) {
@@ -1914,6 +2128,7 @@
                   descricao: descricaoBase + (sufixoIrma ? sufixoIrma[0] : ''),
                   conta, formaModo, categoria, observacao,
                   grupoViagemId, grupoViagemNome,
+                  emprestimoPara, emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
                   valor: valorParcelaStr
                   // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
                 };
@@ -1943,7 +2158,8 @@
             conta, formaModo, numParcelas: String(numParcelas),
             grupoId, categoria, observacao, data: dataParcela,
             valor: valorParcela.toFixed(2).replace('.', ','),
-            grupoViagemId, grupoViagemNome
+            grupoViagemId, grupoViagemNome,
+            emprestimoPara, emprestimoQuitado: false
           });
         }
       } else {
@@ -1954,7 +2170,8 @@
           numParcelas: '1', categoria, observacao,
           data: dataBase,
           valor: valorTotal.toFixed(2).replace('.', ','),
-          grupoViagemId, grupoViagemNome
+          grupoViagemId, grupoViagemNome,
+          emprestimoPara, emprestimoQuitado: false
         });
       }
 
@@ -1987,6 +2204,8 @@
       document.getElementById('dataCompra').value = item.data;
       document.getElementById('observacao').value = item.observacao || '';
       atualizarLinkObs();
+      document.getElementById('emprestimoPara').value = item.emprestimoPara || '';
+      atualizarLinkEmprestimo();
       document.getElementById('valor').value = 'R$ ' + item.valor;
       popularSelectGrupos(item.grupoViagemId || '');
 
@@ -2025,6 +2244,8 @@
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
+      document.getElementById('emprestimoPara').value = '';
+      atualizarLinkEmprestimo();
       const selNumParcelas = document.getElementById('numParcelas');
       const avisoParcela = document.getElementById('avisoParcelaGrupo');
       if (selNumParcelas) selNumParcelas.disabled = false;
@@ -2853,6 +3074,58 @@
           containerFixos.appendChild(div);
         });
       }
+      renderizarEmprestimos();
+    }
+
+    // Lista de empréstimos pendentes, agrupados por pessoa. Considera TODOS os
+    // lançamentos marcados (independente do mês), já que a cobrança não tem
+    // prazo fixo — só some daqui quando marcado como reembolsado.
+    function renderizarEmprestimos() {
+      const container = document.getElementById('listaEmprestimos');
+      if (!container) return;
+      const pendentes = lancamentos.filter(l => l.emprestimoPara && !l.emprestimoQuitado);
+      if (pendentes.length === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum empréstimo em aberto.</p>';
+        return;
+      }
+      const porPessoa = {};
+      pendentes.forEach(l => {
+        (porPessoa[l.emprestimoPara] = porPessoa[l.emprestimoPara] || []).push(l);
+      });
+      container.innerHTML = '';
+      Object.entries(porPessoa).forEach(([nome, itens]) => {
+        const total = itens.reduce((s, l) => s + parseVal(l.valor), 0);
+        const bloco = document.createElement('div');
+        bloco.style.cssText = 'margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #2a2a2a;';
+        const linhas = itens.map(l => `
+          <div class="item-lancamento" style="padding:6px 0;">
+            <div class="item-info">
+              <strong style="font-size:13px;">${l.descricao}</strong>
+              <div style="font-size:11px;color:#888;">${l.data.split('-').reverse().join('/')} • ${l.conta}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="valor-despesa">${fmtOculto(parseVal(l.valor))}</span>
+              <button type="button" class="btn-mini" onclick="marcarEmprestimoQuitado(${l.id})">Recebido</button>
+            </div>
+          </div>
+        `).join('');
+        bloco.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <strong>${nome}</strong>
+            <span style="color:#ffd166;">${fmtOculto(total)}</span>
+          </div>
+          ${linhas}
+        `;
+        container.appendChild(bloco);
+      });
+    }
+
+    function marcarEmprestimoQuitado(id) {
+      const idx = lancamentos.findIndex(l => l.id === id);
+      if (idx === -1) return;
+      lancamentos[idx].emprestimoQuitado = true;
+      salvarLocalStorage();
+      renderizarEmprestimos();
     }
 
     function exibirLancamentosDetalhadosFatura(tipoFiltro, mes, ano) {
@@ -3516,9 +3789,7 @@ function interpretarFala(fala) {
   document.getElementById('modalVoz').classList.remove('escondido');
 }
 
-function confirmarLancamentoVoz() {
-  if (!lancamentoVozPendente) return;
-
+function preencherFormularioVoz() {
   // 1. Simular a alteração da interface para o tipo correto (Receita ou Despesa)
   alternarTipo(lancamentoVozPendente.tipo);
 
@@ -3544,15 +3815,31 @@ function confirmarLancamentoVoz() {
 
   document.getElementById('dataCompra').value = obterDataBrasilia();
   document.getElementById('observacao').value = 'Lançamento via voz';
+  document.getElementById('emprestimoPara').value = '';
+  atualizarLinkEmprestimo();
+}
 
+// Botão "Editar": preenche o formulário e deixa você ajustar/revisar antes de tocar em Salvar
+function editarLancamentoVoz() {
+  if (!lancamentoVozPendente) return;
+  preencherFormularioVoz();
   fecharModal('modalVoz');
 
-  // Não salva sozinho: deixa o formulário preenchido e visível pra você conferir/ajustar
-  // e tocar em "Salvar" quando estiver certo — assim dá pra corrigir sem refazer tudo.
   const form = document.getElementById('formLancamento');
   if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.getElementById('descricao').focus();
 
+  lancamentoVozPendente = null;
+}
+
+// Botão "Confirmar": já lança direto, sem passar pela tela do formulário
+// (a própria prévia da voz já funciona como confirmação, então não abre outro popup)
+function confirmarLancamentoVoz() {
+  if (!lancamentoVozPendente) return;
+  const valorTotal = parseVal(lancamentoVozPendente.valor);
+  preencherFormularioVoz();
+  fecharModal('modalVoz');
+  executarSalvarLancamento(valorTotal);
   lancamentoVozPendente = null;
 }
 
@@ -3571,6 +3858,7 @@ function confirmarLancamentoVoz() {
     aplicarSecao('metas');
     aplicarSecao('fixos');
     aplicarSecao('backup');
+    aplicarSecao('emprestimos');
     aplicarSecao('evolucaoMensal');
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
@@ -3599,6 +3887,26 @@ function confirmarLancamentoVoz() {
       navigator.storage.persist().catch(() => {});
     }
   </script>
+<!-- MODAL DE CONFIRMAÇÃO DE LANÇAMENTO NOVO -->
+<div id="modalConfirmarLancamento" class="modal-overlay escondido">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Confirmar lançamento</h3>
+      <button class="btn-fechar" onclick="fecharModal('modalConfirmarLancamento')">&times;</button>
+    </div>
+    <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Tem certeza que deseja lançar isto?</p>
+    <div class="resumo-voz">
+      <p><strong>Tipo:</strong> <span id="confirmLancTipo" style="font-weight:bold;"></span></p>
+      <p><strong>Descrição:</strong> <span id="confirmLancDescricao"></span></p>
+      <p><strong>Valor:</strong> <span id="confirmLancValor" style="color:#2196f3; font-weight:bold;"></span></p>
+      <p><strong>Detalhes:</strong> <span id="confirmLancDetalhe"></span></p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="btn-cancelar" style="flex:1; margin:0;" onclick="fecharModal('modalConfirmarLancamento')">Voltar e ajustar</button>
+      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:#4caf50; color:#fff;" onclick="confirmarSalvarLancamento()">Confirmar</button>
+    </div>
+  </div>
+</div>
 <!-- MODAL DE CONFIRMAÇÃO DE VOZ -->
 <div id="modalVoz" class="modal-overlay escondido">
   <div class="modal-content">
@@ -3606,7 +3914,7 @@ function confirmarLancamentoVoz() {
       <h3>Confira seu lançamento</h3>
       <button class="btn-fechar" onclick="fecharModal('modalVoz')">&times;</button>
     </div>
-    <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Entendemos o seguinte da sua fala. Confira e, na próxima tela, você pode ajustar qualquer campo antes de salvar:</p>
+    <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Entendemos o seguinte da sua fala. Se estiver tudo certo, toque em Confirmar; se quiser ajustar algo antes, toque em Editar:</p>
     <div class="resumo-voz">
       <p><strong>Tipo:</strong> <span id="vozTipo" style="font-weight:bold;"></span></p>
       <p><strong>Descrição:</strong> <span id="vozDescricao"></span></p>
@@ -3615,8 +3923,8 @@ function confirmarLancamentoVoz() {
       <p><strong>Forma:</strong> <span id="vozForma"></span></p>
     </div>
     <div style="display:flex; gap:10px;">
-      <button type="button" class="btn-cancelar" style="flex:1; margin:0;" onclick="fecharModal('modalVoz')">Cancelar</button>
-      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:#4caf50; color:#fff;" onclick="confirmarLancamentoVoz()">Revisar e Salvar</button>
+      <button type="button" class="btn-cancelar" style="flex:1; margin:0;" onclick="editarLancamentoVoz()">Editar</button>
+      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:#4caf50; color:#fff;" onclick="confirmarLancamentoVoz()">Confirmar</button>
     </div>
   </div>
 </div>
