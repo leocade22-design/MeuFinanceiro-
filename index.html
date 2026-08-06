@@ -344,11 +344,11 @@
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
           </div>
           <div class="painel-direita">
-            <div class="card-mini" onclick="abrirResumoMes('receita')">
+            <div class="card-mini" onclick="abrirNoGraficos('receita')">
               <span>Receitas</span>
               <h4 class="val-receita" id="faturaReceita">R$ 0,00</h4>
             </div>
-            <div class="card-mini" onclick="abrirResumoMes('despesa')">
+            <div class="card-mini" onclick="abrirNoGraficos('despesa')">
               <span>Despesas</span>
               <h4 class="val-despesa" id="faturaDespesa">R$ 0,00</h4>
             </div>
@@ -385,6 +385,8 @@
         <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
           <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem. Ao marcar "Recebi", o valor entra como receita na conta que você escolher.</p>
           <div id="listaEmprestimos"></div>
+          <button type="button" id="btnLembretes" class="btn-cancelar escondido" style="margin-top:10px;" onclick="alternarLembretesEmprestimo()">🔔 ativar lembrete de cobrança</button>
+          <p id="avisoLembretes" class="escondido" style="font-size:11px;color:#777;margin-top:8px;line-height:1.4;"></p>
         </div>
       </div>
 
@@ -447,13 +449,19 @@
         </button>
 
         <div class="grid-periodos escondido" id="filtrosPeriodoGraficos">
-          <button type="button" class="btn-periodo ativo" onclick="setFiltroPeriodoGraficos('30', this, 'Últimos 30 dias')">Últimos 30 dias</button>
-          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('90', this, 'Últimos 90 dias')">Últimos 90 dias</button>
-          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('mesAtual', this, 'Este mês')">Este mês</button>
-          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('mesPassado', this, 'Mês passado')">Mês passado</button>
-          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('anoAtual', this, 'Este ano')">Este ano</button>
-          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('tudo', this, 'Desde o início')">Desde o início</button>
-          <button type="button" class="btn-periodo" onclick="setFiltroPeriodoGraficos('custom', this, 'Personalizado')" style="grid-column: span 2;">Personalizado</button>
+          <button type="button" class="btn-periodo ativo" data-periodo="30" onclick="setFiltroPeriodoGraficos('30', 'Últimos 30 dias')">Últimos 30 dias</button>
+          <button type="button" class="btn-periodo" data-periodo="90" onclick="setFiltroPeriodoGraficos('90', 'Últimos 90 dias')">Últimos 90 dias</button>
+          <button type="button" class="btn-periodo" data-periodo="mesAtual" onclick="setFiltroPeriodoGraficos('mesAtual', 'Este mês')">Este mês</button>
+          <button type="button" class="btn-periodo" data-periodo="mesPassado" onclick="setFiltroPeriodoGraficos('mesPassado', 'Mês passado')">Mês passado</button>
+          <button type="button" class="btn-periodo" data-periodo="anoAtual" onclick="setFiltroPeriodoGraficos('anoAtual', 'Este ano')">Este ano</button>
+          <button type="button" class="btn-periodo" data-periodo="tudo" onclick="setFiltroPeriodoGraficos('tudo', 'Desde o início')">Desde o início</button>
+          <button type="button" class="btn-periodo" data-periodo="fatura" onclick="setFiltroPeriodoGraficos('fatura', 'Mês de fatura')" style="grid-column: span 2;">Mês de fatura (como nas Faturas)</button>
+          <button type="button" class="btn-periodo" data-periodo="custom" onclick="setFiltroPeriodoGraficos('custom', 'Personalizado')" style="grid-column: span 2;">Personalizado</button>
+        </div>
+        <div id="boxMesFaturaGraficos" class="escondido" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+          <button type="button" class="btn-mini" onclick="mudarMesFaturaGraficos(-1)">‹ anterior</button>
+          <strong id="labelMesFaturaGraficos" style="font-size:13px;">—</strong>
+          <button type="button" class="btn-mini" onclick="mudarMesFaturaGraficos(1)">próximo ›</button>
         </div>
         <div id="boxDataCustomGraficos" class="form-row escondido" style="margin-top:8px;">
           <div class="form-group">
@@ -641,6 +649,8 @@
         </div>
       </div>
 
+      <div id="chipsContasConsulta" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>
+
       <!-- SUBTOTALIZADORES DINÂMICOS DA CONSULTA -->
       <div class="box-resumo-modal" id="boxSubtotaisModal"></div>
 
@@ -761,25 +771,6 @@
   </div>
 
   <!-- MODAL DE RESUMO DO MÊS (receitas por fonte / despesas por categoria) -->
-  <div id="modalResumoMes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalResumoMes')">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="tituloResumoMes">Resumo</h3>
-        <button class="btn-fechar" onclick="fecharModal('modalResumoMes')">&times;</button>
-      </div>
-      <div id="chipsContasResumo" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>
-      <div style="text-align:center;margin-bottom:16px;">
-        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total do mês</span>
-        <h2 id="totalResumoMes" style="font-size:26px;margin-top:4px;">R$ 0,00</h2>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <p style="font-size:11px;color:#666;margin:0;">Toque numa categoria pra ver os lançamentos dela.</p>
-        <button type="button" class="btn-mini" onclick="alternarTodosGruposResumo()" id="btnExpandirTudoResumo">Expandir tudo</button>
-      </div>
-      <div id="corpoResumoMes"></div>
-    </div>
-  </div>
-
   <!-- MODAL DE VÍNCULO A GRUPO -->
   <div id="modalGrupoVinculo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalGrupoVinculo')">
     <div class="modal-content">
@@ -1527,11 +1518,7 @@
     }
 
     function renderizarDashboard() {
-      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
-      const itensPeriodo = lancamentos.filter(l => {
-        const d = new Date(l.data + 'T12:00:00');
-        return d >= ini && d <= fim;
-      });
+      const itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
 
       let rec = 0, desp = 0;
       const porCategoria = {}, porConta = {};
@@ -1550,7 +1537,7 @@
       });
 
       const saldo = rec - desp;
-      const diasPeriodo = Math.max(1, Math.round((fim - ini) / 86400000) + 1);
+      const diasPeriodo = diasDoPeriodoGraficos();
       const mediaDiaria = desp / diasPeriodo;
       const categoriaLider = Object.entries(porCategoria).sort((a, b) => b[1] - a[1])[0];
       const totalLancamentos = itensPeriodo.length;
@@ -1671,11 +1658,10 @@
     }
 
     function obterGastoCategoriaPeriodo(categoria) {
-      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
-      return lancamentos.filter(l => {
-        const d = new Date(l.data + 'T12:00:00');
-        return l.tipo === 'despesa' && (l.categoria || 'Outros') === categoria && d >= ini && d <= fim;
-      }).reduce((s, l) => s + parseVal(l.valor), 0);
+      const noPeriodo = filtroPeriodoGraficos();
+      return lancamentos.filter(l =>
+        l.tipo === 'despesa' && (l.categoria || 'Outros') === categoria && noPeriodo(l)
+      ).reduce((s, l) => s + parseVal(l.valor), 0);
     }
 
     function salvarMetaCategoria(categoria, valor) {
@@ -2523,14 +2509,47 @@
     }
 
     /* SISTEMA DE CONSULTA & FILTROS DE PERÍODO NO RESUMO DO TOPO */
+    let consultaConta = '';  // '' = todas as contas
+
+    function renderizarChipsContasConsulta() {
+      const box = document.getElementById('chipsContasConsulta');
+      if (!box) return;
+      box.innerHTML = '';
+      ['', ...contas.map(c => c.nome)].forEach(nome => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini' + (consultaConta === nome ? ' ativo' : '');
+        b.textContent = nome === '' ? 'Todas as contas' : nome;
+        b.onclick = () => { consultaConta = nome; renderizarChipsContasConsulta(); atualizarModalConsulta(); };
+        box.appendChild(b);
+      });
+    }
+
     function abrirModalConsulta(tipo) {
       tipoModalAtual = tipo;
       grupoModalAtualId = null;
+      consultaConta = '';
       document.getElementById('wrapFiltrosModal').classList.remove('escondido');
+      document.getElementById('chipsContasConsulta').classList.remove('escondido');
       document.getElementById('labelPeriodoModalAtual').textContent = labelPeriodoGraficos;
       document.getElementById('rodapeGrupo').classList.add('escondido');
+      renderizarChipsContasConsulta();
       document.getElementById('modalPanorama').classList.remove('escondido');
       atualizarModalConsulta();
+    }
+
+    // Tocar em Receitas/Despesas nas Faturas leva pros Gráficos já filtrado no MESMO
+    // mês de fatura que está aberto ali. Uma tela só pra explorar categorias, e os
+    // números batem porque os dois passam a contar pelo mês de fatura.
+    function abrirNoGraficos(tipo) {
+      faturaMesOffsetGraficos = faturaMesOffset;
+      const abaGraficos = document.getElementById('abaGraficos');
+      const btnGraficos = Array.from(document.querySelectorAll('.nav-tab'))
+        .find(b => (b.getAttribute('onclick') || '').includes('abaGraficos'));
+      mudarAba('abaGraficos', btnGraficos);
+      setFiltroPeriodoGraficos('fatura', 'Mês de fatura');
+      setVisaoGrafico(tipo === 'receita' ? 'receitas' : 'despesas');
+      abrirModalConsulta(tipo);
     }
 
     function fecharModal(modalId) {
@@ -2573,24 +2592,77 @@
       seta.textContent = grid.classList.contains('escondido') ? '▼' : '▲';
     }
 
-    function setFiltroPeriodoGraficos(periodo, el, labelTexto) {
+    function setFiltroPeriodoGraficos(periodo, labelTexto) {
       periodoGraficosAtual = periodo;
       labelPeriodoGraficos = labelTexto;
-      document.querySelectorAll('#filtrosPeriodoGraficos .btn-periodo').forEach(b => b.classList.remove('ativo'));
-      el.classList.add('ativo');
+      document.querySelectorAll('#filtrosPeriodoGraficos .btn-periodo').forEach(b => {
+        b.classList.toggle('ativo', b.dataset.periodo === periodo);
+      });
 
       document.getElementById('labelPeriodoGraficoAtual').textContent = 'Período: ' + labelTexto;
       document.getElementById('filtrosPeriodoGraficos').classList.add('escondido');
       document.getElementById('setaPeriodoGrafico').textContent = '▼';
+      document.getElementById('boxDataCustomGraficos').classList.toggle('escondido', periodo !== 'custom');
+      document.getElementById('boxMesFaturaGraficos').classList.toggle('escondido', periodo !== 'fatura');
+      if (periodo === 'custom') document.getElementById('filtrosPeriodoGraficos').classList.remove('escondido');
+      atualizarLabelMesFaturaGraficos();
 
-      const boxCustom = document.getElementById('boxDataCustomGraficos');
-      if (periodo === 'custom') {
-        boxCustom.classList.remove('escondido');
-      } else {
-        boxCustom.classList.add('escondido');
-      }
       renderizarDashboard();
       atualizarResumoEGraficos();
+    }
+
+    function atualizarLabelMesFaturaGraficos() {
+      const el = document.getElementById('labelMesFaturaGraficos');
+      if (!el) return;
+      const ref = getMesReferencia(faturaMesOffsetGraficos);
+      el.textContent = NOMES_MESES[ref.getMonth()] + ' ' + ref.getFullYear();
+      if (periodoGraficosAtual === 'fatura') {
+        const rotulo = 'Fatura de ' + NOMES_MESES[ref.getMonth()];
+        labelPeriodoGraficos = rotulo;
+        document.getElementById('labelPeriodoGraficoAtual').textContent = 'Período: ' + rotulo;
+      }
+    }
+
+    function mudarMesFaturaGraficos(delta) {
+      faturaMesOffsetGraficos += delta;
+      atualizarLabelMesFaturaGraficos();
+      renderizarDashboard();
+      atualizarResumoEGraficos();
+      if (!document.getElementById('modalPanorama').classList.contains('escondido')) atualizarModalConsulta();
+    }
+
+    // Mês de fatura escolhido quando o período dos Gráficos é 'fatura'
+    let faturaMesOffsetGraficos = 0;
+
+    // Predicado único do período dos Gráficos. Além dos intervalos de data comuns,
+    // entende "mês de fatura": a despesa no crédito conta no mês em que ela CAI na
+    // fatura (regra de fechamento), não na data da compra. É assim que a aba Faturas
+    // conta — usar o mesmo critério é o que faz os totais das duas telas baterem.
+    // Nº de dias do período, pra média diária. No modo "mês de fatura" o intervalo
+    // é o próprio mês de referência.
+    function diasDoPeriodoGraficos() {
+      if (periodoGraficosAtual === 'fatura') {
+        const ref = getMesReferencia(faturaMesOffsetGraficos);
+        return new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
+      }
+      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
+      return Math.max(1, Math.round((fim - ini) / 86400000) + 1);
+    }
+
+    function filtroPeriodoGraficos() {
+      if (periodoGraficosAtual === 'fatura') {
+        const ref = getMesReferencia(faturaMesOffsetGraficos);
+        const mes = ref.getMonth(), ano = ref.getFullYear();
+        return l => {
+          const f = getMesFatura(l.data, l.formaModo);
+          return f.mes === mes && f.ano === ano;
+        };
+      }
+      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
+      return l => {
+        const d = new Date(l.data + 'T12:00:00');
+        return d >= ini && d <= fim;
+      };
     }
 
     function obterIntervaloDatas(periodo, idIni, idFim) {
@@ -2632,12 +2704,8 @@
       const corpo = document.getElementById('modalCorpo');
       
       // mesmo período selecionado na aba Gráficos — fonte única de verdade
-      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
-
-      let itensPeriodo = lancamentos.filter(l => {
-        const d = new Date(l.data + 'T12:00:00');
-        return d >= ini && d <= fim;
-      });
+      let itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
+      if (consultaConta) itensPeriodo = itensPeriodo.filter(l => l.conta === consultaConta);
 
       if (tipoModalAtual === 'receita') {
         titulo.textContent = 'Consulta: Receitas';
@@ -2821,11 +2889,7 @@
     }
 
     function atualizarResumoEGraficos() {
-      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
-      const itensPeriodo = lancamentos.filter(l => {
-        const d = new Date(l.data + 'T12:00:00');
-        return d >= ini && d <= fim;
-      });
+      const itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
 
       let rec = 0, desp = 0;
       const porFonte = {}, porCategoria = {}, porContaGrafico = {};
@@ -3105,137 +3169,6 @@
     // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria,
     // com filtro por conta (segue as contas cadastradas) e toque na linha
     // pra ver os lançamentos daquela categoria/fonte
-    let resumoMesTipo = 'despesa';
-    let resumoMesConta = '';       // '' = todas as contas
-    let resumoMesGruposAbertos = new Set(); // categorias/fontes expandidas no momento (pode ser mais de uma)
-
-    function abrirResumoMes(tipo) {
-      resumoMesTipo = tipo;
-      resumoMesConta = '';
-      resumoMesGruposAbertos = new Set();
-      renderizarChipsContasResumo();
-      renderizarResumoMes();
-      document.getElementById('modalResumoMes').classList.remove('escondido');
-    }
-
-    function renderizarChipsContasResumo() {
-      const box = document.getElementById('chipsContasResumo');
-      box.innerHTML = '';
-      ['', ...contas.map(c => c.nome)].forEach(nome => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'btn-mini' + (resumoMesConta === nome ? ' ativo' : '');
-        b.textContent = nome === '' ? 'Todas as contas' : nome;
-        b.onclick = () => {
-          resumoMesConta = nome;
-          resumoMesGruposAbertos = new Set();
-          renderizarChipsContasResumo();
-          renderizarResumoMes();
-        };
-        box.appendChild(b);
-      });
-    }
-
-    function itensResumoMes() {
-      const ref = getMesReferencia(faturaMesOffset);
-      const mes = ref.getMonth(), ano = ref.getFullYear();
-      return lancamentos.filter(l => {
-        if (resumoMesConta && l.conta !== resumoMesConta) return false;
-        if (resumoMesTipo === 'receita') {
-          if (l.tipo !== 'receita') return false;
-          const d = new Date(l.data + 'T12:00:00');
-          return d.getMonth() === mes && d.getFullYear() === ano;
-        }
-        if (l.tipo !== 'despesa') return false;
-        const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
-        return m === mes && a === ano;
-      });
-    }
-
-    function chaveGrupoResumo(l) {
-      return resumoMesTipo === 'receita' ? (l.descricao || 'Outras') : (l.categoria || 'Outros');
-    }
-
-    function renderizarResumoMes() {
-      const ref = getMesReferencia(faturaMesOffset);
-      const eReceita = resumoMesTipo === 'receita';
-      const cor = eReceita ? '#4caf50' : '#ef5350';
-      const itens = itensResumoMes();
-      const porGrupo = {};
-      let total = 0;
-      itens.forEach(l => {
-        const v = parseVal(l.valor);
-        const chave = chaveGrupoResumo(l);
-        porGrupo[chave] = (porGrupo[chave] || 0) + v;
-        total += v;
-      });
-
-      document.getElementById('tituloResumoMes').textContent = (eReceita ? 'Receitas de ' : 'Despesas de ') + NOMES_MESES[ref.getMonth()];
-      const totalEl = document.getElementById('totalResumoMes');
-      totalEl.textContent = fmtOculto(total);
-      totalEl.style.color = cor;
-
-      const corpo = document.getElementById('corpoResumoMes');
-      corpo.innerHTML = '';
-      const nomesGrupos = Object.keys(porGrupo);
-      const btnTudo = document.getElementById('btnExpandirTudoResumo');
-      if (btnTudo) {
-        const tudoAberto = nomesGrupos.length > 0 && nomesGrupos.every(n => resumoMesGruposAbertos.has(n));
-        btnTudo.textContent = tudoAberto ? 'Recolher tudo' : 'Expandir tudo';
-      }
-      if (total === 0) {
-        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">Nenhuma ${eReceita ? 'receita' : 'despesa'} neste mês${resumoMesConta ? ' nessa conta' : ''}.</p>`;
-      } else {
-        Object.entries(porGrupo).sort((a, b) => b[1] - a[1]).forEach(([nome, valor]) => {
-          const pct = Math.round((valor / total) * 100);
-          const sel = resumoMesGruposAbertos.has(nome);
-          const div = document.createElement('div');
-          div.className = 'barra-categoria';
-          div.style.cursor = 'pointer';
-          div.onclick = () => {
-            if (sel) resumoMesGruposAbertos.delete(nome); else resumoMesGruposAbertos.add(nome);
-            renderizarResumoMes();
-          };
-          div.innerHTML = `
-            <div class="barra-info"><span style="${sel ? 'color:#fff;font-weight:700;' : ''}">${nome} ${sel ? '▾' : '▸'}</span><span>${fmtVal(valor)} · ${pct}%</span></div>
-            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:${cor};${sel ? '' : 'opacity:.7;'}"></div></div>
-          `;
-          corpo.appendChild(div);
-
-          // lançamentos dessa categoria, logo abaixo dela (não lá embaixo de tudo)
-          if (sel) {
-            const doGrupo = itens.filter(l => chaveGrupoResumo(l) === nome).sort((a, b) => (a.data < b.data ? 1 : -1));
-            const listaGrupo = document.createElement('div');
-            listaGrupo.style.cssText = 'margin:2px 0 12px 4px;padding-left:8px;border-left:2px solid #333;';
-            doGrupo.forEach(item => {
-              const dataFmt = item.data.split('-').reverse().join('/');
-              const linha = document.createElement('div');
-              linha.className = 'item-lancamento';
-              linha.onclick = (ev) => { ev.stopPropagation(); abrirAcoesLancamento(item.id); };
-              linha.innerHTML = `
-                <div class="item-info">
-                  <strong>${item.descricao}</strong>
-                  <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
-                </div>
-                <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
-              `;
-              listaGrupo.appendChild(linha);
-            });
-            corpo.appendChild(listaGrupo);
-          }
-        });
-      }
-    }
-
-    function alternarTodosGruposResumo() {
-      const itens = itensResumoMes();
-      const nomesGrupos = [...new Set(itens.map(chaveGrupoResumo))];
-      const tudoAberto = nomesGrupos.length > 0 && nomesGrupos.every(n => resumoMesGruposAbertos.has(n));
-      resumoMesGruposAbertos = tudoAberto ? new Set() : new Set(nomesGrupos);
-      renderizarResumoMes();
-    }
-
-    /* REQUISIÇÃO 6: DETALHAMENTO NO SEGUNDO CLIQUE EM DÉBITO, CRÉDITO OU RECEBÍVEIS NAS FATURAS */
     function atualizarFaturas() {
       const container = document.getElementById('listaFaturas');
       const containerFixos = document.getElementById('listaFixos');
@@ -3316,9 +3249,8 @@
       renderizarEmprestimos();
     }
 
-    // Lista de empréstimos pendentes, agrupados por pessoa. Considera TODOS os
-    // lançamentos marcados (independente do mês), já que a cobrança não tem
-    // prazo fixo — só some daqui quando marcado como reembolsado.
+    // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
+    // a cobrança não tem prazo de validade, só some daqui quando reembolsada.
     // Quem está com as cobranças expandidas no momento (por padrão vem tudo
     // recolhido: o que interessa de bate-pronto é o total por pessoa)
     let emprestimosPessoasAbertas = new Set();
@@ -3399,6 +3331,8 @@
       if (abertas.length === 0) {
         container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum empréstimo em aberto.</p>';
         if (badge) badge.textContent = '';
+        atualizarBotaoLembretes();
+        limparBadgeApp();
         return;
       }
 
@@ -3410,6 +3344,7 @@
       const totalGeral = abertas.reduce((sm, c) => sm + c.valor, 0);
       const totalAtrasado = abertas.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
       if (badge) badge.textContent = '· ' + fmtOculto(totalGeral);
+      atualizarBadgeApp();
 
       container.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid #333;">
@@ -3551,6 +3486,100 @@
 
           container.appendChild(bloco);
         });
+
+      atualizarBotaoLembretes();
+    }
+
+    /* LEMBRETE DE COBRANÇA
+       Sem servidor de push, o navegador não acorda sozinho no dia do vencimento.
+       O que dá pra fazer — e é o que está aqui:
+       1. BADGE no ícone do app instalado: fica com o número de cobranças vencidas
+          e PERSISTE com o app fechado. É o lembrete que realmente aparece sozinho.
+       2. Notificação ao abrir o app, quando há algo vencido.
+       3. Se o navegador suportar agendamento local (TimestampTrigger), agenda de
+          verdade pras datas de vencimento. Hoje quase nenhum suporta — por isso é
+          só um bônus quando existir, nunca a base. */
+    const CHAVE_LEMBRETES = 'meu_financeiro_lembretes';
+
+    function lembretesLigados() {
+      return localStorage.getItem(CHAVE_LEMBRETES) === '1';
+    }
+
+    function atualizarBotaoLembretes() {
+      const btn = document.getElementById('btnLembretes');
+      const aviso = document.getElementById('avisoLembretes');
+      if (!btn || !aviso) return;
+      const suportado = 'Notification' in window;
+      btn.classList.toggle('escondido', !suportado);
+      aviso.classList.toggle('escondido', !suportado);
+      if (!suportado) return;
+
+      const ligado = lembretesLigados() && Notification.permission === 'granted';
+      btn.textContent = ligado ? '🔔 lembrete ligado — desativar' : '🔔 ativar lembrete de cobrança';
+      aviso.textContent = ligado
+        ? 'O ícone do app mostra quantas cobranças estão vencidas, e você recebe um aviso ao abrir. Pra o aviso aparecer com o app fechado seria preciso um servidor — que este app não tem.'
+        : 'Marca o ícone do app com o número de cobranças vencidas e avisa ao abrir.';
+    }
+
+    async function alternarLembretesEmprestimo() {
+      if (!('Notification' in window)) return;
+      if (lembretesLigados() && Notification.permission === 'granted') {
+        localStorage.setItem(CHAVE_LEMBRETES, '0');
+        limparBadgeApp();
+      } else {
+        let permissao = Notification.permission;
+        if (permissao !== 'granted') {
+          try { permissao = await Notification.requestPermission(); } catch (e) { permissao = 'denied'; }
+        }
+        if (permissao !== 'granted') {
+          alert('O navegador bloqueou as notificações. Você pode liberar nas configurações do site e tentar de novo — o sinal vermelho no quadro continua funcionando de qualquer forma.');
+          atualizarBotaoLembretes();
+          return;
+        }
+        localStorage.setItem(CHAVE_LEMBRETES, '1');
+        avisarCobrancasVencidas(true);
+      }
+      atualizarBotaoLembretes();
+      atualizarBadgeApp();
+    }
+
+    function cobrancasVencidas() {
+      const hoje = obterDataBrasilia();
+      return cobrancasAbertas().filter(c => c.lanc.emprestimoVence && c.lanc.emprestimoVence <= hoje);
+    }
+
+    // O badge no ícone do app é o único sinal que sobrevive ao app fechado
+    function atualizarBadgeApp() {
+      if (!navigator.setAppBadge) return;
+      const n = lembretesLigados() ? cobrancasVencidas().length : 0;
+      try {
+        if (n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge();
+      } catch (e) { /* sem suporte, segue sem badge */ }
+    }
+
+    function limparBadgeApp() {
+      if (navigator.clearAppBadge) { try { navigator.clearAppBadge(); } catch (e) {} }
+    }
+
+    function avisarCobrancasVencidas(forcar) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!lembretesLigados()) return;
+      const vencidas = cobrancasVencidas();
+      if (!vencidas.length) return;
+
+      // uma vez por dia, pra não repetir a cada abertura
+      const hoje = obterDataBrasilia();
+      if (!forcar && localStorage.getItem('meu_financeiro_ultimo_aviso') === hoje) return;
+      localStorage.setItem('meu_financeiro_ultimo_aviso', hoje);
+
+      const total = vencidas.reduce((sm, c) => sm + c.valor, 0);
+      const nomes = [...new Set(vencidas.map(c => c.nome))];
+      try {
+        new Notification('Tem gente pra cobrar', {
+          body: `${nomes.join(', ')} — R$ ${total.toFixed(2).replace('.', ',')} vencido`,
+          tag: 'emprestimos-vencidos'
+        });
+      } catch (e) { /* alguns navegadores só permitem via service worker */ }
     }
 
     /* RECEBIMENTO DE EMPRÉSTIMO: pergunta em que conta caiu, marca como quitado e
@@ -3636,6 +3665,7 @@
       const corpo = document.getElementById('modalCorpo');
       
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
+      document.getElementById('chipsContasConsulta').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.add('escondido');
       document.getElementById('boxSubtotaisModal').innerHTML = '';
       grupoModalAtualId = null;
@@ -4039,8 +4069,9 @@
       const titulo = document.getElementById('modalTitulo');
       const corpo = document.getElementById('modalCorpo');
       
-      // Oculta filtro de período, mostra rodapé de ações do grupo
+      // Oculta filtro de período e chips de conta, mostra rodapé de ações do grupo
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
+      document.getElementById('chipsContasConsulta').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.remove('escondido');
       document.getElementById('boxSubtotaisModal').innerHTML = '';
       
@@ -4488,6 +4519,8 @@ function confirmarLancamentoVoz() {
     atualizarFaturas();
     atualizarResumoEGraficos();
     renderizarGrupos();
+    atualizarBotaoLembretes();
+    avisarCobrancasVencidas(false);
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
