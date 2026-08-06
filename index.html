@@ -416,6 +416,10 @@
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
           </div>
           <input type="file" id="importBackupInput" class="escondido" accept="application/json" onchange="importarBackup(event)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a;">
+            <span id="versaoApp" style="font-size:11px;color:#666;">versão —</span>
+            <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
+          </div>
         </div>
       </div>
     </div>
@@ -4484,6 +4488,9 @@ function confirmarLancamentoVoz() {
   lancamentoVozPendente = null;
 }
 
+    // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
+    const APP_VERSION = '2026.08.06-1';
+
     // Inicialização
     carregarLocalStorage();
     ultimoIdLancamento = lancamentos.reduce((m, l) => (typeof l.id === 'number' && l.id > m ? l.id : m), 0);
@@ -4519,12 +4526,66 @@ function confirmarLancamentoVoz() {
     atualizarFaturas();
     atualizarResumoEGraficos();
     renderizarGrupos();
+    const elVersao = document.getElementById('versaoApp');
+    if (elVersao) elVersao.textContent = 'versão ' + APP_VERSION;
     atualizarBotaoLembretes();
     avisarCobrancasVencidas(false);
 
+    // Botão de emergência: limpa o cache do app e recarrega da rede. Os dados ficam
+    // no localStorage, que não é tocado aqui — só o cache de arquivos some.
+    async function forcarAtualizacao() {
+      try {
+        if (window.caches) {
+          const nomes = await caches.keys();
+          await Promise.all(nomes.map((n) => caches.delete(n)));
+        }
+        if (navigator.serviceWorker) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch (e) { /* segue e recarrega mesmo assim */ }
+      location.reload(true);
+    }
+
+    /* ATUALIZAÇÃO DO APP INSTALADO
+       Sem isto o app na tela inicial ficava rodando uma versão antiga: o service
+       worker só é reinstalado quando o ARQUIVO sw.js muda, então é preciso pedir
+       a checagem a cada abertura e recarregar quando a versão nova assumir. */
     if ('serviceWorker' in navigator) {
+      // já havia um controlador antes? Se sim, uma troca significa versão nova
+      // chegando — e aí sim vale recarregar. Na primeira instalação, não.
+      const tinhaControlador = !!navigator.serviceWorker.controller;
+      let recarregando = false;
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!tinhaControlador || recarregando) return;
+        recarregando = true;
+        location.reload();
+      });
+
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          reg.update().catch(() => {});
+          // versão nova esperando: manda ativar na hora
+          reg.addEventListener('updatefound', () => {
+            const novo = reg.installing;
+            if (!novo) return;
+            novo.addEventListener('statechange', () => {
+              if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+                novo.postMessage('ATIVAR_AGORA');
+              }
+            });
+          });
+          if (reg.waiting) reg.waiting.postMessage('ATIVAR_AGORA');
+        }).catch(() => {});
+      });
+
+      // volta do segundo plano (abrir o app da tela inicial) também checa
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          if (reg) reg.update().catch(() => {});
+        }).catch(() => {});
       });
     }
 
