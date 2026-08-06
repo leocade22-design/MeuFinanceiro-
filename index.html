@@ -1626,6 +1626,10 @@
           if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
 
+          // um backup gerado antes da correção traz de volta as parcelas com o
+          // mesmo prazo; por isso a correção roda de novo aqui, forçada
+          corrigirVencimentosParcelasAntigas(true);
+
           salvarLocalStorage();
           salvarFixos();
           salvarInvest();
@@ -3891,6 +3895,44 @@
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
 
+    /* CORREÇÃO DE DADOS ANTIGOS
+       Até a versão 2026.08.06-1, um empréstimo marcado numa compra parcelada
+       copiava o MESMO prazo pra todas as parcelas — as três venciam no mesmo dia.
+       A correção do formulário só valeu pra lançamentos novos; o que já estava
+       gravado no aparelho continuou errado. Aqui esses casos são reescalonados
+       mês a mês a partir da primeira parcela.
+
+       Conservador de propósito: só mexe quando TODAS as parcelas da mesma compra
+       têm exatamente o mesmo prazo, que é a assinatura do bug. Se você ajustou os
+       prazos na mão, eles ficam como estão. Roda uma vez só. */
+    const CHAVE_MIGRACAO_VENCIMENTOS = 'meu_financeiro_migracao_vencimentos_v1';
+
+    function corrigirVencimentosParcelasAntigas(forcar) {
+      if (!forcar && localStorage.getItem(CHAVE_MIGRACAO_VENCIMENTOS) === '1') return;
+
+      const porGrupo = {};
+      lancamentos.forEach(l => {
+        if (!l.grupoId || !l.emprestimoVence) return;
+        (porGrupo[l.grupoId] = porGrupo[l.grupoId] || []).push(l);
+      });
+
+      let corrigidas = 0;
+      Object.values(porGrupo).forEach(itens => {
+        if (itens.length < 2) return;
+        if (new Set(itens.map(l => l.emprestimoVence)).size !== 1) return;
+        itens.sort((a, b) => (a.data < b.data ? -1 : 1));
+        const base = itens[0].emprestimoVence;
+        itens.forEach((l, i) => {
+          if (i === 0) return;
+          l.emprestimoVence = somarMeses(base, i);
+          corrigidas++;
+        });
+      });
+
+      localStorage.setItem(CHAVE_MIGRACAO_VENCIMENTOS, '1');
+      if (corrigidas > 0) salvarLocalStorage();
+    }
+
     // Data-limite pra pessoa te reembolsar naquele mês ("eles têm até o dia 10")
     function venceEmprestimoFixo(f, chaveMes) {
       if (!f.emprestimoPara) return '';
@@ -4489,11 +4531,12 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-1';
+    const APP_VERSION = '2026.08.06-2';
 
     // Inicialização
     carregarLocalStorage();
     ultimoIdLancamento = lancamentos.reduce((m, l) => (typeof l.id === 'number' && l.id > m ? l.id : m), 0);
+    corrigirVencimentosParcelasAntigas();
     carregarFixos();
     carregarInvest();
     carregarGrupos();
