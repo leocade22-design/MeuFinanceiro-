@@ -267,8 +267,9 @@
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
               <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
-                <option value="À Vista / Débito">À Vista / Débito</option>
-                <option value="Crédito Parcelado">Crédito Parcelado</option>
+                <option value="Crédito à Vista">Crédito 1x</option>
+                <option value="Crédito Parcelado">Crédito parcelado</option>
+                <option value="À Vista / Débito">Débito</option>
               </select>
             </div>
           </div>
@@ -2329,8 +2330,14 @@
       if (item.tipo === 'despesa') {
         atualizarVisibilidadeForma();
         if (contaTemCredito(item.conta)) {
-          document.getElementById('formaModo').value = item.formaModo || 'À Vista / Débito';
-          verificarParcelamento(item.formaModo);
+          // Compra antiga lançada como "Crédito Parcelado" em 1x era o jeito de
+          // registrar crédito à vista antes dessa opção existir: mostra ela pelo que
+          // realmente é. O comportamento na fatura já era (e continua) o mesmo.
+          const forma = (item.formaModo === 'Crédito Parcelado' && !item.grupoId && String(item.numParcelas || '1') === '1')
+            ? 'Crédito à Vista'
+            : (item.formaModo || 'À Vista / Débito');
+          document.getElementById('formaModo').value = forma;
+          verificarParcelamento(forma);
           document.getElementById('numParcelas').value = item.numParcelas || '1';
         }
         const selCat = document.getElementById('categoria');
@@ -2852,10 +2859,17 @@
       return new Date(hoje.getFullYear(), hoje.getMonth() + offset, 1);
     }
 
+    // Crédito à vista (1x) e crédito parcelado caem os DOIS na fatura — só o débito
+    // sai na hora. Todo lugar que separa fatura de débito usa isto; comparar direto
+    // com 'Crédito Parcelado' fica reservado pra quem precisa saber de PARCELAS.
+    function eCredito(formaModo) {
+      return formaModo === 'Crédito Parcelado' || formaModo === 'Crédito à Vista';
+    }
+
     // Compras no crédito feitas DEPOIS do fechamento (dia 3) caem na fatura do mês seguinte
     function getMesFatura(dataStr, formaModo) {
       const d = new Date(dataStr + 'T12:00:00');
-      if (formaModo === 'Crédito Parcelado' && d.getDate() > DIA_FECHAMENTO_CARTAO) {
+      if (eCredito(formaModo) && d.getDate() > DIA_FECHAMENTO_CARTAO) {
         d.setMonth(d.getMonth() + 1);
       }
       return { mes: d.getMonth(), ano: d.getFullYear() };
@@ -2892,13 +2906,13 @@
 
       if (/fatura/.test(texto)) {
         const total = lancamentos
-          .filter(l => l.tipo === 'despesa' && l.formaModo === 'Crédito Parcelado')
+          .filter(l => l.tipo === 'despesa' && eCredito(l.formaModo))
           .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === mes && f.ano === ano; })
           .reduce((s, l) => s + parseVal(l.valor), 0);
         resposta = `Fatura de ${nomeMes}: ${fmtOculto(total)}`;
       } else if (/fixo/.test(texto)) {
         const noCartao = /cart[ãa]o|cr[ée]dito/.test(texto);
-        const lista = noCartao ? fixos.filter(f => f.formaModo === 'Crédito Parcelado' || contaTemCredito(f.conta)) : fixos;
+        const lista = noCartao ? fixos.filter(f => eCredito(f.formaModo) || contaTemCredito(f.conta)) : fixos;
         const total = lista.reduce((s, f) => s + parseVal(f.valor), 0);
         resposta = `Total de gastos fixos${noCartao ? ' no cartão' : ''}: ${fmtOculto(total)} (${lista.length} ${lista.length === 1 ? 'item' : 'itens'})`;
       } else if (/gast/.test(texto)) {
@@ -3138,7 +3152,7 @@
         const { mes: mFat, ano: aFat } = getMesFatura(l.data, l.formaModo);
         if (mFat === mes && aFat === ano) {
           porConta[l.conta] = (porConta[l.conta] || 0) + v;
-          if (l.formaModo === 'Crédito Parcelado') totalCredito += v;
+          if (eCredito(l.formaModo)) totalCredito += v;
           else totalDebito += v;
         }
       });
@@ -3182,7 +3196,7 @@
           div.innerHTML = `
             <div class="item-info">
               <strong>${f.descricao}</strong>
-              <div style="font-size:11px;color:#888;">${f.conta} • ${formaModoDoFixo(f) === 'Crédito Parcelado' ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:11px;color:#888;">${f.conta} • ${eCredito(formaModoDoFixo(f)) ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
               <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
             </div>
             <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
@@ -3400,13 +3414,13 @@
         titulo.textContent = 'Débito / À Vista de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
-          return l.tipo === 'despesa' && l.formaModo !== 'Crédito Parcelado' && m === mes && a === ano;
+          return l.tipo === 'despesa' && !eCredito(l.formaModo) && m === mes && a === ano;
         });
       } else {
         titulo.textContent = 'Fatura Crédito de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
-          return l.tipo === 'despesa' && l.formaModo === 'Crédito Parcelado' && m === mes && a === ano;
+          return l.tipo === 'despesa' && eCredito(l.formaModo) && m === mes && a === ano;
         });
       }
 
@@ -3982,7 +3996,7 @@ function iniciarReconhecimentoVoz() {
 // palavras-chave, já aplica categoria/conta/forma de pagamento certas, em vez
 // de cair no fallback genérico. Ajuste ou adicione linhas aqui conforme seu uso.
 const REGRAS_VOZ_COMBINADAS = [
-  { chaves: ['uber', '99', '99pop', 'taxi', 'táxi'], categoria: 'Transporte', conta: 'Itaú', formaModo: 'Crédito Parcelado', numParcelas: '1' }
+  { chaves: ['uber', '99', '99pop', 'taxi', 'táxi'], categoria: 'Transporte', conta: 'Itaú', formaModo: 'Crédito à Vista', numParcelas: '1' }
 ];
 
 const NUM_EXTENSO = {
@@ -4089,7 +4103,8 @@ function interpretarFala(fala) {
   let numParcelasVoz = '1';
 
   if (/(crédito|parcelado)/.test(texto)) {
-    formaModo = 'Crédito Parcelado';
+    // "no crédito" sozinho é compra 1x; só é parcelado se a fala disser parcela/vezes
+    formaModo = /(parcelad|parcela|vezes|\d+\s*x)/.test(texto) ? 'Crédito Parcelado' : 'Crédito à Vista';
   } else if (/(tíquete|alimentação|vr|va)/.test(texto)) {
     conta = 'Tíquete Alimentação';
   } else if (texto.includes('picpay')) {
