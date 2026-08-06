@@ -4078,6 +4078,37 @@
       return { itens, bruto, recebido, liquido: bruto - recebido, aReceber };
     }
 
+    /* RATEIO DE UMA COMPRA
+       Quanto dessa compra é seu e quanto é dos outros. Serve pra uma compra à
+       vista (um lançamento) ou parcelada (várias) — por isso recebe uma lista. */
+    function resumoRateioItens(itens) {
+      let devidoTotal = 0, aReceber = 0;
+      const pessoas = new Set();
+      itens.forEach(l => {
+        cobrancasDoLancamento(l).forEach(c => {
+          devidoTotal += c.valor;
+          pessoas.add(c.nome);
+          if (!c.quitado) aReceber += c.valor;
+        });
+      });
+      const total = itens.reduce((sm, l) => sm + parseVal(l.valor), 0);
+      return { devidoTotal, aReceber, recebido: devidoTotal - aReceber,
+               minhaParte: total - devidoTotal, pessoas: [...pessoas] };
+    }
+
+    // Linha discreta abaixo do item, só quando a compra é dividida com alguém
+    function legendaRateio(itens) {
+      const r = resumoRateioItens(itens);
+      if (!r.pessoas.length) return '';
+      const partes = [];
+      partes.push(r.pessoas.length > 1
+        ? `rachado entre ${r.pessoas.length + 1}`
+        : `${r.pessoas[0]} entrou junto`);
+      partes.push('sua parte ' + fmtVal(r.minhaParte));
+      partes.push(r.aReceber > 0 ? 'faltam ' + fmtVal(r.aReceber) : 'tudo recebido');
+      return `<div style="font-size:10px;color:${r.aReceber > 0 ? '#ffd166' : '#4caf50'};margin-top:2px;">${partes.join(' · ')}</div>`;
+    }
+
     function renderizarGrupos() {
       const container = document.getElementById('listaGrupos');
       const termo = textoSeguro(document.getElementById('inputBuscaGrupo')?.value || '');
@@ -4219,6 +4250,7 @@
                   <div class="item-info">
                     <span style="font-size:13px;">${descBase}</span>
                     <div style="font-size:10px;color:#888;">${parcelasDaCompra.length}x • ${restantes > 0 ? restantes + ' parcela' + (restantes > 1 ? 's' : '') + ' restante' + (restantes > 1 ? 's' : '') : 'já paga'} • desde ${dataFmt}</div>
+                    ${legendaRateio(parcelasDaCompra)}
                   </div>
                   <span class="valor-despesa" style="font-size:13px;">- R$ ${totalCompra.toFixed(2).replace('.', ',')}</span>
                 </div>
@@ -4233,6 +4265,7 @@
                 <div class="item-info">
                   <span style="font-size:13px;">${item.descricao}</span>
                   <div style="font-size:10px;color:#888;">${dataFmt} • ${item.conta}</div>
+                  ${eReceita ? '' : legendaRateio([item])}
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                   <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
@@ -4575,7 +4608,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-3';
+    const APP_VERSION = '2026.08.06-4';
 
     // Inicialização
     carregarLocalStorage();
