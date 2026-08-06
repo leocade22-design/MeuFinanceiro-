@@ -202,6 +202,10 @@
 
     .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
+    .form-header-linha { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .form-header-linha h3 { margin:0; }
+    .btn-icone-topo { flex-shrink:0; width:34px; height:30px; border:1px solid #333; border-radius:8px; background:transparent; color:#888; font-size:15px; line-height:1; cursor:pointer; }
+    .btn-icone-topo:active { color:#fff; border-color:#555; }
     .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .link-obs.tem-obs { color:#9a9a9a; }
     .btn-gerenciar-txt { background:transparent; border:none; cursor:pointer; padding:0 2px; color:#666; font-size:11px; }
@@ -229,13 +233,13 @@
 
     <div id="abaLancamentos" class="aba-conteudo ativo">
       <div class="card">
-        <h3 id="tituloFormulario" style="margin-bottom: 16px;">Novo lançamento</h3>
-        <div class="tipo-toggle">
-          <button type="button" id="btnReceita" class="btn-tipo ativo-receita" onclick="alternarTipo('receita')">+ Receita</button>
-          <button type="button" id="btnDespesa" class="btn-tipo" onclick="alternarTipo('despesa')">- Despesa</button>
+        <div class="form-header-linha">
+          <h3 id="tituloFormulario">Novo lançamento</h3>
+          <button type="button" class="btn-icone-topo" onclick="abrirModalTransferencia()" title="Transferências pessoais" aria-label="Transferências pessoais">⇄</button>
         </div>
-        <div style="text-align:center;margin:2px 0 10px;">
-          <button type="button" class="link-obs" style="font-size:11px;" onclick="abrirModalTransferencia()">⇄ transferência entre contas</button>
+        <div class="tipo-toggle">
+          <button type="button" id="btnDespesa" class="btn-tipo ativo-despesa" onclick="alternarTipo('despesa')">- Despesa</button>
+          <button type="button" id="btnReceita" class="btn-tipo" onclick="alternarTipo('receita')">+ Receita</button>
         </div>
         <form id="formLancamento" onsubmit="salvarLancamento(event)">
           <input type="hidden" id="idEditando" value="">
@@ -243,13 +247,14 @@
             <label for="descricao" style="margin-bottom:3px;">Descrição</label>
             <input list="listaDescricoes" id="descricao" name="descricao" placeholder="Ex: Mercado, Uber...">
             <datalist id="listaDescricoes"></datalist>
-            <div style="display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;">
+            <div style="display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;">
               <button type="button" id="linkObs" class="link-obs" onclick="abrirModalObs()">adicionar observação</button>
               <button type="button" id="linkGrupo" class="link-obs escondido" onclick="abrirModalGrupoVinculo()">vincular a um grupo</button>
-              <button type="button" id="linkEmprestimo" class="link-obs escondido" onclick="abrirModalEmprestimo()">isso foi um empréstimo?</button>
+              <button type="button" id="linkEmprestimo" class="link-obs escondido" onclick="abrirModalEmprestimo()">empréstimo?</button>
             </div>
             <textarea id="observacao" name="observacao" class="escondido"></textarea>
             <input type="hidden" id="emprestimoPara" value="">
+            <input type="hidden" id="emprestimoVence" value="">
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -368,11 +373,11 @@
       <!-- EMPRÉSTIMOS (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('emprestimos')">
-          <h3 style="font-size:16px;">Empréstimos</h3>
+          <h3 style="font-size:16px;">Empréstimos <span id="badgeEmprestimos" style="font-size:13px;font-weight:400;color:#ffd166;"></span></h3>
           <span class="chevron-sec" id="chevron-emprestimos">▸</span>
         </button>
         <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Despesas marcadas como "empréstimo" no formulário. Continuam contando normalmente no cartão/conta — isso é só um lembrete de cobrança.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem. Ao marcar "Recebi", o valor entra como receita na conta que você escolher.</p>
           <div id="listaEmprestimos"></div>
         </div>
       </div>
@@ -621,31 +626,12 @@
         <button class="btn-fechar" onclick="fecharModal('modalPanorama')">&times;</button>
       </div>
 
-      <!-- PAINEL DE FILTROS DE PERÍODO (retrátil, recolhido por padrão) -->
+      <!-- O período é o mesmo já escolhido na aba Gráficos: um filtro só, sem duplicar
+           a mesma pergunta em dois lugares -->
       <div id="wrapFiltrosModal" style="margin-bottom:16px;">
-        <button type="button" onclick="alternarFiltroPeriodoModal()" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;padding:0;margin-bottom:8px;cursor:pointer;color:inherit;">
-          <strong>Período</strong>
-          <span style="font-size:12px;color:#aaa;display:flex;align-items:center;gap:6px;"><span id="labelPeriodoModalAtual">Últimos 30 dias</span> <span id="setaPeriodoModal">▼</span></span>
-        </button>
-        <div class="grid-periodos escondido" id="filtrosPeriodoModal">
-          <button type="button" class="btn-periodo ativo" id="p30" onclick="setFiltroPeriodo('30', this)">Últimos 30 dias</button>
-          <button type="button" class="btn-periodo" id="p90" onclick="setFiltroPeriodo('90', this)">Últimos 90 dias</button>
-          <button type="button" class="btn-periodo" id="pMesAtual" onclick="setFiltroPeriodo('mesAtual', this)">Este mês</button>
-          <button type="button" class="btn-periodo" id="pMesPassado" onclick="setFiltroPeriodo('mesPassado', this)">Mês passado</button>
-          <button type="button" class="btn-periodo" id="pAnoAtual" onclick="setFiltroPeriodo('anoAtual', this)">Este ano</button>
-          <button type="button" class="btn-periodo" id="pTudo" onclick="setFiltroPeriodo('tudo', this)">Desde o início</button>
-          <button type="button" class="btn-periodo" id="pCustom" onclick="setFiltroPeriodo('custom', this)" style="grid-column: span 2;">Personalizado</button>
-        </div>
-
-        <div id="boxDataCustom" class="form-row escondido" style="margin-top:8px;">
-          <div class="form-group">
-            <label>Data inicial</label>
-            <input type="date" id="filtroDataIni" onchange="atualizarModalConsulta()">
-          </div>
-          <div class="form-group">
-            <label>Data final</label>
-            <input type="date" id="filtroDataFim" onchange="atualizarModalConsulta()">
-          </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#aaa;">
+          <span>Período: <strong id="labelPeriodoModalAtual" style="color:#ddd;">Últimos 30 dias</strong></span>
+          <button type="button" class="btn-mini" onclick="fecharModal('modalPanorama')">alterar</button>
         </div>
       </div>
 
@@ -826,9 +812,15 @@
         <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
       </div>
       <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.</p>
-      <div class="form-group">
-        <label for="emprestimoTemp">Nome de quem deve</label>
-        <input type="text" id="emprestimoTemp" placeholder="Ex: Dudu">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="emprestimoTemp">Nome de quem deve</label>
+          <input type="text" id="emprestimoTemp" placeholder="Ex: Dudu">
+        </div>
+        <div class="form-group">
+          <label for="emprestimoVenceTemp">Prazo pra pagar</label>
+          <input type="date" id="emprestimoVenceTemp">
+        </div>
       </div>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="limparEmprestimoModal()">Não é empréstimo</button>
@@ -837,11 +829,37 @@
     </div>
   </div>
 
+  <!-- MODAL DE RECEBIMENTO DE EMPRÉSTIMO -->
+  <div id="modalReceberEmprestimo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalReceberEmprestimo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Registrar recebimento</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalReceberEmprestimo')">&times;</button>
+      </div>
+      <div class="box-resumo-modal" id="resumoReceberEmprestimo" style="margin-bottom:14px;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="contaRecebimento">Caiu em qual conta?</label>
+          <select id="contaRecebimento"></select>
+        </div>
+        <div class="form-group">
+          <label for="dataRecebimento">Data</label>
+          <input type="date" id="dataRecebimento">
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:#777;margin-bottom:12px;">Ao confirmar, o valor entra como <strong>receita</strong> nessa conta e a cobrança sai daqui.</p>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalReceberEmprestimo')">Cancelar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarRecebimentoEmprestimo()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DE TRANSFERÊNCIA ENTRE CONTAS -->
   <div id="modalTransferencia" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalTransferencia')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Transferência entre contas</h3>
+        <h3>Transferências pessoais</h3>
         <button class="btn-fechar" onclick="fecharModal('modalTransferencia')">&times;</button>
       </div>
       <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Não entra nas receitas/despesas nem nos gráficos — é só dinheiro mudando de conta.</p>
@@ -929,14 +947,25 @@
             <option value="À Vista / Débito">Débito / À vista</option>
           </select>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="emprestimoFixo">Alguém te reembolsa? <span style="color:#666;">(opcional)</span></label>
+            <input type="text" id="emprestimoFixo" placeholder="Ex: Bernardo" oninput="atualizarPrazoFixoVisibilidade()">
+          </div>
+          <div class="form-group escondido" id="grupoPrazoFixo">
+            <label for="diaCobrancaFixo">Prazo pra te pagar</label>
+            <select id="diaCobrancaFixo"></select>
+          </div>
+        </div>
         <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 3): cobrança até o dia 3 entra na fatura do próprio mês; depois do dia 3, na do mês seguinte.</p>
+        <p id="avisoEmprestimoFixo" class="escondido" style="font-size:11.5px;color:#ffd166;margin-bottom:10px;line-height:1.4;">Cada mês vira uma cobrança em aberto no quadro <strong>Empréstimos</strong> (aba Faturas). O gasto continua contando normal no cartão — quando a pessoa te pagar, é só marcar "Recebi" lá e o valor entra como receita.</p>
         <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
       </form>
     </div>
   </div>
 
   <script>
-    let tipoAtual = 'receita';
+    let tipoAtual = 'despesa';
     let lancamentos = [];
     let fixos = [];
     let investimentos = [];
@@ -957,7 +986,7 @@
 
     // Variáveis de estado da consulta no modal
     let tipoModalAtual = 'saldo';
-    let periodoModalAtual = '30';
+    let labelPeriodoGraficos = 'Últimos 30 dias';
     let periodoGraficosAtual = '30';
 
     const DIA_FECHAMENTO_CARTAO = 3; // cartão vira (fecha) todo dia 3, fatura vence dia 10
@@ -1155,26 +1184,31 @@
         link.textContent = 'empréstimo: ' + v;
         link.classList.add('tem-obs');
       } else {
-        link.textContent = 'isso foi um empréstimo?';
+        link.textContent = 'empréstimo?';
         link.classList.remove('tem-obs');
       }
     }
 
     function abrirModalEmprestimo() {
       document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
+      document.getElementById('emprestimoVenceTemp').value = document.getElementById('emprestimoVence').value;
       document.getElementById('modalEmprestimo').classList.remove('escondido');
       document.getElementById('emprestimoTemp').focus();
     }
 
     function salvarEmprestimoModal() {
-      document.getElementById('emprestimoPara').value = document.getElementById('emprestimoTemp').value.trim();
+      const nome = document.getElementById('emprestimoTemp').value.trim();
+      document.getElementById('emprestimoPara').value = nome;
+      document.getElementById('emprestimoVence').value = nome ? document.getElementById('emprestimoVenceTemp').value : '';
       atualizarLinkEmprestimo();
       fecharModal('modalEmprestimo');
     }
 
     function limparEmprestimoModal() {
       document.getElementById('emprestimoTemp').value = '';
+      document.getElementById('emprestimoVenceTemp').value = '';
       document.getElementById('emprestimoPara').value = '';
+      document.getElementById('emprestimoVence').value = '';
       atualizarLinkEmprestimo();
       fecharModal('modalEmprestimo');
     }
@@ -1404,6 +1438,16 @@
         timeZone: 'America/Sao_Paulo',
         year: 'numeric', month: '2-digit', day: '2-digit'
       }).format(new Date());
+    }
+
+    // IDs de lançamento: sempre únicos e crescentes, mesmo quando vários nascem no
+    // mesmo milissegundo (parcelas, gastos fixos de meses acumulados, recebimentos
+    // em lote). Antes, Date.now() + índice podia colidir entre esses fluxos.
+    let ultimoIdLancamento = 0;
+    function novoIdLancamento() {
+      const agora = Date.now();
+      ultimoIdLancamento = agora > ultimoIdLancamento ? agora : ultimoIdLancamento + 1;
+      return ultimoIdLancamento;
     }
 
     function parseVal(vStr) {
@@ -1879,6 +1923,7 @@
         document.getElementById('grupoParcelas').classList.add('escondido');
         document.getElementById('linkEmprestimo').classList.add('escondido');
         document.getElementById('emprestimoPara').value = '';
+        document.getElementById('emprestimoVence').value = '';
         atualizarLinkEmprestimo();
       } else {
         btnD.className = 'btn-tipo ativo-despesa';
@@ -2150,6 +2195,7 @@
       const observacao = document.getElementById('observacao').value.trim();
       const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
       const emprestimoPara = tipoAtual === 'despesa' ? document.getElementById('emprestimoPara').value.trim() : '';
+      const emprestimoVence = emprestimoPara ? document.getElementById('emprestimoVence').value : '';
 
       let grupoViagemId = '';
       const selGrupo = document.getElementById('grupoViagem').value;
@@ -2173,7 +2219,7 @@
             categoria, observacao, data: dataBase,
             valor: valorTotal.toFixed(2).replace('.', ','),
             grupoViagemId, grupoViagemNome,
-            emprestimoPara, emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
+            emprestimoPara, emprestimoVence, emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
 
           // Propagação para as parcelas irmãs (mesma compra parcelada)
@@ -2198,7 +2244,7 @@
                   descricao: descricaoBase + (sufixoIrma ? sufixoIrma[0] : ''),
                   conta, formaModo, categoria, observacao,
                   grupoViagemId, grupoViagemNome,
-                  emprestimoPara, emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
+                  emprestimoPara, emprestimoVence, emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
                   valor: valorParcelaStr
                   // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
                 };
@@ -2222,26 +2268,26 @@
           d.setMonth(d.getMonth() + n + mesOffsetInicial);
           const dataParcela = d.toISOString().slice(0, 10);
           lancamentos.push({
-            id: Date.now() + n,
+            id: novoIdLancamento(),
             tipo: 'despesa',
             descricao: descricao + ' (' + (n + 1) + '/' + numParcelas + ')',
             conta, formaModo, numParcelas: String(numParcelas),
             grupoId, categoria, observacao, data: dataParcela,
             valor: valorParcela.toFixed(2).replace('.', ','),
             grupoViagemId, grupoViagemNome,
-            emprestimoPara, emprestimoQuitado: false
+            emprestimoPara, emprestimoVence, emprestimoQuitado: false
           });
         }
       } else {
         lancamentos.unshift({
-          id: Date.now(),
+          id: novoIdLancamento(),
           tipo: tipoAtual,
           descricao, conta, formaModo,
           numParcelas: '1', categoria, observacao,
           data: dataBase,
           valor: valorTotal.toFixed(2).replace('.', ','),
           grupoViagemId, grupoViagemNome,
-          emprestimoPara, emprestimoQuitado: false
+          emprestimoPara, emprestimoVence, emprestimoQuitado: false
         });
       }
 
@@ -2275,6 +2321,7 @@
       document.getElementById('observacao').value = item.observacao || '';
       atualizarLinkObs();
       document.getElementById('emprestimoPara').value = item.emprestimoPara || '';
+      document.getElementById('emprestimoVence').value = item.emprestimoVence || '';
       atualizarLinkEmprestimo();
       document.getElementById('valor').value = 'R$ ' + item.valor;
       popularSelectGrupos(item.grupoViagemId || '');
@@ -2315,6 +2362,7 @@
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
       document.getElementById('emprestimoPara').value = '';
+      document.getElementById('emprestimoVence').value = '';
       atualizarLinkEmprestimo();
       const selNumParcelas = document.getElementById('numParcelas');
       const avisoParcela = document.getElementById('avisoParcelaGrupo');
@@ -2328,7 +2376,7 @@
       document.getElementById('tituloFormulario').textContent = 'Novo lançamento';
       document.getElementById('btnSubmit').textContent = 'Salvar';
       document.getElementById('btnCancelarEdit').classList.add('escondido');
-      alternarTipo('receita');
+      alternarTipo('despesa');
     }
 
     function excluirLancamento(id) {
@@ -2363,6 +2411,7 @@
       tipoModalAtual = tipo;
       grupoModalAtualId = null;
       document.getElementById('wrapFiltrosModal').classList.remove('escondido');
+      document.getElementById('labelPeriodoModalAtual').textContent = labelPeriodoGraficos;
       document.getElementById('rodapeGrupo').classList.add('escondido');
       document.getElementById('modalPanorama').classList.remove('escondido');
       atualizarModalConsulta();
@@ -2400,35 +2449,6 @@
       fecharModal('modalTransferencia');
     }
 
-    function setFiltroPeriodo(periodo, el) {
-      periodoModalAtual = periodo;
-      document.querySelectorAll('#filtrosPeriodoModal .btn-periodo').forEach(b => b.classList.remove('ativo'));
-      el.classList.add('ativo');
-
-      const label = document.getElementById('labelPeriodoModalAtual');
-      if (label) label.textContent = el.textContent;
-
-      const boxCustom = document.getElementById('boxDataCustom');
-      if (periodo === 'custom') {
-        boxCustom.classList.remove('escondido');
-      } else {
-        boxCustom.classList.add('escondido');
-        // depois de escolher, já recolhe o filtro sozinho — só o "personalizado" fica aberto
-        const grid = document.getElementById('filtrosPeriodoModal');
-        const seta = document.getElementById('setaPeriodoModal');
-        if (grid) grid.classList.add('escondido');
-        if (seta) seta.textContent = '▼';
-      }
-      atualizarModalConsulta();
-    }
-
-    function alternarFiltroPeriodoModal() {
-      const grid = document.getElementById('filtrosPeriodoModal');
-      const seta = document.getElementById('setaPeriodoModal');
-      grid.classList.toggle('escondido');
-      seta.textContent = grid.classList.contains('escondido') ? '▼' : '▲';
-    }
-
     /* REQUISIÇÃO 5: ALTERNAR EXIBIÇÃO RECOLHÍVEL DO PERÍODO NOS GRÁFICOS */
     function alternarFiltroPeriodoGraficos() {
       const grid = document.getElementById('filtrosPeriodoGraficos');
@@ -2439,6 +2459,7 @@
 
     function setFiltroPeriodoGraficos(periodo, el, labelTexto) {
       periodoGraficosAtual = periodo;
+      labelPeriodoGraficos = labelTexto;
       document.querySelectorAll('#filtrosPeriodoGraficos .btn-periodo').forEach(b => b.classList.remove('ativo'));
       el.classList.add('ativo');
 
@@ -2457,8 +2478,8 @@
     }
 
     function obterIntervaloDatas(periodo, idIni, idFim) {
-      idIni = idIni || 'filtroDataIni';
-      idFim = idFim || 'filtroDataFim';
+      idIni = idIni || 'filtroGraficoDataIni';
+      idFim = idFim || 'filtroGraficoDataFim';
       const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
       let ini = new Date(hoje), fim = new Date(hoje);
 
@@ -2494,7 +2515,8 @@
       const boxSubtotais = document.getElementById('boxSubtotaisModal');
       const corpo = document.getElementById('modalCorpo');
       
-      const { ini, fim } = obterIntervaloDatas(periodoModalAtual);
+      // mesmo período selecionado na aba Gráficos — fonte única de verdade
+      const { ini, fim } = obterIntervaloDatas(periodoGraficosAtual, 'filtroGraficoDataIni', 'filtroGraficoDataFim');
 
       let itensPeriodo = lancamentos.filter(l => {
         const d = new Date(l.data + 'T12:00:00');
@@ -3174,52 +3196,187 @@
     // Lista de empréstimos pendentes, agrupados por pessoa. Considera TODOS os
     // lançamentos marcados (independente do mês), já que a cobrança não tem
     // prazo fixo — só some daqui quando marcado como reembolsado.
+    // Quem está com as parcelas expandidas no momento (por padrão vem tudo recolhido:
+    // o que interessa de bate-pronto é o total por pessoa)
+    let emprestimosPessoasAbertas = new Set();
+
+    function alternarPessoaEmprestimo(nome) {
+      if (emprestimosPessoasAbertas.has(nome)) emprestimosPessoasAbertas.delete(nome);
+      else emprestimosPessoasAbertas.add(nome);
+      renderizarEmprestimos();
+    }
+
     function renderizarEmprestimos() {
       const container = document.getElementById('listaEmprestimos');
       if (!container) return;
+      const badge = document.getElementById('badgeEmprestimos');
       const pendentes = lancamentos.filter(l => l.emprestimoPara && !l.emprestimoQuitado);
+
       if (pendentes.length === 0) {
         container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum empréstimo em aberto.</p>';
+        if (badge) badge.textContent = '';
         return;
       }
+
+      const hoje = obterDataBrasilia();
       const porPessoa = {};
       pendentes.forEach(l => {
         (porPessoa[l.emprestimoPara] = porPessoa[l.emprestimoPara] || []).push(l);
       });
-      container.innerHTML = '';
-      Object.entries(porPessoa).forEach(([nome, itens]) => {
+      const totalGeral = pendentes.reduce((s, l) => s + parseVal(l.valor), 0);
+      if (badge) badge.textContent = '· ' + fmtOculto(totalGeral);
+
+      container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid #333;">
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total a receber</span>
+          <strong style="color:#ffd166;font-size:19px;">${fmtOculto(totalGeral)}</strong>
+        </div>
+      `;
+
+      // quem tem cobrança vencida aparece primeiro
+      const ordenadas = Object.entries(porPessoa).sort((a, b) => {
+        const venc = its => its.some(l => l.emprestimoVence && l.emprestimoVence < hoje) ? 0 : 1;
+        return venc(a[1]) - venc(b[1]) || a[0].localeCompare(b[0], 'pt-BR', { sensitivity: 'base' });
+      });
+
+      ordenadas.forEach(([nome, itens]) => {
         const total = itens.reduce((s, l) => s + parseVal(l.valor), 0);
+        const aberto = emprestimosPessoasAbertas.has(nome);
+        const atrasadas = itens.filter(l => l.emprestimoVence && l.emprestimoVence < hoje).length;
+        const proximo = itens.map(l => l.emprestimoVence).filter(Boolean).sort()[0];
+
+        let legenda = itens.length + (itens.length === 1 ? ' cobrança' : ' cobranças');
+        if (atrasadas > 0) legenda += ' · ' + atrasadas + ' em atraso';
+        else if (proximo) legenda += ' · até ' + proximo.split('-').reverse().join('/');
+
         const bloco = document.createElement('div');
-        bloco.style.cssText = 'margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #2a2a2a;';
-        const linhas = itens.map(l => `
-          <div class="item-lancamento" style="padding:6px 0;">
-            <div class="item-info">
-              <strong style="font-size:13px;">${l.descricao}</strong>
-              <div style="font-size:11px;color:#888;">${l.data.split('-').reverse().join('/')} • ${l.conta}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span class="valor-despesa">${fmtOculto(parseVal(l.valor))}</span>
-              <button type="button" class="btn-mini" onclick="marcarEmprestimoQuitado(${l.id})">Recebido</button>
-            </div>
-          </div>
-        `).join('');
-        bloco.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+        bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid #2a2a2a;';
+
+        const cabecalho = document.createElement('button');
+        cabecalho.type = 'button';
+        cabecalho.className = 'card-header-toggle';
+        cabecalho.onclick = () => alternarPessoaEmprestimo(nome);
+        cabecalho.innerHTML = `
+          <div class="item-info">
             <strong>${nome}</strong>
-            <span style="color:#ffd166;">${fmtOculto(total)}</span>
+            <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : '#888'};">${legenda}</div>
           </div>
-          ${linhas}
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="color:#ffd166;font-weight:700;">${fmtOculto(total)}</span>
+            <span class="chevron-sec">${aberto ? '▾' : '▸'}</span>
+          </div>
         `;
+        bloco.appendChild(cabecalho);
+
+        if (aberto) {
+          const lista = document.createElement('div');
+          lista.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid #333;';
+          itens.slice().sort((a, b) => (a.data < b.data ? -1 : 1)).forEach(l => {
+            const atrasado = l.emprestimoVence && l.emprestimoVence < hoje;
+            // prazo igual à data do lançamento não acrescenta nada — não repete
+            const mostrarPrazo = l.emprestimoVence && (atrasado || l.emprestimoVence !== l.data);
+            const linha = document.createElement('div');
+            linha.className = 'item-lancamento';
+            linha.style.padding = '6px 0';
+            linha.innerHTML = `
+              <div class="item-info">
+                <strong style="font-size:13px;">${l.descricao}</strong>
+                <div style="font-size:11px;color:#888;">${l.data.split('-').reverse().join('/')} • ${l.conta}${mostrarPrazo ? ` • <span style="color:${atrasado ? '#ef5350' : '#888'};">${atrasado ? 'venceu' : 'até'} ${l.emprestimoVence.split('-').reverse().join('/')}</span>` : ''}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <span class="valor-despesa">${fmtOculto(parseVal(l.valor))}</span>
+                <button type="button" class="btn-mini">Recebi</button>
+              </div>
+            `;
+            linha.querySelector('button').onclick = (ev) => { ev.stopPropagation(); abrirReceberEmprestimo([l.id]); };
+            lista.appendChild(linha);
+          });
+
+          if (itens.length > 1) {
+            const btnTudo = document.createElement('button');
+            btnTudo.type = 'button';
+            btnTudo.className = 'btn-mini';
+            btnTudo.style.cssText = 'margin-top:6px;';
+            btnTudo.textContent = 'Recebi tudo de ' + nome;
+            btnTudo.onclick = () => abrirReceberEmprestimo(itens.map(l => l.id));
+            lista.appendChild(btnTudo);
+          }
+          bloco.appendChild(lista);
+        }
+
         container.appendChild(bloco);
       });
     }
 
-    function marcarEmprestimoQuitado(id) {
-      const idx = lancamentos.findIndex(l => l.id === id);
-      if (idx === -1) return;
-      lancamentos[idx].emprestimoQuitado = true;
+    /* RECEBIMENTO DE EMPRÉSTIMO: pergunta em que conta caiu, marca como quitado e
+       lança o valor como receita (com o mesmo som de receita do formulário). */
+    let recebimentoEmprestimoIds = [];
+    const CHAVE_CONTA_REEMBOLSO = 'meu_financeiro_conta_reembolso';
+
+    function contaPadraoReembolso() {
+      const salva = localStorage.getItem(CHAVE_CONTA_REEMBOLSO);
+      if (salva && contas.some(c => c.nome === salva)) return salva;
+      const pic = contas.find(c => /pic\s*pay/i.test(c.nome));
+      return pic ? pic.nome : primeiraConta();
+    }
+
+    function abrirReceberEmprestimo(ids) {
+      const itens = lancamentos.filter(l => ids.includes(l.id) && !l.emprestimoQuitado);
+      if (!itens.length) return;
+      recebimentoEmprestimoIds = itens.map(l => l.id);
+
+      const total = itens.reduce((s, l) => s + parseVal(l.valor), 0);
+      const nome = itens[0].emprestimoPara;
+      const detalhes = itens.map(l =>
+        `<div class="linha-subtotal"><span>${l.descricao}</span><strong>${fmtOculto(parseVal(l.valor))}</strong></div>`
+      ).join('');
+      document.getElementById('resumoReceberEmprestimo').innerHTML = `
+        <div style="margin-bottom:6px;">
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;">Recebendo de ${nome}</span>
+          <h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3>
+        </div>
+        ${itens.length > 1 ? detalhes : ''}
+      `;
+
+      const sel = document.getElementById('contaRecebimento');
+      sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      sel.value = contaPadraoReembolso();
+      document.getElementById('dataRecebimento').value = obterDataBrasilia();
+      document.getElementById('modalReceberEmprestimo').classList.remove('escondido');
+    }
+
+    function confirmarRecebimentoEmprestimo() {
+      const conta = document.getElementById('contaRecebimento').value || primeiraConta();
+      const data = document.getElementById('dataRecebimento').value || obterDataBrasilia();
+      const itens = lancamentos.filter(l => recebimentoEmprestimoIds.includes(l.id) && !l.emprestimoQuitado);
+      if (!itens.length) { fecharModal('modalReceberEmprestimo'); return; }
+
+      localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
+
+      itens.forEach(l => {
+        l.emprestimoQuitado = true;
+        lancamentos.unshift({
+          id: novoIdLancamento(),
+          tipo: 'receita',
+          descricao: 'Reembolso ' + l.emprestimoPara + ' — ' + l.descricao,
+          conta,
+          formaModo: 'À Vista / Débito',
+          numParcelas: '1',
+          categoria: '',
+          observacao: 'Recebimento de empréstimo',
+          data,
+          valor: l.valor,
+          grupoViagemId: '', grupoViagemNome: '',
+          emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+          reembolsoDe: l.id
+        });
+      });
+
       salvarLocalStorage();
-      renderizarEmprestimos();
+      tocarSomReceita();
+      fecharModal('modalReceberEmprestimo');
+      recebimentoEmprestimoIds = [];
+      atualizarTudo();
     }
 
     function exibirLancamentosDetalhadosFatura(tipoFiltro, mes, ano) {
@@ -3302,8 +3459,29 @@
       if (f) garantirOpcaoCategoria(selCatFixo, f.categoria);
       selCatFixo.value = f ? (f.categoria || categoriaPadrao()) : categoriaPadrao();
       document.getElementById('formaFixo').value = f ? formaModoDoFixo(f) : 'Crédito Parcelado';
+
+      const selPrazo = document.getElementById('diaCobrancaFixo');
+      if (!selPrazo.options.length) {
+        for (let d = 1; d <= 28; d++) {
+          const o = document.createElement('option');
+          o.value = String(d);
+          o.textContent = 'até dia ' + d;
+          selPrazo.appendChild(o);
+        }
+      }
+      document.getElementById('emprestimoFixo').value = f ? (f.emprestimoPara || '') : '';
+      selPrazo.value = f && f.diaCobranca ? String(Math.min(parseInt(f.diaCobranca, 10) || 10, 28)) : '10';
+
       atualizarFormaFixoVisibilidade();
+      atualizarPrazoFixoVisibilidade();
       document.getElementById('modalFixo').classList.remove('escondido');
+    }
+
+    // O prazo de cobrança só faz sentido quando o gasto é reembolsado por alguém
+    function atualizarPrazoFixoVisibilidade() {
+      const temEmprestimo = !!document.getElementById('emprestimoFixo').value.trim();
+      document.getElementById('grupoPrazoFixo').classList.toggle('escondido', !temEmprestimo);
+      document.getElementById('avisoEmprestimoFixo').classList.toggle('escondido', !temEmprestimo);
     }
 
     // Cartão de crédito é o padrão dos gastos fixos; conta sem cartão cai pro débito
@@ -3332,31 +3510,46 @@
 
       const idEdit = document.getElementById('idFixoEditando').value;
       const contaEscolhida = document.getElementById('contaFixo').value || primeiraConta();
+      const emprestimoPara = document.getElementById('emprestimoFixo').value.trim();
       const dados = {
         descricao,
         valor: valor.toFixed(2).replace('.', ','),
         conta: contaEscolhida,
         diaVencimento: parseInt(document.getElementById('diaFixo').value, 10) || 1,
         categoria: document.getElementById('categoriaFixo').value || 'Outros',
-        formaModo: contaTemCredito(contaEscolhida) ? document.getElementById('formaFixo').value : 'À Vista / Débito'
+        formaModo: contaTemCredito(contaEscolhida) ? document.getElementById('formaFixo').value : 'À Vista / Débito',
+        emprestimoPara,
+        diaCobranca: emprestimoPara ? (parseInt(document.getElementById('diaCobrancaFixo').value, 10) || 10) : null
       };
 
       if (idEdit) {
         const f = fixos.find(x => x.id === idEdit);
         if (f) {
           Object.assign(f, dados);
-          // Se o lançamento deste mês ainda não venceu, atualiza ele também
           const hoje = obterDataBrasilia();
-          const lanc = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === hoje.slice(0, 7));
+          const mesAtual = hoje.slice(0, 7);
+          // Marcar/desmarcar empréstimo vale do mês atual pra frente: meses passados
+          // já foram acertados na vida real, não faz sentido reabrir cobrança neles.
+          let mudouLanc = false;
+          lancamentos.forEach(l => {
+            if (l.fixoId !== f.id || !l.data || l.data.slice(0, 7) < mesAtual) return;
+            if (l.emprestimoQuitado) return;
+            l.emprestimoPara = emprestimoPara;
+            l.emprestimoVence = emprestimoPara ? venceEmprestimoFixo(f, l.data.slice(0, 7)) : '';
+            mudouLanc = true;
+          });
+          // Se o lançamento deste mês ainda não venceu, atualiza ele também
+          const lanc = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === mesAtual);
           if (lanc && lanc.data >= hoje) {
             lanc.descricao = dados.descricao;
             lanc.valor = dados.valor;
             lanc.conta = dados.conta;
             lanc.categoria = dados.categoria;
             lanc.formaModo = dados.formaModo;
-            lanc.data = hoje.slice(0, 7) + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
-            salvarLocalStorage();
+            lanc.data = mesAtual + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+            mudouLanc = true;
           }
+          if (mudouLanc) salvarLocalStorage();
         }
       } else {
         fixos.push({ id: 'f' + Date.now(), ...dados, dataInicio: obterDataBrasilia() });
@@ -3404,12 +3597,19 @@
     // do mês de cadastro (ou do último mês já gerado) até o mês atual.
     function chaveMesAno(ano, mes) { return ano + '-' + String(mes + 1).padStart(2, '0'); }
 
+    // Data-limite pra pessoa te reembolsar naquele mês ("eles têm até o dia 10")
+    function venceEmprestimoFixo(f, chaveMes) {
+      if (!f.emprestimoPara) return '';
+      const dia = Math.min(Math.max(parseInt(f.diaCobranca, 10) || 10, 1), 28);
+      return chaveMes + '-' + String(dia).padStart(2, '0');
+    }
+
     function gerarLancamentosFixos() {
       if (!fixos.length) return;
       const hoje = obterDataBrasilia();
       const anoAtual = parseInt(hoje.slice(0, 4), 10);
       const mesAtual = parseInt(hoje.slice(5, 7), 10) - 1;
-      let houveNovo = false, contador = 0;
+      let houveNovo = false;
 
       fixos.forEach(f => {
         const inicio = f.dataInicio || hoje;
@@ -3427,7 +3627,7 @@
           const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chave);
           if (!jaExiste) {
             lancamentos.push({
-              id: Date.now() + (contador++),
+              id: novoIdLancamento(),
               tipo: 'despesa',
               descricao: f.descricao,
               conta: f.conta || primeiraConta(),
@@ -3437,7 +3637,10 @@
               observacao: 'Gasto fixo mensal',
               data: chave + '-' + String(dia).padStart(2, '0'),
               valor: f.valor,
-              fixoId: f.id
+              fixoId: f.id,
+              emprestimoPara: f.emprestimoPara || '',
+              emprestimoQuitado: false,
+              emprestimoVence: venceEmprestimoFixo(f, chave)
             });
             houveNovo = true;
           }
@@ -3711,7 +3914,26 @@
    ========================================= */
 let lancamentoVozPendente = null;
 
+// Reconhecimento ativo no momento (null = botão desligado). Guardar a instância é o
+// que permite o segundo toque no botão desligar a escuta em vez de abrir outra.
+let reconhecimentoVoz = null;
+let vozCanceladaManual = false;
+
+function desligarMic() {
+  reconhecimentoVoz = null;
+  const btnMic = document.getElementById('btnMic');
+  if (btnMic) btnMic.classList.remove('mic-animando');
+}
+
 function iniciarReconhecimentoVoz() {
+  // TOGGLE: se já está escutando, o toque desliga e o botão volta pra cor de "off"
+  if (reconhecimentoVoz) {
+    vozCanceladaManual = true;
+    try { reconhecimentoVoz.abort(); } catch (e) { /* já encerrado */ }
+    desligarMic();
+    return;
+  }
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     alert('O seu navegador não suporta reconhecimento de voz nativo (recomendado usar Chrome ou Safari atualizados).');
@@ -3733,16 +3955,24 @@ function iniciarReconhecimentoVoz() {
   };
 
   recognition.onresult = (event) => {
-    btnMic.classList.remove('mic-animando');
+    desligarMic();
     const fala = event.results[0][0].transcript;
     interpretarFala(fala);
   };
 
   recognition.onerror = (event) => {
-    btnMic.classList.remove('mic-animando');
+    const foiCancelamento = vozCanceladaManual || event.error === 'aborted';
+    desligarMic();
+    if (foiCancelamento) return; // desligar o mic de propósito não é erro
     alert('Não foi possível reconhecer a voz. Tente novamente.');
   };
 
+  // rede de segurança: qualquer encerramento (timeout, silêncio, troca de app)
+  // devolve o botão ao estado normal
+  recognition.onend = () => { desligarMic(); };
+
+  vozCanceladaManual = false;
+  reconhecimentoVoz = recognition;
   recognition.start();
 }
 
@@ -3934,6 +4164,7 @@ function preencherFormularioVoz() {
   document.getElementById('dataCompra').value = obterDataBrasilia();
   document.getElementById('observacao').value = 'Lançamento via voz';
   document.getElementById('emprestimoPara').value = '';
+  document.getElementById('emprestimoVence').value = '';
   atualizarLinkEmprestimo();
 }
 
@@ -3963,6 +4194,7 @@ function confirmarLancamentoVoz() {
 
     // Inicialização
     carregarLocalStorage();
+    ultimoIdLancamento = lancamentos.reduce((m, l) => (typeof l.id === 'number' && l.id > m ? l.id : m), 0);
     carregarFixos();
     carregarInvest();
     carregarGrupos();
@@ -3989,7 +4221,7 @@ function confirmarLancamentoVoz() {
     valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
     atualizarIconesOlho();
 
-    alternarTipo('receita');
+    alternarTipo('despesa');
     document.getElementById('dataCompra').value = obterDataBrasilia();
     renderizarLancamentos();
     atualizarFaturas();
