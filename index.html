@@ -109,18 +109,18 @@
     .nav-tab.ativo { background-color: #242424; color: #fff; }
     .aba-conteudo { display: none; }
     .aba-conteudo.ativo { display: block; }
-    .card { background-color: #242424; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-    .tipo-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+    .card { background-color: #242424; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .tipo-toggle { display: flex; gap: 10px; margin-bottom: 12px; }
     .btn-tipo { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; font-weight: bold; font-size: 15px; cursor: pointer; }
     .btn-tipo.ativo-receita { border-color: #2e7d32; color: #4caf50; background-color: rgba(46, 125, 50, 0.15); }
     .btn-tipo.ativo-despesa { border-color: #c62828; color: #ef5350; background-color: rgba(198, 40, 40, 0.15); }
-    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
     label { font-size: 12px; color: #aaa; }
-    select, input { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; }
+    select, input { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px; outline: none; width: 100%; }
     select:focus, input:focus { border-color: #555; }
-    .btn-salvar { width: 100%; padding: 14px; border: none; border-radius: 8px; background-color: #d7ccc8; color: #121212; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+    .btn-salvar { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: #d7ccc8; color: #121212; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 8px; }
     .btn-cancelar { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 8px; background-color: transparent; color: #aaa; font-size: 13px; cursor: pointer; margin-top: 6px; }
     .escondido { display: none !important; }
     .item-lancamento { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer; }
@@ -234,6 +234,9 @@
           <button type="button" id="btnReceita" class="btn-tipo ativo-receita" onclick="alternarTipo('receita')">+ Receita</button>
           <button type="button" id="btnDespesa" class="btn-tipo" onclick="alternarTipo('despesa')">- Despesa</button>
         </div>
+        <div style="text-align:center;margin:2px 0 10px;">
+          <button type="button" class="link-obs" style="font-size:11px;" onclick="abrirModalTransferencia()">⇄ transferência entre contas</button>
+        </div>
         <form id="formLancamento" onsubmit="salvarLancamento(event)">
           <input type="hidden" id="idEditando" value="">
           <div class="form-group" style="gap:3px;">
@@ -344,17 +347,22 @@
         <div id="listaFaturas"></div>
       </div>
 
-      <!-- LANÇAMENTOS DO MÊS SELECIONADO -->
+      <!-- LANÇAMENTOS DO MÊS SELECIONADO (retrátil, aberto por padrão) -->
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('lancamentosMes')">
           <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
-          <button type="button" id="btnEscopoLanc" class="btn-mini" onclick="alternarEscopoLancamentos()">ver todos</button>
+          <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
+        </button>
+        <div id="corpo-lancamentosMes" class="escondido" style="margin-top:12px;">
+          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;">
+            <button type="button" id="btnEscopoLanc" class="btn-mini" onclick="alternarEscopoLancamentos()">ver todos</button>
+          </div>
+          <div class="busca-box">
+            <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
+          </div>
+          <div id="listaLancamentos"></div>
         </div>
-        <div class="busca-box">
-          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-          <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
-        </div>
-        <div id="listaLancamentos"></div>
       </div>
 
       <!-- EMPRÉSTIMOS (retrátil) -->
@@ -448,6 +456,25 @@
         </div>
       </div>
 
+      <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;gap:6px;">
+            <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
+            <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
+            <button class="btn-mini" id="btnVerContas" onclick="setVisaoGrafico('contas')">Contas</button>
+          </div>
+          <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
+            <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
+            <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
+          </div>
+        </div>
+        <h3 id="tituloGraficoUnico" style="color:#ef5350;margin-bottom:14px;">Gastos por Categoria</h3>
+        <div id="containerGraficoCategorias"></div>
+        <div id="containerGraficoReceitas" class="escondido"></div>
+        <div id="containerGraficoContas" class="escondido"></div>
+      </div>
+
       <!-- INDICADORES E INSIGHTS (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
@@ -478,25 +505,6 @@
           </div>
           <div class="insight-list" id="listaInsights"></div>
         </div>
-      </div>
-
-      <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;gap:6px;">
-            <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
-            <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
-            <button class="btn-mini" id="btnVerContas" onclick="setVisaoGrafico('contas')">Contas</button>
-          </div>
-          <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
-            <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
-            <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
-          </div>
-        </div>
-        <h3 id="tituloGraficoUnico" style="color:#ef5350;margin-bottom:14px;">Gastos por Categoria</h3>
-        <div id="containerGraficoCategorias"></div>
-        <div id="containerGraficoReceitas" class="escondido"></div>
-        <div id="containerGraficoContas" class="escondido"></div>
       </div>
 
       <!-- EVOLUÇÃO MENSAL (retrátil) -->
@@ -613,10 +621,13 @@
         <button class="btn-fechar" onclick="fecharModal('modalPanorama')">&times;</button>
       </div>
 
-      <!-- PAINEL DE FILTROS DE PERÍODO -->
+      <!-- PAINEL DE FILTROS DE PERÍODO (retrátil, recolhido por padrão) -->
       <div id="wrapFiltrosModal" style="margin-bottom:16px;">
-        <label style="display:block; margin-bottom:6px; font-weight:bold;">Período</label>
-        <div class="grid-periodos" id="filtrosPeriodoModal">
+        <button type="button" onclick="alternarFiltroPeriodoModal()" style="display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;padding:0;margin-bottom:8px;cursor:pointer;color:inherit;">
+          <strong>Período</strong>
+          <span style="font-size:12px;color:#aaa;display:flex;align-items:center;gap:6px;"><span id="labelPeriodoModalAtual">Últimos 30 dias</span> <span id="setaPeriodoModal">▼</span></span>
+        </button>
+        <div class="grid-periodos escondido" id="filtrosPeriodoModal">
           <button type="button" class="btn-periodo ativo" id="p30" onclick="setFiltroPeriodo('30', this)">Últimos 30 dias</button>
           <button type="button" class="btn-periodo" id="p90" onclick="setFiltroPeriodo('90', this)">Últimos 90 dias</button>
           <button type="button" class="btn-periodo" id="pMesAtual" onclick="setFiltroPeriodo('mesAtual', this)">Este mês</button>
@@ -674,6 +685,7 @@
         <h3 id="modalAcoesTitulo">Opções do Lançamento</h3>
         <button class="btn-fechar" onclick="fecharModal('modalAcoes')">&times;</button>
       </div>
+      <div id="infoAcoesLancamento" style="padding:4px 0 16px;border-bottom:1px solid #2a2a2a;margin-bottom:12px;"></div>
       <div class="balao-acoes">
         <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar lançamento</button>
         <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas desta compra</button>
@@ -825,6 +837,37 @@
     </div>
   </div>
 
+  <!-- MODAL DE TRANSFERÊNCIA ENTRE CONTAS -->
+  <div id="modalTransferencia" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalTransferencia')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Transferência entre contas</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalTransferencia')">&times;</button>
+      </div>
+      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Não entra nas receitas/despesas nem nos gráficos — é só dinheiro mudando de conta.</p>
+      <div class="form-group">
+        <label for="transfOrigem">De</label>
+        <select id="transfOrigem"></select>
+      </div>
+      <div class="form-group">
+        <label for="transfDestino">Para</label>
+        <select id="transfDestino"></select>
+      </div>
+      <div class="form-group">
+        <label for="transfValor">Valor</label>
+        <input type="text" id="transfValor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label for="transfData">Data</label>
+        <input type="date" id="transfData">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalTransferencia')">Cancelar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarTransferencia()">Transferir</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DE GERENCIAR CATEGORIAS -->
   <div id="modalCategorias" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalCategorias')">
     <div class="modal-content">
@@ -898,6 +941,7 @@
     let fixos = [];
     let investimentos = [];
     let grupos = [];
+    let transferencias = [];
     let valoresOcultos = false;
     let faturaMesOffset = 0;
     let tipoGraficoCategoria = 'barras';
@@ -922,6 +966,7 @@
     const STORAGE_KEY_FIXOS = "meu_financeiro_fixos_v1";
     const STORAGE_KEY_INVEST = "meu_financeiro_investimentos_v1";
     const STORAGE_KEY_GRUPOS = "meu_financeiro_grupos_v1";
+    const STORAGE_KEY_TRANSFERENCIAS = "meu_financeiro_transferencias_v1";
     const STORAGE_KEY_ORCAMENTOS = "meu_financeiro_orcamentos_categoria_v1";
     const STORAGE_KEY_CONTAS = "meu_financeiro_contas_v1";
     const STORAGE_KEY_CATEGORIAS = "meu_financeiro_categorias_v1";
@@ -943,6 +988,15 @@
     function carregarFixos() {
       const d = localStorage.getItem(STORAGE_KEY_FIXOS);
       if (d) { try { fixos = JSON.parse(d) || []; } catch (e) { fixos = []; } }
+    }
+
+    // Transferências entre contas próprias ficam num array totalmente separado de
+    // `lancamentos` — de propósito, pra nunca precisar tocar nas somas de receita/
+    // despesa/gráficos/faturas existentes (elas simplesmente nunca veem isso aqui).
+    function salvarTransferencias() { localStorage.setItem(STORAGE_KEY_TRANSFERENCIAS, JSON.stringify(transferencias)); }
+    function carregarTransferencias() {
+      const d = localStorage.getItem(STORAGE_KEY_TRANSFERENCIAS);
+      if (d) { try { transferencias = JSON.parse(d) || []; } catch (e) { transferencias = []; } }
     }
 
     function salvarInvest() { localStorage.setItem(STORAGE_KEY_INVEST, JSON.stringify(investimentos)); }
@@ -1663,14 +1717,18 @@
       if (!toqueValido || algumModalAberto()) return;
       const dx = e.changedTouches[0].clientX - toqueIniX;
       const dy = e.changedTouches[0].clientY - toqueIniY;
-      // só conta como troca de aba se o gesto for claramente horizontal
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      // gesto mais leve pra trocar de aba: menos distância exigida, ainda proteção
+      // contra confundir com rolagem vertical
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 2) return;
       const idxAtual = ORDEM_ABAS.findIndex(id => {
         const el = document.getElementById(id);
         return el && el.classList.contains('ativo');
       });
-      const destino = dx < 0 ? idxAtual + 1 : idxAtual - 1;
-      if (idxAtual === -1 || destino < 0 || destino >= ORDEM_ABAS.length) return;
+      if (idxAtual === -1) return;
+      // scroll infinito: passou da última aba, volta pra primeira (e vice-versa)
+      let destino = dx < 0 ? idxAtual + 1 : idxAtual - 1;
+      if (destino >= ORDEM_ABAS.length) destino = 0;
+      if (destino < 0) destino = ORDEM_ABAS.length - 1;
       const idAba = ORDEM_ABAS[destino];
       const btn = document.querySelector(`.nav-tab[onclick*="${idAba}"]`);
       mudarAba(idAba, btn);
@@ -1943,6 +2001,13 @@
       const item = lancamentos.find(l => l.id === id);
       if (!item) return;
       document.getElementById('modalAcoesTitulo').textContent = item.descricao;
+      const eReceita = item.tipo === 'receita';
+      const dataFmt = item.data.split('-').reverse().join('/');
+      document.getElementById('infoAcoesLancamento').innerHTML = `
+        <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:20px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+        <div style="font-size:12px;color:#888;margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+        ${item.observacao ? `<div style="font-size:11px;color:#8c8c8c;margin-top:4px;">${item.observacao}</div>` : ''}
+      `;
       const btnParcelas = document.getElementById('btnGerenciarParcelas');
       if (btnParcelas) btnParcelas.classList.toggle('escondido', !item.grupoId);
       document.getElementById('modalAcoes').classList.remove('escondido');
@@ -1967,8 +2032,13 @@
       if (!lancamentoSelecionadoId) return;
       const item = lancamentos.find(l => l.id === lancamentoSelecionadoId);
       if (!item || !item.grupoId) return;
-      parcelasGrupoAtual = item.grupoId;
       fecharModal('modalAcoes');
+      abrirGerenciarParcelasPorGrupoId(item.grupoId);
+    }
+
+    function abrirGerenciarParcelasPorGrupoId(grupoId) {
+      if (!grupoId) return;
+      parcelasGrupoAtual = grupoId;
       renderizarGerenciarParcelas();
       document.getElementById('modalParcelas').classList.remove('escondido');
     }
@@ -2302,18 +2372,61 @@
       document.getElementById(modalId).classList.add('escondido');
     }
 
+    // TRANSFERÊNCIA ENTRE CONTAS PRÓPRIAS — fica num array separado (`transferencias`),
+    // de propósito, pra nunca contar como receita/despesa em nenhum resumo/gráfico.
+    function abrirModalTransferencia() {
+      const selO = document.getElementById('transfOrigem');
+      const selD = document.getElementById('transfDestino');
+      selO.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      selD.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      if (contas.length > 1) selD.selectedIndex = 1;
+      document.getElementById('transfValor').value = '';
+      document.getElementById('transfData').value = obterDataBrasilia();
+      document.getElementById('modalTransferencia').classList.remove('escondido');
+    }
+
+    function salvarTransferencia() {
+      const origem = document.getElementById('transfOrigem').value;
+      const destino = document.getElementById('transfDestino').value;
+      const valorBruto = document.getElementById('transfValor').value.replace('R$', '').trim();
+      const valor = parseVal(valorBruto);
+      const data = document.getElementById('transfData').value || obterDataBrasilia();
+
+      if (origem === destino) { alert('Escolha duas contas diferentes.'); return; }
+      if (!valor || valor <= 0) { alert('Digite um valor válido.'); return; }
+
+      transferencias.unshift({ id: Date.now(), data, origem, destino, valor: valor.toFixed(2).replace('.', ',') });
+      salvarTransferencias();
+      fecharModal('modalTransferencia');
+    }
+
     function setFiltroPeriodo(periodo, el) {
       periodoModalAtual = periodo;
       document.querySelectorAll('#filtrosPeriodoModal .btn-periodo').forEach(b => b.classList.remove('ativo'));
       el.classList.add('ativo');
+
+      const label = document.getElementById('labelPeriodoModalAtual');
+      if (label) label.textContent = el.textContent;
 
       const boxCustom = document.getElementById('boxDataCustom');
       if (periodo === 'custom') {
         boxCustom.classList.remove('escondido');
       } else {
         boxCustom.classList.add('escondido');
+        // depois de escolher, já recolhe o filtro sozinho — só o "personalizado" fica aberto
+        const grid = document.getElementById('filtrosPeriodoModal');
+        const seta = document.getElementById('setaPeriodoModal');
+        if (grid) grid.classList.add('escondido');
+        if (seta) seta.textContent = '▼';
       }
       atualizarModalConsulta();
+    }
+
+    function alternarFiltroPeriodoModal() {
+      const grid = document.getElementById('filtrosPeriodoModal');
+      const seta = document.getElementById('setaPeriodoModal');
+      grid.classList.toggle('escondido');
+      seta.textContent = grid.classList.contains('escondido') ? '▼' : '▲';
     }
 
     /* REQUISIÇÃO 5: ALTERNAR EXIBIÇÃO RECOLHÍVEL DO PERÍODO NOS GRÁFICOS */
@@ -3026,25 +3139,6 @@
       `;
 
       container.innerHTML = '';
-      const nomesContasFatura = Object.keys(porConta);
-      if (nomesContasFatura.length === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma despesa lançada neste mês.</p>';
-      } else {
-        const rotulo = document.createElement('div');
-        rotulo.style.cssText = 'font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;';
-        rotulo.textContent = 'Fatura por conta';
-        container.appendChild(rotulo);
-        nomesContasFatura.sort((a, b) => porConta[b] - porConta[a]).forEach(nomeConta => {
-          const pct = totalDespMes > 0 ? Math.round((porConta[nomeConta] / totalDespMes) * 100) : 0;
-          const div = document.createElement('div');
-          div.className = 'barra-categoria';
-          div.innerHTML = `
-            <div class="barra-info"><span>${nomeConta}</span><span class="valor-despesa" style="font-weight:600;">${fmtOculto(porConta[nomeConta])} · ${pct}%</span></div>
-            <div class="barra-bg" style="height:6px;"><div class="barra-fill" style="width:${pct}%;background-color:rgba(239,83,80,0.6);"></div></div>
-          `;
-          container.appendChild(div);
-        });
-      }
 
       containerFixos.innerHTML = '';
       const refCompare = new Date(ano, mes, 1);
@@ -3523,7 +3617,31 @@
               </div>
           `;
 
+          // Compras parceladas viram UMA linha só (valor total + quantas faltam),
+          // em vez de uma linha por parcela — clicar abre o gerenciador de parcelas.
+          const hoje = obterDataBrasilia();
+          const grupoIdsRenderizados = new Set();
           listaItens.forEach(item => {
+            if (item.grupoId) {
+              if (grupoIdsRenderizados.has(item.grupoId)) return; // já renderizou essa compra
+              grupoIdsRenderizados.add(item.grupoId);
+              const parcelasDaCompra = lancamentos.filter(l => l.grupoId === item.grupoId);
+              const totalCompra = parcelasDaCompra.reduce((s, l) => s + parseVal(l.valor), 0);
+              const restantes = parcelasDaCompra.filter(l => l.data > hoje).length;
+              const descBase = (item.descricao || '').replace(/\s\(\d+\/\d+\)$/, '');
+              const dataFmt = item.data.split('-').reverse().join('/');
+              html += `
+                <div class="item-lancamento" onclick="abrirGerenciarParcelasPorGrupoId('${item.grupoId}')" style="padding:6px 0;">
+                  <div class="item-info">
+                    <span style="font-size:13px;">${descBase}</span>
+                    <div style="font-size:10px;color:#888;">${parcelasDaCompra.length}x • ${restantes > 0 ? restantes + ' parcela' + (restantes > 1 ? 's' : '') + ' restante' + (restantes > 1 ? 's' : '') : 'já paga'} • desde ${dataFmt}</div>
+                  </div>
+                  <span class="valor-despesa" style="font-size:13px;">- R$ ${totalCompra.toFixed(2).replace('.', ',')}</span>
+                </div>
+              `;
+              return;
+            }
+
             const dataFmt = item.data.split('-').reverse().join('/');
             const eReceita = item.tipo === 'receita';
             html += `
@@ -3848,6 +3966,7 @@ function confirmarLancamentoVoz() {
     carregarFixos();
     carregarInvest();
     carregarGrupos();
+    carregarTransferencias();
     carregarOrcamentos();
     carregarContas();
     popularSelectsContas();
@@ -3859,6 +3978,8 @@ function confirmarLancamentoVoz() {
     aplicarSecao('fixos');
     aplicarSecao('backup');
     aplicarSecao('emprestimos');
+    if (uiPrefs['secao_lancamentosMes'] === undefined) uiPrefs['secao_lancamentosMes'] = true;
+    aplicarSecao('lancamentosMes');
     aplicarSecao('evolucaoMensal');
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
