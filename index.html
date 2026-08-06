@@ -2709,6 +2709,8 @@
     function atualizarModalConsulta() {
       const titulo = document.getElementById('modalTitulo');
       const boxSubtotais = document.getElementById('boxSubtotaisModal');
+      boxSubtotais.classList.remove('escondido');
+      document.getElementById('subtituloModal').classList.remove('escondido');
       const corpo = document.getElementById('modalCorpo');
       
       // mesmo período selecionado na aba Gráficos — fonte única de verdade
@@ -3654,7 +3656,10 @@
           observacao: 'Recebimento de empréstimo',
           data,
           valor: c.valor.toFixed(2).replace('.', ','),
-          grupoViagemId: '', grupoViagemNome: '',
+          // herda o grupo do gasto original: é isso que faz o total do grupo
+          // descontar o que já voltou pro seu bolso
+          grupoViagemId: c.lanc.grupoViagemId || '',
+          grupoViagemNome: c.lanc.grupoViagemNome || '',
           emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
           reembolsoDe: c.lanc.id
         });
@@ -3675,7 +3680,10 @@
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
       document.getElementById('chipsContasConsulta').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.add('escondido');
-      document.getElementById('boxSubtotaisModal').innerHTML = '';
+      const boxSubFat = document.getElementById('boxSubtotaisModal');
+      boxSubFat.innerHTML = '';
+      boxSubFat.classList.add('escondido');
+      document.getElementById('subtituloModal').classList.remove('escondido');
       grupoModalAtualId = null;
 
       let filtrados = [];
@@ -4055,6 +4063,21 @@
     }
 
     /* REQUISIÇÃO 8: REMOVER LIXEIRA DA LISTA DE GRUPOS E EXIBIR DETALHAMENTO DIRETO/CATEGORIZADO */
+    /* CONTA DE UM GRUPO
+       O que interessa numa viagem rachada não é quanto passou no seu cartão, e sim
+       quanto sobrou pra você depois dos reembolsos. Daí três números diferentes:
+       - bruto:    tudo que você lançou no grupo
+       - liquido:  o que efetivamente saiu do seu bolso (bruto menos o que voltou)
+       - aReceber: o que ainda está em aberto com as outras pessoas */
+    function resumoGrupo(id) {
+      const itens = lancamentos.filter(l => l.grupoViagemId === id);
+      const bruto = itens.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
+      const recebido = itens.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
+      const aReceber = itens.reduce((sm, l) =>
+        sm + cobrancasDoLancamento(l).filter(c => !c.quitado).reduce((a, c) => a + c.valor, 0), 0);
+      return { itens, bruto, recebido, liquido: bruto - recebido, aReceber };
+    }
+
     function renderizarGrupos() {
       const container = document.getElementById('listaGrupos');
       const termo = textoSeguro(document.getElementById('inputBuscaGrupo')?.value || '');
@@ -4068,17 +4091,18 @@
       }
 
       listaFiltrada.forEach(g => {
-        const vinculados = lancamentos.filter(l => l.grupoViagemId === g.id);
-        const totalDespesas = vinculados.filter(l => l.tipo === 'despesa').reduce((s, l) => s + parseVal(l.valor), 0);
-        const totalReceitas = vinculados.filter(l => l.tipo === 'receita').reduce((s, l) => s + parseVal(l.valor), 0);
-        const total = totalDespesas - totalReceitas;
+        const { bruto, recebido, liquido, aReceber } = resumoGrupo(g.id);
+        const total = liquido;
+        const contexto = [];
+        if (recebido > 0) contexto.push('de ' + fmtVal(bruto));
+        if (aReceber > 0) contexto.push(fmtVal(aReceber) + ' a receber');
         const div = document.createElement('div');
         div.className = 'item-lancamento';
         div.addEventListener('click', (e) => { if (e.target.closest('.btn-acao')) return; abrirModalGrupo(g.id); });
         div.innerHTML = `
           <div class="item-info">
             <strong>${g.nome}</strong>
-            <div style="font-size:11px;color:#888;">${g.status === 'aberto' ? '🟢 Em aberto' : '⚪ Encerrado'}</div>
+            <div style="font-size:11px;color:#888;">${g.status === 'aberto' ? '🟢 Em aberto' : '⚪ Encerrado'}${contexto.length ? ' · ' + contexto.join(' · ') : ''}</div>
           </div>
           <div class="item-acoes">
             <span class="${total >= 0 ? 'valor-despesa' : 'valor-receita'}">${fmtVal(total)}</span>
@@ -4119,8 +4143,11 @@
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
       document.getElementById('chipsContasConsulta').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.remove('escondido');
-      document.getElementById('boxSubtotaisModal').innerHTML = '';
-      
+      const boxSub = document.getElementById('boxSubtotaisModal');
+      boxSub.innerHTML = '';
+      boxSub.classList.add('escondido');           // vazia aqui: não deixa a moldura sobrando
+      document.getElementById('subtituloModal').classList.add('escondido');
+
       titulo.textContent = g.nome;
       corpo.innerHTML = '';
       const itens = lancamentos.filter(l => l.grupoViagemId === id);
@@ -4128,9 +4155,7 @@
       if (itens.length === 0) {
         corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto vinculado a este grupo ainda.</p>';
       } else {
-        const totalDespesas = itens.filter(l => l.tipo === 'despesa').reduce((s, l) => s + parseVal(l.valor), 0);
-        const totalReceitas = itens.filter(l => l.tipo === 'receita').reduce((s, l) => s + parseVal(l.valor), 0);
-        const totalLíquido = totalDespesas - totalReceitas;
+        const { bruto, recebido, liquido, aReceber } = resumoGrupo(id);
 
         // Agrupamento por Categoria
         const porCategoria = {};
@@ -4140,12 +4165,31 @@
           porCategoria[cat].push(item);
         });
 
+        // Só mostra a conta aberta quando ela muda alguma coisa — sem rateio nem
+        // reembolso, o total do grupo já é o que você gastou, e a decomposição
+        // seria linha a mais dizendo o mesmo número.
+        const temRateio = recebido > 0 || aReceber > 0;
         let html = `
-          <div style="text-align:center;padding:10px 0 16px;border-bottom:1px solid #333;margin-bottom:16px;">
-            <span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total do Grupo</span>
-            <h3 style="color:${totalLíquido >= 0 ? '#ef5350' : '#4caf50'};font-size:24px;margin-top:4px;">${fmtVal(totalLíquido)}</h3>
+          <div style="text-align:center;padding:10px 0 12px;border-bottom:1px solid #333;margin-bottom:16px;">
+            <span style="font-size:11px;color:#aaa;text-transform:uppercase;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
+            <h3 style="color:${liquido >= 0 ? '#ef5350' : '#4caf50'};font-size:24px;margin-top:4px;">${fmtVal(liquido)}</h3>
           </div>
         `;
+
+        if (temRateio) {
+          const seTodosPagarem = liquido - aReceber;
+          html += `
+            <div class="box-resumo-modal" style="margin-bottom:16px;">
+              <div class="linha-subtotal" style="cursor:default;"><span>Lancei no grupo</span><strong>${fmtVal(bruto)}</strong></div>
+              <div class="linha-subtotal" style="cursor:default;"><span>(−) já me pagaram</span><strong style="color:#4caf50;">${fmtVal(recebido)}</strong></div>
+              <div class="linha-subtotal" style="cursor:default;border-top:1px solid #333;padding-top:6px;margin-top:6px;"><span>(=) saiu do meu bolso</span><strong style="color:#ef5350;">${fmtVal(liquido)}</strong></div>
+              ${aReceber > 0 ? `
+                <div class="linha-subtotal" style="cursor:default;margin-top:8px;padding-top:8px;border-top:1px dashed #333;"><span>ainda a receber</span><strong style="color:#ffd166;">${fmtVal(aReceber)}</strong></div>
+                <div style="font-size:11px;color:#888;margin-top:4px;">Se todo mundo pagar, a viagem te custa ${fmtVal(seTodosPagarem)}.</div>
+              ` : ''}
+            </div>
+          `;
+        }
 
         Object.entries(porCategoria).forEach(([cat, listaItens]) => {
           const totCat = listaItens.reduce((s, item) => s + (item.tipo === 'receita' ? -parseVal(item.valor) : parseVal(item.valor)), 0);
@@ -4531,7 +4575,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-2';
+    const APP_VERSION = '2026.08.06-3';
 
     // Inicialização
     carregarLocalStorage();
