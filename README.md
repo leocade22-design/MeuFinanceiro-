@@ -20,9 +20,13 @@ Antes de mexer em qualquer coisa, exporte um backup: aba **Faturas** →
 
 ## Publicar uma versão nova
 
-O GitHub Pages publica direto do branch `main`: todo push ali dispara um build
-("pages build and deployment" na aba Actions). Não há workflow próprio no
-repositório.
+A publicação é feita por `.github/workflows/pages.yml`, disparado a cada push na
+`main`. Dá pra publicar na mão também: aba **Actions** → *Publicar no GitHub
+Pages* → *Run workflow*, sem precisar de commit novo.
+
+> O Pages precisa estar em *Settings → Pages → Source: GitHub Actions*. No modo
+> antigo ("Deploy from a branch") a GitHub gera o próprio workflow e ignora este
+> arquivo — inclusive o limite de tempo maior que ele define.
 
 **Ao publicar, mude a versão nos dois arquivos, juntos:**
 
@@ -41,11 +45,16 @@ lançamentos).
 
 ### Quando o deploy falha
 
-Já aconteceu de o build passar e o deploy ficar preso em `deployment_queued`
-até estourar o tempo — é fila da própria GitHub, não erro do código. O site
-continua no ar com a versão anterior. Um push novo na `main` costuma resolver;
-a página de status geral pode continuar verde, porque fila lenta num
+O erro que já apareceu várias vezes: o build passa e o deploy fica preso em
+`deployment_queued` ou `deployment_in_progress` até estourar o tempo. É fila da
+própria GitHub, não erro do código — o site continua no ar com a versão
+anterior, e a página de status geral pode seguir verde, porque fila lenta num
 repositório não conta como incidente.
+
+O workflow define `timeout: 1800000` (30 min) no passo de publicar justamente
+por isso: o padrão de 10 minutos cancelava publicações que estavam a caminho.
+Se ainda assim falhar, use *Run workflow* pela aba Actions para tentar de novo
+sem precisar de um commit.
 
 ## Testar localmente
 

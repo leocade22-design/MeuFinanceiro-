@@ -1,0 +1,46 @@
+name: Publicar no GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # permite publicar na mão pela aba Actions, sem precisar de um commit novo
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Uma publicação por vez. cancel-in-progress fica FALSO de propósito: se chegar
+# um push novo no meio de uma publicação, a atual termina em vez de ser abortada.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+
+      - name: Preparar o Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empacotar o site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # site estático de arquivo único: sobe a raiz do repositório como está
+          path: .
+
+      - name: Publicar
+        id: deploy
+        uses: actions/deploy-pages@v4
+        with:
+          # O padrão são 10 minutos (600000 ms) — e era exatamente esse limite
+          # que vinha cancelando a publicação no meio quando a fila da GitHub
+          # estava lenta. Meia hora dá folga pra ela terminar.
+          timeout: 1800000
