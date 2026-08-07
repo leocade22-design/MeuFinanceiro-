@@ -3120,17 +3120,16 @@
         // corresponde ao que a barra representa.
         const pct = Math.round((valor / total) * 100);
         const meta = metaDe(nome);
-        const estourou = meta > 0 && valor > meta;
         const pctMeta = meta > 0 ? Math.min(99, Math.round((meta / total) * 100)) : 0;
         const div = document.createElement('div');
         div.className = 'barra-categoria';
         div.innerHTML = `
           <div class="barra-info">
             <span>${nome}${meta > 0 ? ` <span style="color:#ffd166;font-size:10.5px;">meta ${fmtOculto(meta)}</span>` : ''}</span>
-            <span style="${estourou ? 'color:#ef5350;' : ''}">${fmtOculto(valor)} · ${pct}%</span>
+            <span>${fmtOculto(valor)} · ${pct}%</span>
           </div>
           <div class="barra-bg" style="position:relative;">
-            <div class="barra-fill" style="width:${pct}%;background-color:${estourou ? '#ef5350' : corBase};"></div>
+            <div class="barra-fill" style="width:${pct}%;background-color:${corBase};"></div>
             ${meta > 0 ? `<div class="marca-meta-barra" style="left:${pctMeta}%;"></div>` : ''}
           </div>
         `;
@@ -3180,14 +3179,13 @@
       entradas.forEach(([nome, valor]) => {
         const alt = Math.max(4, Math.round((valor / max) * 100));
         const meta = metaDe(nome);
-        const estourou = meta > 0 && valor > meta;
         const item = document.createElement('div');
         item.className = 'coluna-item';
         item.title = `${nome}: ${fmtVal(valor)}` + (meta > 0 ? ` · meta ${fmtVal(meta)}` : '');
         item.innerHTML = `
-          <span class="coluna-valor" style="${estourou ? 'color:#ef5350;font-weight:700;' : ''}">${valoresOcultos ? '•••' : fmtVal(valor).replace('R$ ', '')}</span>
+          <span class="coluna-valor">${valoresOcultos ? '•••' : fmtVal(valor).replace('R$ ', '')}</span>
           <div style="position:relative;width:100%;height:100%;display:flex;align-items:flex-end;">
-            <div class="coluna-barra" style="height:${alt}%;background-color:${estourou ? '#ef5350' : corBase};"></div>
+            <div class="coluna-barra" style="height:${alt}%;background-color:${corBase};"></div>
             ${meta > 0 ? `<div class="marca-meta" style="bottom:${Math.min(100, Math.round((meta / max) * 100))}%;"></div>` : ''}
           </div>
           <span class="coluna-rotulo">${nome}</span>
@@ -3198,7 +3196,7 @@
       if (entradas.some(([n]) => metaDe(n) > 0)) {
         const leg = document.createElement('div');
         leg.style.cssText = 'font-size:10.5px;color:#888;text-align:center;margin-top:6px;';
-        leg.innerHTML = '<span style="color:#ffd166;">┄</span> meta da categoria · vermelho = estourou';
+        leg.innerHTML = '<span style="color:#ffd166;">┄</span> meta da categoria — passou da linha, estourou';
         container.appendChild(leg);
       }
     }
@@ -5293,7 +5291,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-1';
+    const APP_VERSION = '2026.08.07-2';
 
     // Inicialização
     carregarLocalStorage();
