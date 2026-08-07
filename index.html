@@ -109,7 +109,7 @@
     .nav-tab.ativo { background-color: #242424; color: #fff; }
     .aba-conteudo { display: none; }
     .aba-conteudo.ativo { display: block; }
-    .card { background-color: #242424; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .card { background-color: #242424; border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
     .tipo-toggle { display: flex; gap: 10px; margin-bottom: 12px; }
     .btn-tipo { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; font-weight: bold; font-size: 15px; cursor: pointer; }
     .btn-tipo.ativo-receita { border-color: #2e7d32; color: #4caf50; background-color: rgba(46, 125, 50, 0.15); }
@@ -148,13 +148,13 @@
     .btn-mes { background: #1a1a1a; border: 1px solid #333; color: #fff; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
     /* pop-up centralizado na tela */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; padding: 14px; z-index: 1000; }
-    .modal-content { background: #242424; width: 100%; max-width: 480px; border-radius: 18px; padding: 20px; max-height: 88vh; overflow-y: auto; border: 1px solid #3a3a3a; }
+    .modal-content { background: #242424; width: 100%; max-width: 480px; border-radius: 18px; padding: 16px; max-height: 88vh; overflow-y: auto; border: 1px solid #3a3a3a; }
     /* O formulário é emprestado pro modal de edição: aqui ele perde a moldura de
        card e o próprio cabeçalho, que duplicavam o do modal. */
     #destinoFormEdicao > .card { background: transparent; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
     #destinoFormEdicao .form-header-linha,
     #destinoFormEdicao #btnCancelarEdit { display: none; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 12px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 9px; }
     .btn-fechar { background: transparent; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
 
     /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
@@ -167,10 +167,11 @@
     #chipsContasConsulta button { flex:0 0 auto; white-space:nowrap; }
     .btn-periodo { padding: 8px; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; color: #aaa; font-size: 12px; cursor: pointer; text-align: center; }
     .btn-periodo.ativo { background: #333; color: #fff; border-color: #666; font-weight: bold; }
-    .box-resumo-modal { background: #1a1a1a; border-radius: 10px; padding: 12px; margin-bottom: 16px; border: 1px solid #333; }
+    .box-resumo-modal { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid #333; }
     .linha-subtotal { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 6px; color: #ccc; cursor: pointer; }
     .linha-subtotal > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .linha-subtotal:last-child { margin-bottom: 0; }
+    .linha-subtotal.focada { background:#2b2b2b; border-radius:6px; margin-left:-6px; margin-right:-6px; padding:3px 6px; }
     .busca-box { position: relative; margin-bottom: 16px; }
     .busca-box input { padding-left: 36px; }
     .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
@@ -182,7 +183,7 @@
     .balao-acoes { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
     #listaGruposVinculo { display:flex; flex-direction:column; gap:8px; }
     .btn-opcao-balao.selecionado { border-color:#2e7d32; color:#4caf50; background:rgba(46,125,50,.12); }
-    .bloco-cat { margin-bottom:14px; background:#1a1a1a; padding:10px; border-radius:10px; border:1px solid #333; }
+    .bloco-cat { margin-bottom:10px; background:#1a1a1a; padding:9px 10px; border-radius:10px; border:1px solid #333; }
     details.bloco-cat > summary { display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; }
     details.bloco-cat > summary::-webkit-details-marker { display:none; }
     details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px; }
@@ -2833,7 +2834,14 @@
     }
 
     /* SISTEMA DE CONSULTA & FILTROS DE PERÍODO NO RESUMO DO TOPO */
-    let consultaConta = '';  // '' = todas as contas
+    let consultaConta = '';   // '' = todas as contas
+    let consultaGrupo = '';   // categoria (despesa) ou fonte (receita) em foco
+
+    // Tocar numa linha do resumo isola aquela categoria; tocar no total volta.
+    function focarGrupoConsulta(nome) {
+      consultaGrupo = (consultaGrupo === nome) ? '' : nome;
+      atualizarModalConsulta();
+    }
 
     function renderizarChipsContasConsulta() {
       const box = document.getElementById('chipsContasConsulta');
@@ -2866,6 +2874,7 @@
       tipoModalAtual = tipo;
       grupoModalAtualId = null;
       consultaConta = '';
+      consultaGrupo = '';
       document.getElementById('wrapFiltrosModal').classList.remove('escondido');
       document.getElementById('chipsContasConsulta').classList.remove('escondido');
       document.getElementById('labelPeriodoModalAtual').textContent = labelPeriodoGraficos;
@@ -3067,11 +3076,13 @@
           porDesc[chave] = (porDesc[chave] || 0) + parseVal(l.valor);
         });
 
-        let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total no Período</span><h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        let html = `<div style="margin-bottom:8px;cursor:pointer;" onclick="focarGrupoConsulta('')" title="Ver tudo"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total no Período${consultaGrupo ? ' · tocar pra ver tudo' : ''}</span><h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3></div>`;
         Object.entries(porDesc).sort((a,b) => b[1]-a[1]).forEach(([desc, val]) => {
-          html += `<div class="linha-subtotal"><span>${desc}</span><strong style="color:#4caf50;">${fmtOculto(val)}</strong></div>`;
+          const ativo = consultaGrupo === desc;
+          html += `<div class="linha-subtotal${ativo ? ' focada' : ''}" onclick="focarGrupoConsulta(${JSON.stringify(desc).replace(/"/g, '&quot;')})"><span>${desc}</span><strong style="color:#4caf50;">${fmtOculto(val)}</strong></div>`;
         });
         boxSubtotais.innerHTML = html;
+        if (consultaGrupo) itensPeriodo = itensPeriodo.filter(l => chaveReceitaAgrupada(l) === consultaGrupo);
       } 
       else if (tipoModalAtual === 'despesa') {
         const total = itensPeriodo.reduce((s, l) => s + parseVal(l.valor), 0);
@@ -3081,11 +3092,13 @@
           porCat[c] = (porCat[c] || 0) + parseVal(l.valor); 
         });
 
-        let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total Gasto</span><h3 style="color:#c25651;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        let html = `<div style="margin-bottom:8px;cursor:pointer;" onclick="focarGrupoConsulta('')" title="Ver tudo"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total Gasto${consultaGrupo ? ' · tocar pra ver tudo' : ''}</span><h3 style="color:#c25651;font-size:22px;">${fmtOculto(total)}</h3></div>`;
         Object.entries(porCat).sort((a,b) => b[1]-a[1]).forEach(([cat, val]) => {
-          html += `<div class="linha-subtotal"><span>${cat}</span><strong style="color:${COR_DESPESA_GRAFICO};">${fmtOculto(val)}</strong></div>`;
+          const ativo = consultaGrupo === cat;
+          html += `<div class="linha-subtotal${ativo ? ' focada' : ''}" onclick="focarGrupoConsulta(${JSON.stringify(cat).replace(/"/g, '&quot;')})"><span>${cat}</span><strong style="color:${COR_DESPESA_GRAFICO};">${fmtOculto(val)}</strong></div>`;
         });
         boxSubtotais.innerHTML = html;
+        if (consultaGrupo) itensPeriodo = itensPeriodo.filter(l => (l.categoria || 'Outros') === consultaGrupo);
       } 
       else {
         let totalRec = 0, totalDesp = 0;
@@ -3117,6 +3130,9 @@
         html += `</div>`;
         boxSubtotais.innerHTML = html;
       }
+
+      const sub = document.getElementById('subtituloModal');
+      if (sub) sub.textContent = consultaGrupo ? 'Lançamentos de ' + consultaGrupo : 'Lançamentos do período';
 
       corpo.innerHTML = '';
       if (itensPeriodo.length === 0) {
@@ -3820,7 +3836,7 @@
       const somar = lista => lista.reduce((sm, c) => sm + c.valor, 0);
       if (badge) {
         const partes = [];
-        if (aReceber.length) partes.push('<span style="color:#4caf50;">+' + fmtOculto(somar(aReceber)) + '</span>');
+        if (aReceber.length) partes.push('<span style="color:#ffd166;">+' + fmtOculto(somar(aReceber)) + '</span>');
         if (aPagar.length) partes.push('<span style="color:#ef5350;">−' + fmtOculto(somar(aPagar)) + '</span>');
         badge.innerHTML = '· ' + partes.join(' / ');
       }
@@ -3839,6 +3855,9 @@
       const emAtraso = c => c.vence && c.vence < hoje;
       // verde é dinheiro que vem, vermelho é dinheiro que sai — mesma convenção
       // do resto do app
+      // O TOTAL a receber fica amarelo porque ainda não entrou; o valor de cada
+      // pessoa fica verde porque uma hora entra. O que eu devo é vermelho nos dois.
+      const corTotal = devo ? '#ef5350' : '#ffd166';
       const cor = devo ? '#ef5350' : '#4caf50';
 
       const porPessoa = {};
@@ -3850,7 +3869,7 @@
       topo.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin:${devo ? '18' : '0'}px 0 6px;border-bottom:1px solid #333;">
           <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${devo ? 'Total que eu devo' : 'Total a receber'}</span>
-          <strong style="color:${cor};font-size:19px;">${fmtOculto(total)}</strong>
+          <strong style="color:${corTotal};font-size:19px;">${fmtOculto(total)}</strong>
         </div>
         ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:#ef5350;"><span>⚠ ${devo ? 'vencido — precisa pagar' : 'vencido — pode cobrar'}</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
       `;
@@ -4016,8 +4035,11 @@
 
       const box24 = document.getElementById('resumo24h');
       if (box24) {
+        // sem o teto em hoje isto virava "de ontem em diante" e somava parcela
+        // futura e gasto fixo projetado — daí a despesa de 24h passar a do mês
+        const hoje = obterDataBrasilia();
         const limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        const recentes = lancamentos.filter(l => l.data >= limite);
+        const recentes = lancamentos.filter(l => l.data >= limite && l.data <= hoje);
         const rec = recentes.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
         const desp = recentes.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
         box24.innerHTML = (rec > 0 || desp > 0)
@@ -4067,7 +4089,8 @@
         box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
       }
       if (badge) {
-        badge.textContent = abertas === 0 ? '· tudo pago' : '· ' + fmtOculto(totalAberto) + ' em aberto';
+        // "em aberto" já aparece na linha de cada cartão logo abaixo
+        badge.textContent = abertas === 0 ? '· tudo pago' : '· ' + fmtOculto(totalAberto);
         badge.style.color = abertas === 0 ? '#4caf50' : '#ffd166';
       }
     }
@@ -5369,7 +5392,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-4';
+    const APP_VERSION = '2026.08.07-5';
 
     // Inicialização
     carregarLocalStorage();
