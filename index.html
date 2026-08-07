@@ -371,7 +371,7 @@
         </div>
         <h3 id="tituloMesFatura" style="text-align:center;">—</h3>
         <div style="text-align:center;margin:2px 0 12px;">
-          <span id="capFatura" style="font-size:10.5px;color:#666;letter-spacing:.3px;">fecha dia 3 · vence dia 10</span>
+          <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:10.5px;color:#777;letter-spacing:.3px;cursor:pointer;padding:2px 6px;border-bottom:1px dotted #444;">—</button>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
@@ -809,7 +809,18 @@
           <label for="nomeConta">Nome da conta / cartão</label>
           <input type="text" id="nomeConta" placeholder="Ex: Nubank, Carteira, Vale Refeição...">
         </div>
-        <label class="check-credito"><input type="checkbox" id="contaTemCreditoChk"> Tem cartão de crédito (permite parcelar)</label>
+        <label class="check-credito"><input type="checkbox" id="contaTemCreditoChk" onchange="atualizarCamposCartao()"> Tem cartão de crédito (permite parcelar)</label>
+        <div class="form-row escondido" id="camposDiasCartao">
+          <div class="form-group">
+            <label for="contaDiaFechamento">Fecha no dia</label>
+            <select id="contaDiaFechamento"></select>
+          </div>
+          <div class="form-group">
+            <label for="contaDiaVencimento">Vence no dia</label>
+            <select id="contaDiaVencimento"></select>
+          </div>
+        </div>
+        <p style="font-size:11px;color:#777;margin-bottom:10px;">Compra feita depois do fechamento cai na fatura do mês seguinte. Cada cartão tem os seus dias.</p>
         <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
         <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
       </div>
@@ -1100,7 +1111,23 @@
     let labelPeriodoGraficos = 'Últimos 30 dias';
     let periodoGraficosAtual = '30';
 
-    const DIA_FECHAMENTO_CARTAO = 3; // cartão vira (fecha) todo dia 3, fatura vence dia 10
+    // Padrão de quem ainda não configurou; cada cartão pode ter os seus.
+    const DIA_FECHAMENTO_CARTAO = 3;
+    const DIA_VENCIMENTO_CARTAO = 10;
+
+    // Dias de fechamento/vencimento de um cartão, pelo nome da conta.
+    function diasDoCartao(nomeConta) {
+      const c = contas.find(x => x.nome === nomeConta);
+      return {
+        fecha: parseInt(c && c.diaFechamento, 10) || DIA_FECHAMENTO_CARTAO,
+        vence: parseInt(c && c.diaVencimento, 10) || DIA_VENCIMENTO_CARTAO
+      };
+    }
+
+    // Cartões de crédito cadastrados, na ordem da lista de contas
+    function cartoesDeCredito() {
+      return contas.filter(c => c.temCredito);
+    }
 
     const STORAGE_KEY = "meu_financeiro_v1";
     const STORAGE_KEY_FIXOS = "meu_financeiro_fixos_v1";
@@ -1177,6 +1204,15 @@
       const d = localStorage.getItem(STORAGE_KEY_CONTAS);
       if (d) { try { contas = JSON.parse(d) || []; } catch (e) { contas = []; } }
       if (!Array.isArray(contas) || contas.length === 0) contas = CONTAS_PADRAO.map(c => ({ ...c }));
+      // contas criadas antes dos dias por cartão herdam o padrão, pra o valor
+      // ficar explícito no cadastro em vez de só no fallback
+      let ajustou = false;
+      contas.forEach(c => {
+        if (!c.temCredito) return;
+        if (!c.diaFechamento) { c.diaFechamento = DIA_FECHAMENTO_CARTAO; ajustou = true; }
+        if (!c.diaVencimento) { c.diaVencimento = DIA_VENCIMENTO_CARTAO; ajustou = true; }
+      });
+      if (ajustou) salvarContas();
     }
 
     function contaTemCredito(nome) {
@@ -1456,7 +1492,7 @@
         div.className = 'item-lancamento';
         div.style.cursor = 'default';
         div.innerHTML = `
-          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 tem cartão de crédito' : 'sem cartão de crédito'}</div></div>
+          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 fecha dia ' + diasDoCartao(c.nome).fecha + ' · vence dia ' + diasDoCartao(c.nome).vence : 'sem cartão de crédito'}</div></div>
           <div class="item-acoes">
             <button class="btn-acao" onclick="editarConta('${c.id}')" title="Editar" aria-label="Editar" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
             <button class="btn-acao" onclick="excluirConta('${c.id}')" title="Excluir" aria-label="Excluir" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -1471,6 +1507,10 @@
       document.getElementById('idContaEditando').value = c.id;
       document.getElementById('nomeConta').value = c.nome;
       document.getElementById('contaTemCreditoChk').checked = !!c.temCredito;
+      atualizarCamposCartao();
+      const dias = diasDoCartao(c.nome);
+      document.getElementById('contaDiaFechamento').value = String(dias.fecha);
+      document.getElementById('contaDiaVencimento').value = String(dias.vence);
       document.getElementById('tituloFormConta').textContent = 'Editar conta';
       document.getElementById('btnCancelarConta').classList.remove('escondido');
     }
@@ -1479,8 +1519,28 @@
       document.getElementById('idContaEditando').value = '';
       document.getElementById('nomeConta').value = '';
       document.getElementById('contaTemCreditoChk').checked = false;
+      atualizarCamposCartao();
+      document.getElementById('contaDiaFechamento').value = String(DIA_FECHAMENTO_CARTAO);
+      document.getElementById('contaDiaVencimento').value = String(DIA_VENCIMENTO_CARTAO);
       document.getElementById('tituloFormConta').textContent = 'Adicionar nova conta';
       document.getElementById('btnCancelarConta').classList.add('escondido');
+    }
+
+    function atualizarCamposCartao() {
+      const temCredito = document.getElementById('contaTemCreditoChk').checked;
+      const box = document.getElementById('camposDiasCartao');
+      const selF = document.getElementById('contaDiaFechamento');
+      const selV = document.getElementById('contaDiaVencimento');
+      if (!selF.options.length) {
+        for (let d = 1; d <= 28; d++) {
+          [selF, selV].forEach(sel => {
+            const o = document.createElement('option');
+            o.value = String(d); o.textContent = String(d);
+            sel.appendChild(o);
+          });
+        }
+      }
+      box.classList.toggle('escondido', !temCredito);
     }
 
     function salvarConta() {
@@ -1508,8 +1568,14 @@
         }
         c.nome = nome;
         c.temCredito = temCredito;
+        c.diaFechamento = temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null;
+        c.diaVencimento = temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null;
       } else {
-        contas.push({ id: 'c' + Date.now(), nome, temCredito });
+        contas.push({
+          id: 'c' + Date.now(), nome, temCredito,
+          diaFechamento: temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null,
+          diaVencimento: temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null
+        });
       }
 
       salvarContas();
@@ -2452,7 +2518,7 @@
       container.innerHTML = '';
       grupo.forEach((item, i) => {
         const paga = item.data <= hoje;
-        const f = getMesFatura(item.data, item.formaModo);
+        const f = getMesFatura(item.data, item.formaModo, item.conta);
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #2a2a2a;';
         row.innerHTML = `
@@ -2476,7 +2542,7 @@
       const id = parseInt(inp.dataset.id, 10);
       const item = lancamentos.find(l => l.id === id);
       if (!item) return;
-      const f = getMesFatura(inp.value, item.formaModo);
+      const f = getMesFatura(inp.value, item.formaModo, item.conta);
       const legenda = inp.parentElement.querySelector('.legenda-parcela');
       if (!legenda) return;
       const paga = inp.value <= obterDataBrasilia();
@@ -2656,7 +2722,7 @@
         // Regra de faturamento: se a compra for efetuada após o dia do fechamento (dia 3), a 1ª parcela rola pro mês seguinte
         let dtCompra = new Date(dataBase + 'T12:00:00');
         let mesOffsetInicial = 0;
-        if (dtCompra.getDate() > DIA_FECHAMENTO_CARTAO) {
+        if (dtCompra.getDate() > diasDoCartao(conta).fecha) {
           mesOffsetInicial = 1;
         }
 
@@ -3000,7 +3066,7 @@
         const ref = getMesReferencia(faturaMesOffsetGraficos);
         const mes = ref.getMonth(), ano = ref.getFullYear();
         return l => {
-          const f = getMesFatura(l.data, l.formaModo);
+          const f = getMesFatura(l.data, l.formaModo, l.conta);
           return f.mes === mes && f.ano === ano;
         };
       }
@@ -3489,7 +3555,7 @@
         const label = NOMES_MESES[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2);
         const parcelasFuturas = lancamentos
           .filter(l => l.tipo === 'despesa' && !l.fixoId)
-          .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === ref.getMonth() && f.ano === ref.getFullYear(); })
+          .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === ref.getMonth() && f.ano === ref.getFullYear(); })
           .reduce((s, l) => s + parseVal(l.valor), 0);
         dados[label] = parcelasFuturas + totalFixos;
       }
@@ -3509,9 +3575,9 @@
     }
 
     // Compras no crédito feitas DEPOIS do fechamento (dia 3) caem na fatura do mês seguinte
-    function getMesFatura(dataStr, formaModo) {
+    function getMesFatura(dataStr, formaModo, conta) {
       const d = new Date(dataStr + 'T12:00:00');
-      if (eCredito(formaModo) && d.getDate() > DIA_FECHAMENTO_CARTAO) {
+      if (eCredito(formaModo) && d.getDate() > diasDoCartao(conta).fecha) {
         d.setMonth(d.getMonth() + 1);
       }
       return { mes: d.getMonth(), ano: d.getFullYear() };
@@ -3549,7 +3615,7 @@
       if (/fatura/.test(texto)) {
         const total = lancamentos
           .filter(l => l.tipo === 'despesa' && eCredito(l.formaModo))
-          .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === mes && f.ano === ano; })
+          .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === mes && f.ano === ano; })
           .reduce((s, l) => s + parseVal(l.valor), 0);
         resposta = `Fatura de ${nomeMes}: ${fmtOculto(total)}`;
       } else if (/fixo/.test(texto)) {
@@ -3612,23 +3678,34 @@
     })();
 
     // Legenda do fechamento: contagem regressiva quando o mês exibido é o atual
+    // Com mais de um cartão, cada um fecha no seu dia. O texto mostra o próximo
+    // fechamento de cada um, e tocar nele leva pro cadastro pra ajustar.
     function textoFechamento(mes, ano) {
+      const cartoes = cartoesDeCredito();
+      if (!cartoes.length) return 'nenhum cartão de crédito cadastrado';
+
       const hoje = obterDataBrasilia();
       const hAno = parseInt(hoje.slice(0, 4), 10);
       const hMes = parseInt(hoje.slice(5, 7), 10) - 1;
       const hDia = parseInt(hoje.slice(8, 10), 10);
-      if (ano === hAno && mes === hMes) {
-        let dias;
-        if (hDia <= DIA_FECHAMENTO_CARTAO) {
-          dias = DIA_FECHAMENTO_CARTAO - hDia;
+      const mesCorrente = (ano === hAno && mes === hMes);
+
+      const descrever = (c) => {
+        const dias = diasDoCartao(c.nome);
+        if (!mesCorrente) return `fecha dia ${dias.fecha} · vence dia ${dias.vence}`;
+        let faltam;
+        if (hDia <= dias.fecha) {
+          faltam = dias.fecha - hDia;
         } else {
           const diasNoMes = new Date(hAno, hMes + 1, 0).getDate();
-          dias = diasNoMes - hDia + DIA_FECHAMENTO_CARTAO;
+          faltam = diasNoMes - hDia + dias.fecha;
         }
-        const frase = dias === 0 ? 'fatura fecha hoje' : (dias === 1 ? 'fatura fecha amanhã' : `fatura fecha em ${dias} dias`);
-        return `${frase} · vence dia 10`;
-      }
-      return 'fecha dia 3 · vence dia 10';
+        const frase = faltam === 0 ? 'fecha hoje' : (faltam === 1 ? 'fecha amanhã' : `fecha em ${faltam} dias`);
+        return `${frase} · vence dia ${dias.vence}`;
+      };
+
+      if (cartoes.length === 1) return (mesCorrente ? 'fatura ' : '') + descrever(cartoes[0]);
+      return cartoes.map(c => `${c.nome}: ${descrever(c)}`).join('  ·  ');
     }
 
     function alternarDetalheFatura() {
@@ -3660,7 +3737,7 @@
           if (d.getMonth() === mes && d.getFullYear() === ano) totalRecebimentos += v;
           return;
         }
-        const { mes: mFat, ano: aFat } = getMesFatura(l.data, l.formaModo);
+        const { mes: mFat, ano: aFat } = getMesFatura(l.data, l.formaModo, l.conta);
         if (mFat === mes && aFat === ano) {
           porConta[l.conta] = (porConta[l.conta] || 0) + v;
           if (eCredito(l.formaModo)) totalCredito += v;
@@ -4020,7 +4097,7 @@
     function totalFaturaConta(conta, mes, ano) {
       return lancamentos
         .filter(l => l.tipo === 'despesa' && l.conta === conta && eCredito(l.formaModo))
-        .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === mes && f.ano === ano; })
+        .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === mes && f.ano === ano; })
         .reduce((sm, l) => sm + parseVal(l.valor), 0);
     }
 
@@ -4073,7 +4150,7 @@
             <div style="font-size:11px;color:${pago ? '#4caf50' : '#888'};">
               ${pago
                 ? '✓ paga em ' + pago.data.split('-').reverse().join('/') + ' · ' + fmtOculto(parseVal(pago.valorPago))
-                : 'em aberto'}
+                : 'vence dia ' + diasDoCartao(c.nome).vence}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
@@ -4381,13 +4458,13 @@
       } else if (tipoFiltro === 'debito') {
         titulo.textContent = 'Débito / À Vista de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
-          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
           return l.tipo === 'despesa' && !eCredito(l.formaModo) && m === mes && a === ano;
         });
       } else {
         titulo.textContent = 'Fatura Crédito de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
-          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo);
+          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
           return l.tipo === 'despesa' && eCredito(l.formaModo) && m === mes && a === ano;
         });
       }
@@ -5392,7 +5469,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-5';
+    const APP_VERSION = '2026.08.07-6';
 
     // Inicialização
     carregarLocalStorage();
