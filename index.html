@@ -146,17 +146,30 @@
     .btn-mini { padding: 6px 12px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 11px; cursor: pointer; }
     .btn-mini.ativo { background: #333; color: #fff; border-color: #666; }
     .btn-mes { background: #1a1a1a; border: 1px solid #333; color: #fff; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; }
-    .modal-content { background: #242424; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; border-top: 1px solid #444; }
+    /* pop-up centralizado na tela */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; padding: 14px; z-index: 1000; }
+    .modal-content { background: #242424; width: 100%; max-width: 480px; border-radius: 18px; padding: 20px; max-height: 88vh; overflow-y: auto; border: 1px solid #3a3a3a; }
+    /* O formulário é emprestado pro modal de edição: aqui ele perde a moldura de
+       card e o próprio cabeçalho, que duplicavam o do modal. */
+    #destinoFormEdicao > .card { background: transparent; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
+    #destinoFormEdicao .form-header-linha,
+    #destinoFormEdicao #btnCancelarEdit { display: none; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 12px; }
     .btn-fechar { background: transparent; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
 
     /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
     .grid-periodos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    /* faixa de contas em uma linha só, deslizável: empilhadas ocupavam três
+       linhas e empurravam o conteúdo pra baixo */
+    #chipsContasConsulta { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
+    #chipsContasConsulta::-webkit-scrollbar { height:3px; }
+    #chipsContasConsulta::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+    #chipsContasConsulta button { flex:0 0 auto; white-space:nowrap; }
     .btn-periodo { padding: 8px; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; color: #aaa; font-size: 12px; cursor: pointer; text-align: center; }
     .btn-periodo.ativo { background: #333; color: #fff; border-color: #666; font-weight: bold; }
     .box-resumo-modal { background: #1a1a1a; border-radius: 10px; padding: 12px; margin-bottom: 16px; border: 1px solid #333; }
-    .linha-subtotal { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #ccc; cursor: pointer; }
+    .linha-subtotal { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 6px; color: #ccc; cursor: pointer; }
+    .linha-subtotal > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .linha-subtotal:last-child { margin-bottom: 0; }
     .busca-box { position: relative; margin-bottom: 16px; }
     .busca-box input { padding-left: 36px; }
@@ -205,7 +218,9 @@
     .meta-config input { width:100%; }
 
     .badge-parcelas { display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:10.5px; color:#ffd166; background:rgba(255,209,102,0.08); border:1px solid rgba(255,209,102,0.18); border-radius:999px; padding:3px 8px; }
-    .observacao-mini { margin-top:3px; font-size:10.5px; color:#8c8c8c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* indicativo de leitura rápida, não centro de atenção: pequena, apagada e
+       sempre em uma linha só, pra não esticar o card */
+    .observacao-mini { margin-top:3px; font-size:10px; color:#6e6e6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
@@ -384,8 +399,9 @@
           <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
         </button>
         <div id="corpo-lancamentosMes" class="escondido" style="margin-top:12px;">
-          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;">
-            <button type="button" id="btnEscopoLanc" class="btn-mini" onclick="alternarEscopoLancamentos()">ver todos</button>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
+            <div id="resumo24h" style="font-size:10.5px;line-height:1.5;color:#777;"></div>
+            <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
           <div class="busca-box">
             <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
@@ -424,7 +440,7 @@
       <!-- GASTOS FIXOS (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('fixos')">
-          <h3 style="font-size:16px;">Gastos fixos mensais</h3>
+          <h3 style="font-size:16px;">Gastos fixos mensais <span id="badgeFixos" style="font-size:13px;font-weight:400;color:#ffd166;"></span></h3>
           <span class="chevron-sec" id="chevron-fixos">▸</span>
         </button>
         <div id="corpo-fixos" class="escondido" style="margin-top:10px;">
@@ -530,21 +546,6 @@
         <div id="containerGraficoContas" class="escondido"></div>
       </div>
 
-      <!-- METAS POR CATEGORIA (retrátil) -->
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Metas por categoria</h3>
-            <span id="resumoMetas" style="font-size:11px;color:#aaa;"></span>
-          </div>
-          <span class="chevron-sec" id="chevron-metas">▸</span>
-        </button>
-        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
-          <p style="font-size:11px;color:#777;margin-bottom:10px;">Vale pro período escolhido acima. A meta aparece como uma linha no gráfico de categorias.</p>
-          <div id="listaMetasCategoria" class="meta-lista"></div>
-        </div>
-      </div>
-
       <!-- INDICADORES E INSIGHTS (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
@@ -577,6 +578,20 @@
         </div>
       </div>
 
+      <!-- GASTO POR DIA DA SEMANA (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('gastoDiaSemana')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Gasto por dia da semana</h3>
+            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+          </div>
+          <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
+        </button>
+        <div id="corpo-gastoDiaSemana" class="escondido" style="margin-top:12px;">
+          <div id="containerGastoDiaSemana"></div>
+        </div>
+      </div>
+
       <!-- EVOLUÇÃO MENSAL (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('evolucaoMensal')">
@@ -595,6 +610,20 @@
         </div>
       </div>
 
+      <!-- RANKING DE MAIORES GASTOS (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('rankingGastos')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Maiores gastos</h3>
+            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+          </div>
+          <span class="chevron-sec" id="chevron-rankingGastos">▸</span>
+        </button>
+        <div id="corpo-rankingGastos" class="escondido" style="margin-top:12px;">
+          <div id="containerRankingGastos"></div>
+        </div>
+      </div>
+
       <!-- COMPROMETIDO FUTURO (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('comprometidoFuturo')">
@@ -610,31 +639,18 @@
         </div>
       </div>
 
-      <!-- RANKING DE MAIORES GASTOS (retrátil) -->
+      <!-- METAS POR CATEGORIA (retrátil) -->
       <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('rankingGastos')">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Maiores gastos</h3>
-            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+            <h3 style="color:#ffd166;">Metas por categoria</h3>
+            <span id="resumoMetas" style="font-size:11px;color:#aaa;"></span>
           </div>
-          <span class="chevron-sec" id="chevron-rankingGastos">▸</span>
+          <span class="chevron-sec" id="chevron-metas">▸</span>
         </button>
-        <div id="corpo-rankingGastos" class="escondido" style="margin-top:12px;">
-          <div id="containerRankingGastos"></div>
-        </div>
-      </div>
-
-      <!-- GASTO POR DIA DA SEMANA (retrátil) -->
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('gastoDiaSemana')">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Gasto por dia da semana</h3>
-            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
-          </div>
-          <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
-        </button>
-        <div id="corpo-gastoDiaSemana" class="escondido" style="margin-top:12px;">
-          <div id="containerGastoDiaSemana"></div>
+        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
+          <p style="font-size:11px;color:#777;margin-bottom:10px;">Vale pro período escolhido acima. A meta aparece como uma linha no gráfico de categorias.</p>
+          <div id="listaMetasCategoria" class="meta-lista"></div>
         </div>
       </div>
 
@@ -687,11 +703,11 @@
       <div id="wrapFiltrosModal" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#aaa;">
           <span>Período: <strong id="labelPeriodoModalAtual" style="color:#ddd;">Últimos 30 dias</strong></span>
-          <button type="button" class="btn-mini" onclick="fecharModal('modalPanorama')">alterar</button>
+          <button type="button" class="btn-mini" onclick="trocarPeriodoDaConsulta()">trocar período</button>
         </div>
       </div>
 
-      <div id="chipsContasConsulta" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;"></div>
+      <div id="chipsContasConsulta"></div>
 
       <!-- SUBTOTALIZADORES DINÂMICOS DA CONSULTA -->
       <div class="box-resumo-modal" id="boxSubtotaisModal"></div>
@@ -1649,7 +1665,7 @@
     }
 
     function fmtOculto(valor) {
-      return valoresOcultos ? '••••••' : fmtVal(valor);
+      return valoresOcultos ? '•••' : fmtVal(valor);
     }
 
     function renderizarDashboard() {
@@ -1986,7 +2002,7 @@
 
     // TROCA DE ABA POR GESTO: deslizar o dedo pra esquerda avança, pra direita volta
     const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos'];
-    let toqueIniX = 0, toqueIniY = 0, toqueValido = false;
+    let toqueIniX = 0, toqueIniY = 0, toqueIniT = 0, toqueValido = false, direcaoTravada = null;
 
     function algumModalAberto() {
       return Array.from(document.querySelectorAll('.modal-overlay')).some(m => !m.classList.contains('escondido'));
@@ -1994,19 +2010,37 @@
 
     document.addEventListener('touchstart', (e) => {
       // dentro do card de resumo das Faturas o gesto muda o MÊS, não a aba
-      toqueValido = !algumModalAberto() && !e.target.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas');
+      // e.target nem sempre é Element (pode vir texto ou o próprio document);
+      // sem a checagem, o handler estourava e o gesto parava de funcionar
+      const alvo = e.target && e.target.closest ? e.target : null;
+      toqueValido = e.touches.length === 1 && !algumModalAberto()
+        && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas, .colunas, .grid-periodos'));
+      direcaoTravada = null;
       if (!toqueValido) return;
       toqueIniX = e.touches[0].clientX;
       toqueIniY = e.touches[0].clientY;
+      toqueIniT = Date.now();
+    }, { passive: true });
+
+    // A direção é decidida nos primeiros pixels e TRAVA ali. Antes só o ponto
+    // final contava, então uma rolagem que derivasse de lado no meio do caminho
+    // acabava trocando de aba sozinha.
+    document.addEventListener('touchmove', (e) => {
+      if (!toqueValido || direcaoTravada || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - toqueIniX;
+      const dy = e.touches[0].clientY - toqueIniY;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'horizontal' : 'vertical';
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
       if (!toqueValido || algumModalAberto()) return;
+      if (direcaoTravada !== 'horizontal') return;   // rolagem nunca vira troca de aba
       const dx = e.changedTouches[0].clientX - toqueIniX;
       const dy = e.changedTouches[0].clientY - toqueIniY;
-      // gesto mais leve pra trocar de aba: menos distância exigida, ainda proteção
-      // contra confundir com rolagem vertical
-      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      // arrasto demorado é navegação lenta, não gesto rápido de troca
+      if (Date.now() - toqueIniT > 700) return;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
       const idxAtual = ORDEM_ABAS.findIndex(id => {
         const el = document.getElementById(id);
         return el && el.classList.contains('ativo');
@@ -2356,7 +2390,7 @@
       document.getElementById('infoAcoesLancamento').innerHTML = `
         <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:20px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
         <div style="font-size:12px;color:#888;margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
-        ${item.observacao ? `<div style="font-size:11px;color:#8c8c8c;margin-top:4px;">${item.observacao}</div>` : ''}
+        ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
       `;
       const btnParcelas = document.getElementById('btnGerenciarParcelas');
       if (btnParcelas) btnParcelas.classList.toggle('escondido', !item.grupoId);
@@ -2815,6 +2849,19 @@
       });
     }
 
+    // O botão antes só fechava o modal e deixava você procurar o seletor. Agora
+    // ele leva até lá: fecha, garante a aba Gráficos e já abre a lista de períodos.
+    function trocarPeriodoDaConsulta() {
+      fecharModal('modalPanorama');
+      const btnGraficos = Array.from(document.querySelectorAll('.nav-tab'))
+        .find(b => (b.getAttribute('onclick') || '').includes('abaGraficos'));
+      if (btnGraficos) mudarAba('abaGraficos', btnGraficos);
+      const grid = document.getElementById('filtrosPeriodoGraficos');
+      grid.classList.remove('escondido');
+      document.getElementById('setaPeriodoGrafico').textContent = '▲';
+      grid.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+
     function abrirModalConsulta(tipo) {
       tipoModalAtual = tipo;
       grupoModalAtualId = null;
@@ -3034,9 +3081,9 @@
           porCat[c] = (porCat[c] || 0) + parseVal(l.valor); 
         });
 
-        let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total Gasto</span><h3 style="color:#ef5350;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total Gasto</span><h3 style="color:#c25651;font-size:22px;">${fmtOculto(total)}</h3></div>`;
         Object.entries(porCat).sort((a,b) => b[1]-a[1]).forEach(([cat, val]) => {
-          html += `<div class="linha-subtotal"><span>${cat}</span><strong style="color:#ef5350;">${fmtOculto(val)}</strong></div>`;
+          html += `<div class="linha-subtotal"><span>${cat}</span><strong style="color:${COR_DESPESA_GRAFICO};">${fmtOculto(val)}</strong></div>`;
         });
         boxSubtotais.innerHTML = html;
       } 
@@ -3087,7 +3134,7 @@
           <div class="item-info">
             <strong>${item.descricao}</strong>
             <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
-            ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">${item.observacao}</div>` : ''}
+            ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
           </div>
           <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
         `;
@@ -3654,6 +3701,7 @@
       }
       renderizarEmprestimos();
       renderizarPagamentoFaturas();
+      atualizarResumosDeCabecalho();
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -3765,9 +3813,9 @@
       const somar = lista => lista.reduce((sm, c) => sm + c.valor, 0);
       if (badge) {
         const partes = [];
-        if (aReceber.length) partes.push('+' + fmtOculto(somar(aReceber)));
-        if (aPagar.length) partes.push('−' + fmtOculto(somar(aPagar)));
-        badge.textContent = '· ' + partes.join(' / ');
+        if (aReceber.length) partes.push('<span style="color:#4caf50;">+' + fmtOculto(somar(aReceber)) + '</span>');
+        if (aPagar.length) partes.push('<span style="color:#ef5350;">−' + fmtOculto(somar(aPagar)) + '</span>');
+        badge.innerHTML = '· ' + partes.join(' / ');
       }
 
       if (aReceber.length) renderizarSecaoEmprestimos(container, aReceber, false);
@@ -3782,7 +3830,9 @@
     function renderizarSecaoEmprestimos(container, cobrancas, devo) {
       const hoje = obterDataBrasilia();
       const emAtraso = c => c.vence && c.vence < hoje;
-      const cor = devo ? '#ef5350' : '#ffd166';
+      // verde é dinheiro que vem, vermelho é dinheiro que sai — mesma convenção
+      // do resto do app
+      const cor = devo ? '#ef5350' : '#4caf50';
 
       const porPessoa = {};
       cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
@@ -3946,6 +3996,27 @@
         .filter(l => l.tipo === 'despesa' && l.conta === conta && eCredito(l.formaModo))
         .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === mes && f.ano === ano; })
         .reduce((sm, l) => sm + parseVal(l.valor), 0);
+    }
+
+    // Total dos gastos fixos e movimento das últimas 24h: números pequenos, de
+    // canto de olho, sem competir com o conteúdo do card.
+    function atualizarResumosDeCabecalho() {
+      const badgeF = document.getElementById('badgeFixos');
+      if (badgeF) {
+        const totalFixos = fixos.reduce((sm, f) => sm + parseVal(f.valor), 0);
+        badgeF.textContent = totalFixos > 0 ? '· ' + fmtOculto(totalFixos) + '/mês' : '';
+      }
+
+      const box24 = document.getElementById('resumo24h');
+      if (box24) {
+        const limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const recentes = lancamentos.filter(l => l.data >= limite);
+        const rec = recentes.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
+        const desp = recentes.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
+        box24.innerHTML = (rec > 0 || desp > 0)
+          ? `<div style="color:#3d8b40;">↑ ${fmtOculto(rec)}</div><div style="color:#a83e3b;">↓ ${fmtOculto(desp)}</div><div style="color:#5a5a5a;">últimas 24h</div>`
+          : '';
+      }
     }
 
     function renderizarPagamentoFaturas() {
@@ -4305,7 +4376,7 @@
             <div class="item-info">
               <strong>${item.descricao}</strong>
               <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
-              ${item.observacao ? `<div style="font-size:10px;color:#8c8c8c;">${item.observacao}</div>` : ''}
+              ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
             </div>
             <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
           `;
@@ -5291,7 +5362,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-2';
+    const APP_VERSION = '2026.08.07-3';
 
     // Inicialização
     carregarLocalStorage();
