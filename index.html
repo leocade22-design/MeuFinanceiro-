@@ -158,6 +158,13 @@
     
     /* MODAL DE AÇÕES (BALÃO SUSPENSO) */
     .balao-acoes { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+    #listaGruposVinculo { display:flex; flex-direction:column; gap:8px; }
+    .btn-opcao-balao.selecionado { border-color:#2e7d32; color:#4caf50; background:rgba(46,125,50,.12); }
+    .bloco-cat { margin-bottom:14px; background:#1a1a1a; padding:10px; border-radius:10px; border:1px solid #333; }
+    details.bloco-cat > summary { display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; }
+    details.bloco-cat > summary::-webkit-details-marker { display:none; }
+    details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px; }
+    details.bloco-cat[open] > summary .chevron-sec { transform:rotate(90deg); display:inline-block; }
     .btn-opcao-balao { padding: 14px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 15px; }
     .btn-opcao-balao.danger { color: #ef5350; border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
     textarea { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
@@ -272,9 +279,10 @@
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
               <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
-                <option value="Crédito à Vista">Crédito 1x</option>
+                <option value="Crédito à Vista">Crédito</option>
                 <option value="Crédito Parcelado">Crédito parcelado</option>
                 <option value="À Vista / Débito">Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
               </select>
             </div>
           </div>
@@ -383,7 +391,7 @@
           <span class="chevron-sec" id="chevron-emprestimos">▸</span>
         </button>
         <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem. Ao marcar "Recebi", o valor entra como receita na conta que você escolher.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem e o que você deve. Ao marcar "Recebi" ou "Paguei", o lançamento entra sozinho na conta que você escolher.</p>
           <div id="listaEmprestimos"></div>
           <button type="button" id="btnLembretes" class="btn-cancelar escondido" style="margin-top:10px;" onclick="alternarLembretesEmprestimo()">🔔 ativar lembrete de cobrança</button>
           <p id="avisoLembretes" class="escondido" style="font-size:11px;color:#777;margin-top:8px;line-height:1.4;"></p>
@@ -707,9 +715,10 @@
         <h3 id="tituloGerenciarParcelas">Parcelas</h3>
         <button class="btn-fechar" onclick="fecharModal('modalParcelas')">&times;</button>
       </div>
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Ajuste a data de qualquer parcela individualmente, ou empurre de uma vez todas as que ainda não venceram (pra pular um mês, por exemplo).</p>
-      <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as parcelas restantes</button>
-      <div id="listaGerenciarParcelas"></div>
+      <div id="resumoParcelas" class="box-resumo-modal" style="margin-bottom:12px;"></div>
+      <p style="color:#777;font-size:11.5px;margin-bottom:10px;">A data de cada parcela define em qual fatura ela cai (fechamento dia 3).</p>
+      <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as que faltam</button>
+      <div id="listaGerenciarParcelas" onchange="previewFaturasParcelas(event)"></div>
       <div style="display:flex;gap:10px;margin-top:14px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalParcelas')">Fechar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarDatasParcelas()">Salvar datas</button>
@@ -782,12 +791,11 @@
         <h3>Vincular a um grupo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalGrupoVinculo')">&times;</button>
       </div>
-      <div class="form-group" id="grupoGrupoViagemWrap">
-        <label for="grupoViagem">Grupo</label>
+      <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Vale pra despesa e pra receita (ex: reembolso de uma viagem).</p>
+      <div class="form-group escondido" id="grupoGrupoViagemWrap">
         <select id="grupoViagem" onchange="onMudarGrupoSelect()"></select>
-        <span style="font-size:11px;color:#777;">Funciona pra despesas e também pra receitas (ex: reembolso de uma viagem).</span>
       </div>
-      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarGrupoVinculo()">OK</button>
+      <div id="listaGruposVinculo"></div>
     </div>
   </div>
 
@@ -812,18 +820,18 @@
         <h3>Empréstimo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
       </div>
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.</p>
+      <p id="textoModalEmprestimo" style="color:#aaa;font-size:12px;margin-bottom:10px;"></p>
       <div class="form-row">
         <div class="form-group">
-          <label for="emprestimoTemp">Quem te deve</label>
+          <label for="emprestimoTemp" id="labelQuemEmprestimo">Quem te deve</label>
           <input type="text" id="emprestimoTemp" placeholder="Ex: Dudu" oninput="atualizarPreviaRateio()">
         </div>
         <div class="form-group">
-          <label for="emprestimoVenceTemp">Prazo pra pagar</label>
+          <label for="emprestimoVenceTemp" id="labelPrazoEmprestimo">Prazo pra pagar</label>
           <input type="date" id="emprestimoVenceTemp">
         </div>
       </div>
-      <p style="font-size:11px;color:#777;margin:-6px 0 10px;">Racha entre várias pessoas? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
+      <p style="font-size:11px;color:#777;margin:-6px 0 10px;">Mais de uma pessoa? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
       <label class="check-credito escondido" id="wrapRateioIncluiVoce">
         <input type="checkbox" id="rateioIncluiVoce" checked onchange="atualizarPreviaRateio()">
         dividir incluindo a minha parte
@@ -840,13 +848,13 @@
   <div id="modalReceberEmprestimo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalReceberEmprestimo')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Registrar recebimento</h3>
+        <h3 id="tituloReceberEmprestimo">Registrar recebimento</h3>
         <button class="btn-fechar" onclick="fecharModal('modalReceberEmprestimo')">&times;</button>
       </div>
       <div class="box-resumo-modal" id="resumoReceberEmprestimo" style="margin-bottom:14px;"></div>
       <div class="form-row">
         <div class="form-group">
-          <label for="contaRecebimento">Caiu em qual conta?</label>
+          <label for="contaRecebimento" id="labelContaRecebimento">Caiu em qual conta?</label>
           <select id="contaRecebimento"></select>
         </div>
         <div class="form-group">
@@ -854,7 +862,7 @@
           <input type="date" id="dataRecebimento">
         </div>
       </div>
-      <p style="font-size:11.5px;color:#777;margin-bottom:12px;">Ao confirmar, o valor entra como <strong>receita</strong> nessa conta e a cobrança sai daqui.</p>
+      <p id="avisoReceberEmprestimo" style="font-size:11.5px;color:#777;margin-bottom:12px;"></p>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalReceberEmprestimo')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarRecebimentoEmprestimo()">Confirmar</button>
@@ -1187,12 +1195,14 @@
       const link = document.getElementById('linkEmprestimo');
       if (!link) return;
       const v = document.getElementById('emprestimoPara').value.trim();
+      const devo = tipoAtual === 'receita';
       if (v) {
         const qtd = nomesEmprestimo(v).length;
-        link.textContent = qtd > 1 ? `empréstimo: ${qtd} pessoas` : 'empréstimo: ' + v;
+        const quem = qtd > 1 ? `${qtd} pessoas` : v;
+        link.textContent = (devo ? 'devo a: ' : 'empréstimo: ') + quem;
         link.classList.add('tem-obs');
       } else {
-        link.textContent = 'empréstimo?';
+        link.textContent = devo ? 'peguei emprestado?' : 'empréstimo?';
         link.classList.remove('tem-obs');
       }
     }
@@ -1204,6 +1214,12 @@
     }
 
     function abrirModalEmprestimo() {
+      const devo = tipoAtual === 'receita';
+      document.getElementById('textoModalEmprestimo').textContent = devo
+        ? 'Dinheiro que entrou mas você vai devolver. Continua contando como receita na conta — aqui fica o lembrete da dívida.'
+        : 'Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.';
+      document.getElementById('labelQuemEmprestimo').textContent = devo ? 'De quem você pegou' : 'Quem te deve';
+      document.getElementById('labelPrazoEmprestimo').textContent = devo ? 'Prazo pra devolver' : 'Prazo pra pagar';
       document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
       document.getElementById('emprestimoVenceTemp').value = document.getElementById('emprestimoVence').value;
       document.getElementById('rateioIncluiVoce').checked = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
@@ -1234,7 +1250,7 @@
           <strong>${total ? 'R$ ' + cota.toFixed(2).replace('.', ',') + ' cada' : 'digite o valor'}</strong>
         </div>
         <div style="font-size:11px;color:#888;margin-top:4px;">
-          Vão te dever: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na cobrança.' : ''}
+          ${tipoAtual === 'receita' ? 'Você vai devolver a' : 'Vão te dever'}: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na conta.' : ''}
         </div>
       `;
     }
@@ -1581,10 +1597,27 @@
       return lancamentos.filter(l => l.grupoId === item.grupoId && l.tipo === 'despesa' && l.data >= hoje).length;
     }
 
+    // O formulário mora na aba Lançamentos, então editar de qualquer outra aba
+    // obriga a trocar. Guardar de onde veio é o que permite voltar depois, em vez
+    // de largar você na tela inicial no meio da conferência.
+    let abaAntesDaEdicao = null;
+
     function abrirEdicaoLancamentoGlobal(id) {
+      const atual = ORDEM_ABAS.find(idAba => {
+        const el = document.getElementById(idAba);
+        return el && el.classList.contains('ativo');
+      });
+      abaAntesDaEdicao = (atual && atual !== 'abaLancamentos') ? atual : null;
       const btnLanc = document.querySelector('.nav-tab[onclick*="abaLancamentos"]');
       if (btnLanc) mudarAba('abaLancamentos', btnLanc);
       prepararEdicao(id);
+    }
+
+    function voltarDaEdicao() {
+      if (!abaAntesDaEdicao) return;
+      const btn = document.querySelector(`.nav-tab[onclick*="${abaAntesDaEdicao}"]`);
+      if (btn) mudarAba(abaAntesDaEdicao, btn);
+      abaAntesDaEdicao = null;
     }
 
     function exportarBackup() {
@@ -1911,7 +1944,59 @@
 
     function abrirModalGrupoVinculo() {
       popularSelectGrupos(document.getElementById('grupoViagem').value);
+      renderizarOpcoesGrupoVinculo();
       document.getElementById('modalGrupoVinculo').classList.remove('escondido');
+    }
+
+    // Um toque resolve: os grupos abertos já aparecem listados, sem precisar abrir
+    // um seletor e confirmar depois.
+    function renderizarOpcoesGrupoVinculo() {
+      const box = document.getElementById('listaGruposVinculo');
+      if (!box) return;
+      const atual = document.getElementById('grupoViagem').value;
+      const abertos = grupos.filter(g => g.status === 'aberto');
+      box.innerHTML = '';
+
+      const escolher = (id) => {
+        document.getElementById('grupoViagem').value = id;
+        atualizarLinkGrupo();
+        fecharModal('modalGrupoVinculo');
+      };
+
+      abertos.forEach(g => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-opcao-balao' + (atual === g.id ? ' selecionado' : '');
+        b.textContent = (atual === g.id ? '✓ ' : '') + g.nome;
+        b.onclick = () => escolher(atual === g.id ? '' : g.id);
+        box.appendChild(b);
+      });
+
+      if (atual) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-opcao-balao';
+        b.style.color = '#ef5350';
+        b.textContent = 'desvincular';
+        b.onclick = () => escolher('');
+        box.appendChild(b);
+      }
+
+      const novo = document.createElement('button');
+      novo.type = 'button';
+      novo.className = 'btn-opcao-balao';
+      novo.textContent = '+ criar novo grupo';
+      novo.onclick = () => {
+        const nome = prompt('Nome do novo grupo (ex: Viagem Ubatuba, Show X):');
+        if (!nome) return;
+        const g = { id: 'gr' + Date.now(), nome, status: 'aberto', dataCriacao: obterDataBrasilia() };
+        grupos.push(g);
+        salvarGrupos();
+        renderizarGrupos();
+        popularSelectGrupos(g.id);
+        escolher(g.id);
+      };
+      box.appendChild(novo);
     }
 
     function salvarGrupoVinculo() {
@@ -1953,14 +2038,24 @@
       const conta = document.getElementById('conta').value;
       const gF = document.getElementById('grupoFormaModo');
       const gP = document.getElementById('grupoParcelas');
-      if (tipoAtual === 'despesa' && contaTemCredito(conta)) {
-        gF.classList.remove('escondido');
-        verificarParcelamento(document.getElementById('formaModo').value);
-      } else {
+      const sel = document.getElementById('formaModo');
+      const temCredito = contaTemCredito(conta);
+
+      if (tipoAtual !== 'despesa') {
         gF.classList.add('escondido');
         gP.classList.add('escondido');
-        document.getElementById('formaModo').value = 'À Vista / Débito';
+        sel.value = 'À Vista / Débito';
+        return;
       }
+
+      // Conta sem crédito ainda precisa escolher entre débito e dinheiro — por isso
+      // o seletor não some mais, só perde as opções de crédito.
+      gF.classList.remove('escondido');
+      Array.from(sel.options).forEach(o => {
+        o.hidden = !temCredito && eCredito(o.value);
+      });
+      if (!temCredito && eCredito(sel.value)) sel.value = 'À Vista / Débito';
+      verificarParcelamento(sel.value);
     }
 
     function alternarTipo(tipo) {
@@ -1977,10 +2072,8 @@
         gC.classList.add('escondido');
         document.getElementById('grupoFormaModo').classList.add('escondido');
         document.getElementById('grupoParcelas').classList.add('escondido');
-        document.getElementById('linkEmprestimo').classList.add('escondido');
-        document.getElementById('emprestimoPara').value = '';
-        document.getElementById('emprestimoVence').value = '';
-        document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+        // receita também aceita empréstimo — aqui é dinheiro que ENTROU e você deve
+        document.getElementById('linkEmprestimo').classList.remove('escondido');
         atualizarLinkEmprestimo();
       } else {
         btnD.className = 'btn-tipo ativo-despesa';
@@ -2153,21 +2246,52 @@
       const base = (grupo[0].descricao || '').replace(/\s\(\d+\/\d+\)$/, '');
       document.getElementById('tituloGerenciarParcelas').textContent = base;
       const hoje = obterDataBrasilia();
+      const total = grupo.reduce((sm, l) => sm + parseVal(l.valor), 0);
+
+      // Cabeçalho: o que é essa compra, antes de mostrar as datas soltas
+      const resumo = document.getElementById('resumoParcelas');
+      const rat = resumoRateioItens(grupo);
+      resumo.innerHTML = `
+        <div class="linha-subtotal" style="cursor:default;">
+          <span>${grupo.length}x de ${fmtVal(parseVal(grupo[0].valor))} · ${grupo[0].conta}</span>
+          <strong>${fmtVal(total)}</strong>
+        </div>
+        ${rat.pessoas.length ? `<div style="font-size:11px;color:#ffd166;margin-top:4px;">rachado entre ${rat.pessoas.length + 1} · sua parte ${fmtVal(rat.minhaParte)}</div>` : ''}
+      `;
+
       container.innerHTML = '';
-      grupo.forEach(item => {
-        const numMatch = (item.descricao || '').match(/\(\d+\/\d+\)$/);
-        const label = numMatch ? numMatch[0] : '';
+      grupo.forEach((item, i) => {
+        const paga = item.data <= hoje;
+        const f = getMesFatura(item.data, item.formaModo);
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #2a2a2a;';
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #2a2a2a;';
         row.innerHTML = `
-          <div style="flex:1;">
-            <strong style="font-size:13px;">${label}</strong>
-            <div style="font-size:11px;color:#888;">R$ ${item.valor}${item.data > hoje ? ' · agendado' : ' · já efetivado'}</div>
+          <div style="flex:1;min-width:0;">
+            <strong style="font-size:13px;">Parcela ${i + 1} de ${grupo.length}</strong>
+            <div class="legenda-parcela" style="font-size:11px;color:${paga ? '#666' : '#ffd166'};">
+              ${fmtVal(parseVal(item.valor))} · ${paga ? 'já paga' : 'a pagar'} · cai na fatura de ${NOMES_MESES[f.mes].toLowerCase()}
+            </div>
           </div>
-          <input type="date" value="${item.data}" data-id="${item.id}" style="width:145px;">
+          <input type="date" value="${item.data}" data-id="${item.id}" style="width:142px;">
         `;
         container.appendChild(row);
       });
+    }
+
+    // Mexeu numa data: atualiza na hora a fatura mostrada naquela linha, sem
+    // precisar salvar pra descobrir onde a parcela foi parar
+    function previewFaturasParcelas(ev) {
+      const inp = ev.target;
+      if (!inp || inp.type !== 'date' || !inp.value) return;
+      const id = parseInt(inp.dataset.id, 10);
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+      const f = getMesFatura(inp.value, item.formaModo);
+      const legenda = inp.parentElement.querySelector('.legenda-parcela');
+      if (!legenda) return;
+      const paga = inp.value <= obterDataBrasilia();
+      legenda.style.color = paga ? '#666' : '#ffd166';
+      legenda.textContent = `${fmtVal(parseVal(item.valor))} · ${paga ? 'já paga' : 'a pagar'} · cai na fatura de ${NOMES_MESES[f.mes].toLowerCase()}`;
     }
 
     function salvarDatasParcelas() {
@@ -2251,7 +2375,7 @@
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
       const observacao = document.getElementById('observacao').value.trim();
       const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
-      const emprestimoPara = tipoAtual === 'despesa' ? document.getElementById('emprestimoPara').value.trim() : '';
+      const emprestimoPara = document.getElementById('emprestimoPara').value.trim();
       const emprestimoVence = emprestimoPara ? document.getElementById('emprestimoVence').value : '';
       const rateioIncluiVoce = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
       const nomesEmpr = nomesEmprestimo(emprestimoPara);
@@ -2487,6 +2611,7 @@
       document.getElementById('btnSubmit').textContent = 'Salvar';
       document.getElementById('btnCancelarEdit').classList.add('escondido');
       alternarTipo('despesa');
+      voltarDaEdicao();
     }
 
     function excluirLancamento(id) {
@@ -3276,15 +3401,19 @@
     // cobrança por pessoa, cada uma com a sua cota. Os dois formatos convivem —
     // dado antigo continua sendo lido sem migração.
     function cobrancasDoLancamento(l) {
+      // A direção sai do tipo do lançamento, sem campo novo: despesa marcada como
+      // empréstimo é dinheiro que vão te devolver; receita marcada é dinheiro que
+      // entrou e você vai devolver.
+      const devo = l.tipo === 'receita';
       if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.length) {
         return l.emprestimoRateio.map((d, i) => ({
-          chave: l.id + ':' + i, lanc: l, idx: i,
+          chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado
         }));
       }
       if (l.emprestimoPara) {
         return [{
-          chave: l.id + ':-1', lanc: l, idx: -1,
+          chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado
         }];
       }
@@ -3346,35 +3475,59 @@
         return;
       }
 
+      container.innerHTML = '';
+      const aReceber = abertas.filter(c => !c.devo);
+      const aPagar = abertas.filter(c => c.devo);
+
+      const somar = lista => lista.reduce((sm, c) => sm + c.valor, 0);
+      if (badge) {
+        const partes = [];
+        if (aReceber.length) partes.push('+' + fmtOculto(somar(aReceber)));
+        if (aPagar.length) partes.push('−' + fmtOculto(somar(aPagar)));
+        badge.textContent = '· ' + partes.join(' / ');
+      }
+
+      if (aReceber.length) renderizarSecaoEmprestimos(container, aReceber, false);
+      if (aPagar.length) renderizarSecaoEmprestimos(container, aPagar, true);
+
+      atualizarBotaoLembretes();
+      atualizarBadgeApp();
+    }
+
+    // Uma direção por vez: o que te devem e o que você deve seguem a mesma
+    // estrutura, mudando só o rótulo, a cor e o verbo do botão.
+    function renderizarSecaoEmprestimos(container, cobrancas, devo) {
       const hoje = obterDataBrasilia();
       const emAtraso = c => c.lanc.emprestimoVence && c.lanc.emprestimoVence < hoje;
+      const cor = devo ? '#ef5350' : '#ffd166';
 
       const porPessoa = {};
-      abertas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
-      const totalGeral = abertas.reduce((sm, c) => sm + c.valor, 0);
-      const totalAtrasado = abertas.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
-      if (badge) badge.textContent = '· ' + fmtOculto(totalGeral);
-      atualizarBadgeApp();
+      cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
+      const total = cobrancas.reduce((sm, c) => sm + c.valor, 0);
+      const totalAtrasado = cobrancas.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
 
-      container.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid #333;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total a receber</span>
-          <strong style="color:#ffd166;font-size:19px;">${fmtOculto(totalGeral)}</strong>
+      const topo = document.createElement('div');
+      topo.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin:${devo ? '18' : '0'}px 0 6px;border-bottom:1px solid #333;">
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${devo ? 'Total que eu devo' : 'Total a receber'}</span>
+          <strong style="color:${cor};font-size:19px;">${fmtOculto(total)}</strong>
         </div>
-        ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:#ef5350;"><span>⚠ vencido — pode cobrar</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
+        ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:#ef5350;"><span>⚠ ${devo ? 'vencido — precisa pagar' : 'vencido — pode cobrar'}</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
       `;
+      container.appendChild(topo);
 
       // quem tem cobrança vencida aparece primeiro
       Object.entries(porPessoa)
         .sort((a, b) => (a[1].some(emAtraso) ? 0 : 1) - (b[1].some(emAtraso) ? 0 : 1)
           || a[0].localeCompare(b[0], 'pt-BR', { sensitivity: 'base' }))
-        .forEach(([nome, cobrancas]) => {
-          const total = cobrancas.reduce((sm, c) => sm + c.valor, 0);
-          const aberto = emprestimosPessoasAbertas.has(nome);
-          const atrasadas = cobrancas.filter(emAtraso).length;
-          const proximo = cobrancas.map(c => c.lanc.emprestimoVence).filter(Boolean).sort()[0];
+        .forEach(([nome, lista]) => {
+          const totalPessoa = lista.reduce((sm, c) => sm + c.valor, 0);
+          const chavePessoa = (devo ? 'devo:' : 'recebo:') + nome;
+          const aberto = emprestimosPessoasAbertas.has(chavePessoa);
+          const atrasadas = lista.filter(emAtraso).length;
+          const proximo = lista.map(c => c.lanc.emprestimoVence).filter(Boolean).sort()[0];
 
-          let legenda = cobrancas.length + (cobrancas.length === 1 ? ' cobrança' : ' cobranças');
+          let legenda = lista.length + (lista.length === 1 ? ' cobrança' : ' cobranças');
           if (atrasadas > 0) legenda += ' · ' + atrasadas + ' em atraso';
           else if (proximo) legenda += ' · a partir de ' + proximo.split('-').reverse().join('/');
 
@@ -3384,28 +3537,27 @@
           const cabecalho = document.createElement('button');
           cabecalho.type = 'button';
           cabecalho.className = 'card-header-toggle';
-          cabecalho.onclick = () => alternarPessoaEmprestimo(nome);
+          cabecalho.onclick = () => alternarPessoaEmprestimo(chavePessoa);
           cabecalho.innerHTML = `
             <div class="item-info">
               <strong>${nome}</strong>
               <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : '#888'};">${legenda}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="color:#ffd166;font-weight:700;">${fmtOculto(total)}</span>
+              <span style="color:${cor};font-weight:700;">${fmtOculto(totalPessoa)}</span>
               <span class="chevron-sec">${aberto ? '▾' : '▸'}</span>
             </div>
           `;
           bloco.appendChild(cabecalho);
 
           if (aberto) {
-            const lista = document.createElement('div');
-            lista.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid #333;';
+            const listaEl = document.createElement('div');
+            listaEl.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid #333;';
 
-            // agrupa por compra: a data em que VOCÊ pagou e a conta ficam no
-            // cabeçalho da compra; cada linha abaixo carrega só o prazo daquela
-            // parcela — era a repetição de duas datas por linha que confundia
+            // agrupa por compra: a data e a conta ficam no cabeçalho da compra;
+            // cada linha abaixo carrega só o prazo daquela parcela
             const porCompra = {};
-            cobrancas.forEach(c => {
+            lista.forEach(c => {
               const k = chaveCompra(c.lanc);
               (porCompra[k] = porCompra[k] || []).push(c);
             });
@@ -3422,7 +3574,7 @@
                 cab.innerHTML = `
                   <div style="min-width:0;">
                     <div style="font-size:12.5px;color:#ddd;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${descricaoBaseCompra(primeiro.descricao)}</div>
-                    <div style="font-size:10.5px;color:#777;">${itens.length}x · ${primeiro.fixoId ? 'mensal' : 'pago ' + primeiro.data.split('-').reverse().join('/')} · ${primeiro.conta}</div>
+                    <div style="font-size:10.5px;color:#777;">${itens.length}x · ${primeiro.fixoId ? 'mensal' : (devo ? 'recebido ' : 'pago ') + primeiro.data.split('-').reverse().join('/')} · ${primeiro.conta}</div>
                   </div>
                   <div style="display:flex;gap:4px;flex-shrink:0;"></div>
                 `;
@@ -3434,20 +3586,18 @@
                     b.className = 'btn-mini';
                     b.style.cssText = 'padding:3px 7px;font-size:10px;';
                     b.textContent = rotulo;
-                    b.title = 'Adiar ou adiantar o prazo de cobrança desta compra';
+                    b.title = 'Adiar ou adiantar o prazo desta compra';
                     b.onclick = (ev) => { ev.stopPropagation(); deslocarVencimentoCompra(chave, delta); };
                     box.appendChild(b);
                   });
                 }
-                lista.appendChild(cab);
+                listaEl.appendChild(cab);
               }
 
               itens.forEach(c => {
                 const l = c.lanc;
                 const atrasado = emAtraso(c);
                 const rotulo = ehMultipla ? rotuloParcela(l) : descricaoBaseCompra(l.descricao);
-                // uma data só por linha: o prazo. A data da compra já está no
-                // cabeçalho (ou é irrelevante quando não há prazo definido)
                 const detalhe = l.emprestimoVence
                   ? `<span style="color:${atrasado ? '#ef5350' : '#888'};">${atrasado ? 'venceu' : 'vence'} ${l.emprestimoVence.split('-').reverse().join('/')}</span>`
                   : (ehMultipla ? l.data.split('-').reverse().join('/') : `${l.data.split('-').reverse().join('/')} · ${l.conta}`);
@@ -3461,12 +3611,12 @@
                     <div style="font-size:11px;">${detalhe}</div>
                   </div>
                   <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                    <span class="valor-despesa">${fmtOculto(c.valor)}</span>
-                    <button type="button" class="btn-mini">Recebi</button>
+                    <span class="${devo ? 'valor-receita' : 'valor-despesa'}">${fmtOculto(c.valor)}</span>
+                    <button type="button" class="btn-mini">${devo ? 'Paguei' : 'Recebi'}</button>
                   </div>
                 `;
                 linha.querySelector('button').onclick = (ev) => { ev.stopPropagation(); abrirReceberEmprestimo([c.chave]); };
-                lista.appendChild(linha);
+                listaEl.appendChild(linha);
               });
 
               if (ehMultipla) {
@@ -3474,30 +3624,26 @@
                 btnCompra.type = 'button';
                 btnCompra.className = 'btn-mini';
                 btnCompra.style.cssText = 'margin:4px 0 2px;';
-                btnCompra.textContent = 'Recebi as ' + itens.length + ' (' + fmtOculto(totalCompra) + ')';
+                btnCompra.textContent = (devo ? 'Paguei as ' : 'Recebi as ') + itens.length + ' (' + fmtOculto(totalCompra) + ')';
                 btnCompra.onclick = () => abrirReceberEmprestimo(itens.map(c => c.chave));
-                lista.appendChild(btnCompra);
+                listaEl.appendChild(btnCompra);
               }
             });
 
-            // com uma compra só, o botão dela já quita tudo dessa pessoa — não
-            // repete a mesma ação com dois nomes diferentes
-            if (cobrancas.length > 1 && Object.keys(porCompra).length > 1) {
+            if (lista.length > 1 && Object.keys(porCompra).length > 1) {
               const btnTudo = document.createElement('button');
               btnTudo.type = 'button';
               btnTudo.className = 'btn-mini';
               btnTudo.style.cssText = 'margin-top:8px;';
-              btnTudo.textContent = 'Recebi tudo de ' + nome;
-              btnTudo.onclick = () => abrirReceberEmprestimo(cobrancas.map(c => c.chave));
-              lista.appendChild(btnTudo);
+              btnTudo.textContent = (devo ? 'Paguei tudo de ' : 'Recebi tudo de ') + nome;
+              btnTudo.onclick = () => abrirReceberEmprestimo(lista.map(c => c.chave));
+              listaEl.appendChild(btnTudo);
             }
-            bloco.appendChild(lista);
+            bloco.appendChild(listaEl);
           }
 
           container.appendChild(bloco);
         });
-
-      atualizarBotaoLembretes();
     }
 
     /* LEMBRETE DE COBRANÇA
@@ -3585,7 +3731,8 @@
       const total = vencidas.reduce((sm, c) => sm + c.valor, 0);
       const nomes = [...new Set(vencidas.map(c => c.nome))];
       try {
-        new Notification('Tem gente pra cobrar', {
+        const soDividas = vencidas.every(c => c.devo);
+        new Notification(soDividas ? 'Tem conta pra pagar' : 'Tem gente pra cobrar', {
           body: `${nomes.join(', ')} — R$ ${total.toFixed(2).replace('.', ',')} vencido`,
           tag: 'emprestimos-vencidos'
         });
@@ -3615,15 +3762,22 @@
       if (!itens.length) return;
       recebimentoEmprestimoChaves = itens.map(c => c.chave);
 
+      const devo = itens[0].devo;
       const total = itens.reduce((sm, c) => sm + c.valor, 0);
       const nomes = [...new Set(itens.map(c => c.nome))];
+
+      document.getElementById('tituloReceberEmprestimo').textContent = devo ? 'Registrar pagamento' : 'Registrar recebimento';
+      document.getElementById('labelContaRecebimento').textContent = devo ? 'Saiu de qual conta?' : 'Caiu em qual conta?';
+      document.getElementById('avisoReceberEmprestimo').innerHTML = devo
+        ? 'Ao confirmar, o valor sai como <strong>despesa à vista</strong> nessa conta — não entra em fatura de cartão.'
+        : 'Ao confirmar, o valor entra como <strong>receita</strong> nessa conta e a cobrança sai daqui.';
       const detalhes = itens.map(c =>
         `<div class="linha-subtotal" style="cursor:default;"><span>${c.nome} · ${descricaoBaseCompra(c.lanc.descricao)}${rotuloParcela(c.lanc) ? ' (' + rotuloParcela(c.lanc) + ')' : ''}</span><strong>${fmtOculto(c.valor)}</strong></div>`
       ).join('');
       document.getElementById('resumoReceberEmprestimo').innerHTML = `
         <div style="margin-bottom:6px;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;">Recebendo de ${nomes.join(', ')}</span>
-          <h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3>
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;">${devo ? 'Pagando ' : 'Recebendo de '}${nomes.join(', ')}</span>
+          <h3 style="color:${devo ? '#ef5350' : '#4caf50'};font-size:22px;">${fmtOculto(total)}</h3>
         </div>
         ${itens.length > 1 ? detalhes : ''}
       `;
@@ -3643,17 +3797,20 @@
 
       localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
 
+      const devo = itens[0].devo;
       itens.forEach(c => {
         marcarCobrancaQuitada(c);
         lancamentos.unshift({
           id: novoIdLancamento(),
-          tipo: 'receita',
-          descricao: 'Reembolso ' + c.nome + ' — ' + descricaoBaseCompra(c.lanc.descricao),
+          tipo: devo ? 'despesa' : 'receita',
+          descricao: (devo ? 'Paguei ' : 'Reembolso ') + c.nome + ' — ' + descricaoBaseCompra(c.lanc.descricao),
           conta,
+          // à vista de propósito: quitar dívida sai por pix/dinheiro/débito e não
+          // pode ir parar na fatura do cartão
           formaModo: 'À Vista / Débito',
           numParcelas: '1',
-          categoria: '',
-          observacao: 'Recebimento de empréstimo',
+          categoria: devo ? categoriaPadrao() : '',
+          observacao: devo ? 'Pagamento de empréstimo' : 'Recebimento de empréstimo',
           data,
           valor: c.valor.toFixed(2).replace('.', ','),
           // herda o grupo do gasto original: é isso que faz o total do grupo
@@ -3666,7 +3823,7 @@
       });
 
       salvarLocalStorage();
-      tocarSomReceita();
+      if (!devo) tocarSomReceita();   // o som celebra dinheiro entrando
       fecharModal('modalReceberEmprestimo');
       recebimentoEmprestimoChaves = [];
       atualizarTudo();
@@ -4074,7 +4231,7 @@
       const bruto = itens.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
       const recebido = itens.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
       const aReceber = itens.reduce((sm, l) =>
-        sm + cobrancasDoLancamento(l).filter(c => !c.quitado).reduce((a, c) => a + c.valor, 0), 0);
+        sm + cobrancasDoLancamento(l).filter(c => !c.quitado && !c.devo).reduce((a, c) => a + c.valor, 0), 0);
       return { itens, bruto, recebido, liquido: bruto - recebido, aReceber };
     }
 
@@ -4085,7 +4242,7 @@
       let devidoTotal = 0, aReceber = 0;
       const pessoas = new Set();
       itens.forEach(l => {
-        cobrancasDoLancamento(l).forEach(c => {
+        cobrancasDoLancamento(l).filter(c => !c.devo).forEach(c => {
           devidoTotal += c.valor;
           pessoas.add(c.nome);
           if (!c.quitado) aReceber += c.valor;
@@ -4222,10 +4379,30 @@
           `;
         }
 
-        Object.entries(porCategoria).forEach(([cat, listaItens]) => {
+        // O gasto é o assunto do grupo; o reembolso é consequência dele. Por isso
+        // as categorias de despesa vêm primeiro e as de receita fecham a lista.
+        const soReceita = itensCat => itensCat.every(l => l.tipo === 'receita');
+        Object.entries(porCategoria)
+          .sort((a, b) => (soReceita(a[1]) ? 1 : 0) - (soReceita(b[1]) ? 1 : 0))
+          .forEach(([cat, listaItens]) => {
+          // Categoria de reembolso é dinheiro que voltou: mostrar como negativo
+          // (efeito no total) confundia — aqui aparece em verde, com sinal de +
+          const soReembolso = soReceita(listaItens);
           const totCat = listaItens.reduce((s, item) => s + (item.tipo === 'receita' ? -parseVal(item.valor) : parseVal(item.valor)), 0);
-          html += `
-            <div style="margin-bottom:14px; background:#1a1a1a; padding:10px; border-radius:10px; border:1px solid #333;">
+          // Reembolso recolhido por padrão: o total dele já resume o que interessa,
+          // e a lista pessoa a pessoa só quando você quiser conferir
+          html += soReembolso ? `
+            <details class="bloco-cat">
+              <summary>
+                <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
+                <span style="display:flex;align-items:center;gap:6px;">
+                  <strong style="font-size:13px;color:#4caf50;">+ ${fmtVal(-totCat)}</strong>
+                  <span class="chevron-sec" style="font-size:13px;">▸</span>
+                </span>
+              </summary>
+              <div class="corpo-cat">
+          ` : `
+            <div class="bloco-cat">
               <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px;">
                 <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
                 <strong style="font-size:13px;">${fmtVal(totCat)}</strong>
@@ -4236,7 +4413,31 @@
           // em vez de uma linha por parcela — clicar abre o gerenciador de parcelas.
           const hoje = obterDataBrasilia();
           const grupoIdsRenderizados = new Set();
+          const reembolsosRenderizados = new Set();
           listaItens.forEach(item => {
+            // Uma compra parcelada rateada gera um reembolso POR PARCELA e por
+            // pessoa — sete linhas iguais pra três pessoas. Aqui cada pessoa vira
+            // uma linha só, com o nº de recebimentos ao lado.
+            if (item.tipo === 'receita' && item.reembolsoDe) {
+              if (reembolsosRenderizados.has(item.descricao)) return;
+              reembolsosRenderizados.add(item.descricao);
+              const mesmos = listaItens.filter(l => l.tipo === 'receita' && l.reembolsoDe && l.descricao === item.descricao);
+              const somaPessoa = mesmos.reduce((sm, l) => sm + parseVal(l.valor), 0);
+              const m = (item.descricao || '').match(/^Reembolso\s+(.+?)\s+—\s+(.*)$/);
+              const quem = m ? m[1] : item.descricao;
+              const doQue = m ? m[2] : '';
+              html += `
+                <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
+                  <div class="item-info">
+                    <span style="font-size:13px;">${quem}</span>
+                    <div style="font-size:10px;color:#888;">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}</div>
+                  </div>
+                  <span class="valor-receita" style="font-size:13px;">+ ${fmtVal(somaPessoa)}</span>
+                </div>
+              `;
+              return;
+            }
+
             if (item.grupoId) {
               if (grupoIdsRenderizados.has(item.grupoId)) return; // já renderizou essa compra
               grupoIdsRenderizados.add(item.grupoId);
@@ -4274,7 +4475,7 @@
               </div>
             `;
           });
-          html += `</div>`;
+          html += soReembolso ? `</div></details>` : `</div>`;
         });
 
         corpo.innerHTML = html;
@@ -4502,7 +4703,9 @@ function interpretarFala(fala) {
   let formaModo = 'À Vista / Débito';
   let numParcelasVoz = '1';
 
-  if (/(crédito|parcelado)/.test(texto)) {
+  if (/(dinheiro|espécie|especie)/.test(texto)) {
+    formaModo = 'Dinheiro';
+  } else if (/(crédito|parcelado)/.test(texto)) {
     // "no crédito" sozinho é compra 1x; só é parcelado se a fala disser parcela/vezes
     formaModo = /(parcelad|parcela|vezes|\d+\s*x)/.test(texto) ? 'Crédito Parcelado' : 'Crédito à Vista';
   } else if (/(tíquete|alimentação|vr|va)/.test(texto)) {
@@ -4608,7 +4811,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-4';
+    const APP_VERSION = '2026.08.06-6';
 
     // Inicialização
     carregarLocalStorage();
