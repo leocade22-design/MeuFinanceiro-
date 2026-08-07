@@ -3785,8 +3785,15 @@
     // setembro" — sem precisar editar parcela por parcela.
     function deslocarVencimentoCompra(chave, delta) {
       lancamentos.forEach(l => {
-        if (chaveCompra(l) !== chave || !l.emprestimoVence) return;
-        l.emprestimoVence = somarMeses(l.emprestimoVence, delta);
+        if (chaveCompra(l) !== chave) return;
+        if (l.emprestimoVence) l.emprestimoVence = somarMeses(l.emprestimoVence, delta);
+        // Parcela de dívida e rateio guardam o prazo em CADA entrada. Sem mexer
+        // aqui, os botões não moviam nada do que estava na tela.
+        if (Array.isArray(l.emprestimoRateio)) {
+          l.emprestimoRateio.forEach(d => {
+            if (d.vence) d.vence = somarMeses(d.vence, delta);
+          });
+        }
       });
       salvarLocalStorage();
       renderizarEmprestimos();
@@ -5362,7 +5369,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-3';
+    const APP_VERSION = '2026.08.07-4';
 
     // Inicialização
     carregarLocalStorage();
