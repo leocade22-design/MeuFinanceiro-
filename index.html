@@ -138,6 +138,8 @@
     .coluna-valor { font-size:9px; color:#aaa; margin-bottom:3px; white-space:nowrap; }
     .coluna-barra { width:100%; border-radius:4px 4px 0 0; min-height:2px; }
     .coluna-par { display:flex; gap:2px; width:100%; align-items:flex-end; height:100%; }
+    .marca-meta { position:absolute; left:0; right:0; border-top:2px dashed #ffd166; }
+    .marca-meta-barra { position:absolute; top:-2px; bottom:-2px; width:2px; background:#ffd166; }
     .coluna-rotulo { font-size:9.5px; color:#888; margin-top:5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
     .barra-bg { background-color: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden; }
     .barra-fill { height: 100%; border-radius: 4px; }
@@ -248,7 +250,8 @@
     </div>
 
     <div id="abaLancamentos" class="aba-conteudo ativo">
-      <div class="card">
+      <div id="ancoraFormLancamento"></div>
+      <div class="card" id="cardFormLancamento">
         <div class="form-header-linha">
           <h3 id="tituloFormulario">Novo lançamento</h3>
           <button type="button" class="btn-icone-topo" onclick="abrirModalTransferencia()" title="Transferências pessoais" aria-label="Transferências pessoais">⇄</button>
@@ -274,6 +277,7 @@
             <input type="hidden" id="emprestimoPara" value="">
             <input type="hidden" id="emprestimoVence" value="">
             <input type="hidden" id="emprestimoRateioIncluiVoce" value="1">
+            <input type="hidden" id="emprestimoParcelas" value="1">
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -526,6 +530,21 @@
         <div id="containerGraficoContas" class="escondido"></div>
       </div>
 
+      <!-- METAS POR CATEGORIA (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="color:#ffd166;">Metas por categoria</h3>
+            <span id="resumoMetas" style="font-size:11px;color:#aaa;"></span>
+          </div>
+          <span class="chevron-sec" id="chevron-metas">▸</span>
+        </button>
+        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
+          <p style="font-size:11px;color:#777;margin-bottom:10px;">Vale pro período escolhido acima. A meta aparece como uma linha no gráfico de categorias.</p>
+          <div id="listaMetasCategoria" class="meta-lista"></div>
+        </div>
+      </div>
+
       <!-- INDICADORES E INSIGHTS (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
@@ -637,19 +656,6 @@
         <div id="listaInvestimentos"></div>
       </div>
 
-      <!-- METAS POR CATEGORIA (retrátil, realocado da aba Gráficos) -->
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Metas por categoria</h3>
-            <span style="font-size:11px;color:#aaa;">período selecionado na aba Gráficos</span>
-          </div>
-          <span class="chevron-sec" id="chevron-metas">▸</span>
-        </button>
-        <div id="corpo-metas" class="escondido" style="margin-top:10px;">
-          <div id="listaMetasCategoria" class="meta-lista"></div>
-        </div>
-      </div>
     </div>
 
     <div id="abaGrupos" class="aba-conteudo">
@@ -856,6 +862,10 @@
         </div>
       </div>
       <p style="font-size:11px;color:#777;margin:-6px 0 10px;">Mais de uma pessoa? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
+      <div class="form-group escondido" id="wrapParcelasDivida">
+        <label for="emprestimoParcelasTemp">Vou devolver em quantas vezes?</label>
+        <select id="emprestimoParcelasTemp" onchange="atualizarPreviaRateio()"></select>
+      </div>
       <label class="check-credito escondido" id="wrapRateioIncluiVoce">
         <input type="checkbox" id="rateioIncluiVoce" checked onchange="atualizarPreviaRateio()">
         dividir incluindo a minha parte
@@ -865,6 +875,20 @@
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="limparEmprestimoModal()">Não é empréstimo</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarEmprestimoModal()">OK</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO RÁPIDA
+       Não duplica o formulário: o card de lançamento é MOVIDO pra cá e devolvido
+       ao fechar. Assim ids, listeners e toda a lógica seguem valendo, sem cópia
+       paralela pra manter em sincronia. -->
+  <div id="modalEdicaoRapida" class="modal-overlay escondido" onclick="if(event.target===this) fecharEdicaoRapida()">
+    <div class="modal-content" id="conteudoEdicaoRapida">
+      <div class="modal-header">
+        <h3>Editar lançamento</h3>
+        <button class="btn-fechar" onclick="fecharEdicaoRapida()">&times;</button>
+      </div>
+      <div id="destinoFormEdicao"></div>
     </div>
   </div>
 
@@ -1276,6 +1300,17 @@
 
     function abrirModalEmprestimo() {
       const devo = tipoAtual === 'receita';
+      const selP = document.getElementById('emprestimoParcelasTemp');
+      if (!selP.options.length) {
+        for (let n = 1; n <= 24; n++) {
+          const o = document.createElement('option');
+          o.value = String(n);
+          o.textContent = n === 1 ? 'de uma vez' : n + 'x';
+          selP.appendChild(o);
+        }
+      }
+      selP.value = document.getElementById('emprestimoParcelas').value || '1';
+      document.getElementById('wrapParcelasDivida').classList.toggle('escondido', !devo);
       document.getElementById('textoModalEmprestimo').textContent = devo
         ? 'Dinheiro que entrou mas você vai devolver. Continua contando como receita na conta — aqui fica o lembrete da dívida.'
         : 'Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.';
@@ -1321,6 +1356,8 @@
       const nomes = nomesEmprestimo(bruto);
       document.getElementById('emprestimoPara').value = nomes.join(', ');
       document.getElementById('emprestimoVence').value = nomes.length ? document.getElementById('emprestimoVenceTemp').value : '';
+      document.getElementById('emprestimoParcelas').value = (nomes.length && tipoAtual === 'receita')
+        ? document.getElementById('emprestimoParcelasTemp').value : '1';
       document.getElementById('emprestimoRateioIncluiVoce').value = document.getElementById('rateioIncluiVoce').checked ? '1' : '0';
       atualizarLinkEmprestimo();
       fecharModal('modalEmprestimo');
@@ -1332,6 +1369,7 @@
       document.getElementById('emprestimoPara').value = '';
       document.getElementById('emprestimoVence').value = '';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+      document.getElementById('emprestimoParcelas').value = '1';
       atualizarLinkEmprestimo();
       atualizarPreviaRateio();
       fecharModal('modalEmprestimo');
@@ -1340,11 +1378,25 @@
     // Monta a lista de devedores de UM lançamento (uma parcela, por exemplo).
     // Rateio divide o valor daquela parcela; sem rateio, o devedor único responde
     // pelo valor inteiro.
-    function montarRateio(nomes, incluiVoce, valorDoLancamento) {
-      if (nomes.length <= 1) return null;
-      const divisor = nomes.length + (incluiVoce ? 1 : 0);
-      const cota = valorDoLancamento / divisor;
-      return nomes.map(nome => ({ nome, valor: cota.toFixed(2).replace('.', ','), quitado: false }));
+    function montarRateio(nomes, incluiVoce, valorDoLancamento, parcelas, venceBase) {
+      const n = Math.max(1, parseInt(parcelas, 10) || 1);
+      if (nomes.length <= 1 && n <= 1) return null;
+      const divisor = nomes.length + (incluiVoce && nomes.length > 1 ? 1 : 0);
+      const cota = valorDoLancamento / divisor / n;
+      const lista = [];
+      nomes.forEach(nome => {
+        for (let i = 0; i < n; i++) {
+          lista.push({
+            nome,
+            valor: cota.toFixed(2).replace('.', ','),
+            quitado: false,
+            // cada parcela da dívida vence no seu próprio mês
+            vence: n > 1 ? somarMeses(venceBase, i) : undefined,
+            rotulo: n > 1 ? (i + 1) + '/' + n : undefined
+          });
+        }
+      });
+      return lista;
     }
 
     // CARD ÚNICO DE GRÁFICOS: ALTERNAR DESPESAS / RECEITAS
@@ -1670,13 +1722,38 @@
         const el = document.getElementById(idAba);
         return el && el.classList.contains('ativo');
       });
-      abaAntesDaEdicao = (atual && atual !== 'abaLancamentos') ? atual : null;
-      const btnLanc = document.querySelector('.nav-tab[onclick*="abaLancamentos"]');
-      if (btnLanc) mudarAba('abaLancamentos', btnLanc);
+
+      // Editando de outra aba, o formulário vem até você em vez de te levar até
+      // ele: some o vaivém e você não perde o lugar da conferência.
+      if (atual && atual !== 'abaLancamentos') {
+        abaAntesDaEdicao = null;
+        document.getElementById('destinoFormEdicao').appendChild(document.getElementById('cardFormLancamento'));
+        document.getElementById('modalEdicaoRapida').classList.remove('escondido');
+        document.getElementById('conteudoEdicaoRapida').scrollTop = 0;
+      }
       prepararEdicao(id);
     }
 
+    function edicaoRapidaAberta() {
+      return !document.getElementById('modalEdicaoRapida').classList.contains('escondido');
+    }
+
+    // devolve o card pro lugar de origem
+    function fecharEdicaoRapida() {
+      if (!edicaoRapidaAberta()) return;
+      const ancora = document.getElementById('ancoraFormLancamento');
+      ancora.parentNode.insertBefore(document.getElementById('cardFormLancamento'), ancora.nextSibling);
+      document.getElementById('modalEdicaoRapida').classList.add('escondido');
+      if (document.getElementById('idEditando').value) cancelarEdicao();
+    }
+
     function voltarDaEdicao() {
+      if (edicaoRapidaAberta()) {
+        const ancora = document.getElementById('ancoraFormLancamento');
+        ancora.parentNode.insertBefore(document.getElementById('cardFormLancamento'), ancora.nextSibling);
+        document.getElementById('modalEdicaoRapida').classList.add('escondido');
+        return;
+      }
       if (!abaAntesDaEdicao) return;
       const btn = document.querySelector(`.nav-tab[onclick*="${abaAntesDaEdicao}"]`);
       if (btn) mudarAba(abaAntesDaEdicao, btn);
@@ -1778,13 +1855,24 @@
         orcamentosCategoria[categoria] = valor;
       }
       salvarOrcamentos();
-      renderizarMetasCategorias();
+      atualizarResumoEGraficos();   // redesenha o gráfico com a linha nova (e a lista junto)
     }
 
     function renderizarMetasCategorias() {
       const lista = document.getElementById('listaMetasCategoria');
       if (!lista) return;
       const cats = obterCategoriasDespesas();
+
+      const resumo = document.getElementById('resumoMetas');
+      if (resumo) {
+        const comMeta = cats.filter(c => parseVal(orcamentosCategoria[c]) > 0);
+        const estouradas = comMeta.filter(c => obterGastoCategoriaPeriodo(c) > parseVal(orcamentosCategoria[c]));
+        if (!comMeta.length) { resumo.textContent = 'nenhuma meta definida'; resumo.style.color = '#aaa'; }
+        else if (estouradas.length) {
+          resumo.textContent = estouradas.length + (estouradas.length === 1 ? ' estourou' : ' estouraram');
+          resumo.style.color = '#ef5350';
+        } else { resumo.textContent = comMeta.length + ' dentro do teto'; resumo.style.color = '#4caf50'; }
+      }
       lista.innerHTML = '';
       cats.forEach(cat => {
         const gasto = obterGastoCategoriaPeriodo(cat);
@@ -2446,6 +2534,7 @@
       const emprestimoVence = emprestimoPara ? document.getElementById('emprestimoVence').value : '';
       const rateioIncluiVoce = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
       const nomesEmpr = nomesEmprestimo(emprestimoPara);
+      const parcelasDivida = document.getElementById('emprestimoParcelas').value || '1';
 
       let grupoViagemId = '';
       const selGrupo = document.getElementById('grupoViagem').value;
@@ -2482,7 +2571,7 @@
             valor: valorParcelaStr,
             grupoViagemId, grupoViagemNome,
             emprestimoPara, emprestimoVence, rateioIncluiVoce,
-            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela),
+            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
             emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
 
@@ -2517,7 +2606,7 @@
                 grupoViagemId, grupoViagemNome,
                 emprestimoPara, rateioIncluiVoce,
                 emprestimoVence: emprestimoPara ? somarMeses(emprestimoVence, passos) : '',
-                emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela),
+                emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
                 emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
                 valor: valorParcelaStr
                 // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
@@ -2551,7 +2640,7 @@
             // o prazo acompanha a parcela: 1ª vence no mês escolhido, as seguintes
             // no mesmo dia dos meses seguintes
             emprestimoPara, emprestimoVence: somarMeses(emprestimoVence, n), rateioIncluiVoce,
-            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela),
+            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
             emprestimoQuitado: false
           });
         }
@@ -2565,7 +2654,7 @@
           valor: valorTotal.toFixed(2).replace('.', ','),
           grupoViagemId, grupoViagemNome,
           emprestimoPara, emprestimoVence, rateioIncluiVoce,
-          emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal),
+          emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal, parcelasDivida, emprestimoVence),
           emprestimoQuitado: false
         });
       }
@@ -2651,7 +2740,7 @@
       document.getElementById('tituloFormulario').textContent = 'Editar Lançamento';
       document.getElementById('btnSubmit').textContent = 'Atualizar Lançamento';
       document.getElementById('btnCancelarEdit').classList.remove('escondido');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!edicaoRapidaAberta()) window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function cancelarEdicao() {
@@ -2662,6 +2751,7 @@
       document.getElementById('emprestimoPara').value = '';
       document.getElementById('emprestimoVence').value = '';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+      document.getElementById('emprestimoParcelas').value = '1';
       atualizarLinkEmprestimo();
       const selNumParcelas = document.getElementById('numParcelas');
       const avisoParcela = document.getElementById('avisoParcelaGrupo');
@@ -2926,8 +3016,7 @@
         // quase iguais. Aqui todas viram uma só, pela compra que originou.
         const porDesc = {};
         itensPeriodo.forEach(l => {
-          const m = l.reembolsoDe ? (l.descricao || '').match(/^Reembolso\s+.+?\s+—\s+(.*)$/) : null;
-          const chave = m ? 'Reembolso · ' + m[1] : l.descricao;
+          const chave = chaveReceitaAgrupada(l);
           porDesc[chave] = (porDesc[chave] || 0) + parseVal(l.valor);
         });
 
@@ -3007,28 +3096,47 @@
     }
 
     /* OUTRAS ABAS E GRÁFICOS */
-    function renderizarBarras(container, dados, corBase) {
+    // Um rateio gera uma receita por pessoa e por parcela. Nos gráficos o que
+    // interessa é o conjunto: agrupa pelo GRUPO (a viagem) quando o lançamento
+    // está vinculado a um, senão pela compra que originou.
+    function chaveReceitaAgrupada(l) {
+      if (!l.reembolsoDe) return l.descricao;
+      if (l.grupoViagemNome) return 'Reembolso · ' + l.grupoViagemNome;
+      const m = (l.descricao || '').match(/^Reembolso\s+.+?\s+—\s+(.*)$/);
+      return 'Reembolso · ' + (m ? m[1] : 'empréstimos');
+    }
+
+    function renderizarBarras(container, dados, corBase, metas) {
       container.innerHTML = '';
       const total = Object.values(dados).reduce((a, b) => a + b, 0);
       if (total === 0) {
         container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
         return;
       }
+      const metaDe = nome => (metas && metas[nome] ? parseVal(metas[nome]) : 0);
       Object.entries(dados).sort((a, b) => b[1] - a[1]).forEach(([nome, valor]) => {
+        // a largura é a fatia do total — é isso que a porcentagem ao lado diz.
+        // A meta usa a MESMA escala, senão a linha marcaria um ponto que não
+        // corresponde ao que a barra representa.
         const pct = Math.round((valor / total) * 100);
+        const meta = metaDe(nome);
+        const pctMeta = meta > 0 ? Math.min(99, Math.round((meta / total) * 100)) : 0;
         const div = document.createElement('div');
         div.className = 'barra-categoria';
         div.innerHTML = `
-          <div class="barra-info"><span>${nome}</span><span>${fmtVal(valor)} · ${pct}%</span></div>
-          <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:${corBase};"></div></div>
+          <div class="barra-info">
+            <span>${nome}${meta > 0 ? ` <span style="color:#ffd166;font-size:10.5px;">meta ${fmtOculto(meta)}</span>` : ''}</span>
+            <span>${fmtOculto(valor)} · ${pct}%</span>
+          </div>
+          <div class="barra-bg" style="position:relative;">
+            <div class="barra-fill" style="width:${pct}%;background-color:${corBase};"></div>
+            ${meta > 0 ? `<div class="marca-meta-barra" style="left:${pctMeta}%;"></div>` : ''}
+          </div>
         `;
         container.appendChild(div);
       });
     }
 
-    // Igual à de cima, mas preserva a ordem das chaves em vez de ordenar por valor
-    // (útil pra dia da semana / linha do tempo, onde a ordem cronológica importa).
-    // Escala cada barra pelo MAIOR valor do conjunto, não por %-do-total.
     function renderizarBarrasOrdem(container, dados, corBase) {
       container.innerHTML = '';
       const entradas = Object.entries(dados);
@@ -3051,29 +3159,46 @@
 
     // Colunas verticais: boas pra comparar poucos itens lado a lado, enquanto as
     // barras horizontais aguentam nome comprido e lista longa.
-    function renderizarColunas(container, dados, corBase) {
+    // Vermelho mais fechado que o #ef5350 dos valores: em área grande, o tom vivo
+    // cansa a vista. O texto continua no tom forte, onde é rápido de ler.
+    const COR_DESPESA_GRAFICO = '#a83e3b';
+
+    function renderizarColunas(container, dados, corBase, metas) {
       container.innerHTML = '';
       const entradas = Object.entries(dados).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
       if (!entradas.length) {
         container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
         return;
       }
-      const max = Math.max(...entradas.map(e => e[1]));
+      // a meta entra na escala: se o teto for maior que o gasto, a barra precisa
+      // caber embaixo da linha, senão a linha sairia do gráfico
+      const metaDe = nome => (metas && metas[nome] ? parseVal(metas[nome]) : 0);
+      const max = Math.max(...entradas.map(([n, v]) => Math.max(v, metaDe(n))));
       const box = document.createElement('div');
       box.className = 'colunas';
       entradas.forEach(([nome, valor]) => {
         const alt = Math.max(4, Math.round((valor / max) * 100));
+        const meta = metaDe(nome);
         const item = document.createElement('div');
         item.className = 'coluna-item';
-        item.title = `${nome}: ${fmtVal(valor)}`;
+        item.title = `${nome}: ${fmtVal(valor)}` + (meta > 0 ? ` · meta ${fmtVal(meta)}` : '');
         item.innerHTML = `
           <span class="coluna-valor">${valoresOcultos ? '•••' : fmtVal(valor).replace('R$ ', '')}</span>
-          <div class="coluna-barra" style="height:${alt}%;background-color:${corBase};"></div>
+          <div style="position:relative;width:100%;height:100%;display:flex;align-items:flex-end;">
+            <div class="coluna-barra" style="height:${alt}%;background-color:${corBase};"></div>
+            ${meta > 0 ? `<div class="marca-meta" style="bottom:${Math.min(100, Math.round((meta / max) * 100))}%;"></div>` : ''}
+          </div>
           <span class="coluna-rotulo">${nome}</span>
         `;
         box.appendChild(item);
       });
       container.appendChild(box);
+      if (entradas.some(([n]) => metaDe(n) > 0)) {
+        const leg = document.createElement('div');
+        leg.style.cssText = 'font-size:10.5px;color:#888;text-align:center;margin-top:6px;';
+        leg.innerHTML = '<span style="color:#ffd166;">┄</span> meta da categoria — passou da linha, estourou';
+        container.appendChild(leg);
+      }
     }
 
     function renderizarPizza(container, dados, paleta) {
@@ -3139,7 +3264,11 @@
       const porFonte = {}, porCategoria = {}, porContaGrafico = {};
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
-        if (l.tipo === 'receita') { rec += v; porFonte[l.descricao] = (porFonte[l.descricao] || 0) + v; }
+        if (l.tipo === 'receita') {
+          rec += v;
+          const chave = chaveReceitaAgrupada(l);
+          porFonte[chave] = (porFonte[chave] || 0) + v;
+        }
         else {
           desp += v;
           const cat = l.categoria || 'Outros';
@@ -3161,15 +3290,17 @@
         }
       }
 
-      const desenhar = (tipo, idContainer, dados, cor, paleta) => {
+      const desenhar = (tipo, idContainer, dados, cor, paleta, metas) => {
         const el = document.getElementById(idContainer);
         if (tipo === 'pizza') renderizarPizza(el, dados, paleta);
-        else if (tipo === 'colunas') renderizarColunas(el, dados, cor);
-        else renderizarBarras(el, dados, cor);
+        else if (tipo === 'colunas') renderizarColunas(el, dados, cor, metas);
+        else renderizarBarras(el, dados, cor, metas);
       };
-      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, '#4caf50', PALETA_RECEITAS);
-      desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, '#ef5350');
+      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, '#3d8b40', PALETA_RECEITAS);
+      // só o gráfico de categorias recebe as metas — é onde o teto faz sentido
+      desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, COR_DESPESA_GRAFICO, null, orcamentosCategoria);
       desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, '#42a5f5');
+      renderizarMetasCategorias();
       renderizarMetasCategorias();
       renderizarRankingGastos(itensPeriodo);
       renderizarGastoPorDiaSemana(itensPeriodo);
@@ -3249,8 +3380,8 @@
           item.innerHTML = `
             <span class="coluna-valor" style="color:${m.saldo >= 0 ? '#4caf50' : '#ef5350'};">${valoresOcultos ? '•••' : fmtVal(m.saldo).replace('R$ ', '')}</span>
             <div class="coluna-par">
-              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.rec / max) * 100))}%;background-color:#4caf50;"></div>
-              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.desp / max) * 100))}%;background-color:#ef5350;"></div>
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.rec / max) * 100))}%;background-color:#3d8b40;"></div>
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.desp / max) * 100))}%;background-color:${COR_DESPESA_GRAFICO};"></div>
             </div>
             <span class="coluna-rotulo">${m.label}</span>
           `;
@@ -3549,20 +3680,31 @@
       if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.length) {
         return l.emprestimoRateio.map((d, i) => ({
           chave: l.id + ':' + i, lanc: l, idx: i, devo,
-          nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado
+          nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado,
+          vence: d.vence || l.emprestimoVence, rotulo: d.rotulo
         }));
       }
       if (l.emprestimoPara) {
         return [{
           chave: l.id + ':-1', lanc: l, idx: -1, devo,
-          nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado
+          nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado,
+          vence: l.emprestimoVence
         }];
       }
       return [];
     }
 
     function cobrancasAbertas() {
-      return lancamentos.reduce((acc, l) => acc.concat(cobrancasDoLancamento(l)), []).filter(c => !c.quitado);
+      const hoje = obterDataBrasilia();
+      return lancamentos
+        // Gasto fixo de mês que ainda não chegou não é cobrança: ninguém te deve a
+        // mensalidade de outubro em agosto. A comparação é por MÊS, não por dia —
+        // a mensalidade deste mês conta mesmo que o vencimento seja daqui a dias.
+        // Parcela é outra história: a compra inteira já saiu do seu bolso, então
+        // todas as parcelas já são devidas.
+        .filter(l => !(l.fixoId && l.data.slice(0, 7) > hoje.slice(0, 7)))
+        .reduce((acc, l) => acc.concat(cobrancasDoLancamento(l)), [])
+        .filter(c => !c.quitado);
     }
 
     function marcarCobrancaQuitada(c) {
@@ -3639,7 +3781,7 @@
     // estrutura, mudando só o rótulo, a cor e o verbo do botão.
     function renderizarSecaoEmprestimos(container, cobrancas, devo) {
       const hoje = obterDataBrasilia();
-      const emAtraso = c => c.lanc.emprestimoVence && c.lanc.emprestimoVence < hoje;
+      const emAtraso = c => c.vence && c.vence < hoje;
       const cor = devo ? '#ef5350' : '#ffd166';
 
       const porPessoa = {};
@@ -3666,7 +3808,7 @@
           const chavePessoa = (devo ? 'devo:' : 'recebo:') + nome;
           const aberto = emprestimosPessoasAbertas.has(chavePessoa);
           const atrasadas = lista.filter(emAtraso).length;
-          const proximo = lista.map(c => c.lanc.emprestimoVence).filter(Boolean).sort()[0];
+          const proximo = lista.map(c => c.vence).filter(Boolean).sort()[0];
 
           let legenda = lista.length + (lista.length === 1 ? ' cobrança' : ' cobranças');
           if (atrasadas > 0) legenda += ' · ' + atrasadas + ' em atraso';
@@ -3704,7 +3846,7 @@
             });
 
             Object.entries(porCompra).forEach(([chave, itens]) => {
-              itens.sort((a, b) => (a.lanc.data < b.lanc.data ? -1 : 1));
+              itens.sort((a, b) => ((a.vence || a.lanc.data) < (b.vence || b.lanc.data) ? -1 : 1));
               const primeiro = itens[0].lanc;
               const totalCompra = itens.reduce((sm, c) => sm + c.valor, 0);
               const ehMultipla = itens.length > 1;
@@ -3738,9 +3880,9 @@
               itens.forEach(c => {
                 const l = c.lanc;
                 const atrasado = emAtraso(c);
-                const rotulo = ehMultipla ? rotuloParcela(l) : descricaoBaseCompra(l.descricao);
-                const detalhe = l.emprestimoVence
-                  ? `<span style="color:${atrasado ? '#ef5350' : '#888'};">${atrasado ? 'venceu' : 'vence'} ${l.emprestimoVence.split('-').reverse().join('/')}</span>`
+                const rotulo = c.rotulo || (ehMultipla ? rotuloParcela(l) : descricaoBaseCompra(l.descricao));
+                const detalhe = c.vence
+                  ? `<span style="color:${atrasado ? '#ef5350' : '#888'};">${atrasado ? 'venceu' : 'vence'} ${c.vence.split('-').reverse().join('/')}</span>`
                   : (ehMultipla ? l.data.split('-').reverse().join('/') : `${l.data.split('-').reverse().join('/')} · ${l.conta}`);
 
                 const linha = document.createElement('div');
@@ -5149,7 +5291,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-8';
+    const APP_VERSION = '2026.08.07-2';
 
     // Inicialização
     carregarLocalStorage();
