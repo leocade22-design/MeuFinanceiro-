@@ -158,6 +158,13 @@
     
     /* MODAL DE AÇÕES (BALÃO SUSPENSO) */
     .balao-acoes { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+    #listaGruposVinculo { display:flex; flex-direction:column; gap:8px; }
+    .btn-opcao-balao.selecionado { border-color:#2e7d32; color:#4caf50; background:rgba(46,125,50,.12); }
+    .bloco-cat { margin-bottom:14px; background:#1a1a1a; padding:10px; border-radius:10px; border:1px solid #333; }
+    details.bloco-cat > summary { display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; }
+    details.bloco-cat > summary::-webkit-details-marker { display:none; }
+    details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px; }
+    details.bloco-cat[open] > summary .chevron-sec { transform:rotate(90deg); display:inline-block; }
     .btn-opcao-balao { padding: 14px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 15px; }
     .btn-opcao-balao.danger { color: #ef5350; border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
     textarea { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
@@ -272,9 +279,10 @@
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
               <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
-                <option value="Crédito à Vista">Crédito 1x</option>
+                <option value="Crédito à Vista">Crédito</option>
                 <option value="Crédito Parcelado">Crédito parcelado</option>
                 <option value="À Vista / Débito">Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
               </select>
             </div>
           </div>
@@ -707,9 +715,10 @@
         <h3 id="tituloGerenciarParcelas">Parcelas</h3>
         <button class="btn-fechar" onclick="fecharModal('modalParcelas')">&times;</button>
       </div>
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Ajuste a data de qualquer parcela individualmente, ou empurre de uma vez todas as que ainda não venceram (pra pular um mês, por exemplo).</p>
-      <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as parcelas restantes</button>
-      <div id="listaGerenciarParcelas"></div>
+      <div id="resumoParcelas" class="box-resumo-modal" style="margin-bottom:12px;"></div>
+      <p style="color:#777;font-size:11.5px;margin-bottom:10px;">A data de cada parcela define em qual fatura ela cai (fechamento dia 3).</p>
+      <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as que faltam</button>
+      <div id="listaGerenciarParcelas" onchange="previewFaturasParcelas(event)"></div>
       <div style="display:flex;gap:10px;margin-top:14px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalParcelas')">Fechar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarDatasParcelas()">Salvar datas</button>
@@ -782,12 +791,11 @@
         <h3>Vincular a um grupo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalGrupoVinculo')">&times;</button>
       </div>
-      <div class="form-group" id="grupoGrupoViagemWrap">
-        <label for="grupoViagem">Grupo</label>
+      <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Vale pra despesa e pra receita (ex: reembolso de uma viagem).</p>
+      <div class="form-group escondido" id="grupoGrupoViagemWrap">
         <select id="grupoViagem" onchange="onMudarGrupoSelect()"></select>
-        <span style="font-size:11px;color:#777;">Funciona pra despesas e também pra receitas (ex: reembolso de uma viagem).</span>
       </div>
-      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarGrupoVinculo()">OK</button>
+      <div id="listaGruposVinculo"></div>
     </div>
   </div>
 
@@ -1581,10 +1589,27 @@
       return lancamentos.filter(l => l.grupoId === item.grupoId && l.tipo === 'despesa' && l.data >= hoje).length;
     }
 
+    // O formulário mora na aba Lançamentos, então editar de qualquer outra aba
+    // obriga a trocar. Guardar de onde veio é o que permite voltar depois, em vez
+    // de largar você na tela inicial no meio da conferência.
+    let abaAntesDaEdicao = null;
+
     function abrirEdicaoLancamentoGlobal(id) {
+      const atual = ORDEM_ABAS.find(idAba => {
+        const el = document.getElementById(idAba);
+        return el && el.classList.contains('ativo');
+      });
+      abaAntesDaEdicao = (atual && atual !== 'abaLancamentos') ? atual : null;
       const btnLanc = document.querySelector('.nav-tab[onclick*="abaLancamentos"]');
       if (btnLanc) mudarAba('abaLancamentos', btnLanc);
       prepararEdicao(id);
+    }
+
+    function voltarDaEdicao() {
+      if (!abaAntesDaEdicao) return;
+      const btn = document.querySelector(`.nav-tab[onclick*="${abaAntesDaEdicao}"]`);
+      if (btn) mudarAba(abaAntesDaEdicao, btn);
+      abaAntesDaEdicao = null;
     }
 
     function exportarBackup() {
@@ -1911,7 +1936,59 @@
 
     function abrirModalGrupoVinculo() {
       popularSelectGrupos(document.getElementById('grupoViagem').value);
+      renderizarOpcoesGrupoVinculo();
       document.getElementById('modalGrupoVinculo').classList.remove('escondido');
+    }
+
+    // Um toque resolve: os grupos abertos já aparecem listados, sem precisar abrir
+    // um seletor e confirmar depois.
+    function renderizarOpcoesGrupoVinculo() {
+      const box = document.getElementById('listaGruposVinculo');
+      if (!box) return;
+      const atual = document.getElementById('grupoViagem').value;
+      const abertos = grupos.filter(g => g.status === 'aberto');
+      box.innerHTML = '';
+
+      const escolher = (id) => {
+        document.getElementById('grupoViagem').value = id;
+        atualizarLinkGrupo();
+        fecharModal('modalGrupoVinculo');
+      };
+
+      abertos.forEach(g => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-opcao-balao' + (atual === g.id ? ' selecionado' : '');
+        b.textContent = (atual === g.id ? '✓ ' : '') + g.nome;
+        b.onclick = () => escolher(atual === g.id ? '' : g.id);
+        box.appendChild(b);
+      });
+
+      if (atual) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-opcao-balao';
+        b.style.color = '#ef5350';
+        b.textContent = 'desvincular';
+        b.onclick = () => escolher('');
+        box.appendChild(b);
+      }
+
+      const novo = document.createElement('button');
+      novo.type = 'button';
+      novo.className = 'btn-opcao-balao';
+      novo.textContent = '+ criar novo grupo';
+      novo.onclick = () => {
+        const nome = prompt('Nome do novo grupo (ex: Viagem Ubatuba, Show X):');
+        if (!nome) return;
+        const g = { id: 'gr' + Date.now(), nome, status: 'aberto', dataCriacao: obterDataBrasilia() };
+        grupos.push(g);
+        salvarGrupos();
+        renderizarGrupos();
+        popularSelectGrupos(g.id);
+        escolher(g.id);
+      };
+      box.appendChild(novo);
     }
 
     function salvarGrupoVinculo() {
@@ -1953,14 +2030,24 @@
       const conta = document.getElementById('conta').value;
       const gF = document.getElementById('grupoFormaModo');
       const gP = document.getElementById('grupoParcelas');
-      if (tipoAtual === 'despesa' && contaTemCredito(conta)) {
-        gF.classList.remove('escondido');
-        verificarParcelamento(document.getElementById('formaModo').value);
-      } else {
+      const sel = document.getElementById('formaModo');
+      const temCredito = contaTemCredito(conta);
+
+      if (tipoAtual !== 'despesa') {
         gF.classList.add('escondido');
         gP.classList.add('escondido');
-        document.getElementById('formaModo').value = 'À Vista / Débito';
+        sel.value = 'À Vista / Débito';
+        return;
       }
+
+      // Conta sem crédito ainda precisa escolher entre débito e dinheiro — por isso
+      // o seletor não some mais, só perde as opções de crédito.
+      gF.classList.remove('escondido');
+      Array.from(sel.options).forEach(o => {
+        o.hidden = !temCredito && eCredito(o.value);
+      });
+      if (!temCredito && eCredito(sel.value)) sel.value = 'À Vista / Débito';
+      verificarParcelamento(sel.value);
     }
 
     function alternarTipo(tipo) {
@@ -2153,21 +2240,52 @@
       const base = (grupo[0].descricao || '').replace(/\s\(\d+\/\d+\)$/, '');
       document.getElementById('tituloGerenciarParcelas').textContent = base;
       const hoje = obterDataBrasilia();
+      const total = grupo.reduce((sm, l) => sm + parseVal(l.valor), 0);
+
+      // Cabeçalho: o que é essa compra, antes de mostrar as datas soltas
+      const resumo = document.getElementById('resumoParcelas');
+      const rat = resumoRateioItens(grupo);
+      resumo.innerHTML = `
+        <div class="linha-subtotal" style="cursor:default;">
+          <span>${grupo.length}x de ${fmtVal(parseVal(grupo[0].valor))} · ${grupo[0].conta}</span>
+          <strong>${fmtVal(total)}</strong>
+        </div>
+        ${rat.pessoas.length ? `<div style="font-size:11px;color:#ffd166;margin-top:4px;">rachado entre ${rat.pessoas.length + 1} · sua parte ${fmtVal(rat.minhaParte)}</div>` : ''}
+      `;
+
       container.innerHTML = '';
-      grupo.forEach(item => {
-        const numMatch = (item.descricao || '').match(/\(\d+\/\d+\)$/);
-        const label = numMatch ? numMatch[0] : '';
+      grupo.forEach((item, i) => {
+        const paga = item.data <= hoje;
+        const f = getMesFatura(item.data, item.formaModo);
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #2a2a2a;';
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #2a2a2a;';
         row.innerHTML = `
-          <div style="flex:1;">
-            <strong style="font-size:13px;">${label}</strong>
-            <div style="font-size:11px;color:#888;">R$ ${item.valor}${item.data > hoje ? ' · agendado' : ' · já efetivado'}</div>
+          <div style="flex:1;min-width:0;">
+            <strong style="font-size:13px;">Parcela ${i + 1} de ${grupo.length}</strong>
+            <div class="legenda-parcela" style="font-size:11px;color:${paga ? '#666' : '#ffd166'};">
+              ${fmtVal(parseVal(item.valor))} · ${paga ? 'já paga' : 'a pagar'} · cai na fatura de ${NOMES_MESES[f.mes].toLowerCase()}
+            </div>
           </div>
-          <input type="date" value="${item.data}" data-id="${item.id}" style="width:145px;">
+          <input type="date" value="${item.data}" data-id="${item.id}" style="width:142px;">
         `;
         container.appendChild(row);
       });
+    }
+
+    // Mexeu numa data: atualiza na hora a fatura mostrada naquela linha, sem
+    // precisar salvar pra descobrir onde a parcela foi parar
+    function previewFaturasParcelas(ev) {
+      const inp = ev.target;
+      if (!inp || inp.type !== 'date' || !inp.value) return;
+      const id = parseInt(inp.dataset.id, 10);
+      const item = lancamentos.find(l => l.id === id);
+      if (!item) return;
+      const f = getMesFatura(inp.value, item.formaModo);
+      const legenda = inp.parentElement.querySelector('.legenda-parcela');
+      if (!legenda) return;
+      const paga = inp.value <= obterDataBrasilia();
+      legenda.style.color = paga ? '#666' : '#ffd166';
+      legenda.textContent = `${fmtVal(parseVal(item.valor))} · ${paga ? 'já paga' : 'a pagar'} · cai na fatura de ${NOMES_MESES[f.mes].toLowerCase()}`;
     }
 
     function salvarDatasParcelas() {
@@ -2487,6 +2605,7 @@
       document.getElementById('btnSubmit').textContent = 'Salvar';
       document.getElementById('btnCancelarEdit').classList.add('escondido');
       alternarTipo('despesa');
+      voltarDaEdicao();
     }
 
     function excluirLancamento(id) {
@@ -4222,10 +4341,30 @@
           `;
         }
 
-        Object.entries(porCategoria).forEach(([cat, listaItens]) => {
+        // O gasto é o assunto do grupo; o reembolso é consequência dele. Por isso
+        // as categorias de despesa vêm primeiro e as de receita fecham a lista.
+        const soReceita = itensCat => itensCat.every(l => l.tipo === 'receita');
+        Object.entries(porCategoria)
+          .sort((a, b) => (soReceita(a[1]) ? 1 : 0) - (soReceita(b[1]) ? 1 : 0))
+          .forEach(([cat, listaItens]) => {
+          // Categoria de reembolso é dinheiro que voltou: mostrar como negativo
+          // (efeito no total) confundia — aqui aparece em verde, com sinal de +
+          const soReembolso = soReceita(listaItens);
           const totCat = listaItens.reduce((s, item) => s + (item.tipo === 'receita' ? -parseVal(item.valor) : parseVal(item.valor)), 0);
-          html += `
-            <div style="margin-bottom:14px; background:#1a1a1a; padding:10px; border-radius:10px; border:1px solid #333;">
+          // Reembolso recolhido por padrão: o total dele já resume o que interessa,
+          // e a lista pessoa a pessoa só quando você quiser conferir
+          html += soReembolso ? `
+            <details class="bloco-cat">
+              <summary>
+                <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
+                <span style="display:flex;align-items:center;gap:6px;">
+                  <strong style="font-size:13px;color:#4caf50;">+ ${fmtVal(-totCat)}</strong>
+                  <span class="chevron-sec" style="font-size:13px;">▸</span>
+                </span>
+              </summary>
+              <div class="corpo-cat">
+          ` : `
+            <div class="bloco-cat">
               <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px;">
                 <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
                 <strong style="font-size:13px;">${fmtVal(totCat)}</strong>
@@ -4236,7 +4375,31 @@
           // em vez de uma linha por parcela — clicar abre o gerenciador de parcelas.
           const hoje = obterDataBrasilia();
           const grupoIdsRenderizados = new Set();
+          const reembolsosRenderizados = new Set();
           listaItens.forEach(item => {
+            // Uma compra parcelada rateada gera um reembolso POR PARCELA e por
+            // pessoa — sete linhas iguais pra três pessoas. Aqui cada pessoa vira
+            // uma linha só, com o nº de recebimentos ao lado.
+            if (item.tipo === 'receita' && item.reembolsoDe) {
+              if (reembolsosRenderizados.has(item.descricao)) return;
+              reembolsosRenderizados.add(item.descricao);
+              const mesmos = listaItens.filter(l => l.tipo === 'receita' && l.reembolsoDe && l.descricao === item.descricao);
+              const somaPessoa = mesmos.reduce((sm, l) => sm + parseVal(l.valor), 0);
+              const m = (item.descricao || '').match(/^Reembolso\s+(.+?)\s+—\s+(.*)$/);
+              const quem = m ? m[1] : item.descricao;
+              const doQue = m ? m[2] : '';
+              html += `
+                <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
+                  <div class="item-info">
+                    <span style="font-size:13px;">${quem}</span>
+                    <div style="font-size:10px;color:#888;">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}</div>
+                  </div>
+                  <span class="valor-receita" style="font-size:13px;">+ ${fmtVal(somaPessoa)}</span>
+                </div>
+              `;
+              return;
+            }
+
             if (item.grupoId) {
               if (grupoIdsRenderizados.has(item.grupoId)) return; // já renderizou essa compra
               grupoIdsRenderizados.add(item.grupoId);
@@ -4274,7 +4437,7 @@
               </div>
             `;
           });
-          html += `</div>`;
+          html += soReembolso ? `</div></details>` : `</div>`;
         });
 
         corpo.innerHTML = html;
@@ -4502,7 +4665,9 @@ function interpretarFala(fala) {
   let formaModo = 'À Vista / Débito';
   let numParcelasVoz = '1';
 
-  if (/(crédito|parcelado)/.test(texto)) {
+  if (/(dinheiro|espécie|especie)/.test(texto)) {
+    formaModo = 'Dinheiro';
+  } else if (/(crédito|parcelado)/.test(texto)) {
     // "no crédito" sozinho é compra 1x; só é parcelado se a fala disser parcela/vezes
     formaModo = /(parcelad|parcela|vezes|\d+\s*x)/.test(texto) ? 'Crédito Parcelado' : 'Crédito à Vista';
   } else if (/(tíquete|alimentação|vr|va)/.test(texto)) {
@@ -4608,7 +4773,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-4';
+    const APP_VERSION = '2026.08.06-5';
 
     // Inicialização
     carregarLocalStorage();
