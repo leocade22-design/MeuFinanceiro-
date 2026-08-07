@@ -1,7 +1,7 @@
 // IMPORTANTE: ao publicar uma versão nova do app, mude VERSAO aqui e a constante
 // APP_VERSION no index.html (as duas juntas). É a mudança neste arquivo que faz o
 // navegador perceber que existe versão nova e reinstalar o service worker.
-const VERSAO = '2026.08.06-5';
+const VERSAO = '2026.08.06-6';
 const CACHE_NAME = 'meu-financeiro-' + VERSAO;
 
 const ARQUIVOS_PARA_CACHE = [

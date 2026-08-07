@@ -391,7 +391,7 @@
           <span class="chevron-sec" id="chevron-emprestimos">▸</span>
         </button>
         <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem. Ao marcar "Recebi", o valor entra como receita na conta que você escolher.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem e o que você deve. Ao marcar "Recebi" ou "Paguei", o lançamento entra sozinho na conta que você escolher.</p>
           <div id="listaEmprestimos"></div>
           <button type="button" id="btnLembretes" class="btn-cancelar escondido" style="margin-top:10px;" onclick="alternarLembretesEmprestimo()">🔔 ativar lembrete de cobrança</button>
           <p id="avisoLembretes" class="escondido" style="font-size:11px;color:#777;margin-top:8px;line-height:1.4;"></p>
@@ -820,18 +820,18 @@
         <h3>Empréstimo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
       </div>
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.</p>
+      <p id="textoModalEmprestimo" style="color:#aaa;font-size:12px;margin-bottom:10px;"></p>
       <div class="form-row">
         <div class="form-group">
-          <label for="emprestimoTemp">Quem te deve</label>
+          <label for="emprestimoTemp" id="labelQuemEmprestimo">Quem te deve</label>
           <input type="text" id="emprestimoTemp" placeholder="Ex: Dudu" oninput="atualizarPreviaRateio()">
         </div>
         <div class="form-group">
-          <label for="emprestimoVenceTemp">Prazo pra pagar</label>
+          <label for="emprestimoVenceTemp" id="labelPrazoEmprestimo">Prazo pra pagar</label>
           <input type="date" id="emprestimoVenceTemp">
         </div>
       </div>
-      <p style="font-size:11px;color:#777;margin:-6px 0 10px;">Racha entre várias pessoas? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
+      <p style="font-size:11px;color:#777;margin:-6px 0 10px;">Mais de uma pessoa? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
       <label class="check-credito escondido" id="wrapRateioIncluiVoce">
         <input type="checkbox" id="rateioIncluiVoce" checked onchange="atualizarPreviaRateio()">
         dividir incluindo a minha parte
@@ -848,13 +848,13 @@
   <div id="modalReceberEmprestimo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalReceberEmprestimo')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Registrar recebimento</h3>
+        <h3 id="tituloReceberEmprestimo">Registrar recebimento</h3>
         <button class="btn-fechar" onclick="fecharModal('modalReceberEmprestimo')">&times;</button>
       </div>
       <div class="box-resumo-modal" id="resumoReceberEmprestimo" style="margin-bottom:14px;"></div>
       <div class="form-row">
         <div class="form-group">
-          <label for="contaRecebimento">Caiu em qual conta?</label>
+          <label for="contaRecebimento" id="labelContaRecebimento">Caiu em qual conta?</label>
           <select id="contaRecebimento"></select>
         </div>
         <div class="form-group">
@@ -862,7 +862,7 @@
           <input type="date" id="dataRecebimento">
         </div>
       </div>
-      <p style="font-size:11.5px;color:#777;margin-bottom:12px;">Ao confirmar, o valor entra como <strong>receita</strong> nessa conta e a cobrança sai daqui.</p>
+      <p id="avisoReceberEmprestimo" style="font-size:11.5px;color:#777;margin-bottom:12px;"></p>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalReceberEmprestimo')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarRecebimentoEmprestimo()">Confirmar</button>
@@ -1195,12 +1195,14 @@
       const link = document.getElementById('linkEmprestimo');
       if (!link) return;
       const v = document.getElementById('emprestimoPara').value.trim();
+      const devo = tipoAtual === 'receita';
       if (v) {
         const qtd = nomesEmprestimo(v).length;
-        link.textContent = qtd > 1 ? `empréstimo: ${qtd} pessoas` : 'empréstimo: ' + v;
+        const quem = qtd > 1 ? `${qtd} pessoas` : v;
+        link.textContent = (devo ? 'devo a: ' : 'empréstimo: ') + quem;
         link.classList.add('tem-obs');
       } else {
-        link.textContent = 'empréstimo?';
+        link.textContent = devo ? 'peguei emprestado?' : 'empréstimo?';
         link.classList.remove('tem-obs');
       }
     }
@@ -1212,6 +1214,12 @@
     }
 
     function abrirModalEmprestimo() {
+      const devo = tipoAtual === 'receita';
+      document.getElementById('textoModalEmprestimo').textContent = devo
+        ? 'Dinheiro que entrou mas você vai devolver. Continua contando como receita na conta — aqui fica o lembrete da dívida.'
+        : 'Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.';
+      document.getElementById('labelQuemEmprestimo').textContent = devo ? 'De quem você pegou' : 'Quem te deve';
+      document.getElementById('labelPrazoEmprestimo').textContent = devo ? 'Prazo pra devolver' : 'Prazo pra pagar';
       document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
       document.getElementById('emprestimoVenceTemp').value = document.getElementById('emprestimoVence').value;
       document.getElementById('rateioIncluiVoce').checked = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
@@ -1242,7 +1250,7 @@
           <strong>${total ? 'R$ ' + cota.toFixed(2).replace('.', ',') + ' cada' : 'digite o valor'}</strong>
         </div>
         <div style="font-size:11px;color:#888;margin-top:4px;">
-          Vão te dever: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na cobrança.' : ''}
+          ${tipoAtual === 'receita' ? 'Você vai devolver a' : 'Vão te dever'}: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na conta.' : ''}
         </div>
       `;
     }
@@ -2064,10 +2072,8 @@
         gC.classList.add('escondido');
         document.getElementById('grupoFormaModo').classList.add('escondido');
         document.getElementById('grupoParcelas').classList.add('escondido');
-        document.getElementById('linkEmprestimo').classList.add('escondido');
-        document.getElementById('emprestimoPara').value = '';
-        document.getElementById('emprestimoVence').value = '';
-        document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+        // receita também aceita empréstimo — aqui é dinheiro que ENTROU e você deve
+        document.getElementById('linkEmprestimo').classList.remove('escondido');
         atualizarLinkEmprestimo();
       } else {
         btnD.className = 'btn-tipo ativo-despesa';
@@ -2369,7 +2375,7 @@
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
       const observacao = document.getElementById('observacao').value.trim();
       const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
-      const emprestimoPara = tipoAtual === 'despesa' ? document.getElementById('emprestimoPara').value.trim() : '';
+      const emprestimoPara = document.getElementById('emprestimoPara').value.trim();
       const emprestimoVence = emprestimoPara ? document.getElementById('emprestimoVence').value : '';
       const rateioIncluiVoce = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
       const nomesEmpr = nomesEmprestimo(emprestimoPara);
@@ -3395,15 +3401,19 @@
     // cobrança por pessoa, cada uma com a sua cota. Os dois formatos convivem —
     // dado antigo continua sendo lido sem migração.
     function cobrancasDoLancamento(l) {
+      // A direção sai do tipo do lançamento, sem campo novo: despesa marcada como
+      // empréstimo é dinheiro que vão te devolver; receita marcada é dinheiro que
+      // entrou e você vai devolver.
+      const devo = l.tipo === 'receita';
       if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.length) {
         return l.emprestimoRateio.map((d, i) => ({
-          chave: l.id + ':' + i, lanc: l, idx: i,
+          chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado
         }));
       }
       if (l.emprestimoPara) {
         return [{
-          chave: l.id + ':-1', lanc: l, idx: -1,
+          chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado
         }];
       }
@@ -3465,35 +3475,59 @@
         return;
       }
 
+      container.innerHTML = '';
+      const aReceber = abertas.filter(c => !c.devo);
+      const aPagar = abertas.filter(c => c.devo);
+
+      const somar = lista => lista.reduce((sm, c) => sm + c.valor, 0);
+      if (badge) {
+        const partes = [];
+        if (aReceber.length) partes.push('+' + fmtOculto(somar(aReceber)));
+        if (aPagar.length) partes.push('−' + fmtOculto(somar(aPagar)));
+        badge.textContent = '· ' + partes.join(' / ');
+      }
+
+      if (aReceber.length) renderizarSecaoEmprestimos(container, aReceber, false);
+      if (aPagar.length) renderizarSecaoEmprestimos(container, aPagar, true);
+
+      atualizarBotaoLembretes();
+      atualizarBadgeApp();
+    }
+
+    // Uma direção por vez: o que te devem e o que você deve seguem a mesma
+    // estrutura, mudando só o rótulo, a cor e o verbo do botão.
+    function renderizarSecaoEmprestimos(container, cobrancas, devo) {
       const hoje = obterDataBrasilia();
       const emAtraso = c => c.lanc.emprestimoVence && c.lanc.emprestimoVence < hoje;
+      const cor = devo ? '#ef5350' : '#ffd166';
 
       const porPessoa = {};
-      abertas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
-      const totalGeral = abertas.reduce((sm, c) => sm + c.valor, 0);
-      const totalAtrasado = abertas.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
-      if (badge) badge.textContent = '· ' + fmtOculto(totalGeral);
-      atualizarBadgeApp();
+      cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
+      const total = cobrancas.reduce((sm, c) => sm + c.valor, 0);
+      const totalAtrasado = cobrancas.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
 
-      container.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid #333;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total a receber</span>
-          <strong style="color:#ffd166;font-size:19px;">${fmtOculto(totalGeral)}</strong>
+      const topo = document.createElement('div');
+      topo.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin:${devo ? '18' : '0'}px 0 6px;border-bottom:1px solid #333;">
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${devo ? 'Total que eu devo' : 'Total a receber'}</span>
+          <strong style="color:${cor};font-size:19px;">${fmtOculto(total)}</strong>
         </div>
-        ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:#ef5350;"><span>⚠ vencido — pode cobrar</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
+        ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:#ef5350;"><span>⚠ ${devo ? 'vencido — precisa pagar' : 'vencido — pode cobrar'}</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
       `;
+      container.appendChild(topo);
 
       // quem tem cobrança vencida aparece primeiro
       Object.entries(porPessoa)
         .sort((a, b) => (a[1].some(emAtraso) ? 0 : 1) - (b[1].some(emAtraso) ? 0 : 1)
           || a[0].localeCompare(b[0], 'pt-BR', { sensitivity: 'base' }))
-        .forEach(([nome, cobrancas]) => {
-          const total = cobrancas.reduce((sm, c) => sm + c.valor, 0);
-          const aberto = emprestimosPessoasAbertas.has(nome);
-          const atrasadas = cobrancas.filter(emAtraso).length;
-          const proximo = cobrancas.map(c => c.lanc.emprestimoVence).filter(Boolean).sort()[0];
+        .forEach(([nome, lista]) => {
+          const totalPessoa = lista.reduce((sm, c) => sm + c.valor, 0);
+          const chavePessoa = (devo ? 'devo:' : 'recebo:') + nome;
+          const aberto = emprestimosPessoasAbertas.has(chavePessoa);
+          const atrasadas = lista.filter(emAtraso).length;
+          const proximo = lista.map(c => c.lanc.emprestimoVence).filter(Boolean).sort()[0];
 
-          let legenda = cobrancas.length + (cobrancas.length === 1 ? ' cobrança' : ' cobranças');
+          let legenda = lista.length + (lista.length === 1 ? ' cobrança' : ' cobranças');
           if (atrasadas > 0) legenda += ' · ' + atrasadas + ' em atraso';
           else if (proximo) legenda += ' · a partir de ' + proximo.split('-').reverse().join('/');
 
@@ -3503,28 +3537,27 @@
           const cabecalho = document.createElement('button');
           cabecalho.type = 'button';
           cabecalho.className = 'card-header-toggle';
-          cabecalho.onclick = () => alternarPessoaEmprestimo(nome);
+          cabecalho.onclick = () => alternarPessoaEmprestimo(chavePessoa);
           cabecalho.innerHTML = `
             <div class="item-info">
               <strong>${nome}</strong>
               <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : '#888'};">${legenda}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="color:#ffd166;font-weight:700;">${fmtOculto(total)}</span>
+              <span style="color:${cor};font-weight:700;">${fmtOculto(totalPessoa)}</span>
               <span class="chevron-sec">${aberto ? '▾' : '▸'}</span>
             </div>
           `;
           bloco.appendChild(cabecalho);
 
           if (aberto) {
-            const lista = document.createElement('div');
-            lista.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid #333;';
+            const listaEl = document.createElement('div');
+            listaEl.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid #333;';
 
-            // agrupa por compra: a data em que VOCÊ pagou e a conta ficam no
-            // cabeçalho da compra; cada linha abaixo carrega só o prazo daquela
-            // parcela — era a repetição de duas datas por linha que confundia
+            // agrupa por compra: a data e a conta ficam no cabeçalho da compra;
+            // cada linha abaixo carrega só o prazo daquela parcela
             const porCompra = {};
-            cobrancas.forEach(c => {
+            lista.forEach(c => {
               const k = chaveCompra(c.lanc);
               (porCompra[k] = porCompra[k] || []).push(c);
             });
@@ -3541,7 +3574,7 @@
                 cab.innerHTML = `
                   <div style="min-width:0;">
                     <div style="font-size:12.5px;color:#ddd;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${descricaoBaseCompra(primeiro.descricao)}</div>
-                    <div style="font-size:10.5px;color:#777;">${itens.length}x · ${primeiro.fixoId ? 'mensal' : 'pago ' + primeiro.data.split('-').reverse().join('/')} · ${primeiro.conta}</div>
+                    <div style="font-size:10.5px;color:#777;">${itens.length}x · ${primeiro.fixoId ? 'mensal' : (devo ? 'recebido ' : 'pago ') + primeiro.data.split('-').reverse().join('/')} · ${primeiro.conta}</div>
                   </div>
                   <div style="display:flex;gap:4px;flex-shrink:0;"></div>
                 `;
@@ -3553,20 +3586,18 @@
                     b.className = 'btn-mini';
                     b.style.cssText = 'padding:3px 7px;font-size:10px;';
                     b.textContent = rotulo;
-                    b.title = 'Adiar ou adiantar o prazo de cobrança desta compra';
+                    b.title = 'Adiar ou adiantar o prazo desta compra';
                     b.onclick = (ev) => { ev.stopPropagation(); deslocarVencimentoCompra(chave, delta); };
                     box.appendChild(b);
                   });
                 }
-                lista.appendChild(cab);
+                listaEl.appendChild(cab);
               }
 
               itens.forEach(c => {
                 const l = c.lanc;
                 const atrasado = emAtraso(c);
                 const rotulo = ehMultipla ? rotuloParcela(l) : descricaoBaseCompra(l.descricao);
-                // uma data só por linha: o prazo. A data da compra já está no
-                // cabeçalho (ou é irrelevante quando não há prazo definido)
                 const detalhe = l.emprestimoVence
                   ? `<span style="color:${atrasado ? '#ef5350' : '#888'};">${atrasado ? 'venceu' : 'vence'} ${l.emprestimoVence.split('-').reverse().join('/')}</span>`
                   : (ehMultipla ? l.data.split('-').reverse().join('/') : `${l.data.split('-').reverse().join('/')} · ${l.conta}`);
@@ -3580,12 +3611,12 @@
                     <div style="font-size:11px;">${detalhe}</div>
                   </div>
                   <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                    <span class="valor-despesa">${fmtOculto(c.valor)}</span>
-                    <button type="button" class="btn-mini">Recebi</button>
+                    <span class="${devo ? 'valor-receita' : 'valor-despesa'}">${fmtOculto(c.valor)}</span>
+                    <button type="button" class="btn-mini">${devo ? 'Paguei' : 'Recebi'}</button>
                   </div>
                 `;
                 linha.querySelector('button').onclick = (ev) => { ev.stopPropagation(); abrirReceberEmprestimo([c.chave]); };
-                lista.appendChild(linha);
+                listaEl.appendChild(linha);
               });
 
               if (ehMultipla) {
@@ -3593,30 +3624,26 @@
                 btnCompra.type = 'button';
                 btnCompra.className = 'btn-mini';
                 btnCompra.style.cssText = 'margin:4px 0 2px;';
-                btnCompra.textContent = 'Recebi as ' + itens.length + ' (' + fmtOculto(totalCompra) + ')';
+                btnCompra.textContent = (devo ? 'Paguei as ' : 'Recebi as ') + itens.length + ' (' + fmtOculto(totalCompra) + ')';
                 btnCompra.onclick = () => abrirReceberEmprestimo(itens.map(c => c.chave));
-                lista.appendChild(btnCompra);
+                listaEl.appendChild(btnCompra);
               }
             });
 
-            // com uma compra só, o botão dela já quita tudo dessa pessoa — não
-            // repete a mesma ação com dois nomes diferentes
-            if (cobrancas.length > 1 && Object.keys(porCompra).length > 1) {
+            if (lista.length > 1 && Object.keys(porCompra).length > 1) {
               const btnTudo = document.createElement('button');
               btnTudo.type = 'button';
               btnTudo.className = 'btn-mini';
               btnTudo.style.cssText = 'margin-top:8px;';
-              btnTudo.textContent = 'Recebi tudo de ' + nome;
-              btnTudo.onclick = () => abrirReceberEmprestimo(cobrancas.map(c => c.chave));
-              lista.appendChild(btnTudo);
+              btnTudo.textContent = (devo ? 'Paguei tudo de ' : 'Recebi tudo de ') + nome;
+              btnTudo.onclick = () => abrirReceberEmprestimo(lista.map(c => c.chave));
+              listaEl.appendChild(btnTudo);
             }
-            bloco.appendChild(lista);
+            bloco.appendChild(listaEl);
           }
 
           container.appendChild(bloco);
         });
-
-      atualizarBotaoLembretes();
     }
 
     /* LEMBRETE DE COBRANÇA
@@ -3704,7 +3731,8 @@
       const total = vencidas.reduce((sm, c) => sm + c.valor, 0);
       const nomes = [...new Set(vencidas.map(c => c.nome))];
       try {
-        new Notification('Tem gente pra cobrar', {
+        const soDividas = vencidas.every(c => c.devo);
+        new Notification(soDividas ? 'Tem conta pra pagar' : 'Tem gente pra cobrar', {
           body: `${nomes.join(', ')} — R$ ${total.toFixed(2).replace('.', ',')} vencido`,
           tag: 'emprestimos-vencidos'
         });
@@ -3734,15 +3762,22 @@
       if (!itens.length) return;
       recebimentoEmprestimoChaves = itens.map(c => c.chave);
 
+      const devo = itens[0].devo;
       const total = itens.reduce((sm, c) => sm + c.valor, 0);
       const nomes = [...new Set(itens.map(c => c.nome))];
+
+      document.getElementById('tituloReceberEmprestimo').textContent = devo ? 'Registrar pagamento' : 'Registrar recebimento';
+      document.getElementById('labelContaRecebimento').textContent = devo ? 'Saiu de qual conta?' : 'Caiu em qual conta?';
+      document.getElementById('avisoReceberEmprestimo').innerHTML = devo
+        ? 'Ao confirmar, o valor sai como <strong>despesa à vista</strong> nessa conta — não entra em fatura de cartão.'
+        : 'Ao confirmar, o valor entra como <strong>receita</strong> nessa conta e a cobrança sai daqui.';
       const detalhes = itens.map(c =>
         `<div class="linha-subtotal" style="cursor:default;"><span>${c.nome} · ${descricaoBaseCompra(c.lanc.descricao)}${rotuloParcela(c.lanc) ? ' (' + rotuloParcela(c.lanc) + ')' : ''}</span><strong>${fmtOculto(c.valor)}</strong></div>`
       ).join('');
       document.getElementById('resumoReceberEmprestimo').innerHTML = `
         <div style="margin-bottom:6px;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;">Recebendo de ${nomes.join(', ')}</span>
-          <h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3>
+          <span style="font-size:11px;color:#aaa;text-transform:uppercase;">${devo ? 'Pagando ' : 'Recebendo de '}${nomes.join(', ')}</span>
+          <h3 style="color:${devo ? '#ef5350' : '#4caf50'};font-size:22px;">${fmtOculto(total)}</h3>
         </div>
         ${itens.length > 1 ? detalhes : ''}
       `;
@@ -3762,17 +3797,20 @@
 
       localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
 
+      const devo = itens[0].devo;
       itens.forEach(c => {
         marcarCobrancaQuitada(c);
         lancamentos.unshift({
           id: novoIdLancamento(),
-          tipo: 'receita',
-          descricao: 'Reembolso ' + c.nome + ' — ' + descricaoBaseCompra(c.lanc.descricao),
+          tipo: devo ? 'despesa' : 'receita',
+          descricao: (devo ? 'Paguei ' : 'Reembolso ') + c.nome + ' — ' + descricaoBaseCompra(c.lanc.descricao),
           conta,
+          // à vista de propósito: quitar dívida sai por pix/dinheiro/débito e não
+          // pode ir parar na fatura do cartão
           formaModo: 'À Vista / Débito',
           numParcelas: '1',
-          categoria: '',
-          observacao: 'Recebimento de empréstimo',
+          categoria: devo ? categoriaPadrao() : '',
+          observacao: devo ? 'Pagamento de empréstimo' : 'Recebimento de empréstimo',
           data,
           valor: c.valor.toFixed(2).replace('.', ','),
           // herda o grupo do gasto original: é isso que faz o total do grupo
@@ -3785,7 +3823,7 @@
       });
 
       salvarLocalStorage();
-      tocarSomReceita();
+      if (!devo) tocarSomReceita();   // o som celebra dinheiro entrando
       fecharModal('modalReceberEmprestimo');
       recebimentoEmprestimoChaves = [];
       atualizarTudo();
@@ -4193,7 +4231,7 @@
       const bruto = itens.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
       const recebido = itens.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
       const aReceber = itens.reduce((sm, l) =>
-        sm + cobrancasDoLancamento(l).filter(c => !c.quitado).reduce((a, c) => a + c.valor, 0), 0);
+        sm + cobrancasDoLancamento(l).filter(c => !c.quitado && !c.devo).reduce((a, c) => a + c.valor, 0), 0);
       return { itens, bruto, recebido, liquido: bruto - recebido, aReceber };
     }
 
@@ -4204,7 +4242,7 @@
       let devidoTotal = 0, aReceber = 0;
       const pessoas = new Set();
       itens.forEach(l => {
-        cobrancasDoLancamento(l).forEach(c => {
+        cobrancasDoLancamento(l).filter(c => !c.devo).forEach(c => {
           devidoTotal += c.valor;
           pessoas.add(c.nome);
           if (!c.quitado) aReceber += c.valor;
@@ -4773,7 +4811,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-5';
+    const APP_VERSION = '2026.08.06-6';
 
     // Inicialização
     carregarLocalStorage();
