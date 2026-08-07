@@ -3016,8 +3016,7 @@
         // quase iguais. Aqui todas viram uma só, pela compra que originou.
         const porDesc = {};
         itensPeriodo.forEach(l => {
-          const m = l.reembolsoDe ? (l.descricao || '').match(/^Reembolso\s+.+?\s+—\s+(.*)$/) : null;
-          const chave = m ? 'Reembolso · ' + m[1] : l.descricao;
+          const chave = chaveReceitaAgrupada(l);
           porDesc[chave] = (porDesc[chave] || 0) + parseVal(l.valor);
         });
 
@@ -3097,6 +3096,16 @@
     }
 
     /* OUTRAS ABAS E GRÁFICOS */
+    // Um rateio gera uma receita por pessoa e por parcela. Nos gráficos o que
+    // interessa é o conjunto: agrupa pelo GRUPO (a viagem) quando o lançamento
+    // está vinculado a um, senão pela compra que originou.
+    function chaveReceitaAgrupada(l) {
+      if (!l.reembolsoDe) return l.descricao;
+      if (l.grupoViagemNome) return 'Reembolso · ' + l.grupoViagemNome;
+      const m = (l.descricao || '').match(/^Reembolso\s+.+?\s+—\s+(.*)$/);
+      return 'Reembolso · ' + (m ? m[1] : 'empréstimos');
+    }
+
     function renderizarBarras(container, dados, corBase, metas) {
       container.innerHTML = '';
       const total = Object.values(dados).reduce((a, b) => a + b, 0);
@@ -3106,23 +3115,23 @@
       }
       const metaDe = nome => (metas && metas[nome] ? parseVal(metas[nome]) : 0);
       Object.entries(dados).sort((a, b) => b[1] - a[1]).forEach(([nome, valor]) => {
-        if (valor <= 0) return;
+        // a largura é a fatia do total — é isso que a porcentagem ao lado diz.
+        // A meta usa a MESMA escala, senão a linha marcaria um ponto que não
+        // corresponde ao que a barra representa.
+        const pct = Math.round((valor / total) * 100);
         const meta = metaDe(nome);
         const estourou = meta > 0 && valor > meta;
-        // escala da linha: quando o teto é maior que o gasto, ele é quem manda
-        const escala = Math.max(valor, meta, total);
-        const pct = Math.round((valor / escala) * 100);
-        const pctMeta = meta > 0 ? Math.round((meta / escala) * 100) : 0;
+        const pctMeta = meta > 0 ? Math.min(99, Math.round((meta / total) * 100)) : 0;
         const div = document.createElement('div');
-        div.style.cssText = 'margin-bottom:12px;';
+        div.className = 'barra-categoria';
         div.innerHTML = `
-          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+          <div class="barra-info">
             <span>${nome}${meta > 0 ? ` <span style="color:#ffd166;font-size:10.5px;">meta ${fmtOculto(meta)}</span>` : ''}</span>
-            <strong style="${estourou ? 'color:#ef5350;' : ''}">${fmtOculto(valor)}</strong>
+            <span style="${estourou ? 'color:#ef5350;' : ''}">${fmtOculto(valor)} · ${pct}%</span>
           </div>
           <div class="barra-bg" style="position:relative;">
             <div class="barra-fill" style="width:${pct}%;background-color:${estourou ? '#ef5350' : corBase};"></div>
-            ${meta > 0 ? `<div class="marca-meta-barra" style="left:${Math.min(99, pctMeta)}%;"></div>` : ''}
+            ${meta > 0 ? `<div class="marca-meta-barra" style="left:${pctMeta}%;"></div>` : ''}
           </div>
         `;
         container.appendChild(div);
@@ -3257,7 +3266,11 @@
       const porFonte = {}, porCategoria = {}, porContaGrafico = {};
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
-        if (l.tipo === 'receita') { rec += v; porFonte[l.descricao] = (porFonte[l.descricao] || 0) + v; }
+        if (l.tipo === 'receita') {
+          rec += v;
+          const chave = chaveReceitaAgrupada(l);
+          porFonte[chave] = (porFonte[chave] || 0) + v;
+        }
         else {
           desp += v;
           const cat = l.categoria || 'Outros';
@@ -5280,7 +5293,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-9';
+    const APP_VERSION = '2026.08.07-1';
 
     // Inicialização
     carregarLocalStorage();
