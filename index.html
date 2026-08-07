@@ -132,6 +132,13 @@
     .valor-despesa { color: #ef5350; font-weight: bold; white-space: nowrap; }
     .barra-categoria { margin-bottom: 12px; }
     .barra-info { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+    /* GRÁFICO DE COLUNAS (vertical) */
+    .colunas { display:flex; align-items:flex-end; gap:6px; height:150px; padding:0 2px 4px; overflow-x:auto; }
+    .coluna-item { flex:1 0 34px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:34px; }
+    .coluna-valor { font-size:9px; color:#aaa; margin-bottom:3px; white-space:nowrap; }
+    .coluna-barra { width:100%; border-radius:4px 4px 0 0; min-height:2px; }
+    .coluna-par { display:flex; gap:2px; width:100%; align-items:flex-end; height:100%; }
+    .coluna-rotulo { font-size:9.5px; color:#888; margin-top:5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
     .barra-bg { background-color: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden; }
     .barra-fill { height: 100%; border-radius: 4px; }
     .btn-mini { padding: 6px 12px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 11px; cursor: pointer; }
@@ -384,6 +391,18 @@
         </div>
       </div>
 
+      <!-- PAGAMENTO DA FATURA (retrátil) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('pagamentoFatura')">
+          <h3 style="font-size:16px;">Fatura do cartão <span id="badgeFatura" style="font-size:13px;font-weight:400;"></span></h3>
+          <span class="chevron-sec" id="chevron-pagamentoFatura">▸</span>
+        </button>
+        <div id="corpo-pagamentoFatura" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Marque o que já pagou. Se o valor do banco não bater com o daqui, a diferença vira um lançamento de ajuste pra você investigar depois.</p>
+          <div id="listaPagamentoFatura"></div>
+        </div>
+      </div>
+
       <!-- EMPRÉSTIMOS (retrátil) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('emprestimos')">
@@ -497,6 +516,7 @@
           </div>
           <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
             <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
+            <button class="btn-mini" id="btnColunas" onclick="setTipoGrafico('colunas')">Colunas</button>
             <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
           </div>
         </div>
@@ -548,6 +568,10 @@
           <span class="chevron-sec" id="chevron-evolucaoMensal">▸</span>
         </button>
         <div id="corpo-evolucaoMensal" class="escondido" style="margin-top:12px;">
+          <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px;">
+            <button type="button" class="btn-mini ativo" id="btnEvolBarras" onclick="setTipoEvolucao('barras')">Barras</button>
+            <button type="button" class="btn-mini" id="btnEvolColunas" onclick="setTipoEvolucao('colunas')">Colunas</button>
+          </div>
           <div id="containerEvolucaoMensal"></div>
         </div>
       </div>
@@ -844,6 +868,34 @@
     </div>
   </div>
 
+  <!-- MODAL DE PAGAMENTO DE FATURA -->
+  <div id="modalPagarFatura" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalPagarFatura')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloPagarFatura">Pagar fatura</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalPagarFatura')">&times;</button>
+      </div>
+      <div class="box-resumo-modal" style="margin-bottom:14px;">
+        <div class="linha-subtotal" style="cursor:default;"><span>Somado aqui no app</span><strong id="faturaCalculada">R$ 0,00</strong></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="faturaValorPago">Valor que o banco cobrou</label>
+          <input type="text" id="faturaValorPago" inputmode="numeric" oninput="mascaraMoeda(this); previewAjusteFatura();">
+        </div>
+        <div class="form-group">
+          <label for="faturaDataPagamento">Pago em</label>
+          <input type="date" id="faturaDataPagamento">
+        </div>
+      </div>
+      <p id="previaAjusteFatura" style="font-size:11.5px;line-height:1.45;margin-bottom:12px;"></p>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalPagarFatura')">Cancelar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarPagarFatura()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DE RECEBIMENTO DE EMPRÉSTIMO -->
   <div id="modalReceberEmprestimo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalReceberEmprestimo')">
     <div class="modal-content">
@@ -988,10 +1040,13 @@
     let transferencias = [];
     let valoresOcultos = false;
     let faturaMesOffset = 0;
+    let tipoEvolucao = 'barras';
     let tipoGraficoCategoria = 'barras';
     let lancamentoSelecionadoId = null;
     let grupoModalAtualId = null;
     let orcamentosCategoria = {};
+    // fatura quitada: chave "Conta|AAAA-MM" -> { valorPago, data }
+    let faturasPagas = {};
     let contas = [];
     let categorias = [];
     let uiPrefs = {};
@@ -1012,6 +1067,7 @@
     const STORAGE_KEY_GRUPOS = "meu_financeiro_grupos_v1";
     const STORAGE_KEY_TRANSFERENCIAS = "meu_financeiro_transferencias_v1";
     const STORAGE_KEY_ORCAMENTOS = "meu_financeiro_orcamentos_categoria_v1";
+    const STORAGE_KEY_FATURAS_PAGAS = "meu_financeiro_faturas_pagas_v1";
     const STORAGE_KEY_CONTAS = "meu_financeiro_contas_v1";
     const STORAGE_KEY_CATEGORIAS = "meu_financeiro_categorias_v1";
     const STORAGE_KEY_UI = "meu_financeiro_ui_v1";
@@ -1056,6 +1112,11 @@
     }
 
     function salvarOrcamentos() { localStorage.setItem(STORAGE_KEY_ORCAMENTOS, JSON.stringify(orcamentosCategoria)); }
+    function salvarFaturasPagas() { localStorage.setItem(STORAGE_KEY_FATURAS_PAGAS, JSON.stringify(faturasPagas)); }
+    function carregarFaturasPagas() {
+      const d = localStorage.getItem(STORAGE_KEY_FATURAS_PAGAS);
+      if (d) { try { faturasPagas = JSON.parse(d) || {}; } catch (e) { faturasPagas = {}; } }
+    }
     function carregarOrcamentos() {
       const d = localStorage.getItem(STORAGE_KEY_ORCAMENTOS);
       if (d) { try { orcamentosCategoria = JSON.parse(d) || {}; } catch (e) { orcamentosCategoria = {}; } }
@@ -1302,8 +1363,10 @@
       });
       // Botões Barras/Pizza valem pra todas as visões; refletem o tipo salvo de cada uma
       const atual = VISOES[visao];
-      document.getElementById('btnBarras').className = 'btn-mini' + (atual.tipo === 'barras' ? ' ativo' : '');
-      document.getElementById('btnPizza').className = 'btn-mini' + (atual.tipo === 'pizza' ? ' ativo' : '');
+      ['barras', 'colunas', 'pizza'].forEach(t => {
+        const b = document.getElementById('btn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (b) b.className = 'btn-mini' + (atual.tipo === t ? ' ativo' : '');
+      });
       const t = document.getElementById('tituloGraficoUnico');
       t.textContent = atual.titulo;
       t.style.color = atual.cor;
@@ -1622,7 +1685,7 @@
 
     function exportarBackup() {
       const payload = {
-        versao: 2,
+        versao: 3,
         exportadoEm: new Date().toISOString(),
         lancamentos,
         fixos,
@@ -1630,6 +1693,7 @@
         grupos,
         valoresOcultos,
         orcamentosCategoria,
+        faturasPagas,
         contas,
         categorias
       };
@@ -1656,6 +1720,7 @@
           grupos = Array.isArray(data.grupos) ? data.grupos : [];
           valoresOcultos = !!data.valoresOcultos;
           orcamentosCategoria = data.orcamentosCategoria && typeof data.orcamentosCategoria === 'object' ? data.orcamentosCategoria : {};
+          faturasPagas = data.faturasPagas && typeof data.faturasPagas === 'object' ? data.faturasPagas : {};
           if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
 
@@ -1668,6 +1733,7 @@
           salvarInvest();
           salvarGrupos();
           salvarOrcamentos();
+          salvarFaturasPagas();
           salvarContas();
           popularSelectsContas();
           salvarCategorias();
@@ -2983,6 +3049,33 @@
       });
     }
 
+    // Colunas verticais: boas pra comparar poucos itens lado a lado, enquanto as
+    // barras horizontais aguentam nome comprido e lista longa.
+    function renderizarColunas(container, dados, corBase) {
+      container.innerHTML = '';
+      const entradas = Object.entries(dados).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      if (!entradas.length) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        return;
+      }
+      const max = Math.max(...entradas.map(e => e[1]));
+      const box = document.createElement('div');
+      box.className = 'colunas';
+      entradas.forEach(([nome, valor]) => {
+        const alt = Math.max(4, Math.round((valor / max) * 100));
+        const item = document.createElement('div');
+        item.className = 'coluna-item';
+        item.title = `${nome}: ${fmtVal(valor)}`;
+        item.innerHTML = `
+          <span class="coluna-valor">${valoresOcultos ? '•••' : fmtVal(valor).replace('R$ ', '')}</span>
+          <div class="coluna-barra" style="height:${alt}%;background-color:${corBase};"></div>
+          <span class="coluna-rotulo">${nome}</span>
+        `;
+        box.appendChild(item);
+      });
+      container.appendChild(box);
+    }
+
     function renderizarPizza(container, dados, paleta) {
       const cores = paleta || PALETA;
       container.innerHTML = '';
@@ -3019,6 +3112,15 @@
       wrap.appendChild(pizza);
       wrap.appendChild(legenda);
       container.appendChild(wrap);
+    }
+
+    function setTipoEvolucao(tipo) {
+      tipoEvolucao = tipo;
+      document.getElementById('btnEvolBarras').className = 'btn-mini' + (tipo === 'barras' ? ' ativo' : '');
+      document.getElementById('btnEvolColunas').className = 'btn-mini' + (tipo === 'colunas' ? ' ativo' : '');
+      uiPrefs.tipoEvolucao = tipo;   // salvarUiPrefs() grava o objeto inteiro
+      salvarUiPrefs();
+      renderizarEvolucaoMensal();
     }
 
     function setTipoGrafico(tipo) {
@@ -3059,12 +3161,15 @@
         }
       }
 
-      if (tipoGraficoReceita === 'pizza') renderizarPizza(document.getElementById('containerGraficoReceitas'), porFonte, PALETA_RECEITAS);
-      else renderizarBarras(document.getElementById('containerGraficoReceitas'), porFonte, '#4caf50');
-      if (tipoGraficoCategoria === 'pizza') renderizarPizza(document.getElementById('containerGraficoCategorias'), porCategoria);
-      else renderizarBarras(document.getElementById('containerGraficoCategorias'), porCategoria, '#ef5350');
-      if (tipoGraficoConta === 'pizza') renderizarPizza(document.getElementById('containerGraficoContas'), porContaGrafico);
-      else renderizarBarras(document.getElementById('containerGraficoContas'), porContaGrafico, '#42a5f5');
+      const desenhar = (tipo, idContainer, dados, cor, paleta) => {
+        const el = document.getElementById(idContainer);
+        if (tipo === 'pizza') renderizarPizza(el, dados, paleta);
+        else if (tipo === 'colunas') renderizarColunas(el, dados, cor);
+        else renderizarBarras(el, dados, cor);
+      };
+      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, '#4caf50', PALETA_RECEITAS);
+      desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, '#ef5350');
+      desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, '#42a5f5');
       renderizarMetasCategorias();
       renderizarRankingGastos(itensPeriodo);
       renderizarGastoPorDiaSemana(itensPeriodo);
@@ -3131,6 +3236,34 @@
       const max = Math.max(...dadosMeses.map(m => Math.max(m.rec, m.desp)), 0.01);
 
       container.innerHTML = '';
+
+      if (tipoEvolucao === 'colunas') {
+        // duas colunas por mês (entrou / saiu) — melhor pra comparar meses entre si
+        const box = document.createElement('div');
+        box.className = 'colunas';
+        box.style.height = '170px';
+        dadosMeses.forEach(m => {
+          const item = document.createElement('div');
+          item.className = 'coluna-item';
+          item.title = `${m.label} · entrou ${fmtVal(m.rec)} · saiu ${fmtVal(m.desp)}`;
+          item.innerHTML = `
+            <span class="coluna-valor" style="color:${m.saldo >= 0 ? '#4caf50' : '#ef5350'};">${valoresOcultos ? '•••' : fmtVal(m.saldo).replace('R$ ', '')}</span>
+            <div class="coluna-par">
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.rec / max) * 100))}%;background-color:#4caf50;"></div>
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.desp / max) * 100))}%;background-color:#ef5350;"></div>
+            </div>
+            <span class="coluna-rotulo">${m.label}</span>
+          `;
+          box.appendChild(item);
+        });
+        container.appendChild(box);
+        const legenda = document.createElement('div');
+        legenda.style.cssText = 'display:flex;gap:14px;justify-content:center;font-size:10.5px;color:#888;margin-top:6px;';
+        legenda.innerHTML = '<span><span style="color:#4caf50;">■</span> entrou</span><span><span style="color:#ef5350;">■</span> saiu</span><span>o número é o saldo</span>';
+        container.appendChild(legenda);
+        return;
+      }
+
       dadosMeses.forEach(m => {
         const pctRec = Math.round((m.rec / max) * 100);
         const pctDesp = Math.round((m.desp / max) * 100);
@@ -3389,6 +3522,7 @@
         });
       }
       renderizarEmprestimos();
+      renderizarPagamentoFaturas();
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -3651,6 +3785,150 @@
 
           container.appendChild(bloco);
         });
+    }
+
+    /* PAGAMENTO DE FATURA
+       O app soma o que VOCÊ lançou; o banco cobra o que passou de verdade. Quando
+       os dois divergem — compra que você esqueceu, anuidade, juros, algo que nem
+       reconhece — a diferença vira um lançamento de ajuste, visível e editável.
+       Assim o total bate com o extrato e ainda fica a lista do que investigar.
+
+       O pagamento em si NÃO vira despesa: a fatura já é a soma de despesas que
+       você lançou, então lançá-lo de novo contaria duas vezes. */
+    function chaveFatura(conta, mes, ano) {
+      return conta + '|' + ano + '-' + String(mes + 1).padStart(2, '0');
+    }
+
+    function totalFaturaConta(conta, mes, ano) {
+      return lancamentos
+        .filter(l => l.tipo === 'despesa' && l.conta === conta && eCredito(l.formaModo))
+        .filter(l => { const f = getMesFatura(l.data, l.formaModo); return f.mes === mes && f.ano === ano; })
+        .reduce((sm, l) => sm + parseVal(l.valor), 0);
+    }
+
+    function renderizarPagamentoFaturas() {
+      const box = document.getElementById('listaPagamentoFatura');
+      const badge = document.getElementById('badgeFatura');
+      if (!box) return;
+      const ref = getMesReferencia(faturaMesOffset);
+      const mes = ref.getMonth(), ano = ref.getFullYear();
+      const comCredito = contas.filter(c => c.temCredito);
+
+      box.innerHTML = '';
+      let abertas = 0, totalAberto = 0;
+
+      comCredito.forEach(c => {
+        const total = totalFaturaConta(c.nome, mes, ano);
+        const pago = faturasPagas[chaveFatura(c.nome, mes, ano)];
+        if (total <= 0 && !pago) return;
+        if (!pago) { abertas++; totalAberto += total; }
+
+        const linha = document.createElement('div');
+        linha.className = 'item-lancamento';
+        linha.innerHTML = `
+          <div class="item-info">
+            <strong>${c.nome}</strong>
+            <div style="font-size:11px;color:${pago ? '#4caf50' : '#888'};">
+              ${pago
+                ? '✓ paga em ' + pago.data.split('-').reverse().join('/') + ' · ' + fmtOculto(parseVal(pago.valorPago))
+                : 'em aberto'}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="${pago ? '' : 'valor-despesa'}" style="${pago ? 'color:#666;' : ''}">${fmtOculto(total)}</span>
+            <button type="button" class="btn-mini">${pago ? 'desfazer' : 'pagar'}</button>
+          </div>
+        `;
+        linha.querySelector('button').onclick = () => pago ? desfazerPagamentoFatura(c.nome, mes, ano) : abrirPagarFatura(c.nome, mes, ano);
+        box.appendChild(linha);
+      });
+
+      if (!box.children.length) {
+        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
+      }
+      if (badge) {
+        badge.textContent = abertas === 0 ? '· tudo pago' : '· ' + fmtOculto(totalAberto) + ' em aberto';
+        badge.style.color = abertas === 0 ? '#4caf50' : '#ffd166';
+      }
+    }
+
+    let faturaEmPagamento = null;
+
+    function abrirPagarFatura(conta, mes, ano) {
+      const total = totalFaturaConta(conta, mes, ano);
+      faturaEmPagamento = { conta, mes, ano, total };
+      document.getElementById('tituloPagarFatura').textContent = conta + ' · ' + NOMES_MESES[mes];
+      document.getElementById('faturaCalculada').textContent = fmtVal(total);
+      document.getElementById('faturaValorPago').value = 'R$ ' + total.toFixed(2).replace('.', ',');
+      document.getElementById('faturaDataPagamento').value = obterDataBrasilia();
+      previewAjusteFatura();
+      document.getElementById('modalPagarFatura').classList.remove('escondido');
+    }
+
+    function diferencaFatura() {
+      if (!faturaEmPagamento) return 0;
+      const pago = parseVal(document.getElementById('faturaValorPago').value.replace('R$', '').trim());
+      return Math.round((pago - faturaEmPagamento.total) * 100) / 100;
+    }
+
+    function previewAjusteFatura() {
+      const el = document.getElementById('previaAjusteFatura');
+      const dif = diferencaFatura();
+      if (Math.abs(dif) < 0.01) {
+        el.style.color = '#4caf50';
+        el.textContent = 'Bateu certinho com o que está lançado aqui.';
+        return;
+      }
+      el.style.color = '#ffd166';
+      el.innerHTML = dif > 0
+        ? `O banco cobrou <strong>${fmtVal(dif)}</strong> a mais. Vai entrar como "Ajuste de fatura — não identificado", pra você descobrir depois o que foi.`
+        : `O banco cobrou <strong>${fmtVal(-dif)}</strong> a menos. Vai entrar como estorno, pra o mês fechar com o valor real.`;
+    }
+
+    function confirmarPagarFatura() {
+      if (!faturaEmPagamento) return;
+      const { conta, mes, ano } = faturaEmPagamento;
+      const valorPago = parseVal(document.getElementById('faturaValorPago').value.replace('R$', '').trim());
+      const dataPag = document.getElementById('faturaDataPagamento').value || obterDataBrasilia();
+      const dif = diferencaFatura();
+
+      if (Math.abs(dif) >= 0.01) {
+        // dia 1 de propósito: antes do fechamento, então o ajuste cai na fatura
+        // deste mês e não na do mês seguinte
+        const dataAjuste = ano + '-' + String(mes + 1).padStart(2, '0') + '-01';
+        lancamentos.unshift({
+          id: novoIdLancamento(),
+          tipo: dif > 0 ? 'despesa' : 'receita',
+          descricao: dif > 0 ? 'Ajuste de fatura — não identificado' : 'Ajuste de fatura — estorno',
+          conta,
+          formaModo: 'Crédito à Vista',
+          numParcelas: '1',
+          categoria: dif > 0 ? categoriaPadrao() : '',
+          observacao: 'Diferença entre o valor somado no app e o cobrado pelo banco',
+          data: dataAjuste,
+          valor: Math.abs(dif).toFixed(2).replace('.', ','),
+          grupoViagemId: '', grupoViagemNome: '',
+          emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+          ajusteFatura: true
+        });
+        salvarLocalStorage();
+      }
+
+      faturasPagas[chaveFatura(conta, mes, ano)] = {
+        valorPago: valorPago.toFixed(2).replace('.', ','),
+        data: dataPag
+      };
+      salvarFaturasPagas();
+      fecharModal('modalPagarFatura');
+      faturaEmPagamento = null;
+      atualizarTudo();
+    }
+
+    function desfazerPagamentoFatura(conta, mes, ano) {
+      if (!confirm('Desmarcar esta fatura como paga? O lançamento de ajuste, se houver, continua — apague pela lista se não quiser mais.')) return;
+      delete faturasPagas[chaveFatura(conta, mes, ano)];
+      salvarFaturasPagas();
+      atualizarTudo();
     }
 
     /* LEMBRETE DE COBRANÇA
@@ -4680,102 +4958,136 @@ function extrairValorPorExtenso(texto) {
   return null;
 }
 
+/* INTERPRETADOR DE FALA
+   A ideia é entender a frase como ela sai da boca, em qualquer ordem. A técnica:
+   cada pedaço reconhecido (valor, conta, grupo, forma, data) é CONSUMIDO do texto.
+   O que sobra, limpo dos conectivos, vira a descrição — em vez de tentar adivinhar
+   onde a descrição começa e termina. */
+
+function semAcento(t) {
+  return (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
 function interpretarFala(fala) {
-  const texto = fala.toLowerCase();
+  let resto = ' ' + semAcento(fala).replace(/\s+/g, ' ').trim() + ' ';
+  const original = resto;
 
-  // 1. Identificar Tipo
-  let tipo = 'despesa';
-  if (texto.includes('recebi') || texto.includes('ganhei') || texto.includes('salário') || texto.includes('reembolso')) {
-    tipo = 'receita';
-  }
+  // remove do texto o trecho já entendido, pra ele não poluir a descrição
+  const consumir = (trecho) => {
+    if (!trecho) return;
+    const i = resto.indexOf(trecho);
+    if (i !== -1) resto = resto.slice(0, i) + ' ' + resto.slice(i + trecho.length);
+  };
+  const achar = (re) => { const m = resto.match(re); if (m) consumir(m[0]); return m; };
 
-  // 2. Identificar Valor: tenta dígitos primeiro ("50 reais"); se a fala veio
-  // toda em palavras ("cinquenta reais"), cai pro parser por extenso
+  // --- tipo ---
+  const tipo = /\b(recebi|ganhei|salario|me pagou|me pagaram|caiu|entrou|reembolso)\b/.test(resto)
+    ? 'receita' : 'despesa';
+
+  // --- valor: dígitos ou por extenso ---
   let valorFormatoPadrao = null;
-  let trechoValor = '';
-
-  const matchValor = texto.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:,\d{2})?)/);
-  if (matchValor) {
-    let extraido = matchValor[1];
-    if (!extraido.includes(',')) extraido += ',00'; // Adiciona centavos se for número inteiro
-    valorFormatoPadrao = extraido;
-    trechoValor = matchValor[0];
+  // o grupo com pontos precisa de + (e não *): com * ele casava só "240" de "2400"
+  // e sobrava um "0" solto que ia parar na descrição
+  const mValor = achar(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?)\s*(?:reais|real|conto|contos|mangos|pila)?/);
+  if (mValor) {
+    let v = mValor[1];
+    if (!v.includes(',')) v += ',00';
+    valorFormatoPadrao = v;
   } else {
-    const porExtenso = extrairValorPorExtenso(texto);
-    if (porExtenso && porExtenso.valor > 0) {
-      valorFormatoPadrao = porExtenso.valor.toFixed(2).replace('.', ',');
-      trechoValor = texto.slice(porExtenso.idxIni, porExtenso.idxFim);
+    const ext = extrairValorPorExtenso(original);
+    if (ext && ext.valor > 0) {
+      valorFormatoPadrao = ext.valor.toFixed(2).replace('.', ',');
+      consumir(original.slice(ext.idxIni, ext.idxFim));
     }
   }
-
   if (!valorFormatoPadrao) {
-    alert('Não consegui identificar um valor em reais no que você falou. Tente de novo, por exemplo: "cinquenta reais na cerveja".');
+    alert('Não consegui identificar um valor no que você falou. Tente algo como: "paguei 30 reais de uber".');
     return;
   }
 
-  // 3. Identificar Categoria via palavras-chave
-  let categoria = 'Outros';
-  if (/(mercado|cerveja|comida|almoço|jantar|lanche|ifood|padaria)/.test(texto)) categoria = 'Alimentação';
-  else if (/(uber|99|ônibus|gasolina|estacionamento|pedágio|carro)/.test(texto)) categoria = 'Transporte';
-  else if (/(farmácia|remédio|médico|saúde|consulta)/.test(texto)) categoria = 'Saúde';
-  else if (/(viagem|hotel|passagem|aeroporto)/.test(texto)) categoria = 'Viagens ✈️';
-  else if (/(festa|cinema|jogo|ingresso|show)/.test(texto)) categoria = 'Lazer';
-  // Se a categoria mapeada não existe mais na lista do usuário, volta pra padrão
-  if (!categorias.includes(categoria)) categoria = categoriaPadrao();
+  // --- grupo: casa pelo nome dos grupos abertos, palavra a palavra ---
+  let grupoId = '', grupoNome = '';
+  grupos.filter(g => g.status === 'aberto').forEach(g => {
+    if (grupoId) return;
+    const palavras = semAcento(g.nome).split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+    const achada = palavras.find(w => resto.includes(' ' + w));
+    if (achada) { grupoId = g.id; grupoNome = g.nome; consumir(achada); }
+  });
 
-  // 4. Identificar Forma de Pagamento / Conta
-  let conta = primeiraConta(); // conta default: a primeira da lista
+  // --- conta: casa pelo nome real das contas cadastradas ---
+  let conta = '';
+  contas.forEach(c => {
+    if (conta) return;
+    const alvo = semAcento(c.nome);
+    if (resto.includes(' ' + alvo)) { conta = c.nome; consumir(alvo); return; }
+    const primeira = alvo.split(/[^a-z0-9]+/).filter(w => w.length >= 4)[0];
+    if (primeira && resto.includes(' ' + primeira)) { conta = c.nome; consumir(primeira); }
+  });
+  if (!conta) conta = primeiraConta();
+
+  // --- forma de pagamento ---
   let formaModo = 'À Vista / Débito';
   let numParcelasVoz = '1';
+  const mParcelas = achar(/\b(?:em\s*)?(\d{1,2})\s*(?:x|vezes|parcelas)\b/);
+  if (mParcelas) numParcelasVoz = mParcelas[1];
 
-  if (/(dinheiro|espécie|especie)/.test(texto)) {
-    formaModo = 'Dinheiro';
-  } else if (/(crédito|parcelado)/.test(texto)) {
-    // "no crédito" sozinho é compra 1x; só é parcelado se a fala disser parcela/vezes
-    formaModo = /(parcelad|parcela|vezes|\d+\s*x)/.test(texto) ? 'Crédito Parcelado' : 'Crédito à Vista';
-  } else if (/(tíquete|alimentação|vr|va)/.test(texto)) {
-    conta = 'Tíquete Alimentação';
-  } else if (texto.includes('picpay')) {
-    conta = 'PicPay';
+  if (achar(/\b(dinheiro|especie|em espécie)\b/)) formaModo = 'Dinheiro';
+  else if (achar(/\b(debito|pix|transferencia)\b/)) formaModo = 'À Vista / Débito';
+  else if (achar(/\b(credito|cartao|parcelado)\b/) || mParcelas) {
+    formaModo = (mParcelas && parseInt(numParcelasVoz, 10) > 1) ? 'Crédito Parcelado' : 'Crédito à Vista';
   }
+  if (formaModo !== 'Crédito Parcelado') numParcelasVoz = '1';
 
-  // 4b. "Aprendizado": padrões de uso frequentes que você mesmo descreveu —
-  // essas regras sobrepõem categoria/conta/forma quando a fala bate com o padrão.
-  // Fácil de ajustar/estender depois, é só editar REGRAS_VOZ_COMBINADAS ali em cima.
+  // --- data: fala do dia a dia ---
+  let data = obterDataBrasilia();
+  const deslocar = (dias) => {
+    const d = new Date(data + 'T12:00:00');
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().slice(0, 10);
+  };
+  if (achar(/\banteontem\b/)) data = deslocar(-2);
+  else if (achar(/\bontem\b/)) data = deslocar(-1);
+  else achar(/\bhoje\b/);
+
+  // --- categoria: por palavra-chave, sem consumir (a palavra costuma SER a descrição) ---
+  let categoria = 'Outros';
+  if (/(mercado|cerveja|cervej|comida|almoco|jantar|lanche|ifood|padaria|bar|restaurante|pizza)/.test(resto)) categoria = 'Alimentação';
+  else if (/(uber|99|onibus|gasolina|estacionamento|pedagio|carro|combustivel)/.test(resto)) categoria = 'Transporte';
+  else if (/(farmacia|remedio|medico|saude|consulta|dentista)/.test(resto)) categoria = 'Saúde';
+  else if (/(viagem|hotel|passagem|aeroporto|airbnb|pousada)/.test(resto)) categoria = 'Viagens ✈️';
+  else if (/(festa|cinema|jogo|ingresso|show|role)/.test(resto)) categoria = 'Lazer';
+  if (!categorias.includes(categoria)) categoria = categoriaPadrao();
+
+  // padrões que você mesmo descreveu continuam valendo e têm a palavra final
   REGRAS_VOZ_COMBINADAS.forEach(regra => {
-    if (regra.chaves.some(k => texto.includes(k))) {
+    if (regra.chaves.some(k => resto.includes(semAcento(k)))) {
       if (regra.categoria) categoria = categorias.includes(regra.categoria) ? regra.categoria : categoriaPadrao();
       if (regra.conta && contas.some(c => c.nome === regra.conta)) conta = regra.conta;
       if (regra.formaModo) formaModo = regra.formaModo;
       if (regra.numParcelas) numParcelasVoz = regra.numParcelas;
     }
   });
-
-  // Se a conta mapeada não existe mais na lista do usuário, volta pra default
   if (!contas.some(c => c.nome === conta)) conta = primeiraConta();
 
-  // 5. Isolar a Descrição (remove o trecho do valor e palavras de conexão/verbos)
-  let descricao = texto
-    .replace(trechoValor, '') // Remove o valor falado (em dígitos ou por extenso)
-    .replace(/\b(gastei|comprei|recebi|ganhei|paguei|reais|real|conto|mangos|centavos?|no crédito|no débito|no pix|com|de|em|um|uma|o|a)\b/gi, '') // Remove conectivos
-    .trim();
+  // --- descrição: o que sobrou, sem verbos, conectivos e palavras de comando ---
+  const RUIDO = /\b(gastei|comprei|recebi|ganhei|paguei|pagar|foi|fiz|ali|aqui|reais|real|conto|contos|mangos|pila|centavos?|no|na|nos|nas|do|da|dos|das|de|em|com|um|uma|uns|umas|o|a|os|as|pra|para|pro|por|pode|poderia|vincular|vincula|lancar|lanca|anota|anotar|coloca|colocar|grupo|viagem|cartao|conta|meu|minha|que|e)\b/g;
+  let descricao = resto.replace(RUIDO, ' ').replace(/[^\wÀ-ÿ\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  descricao = descricao.split(' ').slice(0, 5).join(' ');
+  descricao = descricao ? descricao.charAt(0).toUpperCase() + descricao.slice(1)
+                        : (tipo === 'receita' ? 'Receita extra' : 'Lançamento rápido');
 
-  // Letra maiúscula na primeira palavra
-  if (descricao.length > 0) {
-    descricao = descricao.charAt(0).toUpperCase() + descricao.slice(1);
-  } else {
-    descricao = tipo === 'receita' ? 'Receita extra' : 'Lançamento rápido';
-  }
-
-  // 6. Montar o objeto temporário e exibir na tela
-  lancamentoVozPendente = { tipo, valor: valorFormatoPadrao, descricao, categoria, conta, formaModo, numParcelas: numParcelasVoz };
+  lancamentoVozPendente = { tipo, valor: valorFormatoPadrao, descricao, categoria, conta, formaModo,
+                            numParcelas: numParcelasVoz, data, grupoId, grupoNome };
 
   document.getElementById('vozTipo').textContent = tipo === 'receita' ? 'RECEITA 📈' : 'DESPESA 📉';
   document.getElementById('vozTipo').style.color = tipo === 'receita' ? '#4caf50' : '#ef5350';
   document.getElementById('vozDescricao').textContent = descricao;
   document.getElementById('vozValor').textContent = 'R$ ' + valorFormatoPadrao;
   document.getElementById('vozCategoria').textContent = tipo === 'receita' ? '-' : categoria;
-  document.getElementById('vozForma').textContent = tipo === 'receita' ? conta : `${conta} (${formaModo})`;
+  document.getElementById('vozForma').textContent =
+    (tipo === 'receita' ? conta : `${conta} (${formaModo}${numParcelasVoz !== '1' ? ' ' + numParcelasVoz + 'x' : ''})`)
+    + (grupoNome ? ' · ' + grupoNome : '')
+    + (data !== obterDataBrasilia() ? ' · ' + data.split('-').reverse().join('/') : '');
 
   document.getElementById('modalVoz').classList.remove('escondido');
 }
@@ -4788,7 +5100,8 @@ function preencherFormularioVoz() {
   document.getElementById('descricao').value = lancamentoVozPendente.descricao;
   document.getElementById('valor').value = 'R$ ' + lancamentoVozPendente.valor;
   document.getElementById('conta').value = lancamentoVozPendente.conta;
-  document.getElementById('grupoViagem').value = ''; // lançamento por voz não vincula a grupo
+  document.getElementById('grupoViagem').value = lancamentoVozPendente.grupoId || '';
+  atualizarLinkGrupo();
 
   if (lancamentoVozPendente.tipo === 'despesa') {
     document.getElementById('categoria').value = lancamentoVozPendente.categoria;
@@ -4804,7 +5117,7 @@ function preencherFormularioVoz() {
     }
   }
 
-  document.getElementById('dataCompra').value = obterDataBrasilia();
+  document.getElementById('dataCompra').value = lancamentoVozPendente.data || obterDataBrasilia();
   document.getElementById('observacao').value = 'Lançamento via voz';
   document.getElementById('emprestimoPara').value = '';
   document.getElementById('emprestimoVence').value = '';
@@ -4836,7 +5149,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-7';
+    const APP_VERSION = '2026.08.06-8';
 
     // Inicialização
     carregarLocalStorage();
@@ -4847,6 +5160,7 @@ function confirmarLancamentoVoz() {
     carregarGrupos();
     carregarTransferencias();
     carregarOrcamentos();
+    carregarFaturasPagas();
     carregarContas();
     popularSelectsContas();
     carregarCategorias();
@@ -4857,9 +5171,11 @@ function confirmarLancamentoVoz() {
     aplicarSecao('fixos');
     aplicarSecao('backup');
     aplicarSecao('emprestimos');
+    aplicarSecao('pagamentoFatura');
     if (uiPrefs['secao_lancamentosMes'] === undefined) uiPrefs['secao_lancamentosMes'] = true;
     aplicarSecao('lancamentosMes');
     aplicarSecao('evolucaoMensal');
+    if (uiPrefs.tipoEvolucao === 'colunas') setTipoEvolucao('colunas');
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
