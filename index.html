@@ -2080,6 +2080,7 @@
         btnR.className = 'btn-tipo';
         gC.classList.remove('escondido');
         document.getElementById('linkEmprestimo').classList.remove('escondido');
+        atualizarLinkEmprestimo();   // o rótulo muda com a direção; sem isto ficava o texto da receita
         atualizarVisibilidadeForma();
       }
       carregarDescricoes(tipo);
@@ -2855,8 +2856,14 @@
       boxSubtotais.innerHTML = '';
       if (tipoModalAtual === 'receita') {
         const total = itensPeriodo.reduce((s, l) => s + parseVal(l.valor), 0);
+        // Um rateio gera uma receita por pessoa e por parcela — dezenas de linhas
+        // quase iguais. Aqui todas viram uma só, pela compra que originou.
         const porDesc = {};
-        itensPeriodo.forEach(l => { porDesc[l.descricao] = (porDesc[l.descricao] || 0) + parseVal(l.valor); });
+        itensPeriodo.forEach(l => {
+          const m = l.reembolsoDe ? (l.descricao || '').match(/^Reembolso\s+.+?\s+—\s+(.*)$/) : null;
+          const chave = m ? 'Reembolso · ' + m[1] : l.descricao;
+          porDesc[chave] = (porDesc[chave] || 0) + parseVal(l.valor);
+        });
 
         let html = `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total no Período</span><h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3></div>`;
         Object.entries(porDesc).sort((a,b) => b[1]-a[1]).forEach(([desc, val]) => {
@@ -3993,16 +4000,19 @@
             mudouLanc = true;
           });
           // Se o lançamento deste mês ainda não venceu, atualiza ele também
-          const lanc = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === mesAtual);
-          if (lanc && lanc.data >= hoje) {
-            lanc.descricao = dados.descricao;
-            lanc.valor = dados.valor;
-            lanc.conta = dados.conta;
-            lanc.categoria = dados.categoria;
-            lanc.formaModo = dados.formaModo;
-            lanc.data = mesAtual + '-' + String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+          // vale pra todo mês que ainda não aconteceu, não só o atual: os fixos
+          // agora são projetados 12 meses à frente
+          const dia = String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+          lancamentos.forEach(l => {
+            if (l.fixoId !== f.id || !l.data || l.data < hoje) return;
+            l.descricao = dados.descricao;
+            l.valor = dados.valor;
+            l.conta = dados.conta;
+            l.categoria = dados.categoria;
+            l.formaModo = dados.formaModo;
+            l.data = l.data.slice(0, 7) + '-' + dia;
             mudouLanc = true;
-          }
+          });
           if (mudouLanc) salvarLocalStorage();
         }
       } else {
@@ -4018,10 +4028,16 @@
     }
 
     function excluirFixo(id) {
-      if (!confirm('Remover este gasto fixo? Os lançamentos já criados nos meses passados permanecem; ele só deixa de entrar nos próximos meses.')) return;
+      if (!confirm('Remover este gasto fixo? O que já passou continua no histórico; os meses que ainda não chegaram somem.')) return;
       fixos = fixos.filter(f => f.id !== id);
+      // como os fixos são projetados 12 meses à frente, é preciso limpar o que
+      // ainda não aconteceu — senão ficariam cobranças fantasmas nas faturas
+      const hoje = obterDataBrasilia();
+      const antes = lancamentos.length;
+      lancamentos = lancamentos.filter(l => !(l.fixoId === id && l.data > hoje));
       salvarFixos();
-      atualizarFaturas();
+      if (lancamentos.length !== antes) salvarLocalStorage();
+      atualizarTudo();
     }
 
     // Opções do gasto fixo (toque na linha)
@@ -4105,11 +4121,16 @@
       return chaveMes + '-' + String(dia).padStart(2, '0');
     }
 
+    // Quantos meses à frente os gastos fixos são projetados. Sem isso, navegar
+    // pra uma fatura futura mostrava R$ 0,00 mesmo com assinaturas ativas.
+    const MESES_FIXOS_A_FRENTE = 12;
+
     function gerarLancamentosFixos() {
       if (!fixos.length) return;
       const hoje = obterDataBrasilia();
-      const anoAtual = parseInt(hoje.slice(0, 4), 10);
-      const mesAtual = parseInt(hoje.slice(5, 7), 10) - 1;
+      const refFim = getMesReferencia(MESES_FIXOS_A_FRENTE);
+      const anoAtual = refFim.getFullYear();
+      const mesAtual = refFim.getMonth();
       let houveNovo = false;
 
       fixos.forEach(f => {
@@ -4426,13 +4447,17 @@
               const m = (item.descricao || '').match(/^Reembolso\s+(.+?)\s+—\s+(.*)$/);
               const quem = m ? m[1] : item.descricao;
               const doQue = m ? m[2] : '';
+              // Verde = essa pessoa já acertou tudo. Amarelo = ainda tem parcela
+              // pendente com você, mesmo já tendo pago alguma.
+              const aindaDeve = lancamentos.some(l =>
+                cobrancasDoLancamento(l).some(c => !c.devo && !c.quitado && c.nome === quem));
               html += `
                 <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
                   <div class="item-info">
                     <span style="font-size:13px;">${quem}</span>
-                    <div style="font-size:10px;color:#888;">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}</div>
+                    <div style="font-size:10px;color:#888;">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}${aindaDeve ? ' · ainda pagando' : ''}</div>
                   </div>
-                  <span class="valor-receita" style="font-size:13px;">+ ${fmtVal(somaPessoa)}</span>
+                  <span style="font-size:13px;font-weight:700;color:${aindaDeve ? '#ffd166' : '#4caf50'};">+ ${fmtVal(somaPessoa)}</span>
                 </div>
               `;
               return;
@@ -4811,7 +4836,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.06-6';
+    const APP_VERSION = '2026.08.06-7';
 
     // Inicialização
     carregarLocalStorage();
