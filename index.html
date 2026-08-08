@@ -17,6 +17,12 @@
     .app-container { width: 100%; max-width: 480px; }
     
     .resumo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
+    /* Rótulo à esquerda, mês no centro e ações à direita, tudo na mesma linha.
+       As laterais têm a mesma largura (flex:1) pra o mês cair no centro real. */
+    .cabecalho-fatura { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+    .cabecalho-fatura .rotulo-resumo { flex:1; font-size:10.5px; color:#666; text-transform:uppercase; letter-spacing:.5px; }
+    .cabecalho-fatura h3 { flex:0 0 auto; text-align:center; font-size:18px; white-space:nowrap; }
+    .cabecalho-fatura .acoes-resumo { flex:1; display:flex; align-items:center; justify-content:flex-end; gap:8px; }
     .resumo-header span { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .5px; }
     .btn-olho { background: transparent; border: none; color: #aaa; font-size: 17px; cursor: pointer; padding: 4px; }
     /* BOTÃO DE VOZ E MODAL */
@@ -61,7 +67,7 @@
       background-color: #1a1a1a; 
       border: 1px solid #2196f3; 
       border-radius: 12px; 
-      padding: 16px 12px; 
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -71,7 +77,7 @@
       transition: transform 0.1s ease, border-color 0.2s;
     }
     .card-saldo-destaque:active { transform: scale(0.98); }
-    .card-saldo-destaque span { display: block; font-size: 11px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-saldo-destaque span { display: block; font-size: 11px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
     .card-saldo-destaque h4 { font-size: 20px; font-weight: bold; }
 
     .painel-direita {
@@ -86,7 +92,7 @@
       background-color: #1a1a1a;
       border: 1px solid #333;
       border-radius: 12px;
-      padding: 8px 12px;
+      padding: 6px 10px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -97,7 +103,7 @@
     }
     .card-mini:active { transform: scale(0.98); }
     .card-mini:hover { border-color: #555; }
-    .card-mini span { display: block; font-size: 10px; color: #aaa; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-mini span { display: block; font-size: 10px; color: #aaa; margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
     .card-mini h4 { font-size: 14px; font-weight: bold; }
 
     .val-saldo { color: #2196f3; }
@@ -130,7 +136,20 @@
     .btn-acao { background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 14px; padding: 4px; }
     .valor-receita { color: #4caf50; font-weight: bold; white-space: nowrap; }
     .valor-despesa { color: #ef5350; font-weight: bold; white-space: nowrap; }
+    .chips-antecedencia { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #aaa; font-size: 12.5px; cursor: pointer; }
+    .chip-antec.on { border-color: #ffd166; color: #ffd166; background: rgba(255,209,102,.1); }
+
     .barra-categoria { margin-bottom: 12px; }
+    /* Versão miúda das barras, pra caber dentro do modal do grupo sem virar
+       um segundo painel de gráficos */
+    .grafico-grupo { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .barra-grupo { margin-bottom: 7px; }
+    .barra-grupo:last-child { margin-bottom: 0; }
+    .barra-grupo-info { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #bbb; margin-bottom: 3px; }
+    .barra-grupo-info span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .barra-grupo-info span:last-child { flex: 0 0 auto; color: #888; }
+    .barra-grupo .barra-bg { height: 6px; }
     .barra-info { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
     /* GRÁFICO DE COLUNAS (vertical) */
     .colunas { display:flex; align-items:flex-end; gap:6px; height:150px; padding:0 2px 4px; overflow-x:auto; }
@@ -154,11 +173,11 @@
     #destinoFormEdicao > .card { background: transparent; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
     #destinoFormEdicao .form-header-linha,
     #destinoFormEdicao #btnCancelarEdit { display: none; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 9px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 9px; }
+    .modal-header h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
     .btn-fechar { background: transparent; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
 
     /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
-    .grid-periodos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
     /* faixa de contas em uma linha só, deslizável: empilhadas ocupavam três
        linhas e empurravam o conteúdo pra baixo */
     #chipsContasConsulta { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
@@ -167,6 +186,20 @@
     #chipsContasConsulta button { flex:0 0 auto; white-space:nowrap; }
     .btn-periodo { padding: 8px; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; color: #aaa; font-size: 12px; cursor: pointer; text-align: center; }
     .btn-periodo.ativo { background: #333; color: #fff; border-color: #666; font-weight: bold; }
+
+    /* Período dos Gráficos: fileira única que rola na horizontal */
+    .barra-periodo { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .chips-periodo { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; padding: 2px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .chips-periodo::-webkit-scrollbar { display: none; }
+    .chips-periodo .btn-periodo { flex: 0 0 auto; padding: 6px 13px; border-radius: 20px; white-space: nowrap; }
+    .chips-periodo .btn-periodo.ativo { background: rgba(33,150,243,.14); border-color: #2196f3; color: #64b5f6; }
+
+    /* Números do período em uma linha só (o card grande vive nas Faturas) */
+    .tira-resumo { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tira-resumo button { flex: 1; min-width: 0; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 7px 6px; text-align: center; cursor: pointer; transition: border-color .2s; }
+    .tira-resumo button:active { border-color: #555; }
+    .tira-resumo span { display: block; font-size: 9.5px; color: #8a8a8a; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 1px; }
+    .tira-resumo strong { font-size: 14px; font-weight: 700; }
     .box-resumo-modal { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid #333; }
     .linha-subtotal { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 6px; color: #ccc; cursor: pointer; }
     .linha-subtotal > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -177,18 +210,19 @@
     .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
 
     /* BOTÃO SELEÇÃO CLEAN DOS GRÁFICOS */
-    .btn-toggle-filtro { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #2196f3; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
     
     /* MODAL DE AÇÕES (BALÃO SUSPENSO) */
-    .balao-acoes { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+    .balao-acoes { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 0; }
     #listaGruposVinculo { display:flex; flex-direction:column; gap:8px; }
     .btn-opcao-balao.selecionado { border-color:#2e7d32; color:#4caf50; background:rgba(46,125,50,.12); }
-    .bloco-cat { margin-bottom:10px; background:#1a1a1a; padding:9px 10px; border-radius:10px; border:1px solid #333; }
+    /* Sem moldura: com uma categoria por quadro, a maioria virava caixa grande
+       pra duas linhas de conteúdo. O título já separa as seções. */
+    .bloco-cat { margin-bottom:10px; background:transparent; padding:0; border-radius:0; border:none; }
     details.bloco-cat > summary { display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; }
     details.bloco-cat > summary::-webkit-details-marker { display:none; }
     details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px; }
     details.bloco-cat[open] > summary .chevron-sec { transform:rotate(90deg); display:inline-block; }
-    .btn-opcao-balao { padding: 14px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 15px; }
+    .btn-opcao-balao { padding: 11px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 14px; }
     .btn-opcao-balao.danger { color: #ef5350; border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
     textarea { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
     textarea:focus { border-color: #555; }
@@ -362,16 +396,16 @@
     <div id="abaFaturas" class="aba-conteudo">
       <!-- Deslizar o dedo dentro deste card muda o mês (sem trocar de aba) -->
       <div class="card" id="cardResumoFaturas">
-        <div class="resumo-header" style="margin-bottom:8px;">
-          <span>Resumo</span>
-          <div style="display:flex;align-items:center;gap:12px;">
+        <div class="cabecalho-fatura">
+          <span class="rotulo-resumo">Resumo</span>
+          <h3 id="tituloMesFatura">—</h3>
+          <div class="acoes-resumo">
             <button type="button" id="btnMesAtual" class="btn-mini escondido" onclick="voltarMesAtual()">mês atual</button>
             <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
           </div>
         </div>
-        <h3 id="tituloMesFatura" style="text-align:center;">—</h3>
-        <div style="text-align:center;margin:2px 0 12px;">
-          <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:10.5px;color:#777;letter-spacing:.3px;cursor:pointer;padding:2px 6px;border-bottom:1px dotted #444;">—</button>
+        <div style="text-align:center;margin:0 0 10px;">
+          <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:9.5px;color:#6a6a6a;font-weight:400;letter-spacing:.2px;cursor:pointer;padding:1px 4px;white-space:pre;">—</button>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
@@ -433,7 +467,7 @@
         <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
           <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem e o que você deve. Ao marcar "Recebi" ou "Paguei", o lançamento entra sozinho na conta que você escolher.</p>
           <div id="listaEmprestimos"></div>
-          <button type="button" id="btnLembretes" class="btn-cancelar escondido" style="margin-top:10px;" onclick="alternarLembretesEmprestimo()">🔔 ativar lembrete de cobrança</button>
+          <button type="button" id="btnLembretes" class="btn-cancelar escondido" style="margin-top:10px;" onclick="abrirModalLembretes()">🔔 ativar lembrete de cobrança</button>
           <p id="avisoLembretes" class="escondido" style="font-size:11px;color:#777;margin-top:8px;line-height:1.4;"></p>
         </div>
       </div>
@@ -473,58 +507,51 @@
     </div>
 
     <div id="abaGraficos" class="aba-conteudo">
-      <div class="card">
-        <div class="resumo-header" style="margin-bottom:12px;">
-          <span>Resumo</span>
-          <button class="btn-olho" id="btnOlho" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;"></button>
-        </div>
-        <div class="painel-topo" style="margin-bottom:16px;">
-          <div class="card-saldo-destaque" onclick="abrirModalConsulta('saldo')">
-            <span>Saldo</span>
-            <h4 class="val-saldo" id="graficoSaldo">R$ 0,00</h4>
-          </div>
-          <div class="painel-direita">
-            <div class="card-mini" onclick="abrirModalConsulta('receita')">
-              <span>Receitas</span>
-              <h4 class="val-receita" id="graficoReceita">R$ 0,00</h4>
-            </div>
-            <div class="card-mini" onclick="abrirModalConsulta('despesa')">
-              <span>Despesas</span>
-              <h4 class="val-despesa" id="graficoDespesa">R$ 0,00</h4>
-            </div>
-          </div>
-        </div>
-
-        <button type="button" class="btn-toggle-filtro" onclick="alternarFiltroPeriodoGraficos()">
-          <span id="labelPeriodoGraficoAtual">Período: Últimos 30 dias</span>
-          <span id="setaPeriodoGrafico">▼</span>
-        </button>
-
-        <div class="grid-periodos escondido" id="filtrosPeriodoGraficos">
-          <button type="button" class="btn-periodo ativo" data-periodo="30" onclick="setFiltroPeriodoGraficos('30', 'Últimos 30 dias')">Últimos 30 dias</button>
-          <button type="button" class="btn-periodo" data-periodo="90" onclick="setFiltroPeriodoGraficos('90', 'Últimos 90 dias')">Últimos 90 dias</button>
+      <!-- O período é o único controle global desta aba: fica numa fileira só,
+           sempre à vista. Antes era um card com um botão que abria uma grade de
+           oito opções — dois toques pra trocar de período. -->
+      <div class="barra-periodo">
+        <div class="chips-periodo" id="filtrosPeriodoGraficos">
+          <button type="button" class="btn-periodo ativo" data-periodo="30" onclick="setFiltroPeriodoGraficos('30', 'Últimos 30 dias')">30 dias</button>
+          <button type="button" class="btn-periodo" data-periodo="90" onclick="setFiltroPeriodoGraficos('90', 'Últimos 90 dias')">90 dias</button>
           <button type="button" class="btn-periodo" data-periodo="mesAtual" onclick="setFiltroPeriodoGraficos('mesAtual', 'Este mês')">Este mês</button>
           <button type="button" class="btn-periodo" data-periodo="mesPassado" onclick="setFiltroPeriodoGraficos('mesPassado', 'Mês passado')">Mês passado</button>
+          <button type="button" class="btn-periodo" data-periodo="fatura" onclick="setFiltroPeriodoGraficos('fatura', 'Mês de fatura')">Mês da fatura</button>
           <button type="button" class="btn-periodo" data-periodo="anoAtual" onclick="setFiltroPeriodoGraficos('anoAtual', 'Este ano')">Este ano</button>
           <button type="button" class="btn-periodo" data-periodo="tudo" onclick="setFiltroPeriodoGraficos('tudo', 'Desde o início')">Desde o início</button>
-          <button type="button" class="btn-periodo" data-periodo="fatura" onclick="setFiltroPeriodoGraficos('fatura', 'Mês de fatura')" style="grid-column: span 2;">Mês de fatura (como nas Faturas)</button>
-          <button type="button" class="btn-periodo" data-periodo="custom" onclick="setFiltroPeriodoGraficos('custom', 'Personalizado')" style="grid-column: span 2;">Personalizado</button>
+          <button type="button" class="btn-periodo" data-periodo="custom" onclick="setFiltroPeriodoGraficos('custom', 'Personalizado')">Escolher</button>
         </div>
-        <div id="boxMesFaturaGraficos" class="escondido" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
-          <button type="button" class="btn-mini" onclick="mudarMesFaturaGraficos(-1)">‹ anterior</button>
-          <strong id="labelMesFaturaGraficos" style="font-size:13px;">—</strong>
-          <button type="button" class="btn-mini" onclick="mudarMesFaturaGraficos(1)">próximo ›</button>
+        <button class="btn-olho" id="btnOlho" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;flex:0 0 auto;"></button>
+      </div>
+      <div id="boxMesFaturaGraficos" class="escondido" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+        <button type="button" class="btn-mini" onclick="mudarMesFaturaGraficos(-1)">‹ anterior</button>
+        <strong id="labelMesFaturaGraficos" style="font-size:13px;">—</strong>
+        <button type="button" class="btn-mini" onclick="mudarMesFaturaGraficos(1)">próximo ›</button>
+      </div>
+      <div id="boxDataCustomGraficos" class="form-row escondido" style="margin-bottom:12px;">
+        <div class="form-group">
+          <label>Data inicial</label>
+          <input type="date" id="filtroGraficoDataIni" onchange="atualizarResumoEGraficos()">
         </div>
-        <div id="boxDataCustomGraficos" class="form-row escondido" style="margin-top:8px;">
-          <div class="form-group">
-            <label>Data inicial</label>
-            <input type="date" id="filtroGraficoDataIni" onchange="atualizarResumoEGraficos()">
-          </div>
-          <div class="form-group">
-            <label>Data final</label>
-            <input type="date" id="filtroGraficoDataFim" onchange="atualizarResumoEGraficos()">
-          </div>
+        <div class="form-group">
+          <label>Data final</label>
+          <input type="date" id="filtroGraficoDataFim" onchange="atualizarResumoEGraficos()">
         </div>
+      </div>
+
+      <!-- Os números do período em uma linha. O card grande de saldo/receitas/
+           despesas mora na aba Faturas — aqui eles servem só de referência pro
+           que os gráficos estão mostrando, e cada um abre a lista daquele lado. -->
+      <div class="tira-resumo">
+        <button type="button" onclick="abrirModalConsulta('receita')">
+          <span>Receitas</span><strong class="val-receita" id="graficoReceita">R$ 0,00</strong>
+        </button>
+        <button type="button" onclick="abrirModalConsulta('despesa')">
+          <span>Despesas</span><strong class="val-despesa" id="graficoDespesa">R$ 0,00</strong>
+        </button>
+        <button type="button" onclick="abrirModalConsulta('saldo')">
+          <span>Saldo</span><strong class="val-saldo" id="graficoSaldo">R$ 0,00</strong>
+        </button>
       </div>
 
       <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
@@ -552,7 +579,7 @@
         <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Indicadores do período</h3>
-            <span style="font-size:11px;color:#aaa;">mesmo período do resumo acima</span>
+            <span style="font-size:11px;color:#aaa;">período selecionado</span>
           </div>
           <span class="chevron-sec" id="chevron-indicadores">▸</span>
         </button>
@@ -584,7 +611,7 @@
         <button type="button" class="card-header-toggle" onclick="alternarSecao('gastoDiaSemana')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Gasto por dia da semana</h3>
-            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+            <span style="font-size:11px;color:#aaa;">período selecionado</span>
           </div>
           <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
         </button>
@@ -616,7 +643,7 @@
         <button type="button" class="card-header-toggle" onclick="alternarSecao('rankingGastos')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Maiores gastos</h3>
-            <span style="font-size:11px;color:#aaa;">mesmo período do resumo</span>
+            <span style="font-size:11px;color:#aaa;">período selecionado</span>
           </div>
           <span class="chevron-sec" id="chevron-rankingGastos">▸</span>
         </button>
@@ -746,11 +773,11 @@
         <h3 id="modalAcoesTitulo">Opções do Lançamento</h3>
         <button class="btn-fechar" onclick="fecharModal('modalAcoes')">&times;</button>
       </div>
-      <div id="infoAcoesLancamento" style="padding:4px 0 16px;border-bottom:1px solid #2a2a2a;margin-bottom:12px;"></div>
+      <div id="infoAcoesLancamento" style="padding:0 0 10px;border-bottom:1px solid #2a2a2a;margin-bottom:10px;"></div>
       <div class="balao-acoes">
-        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar lançamento</button>
-        <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas desta compra</button>
-        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir lançamento</button>
+        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar</button>
+        <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas</button>
+        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir</button>
       </div>
     </div>
   </div>
@@ -824,6 +851,25 @@
         <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
         <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE LEMBRETE DE COBRANÇA -->
+  <div id="modalLembretes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalLembretes')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Lembrete de cobrança</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalLembretes')">&times;</button>
+      </div>
+      <p style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.45;">Chega um aviso só, com todo mundo junto — não um por pessoa.</p>
+
+      <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Avisar quando faltar</label>
+      <div id="chipsAntecedencia" class="chips-antecedencia"></div>
+
+      <p id="previaLembrete" style="font-size:11.5px;color:#777;margin-top:10px;line-height:1.45;"></p>
+
+      <button type="button" class="btn-salvar" style="margin-top:14px;" onclick="salvarLembretes()">Ativar lembrete</button>
+      <button type="button" id="btnDesligarLembrete" class="btn-cancelar escondido" onclick="desligarLembretes()">Desligar lembrete</button>
     </div>
   </div>
 
@@ -2081,7 +2127,7 @@
       // sem a checagem, o handler estourava e o gesto parava de funcionar
       const alvo = e.target && e.target.closest ? e.target : null;
       toqueValido = e.touches.length === 1 && !algumModalAberto()
-        && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas, .colunas, .grid-periodos'));
+        && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas, .colunas, .chips-periodo'));
       direcaoTravada = null;
       if (!toqueValido) return;
       toqueIniX = e.touches[0].clientX;
@@ -2455,7 +2501,7 @@
       const eReceita = item.tipo === 'receita';
       const dataFmt = item.data.split('-').reverse().join('/');
       document.getElementById('infoAcoesLancamento').innerHTML = `
-        <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:20px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+        <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:19px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
         <div style="font-size:12px;color:#888;margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
         ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
       `;
@@ -2930,10 +2976,8 @@
       const btnGraficos = Array.from(document.querySelectorAll('.nav-tab'))
         .find(b => (b.getAttribute('onclick') || '').includes('abaGraficos'));
       if (btnGraficos) mudarAba('abaGraficos', btnGraficos);
-      const grid = document.getElementById('filtrosPeriodoGraficos');
-      grid.classList.remove('escondido');
-      document.getElementById('setaPeriodoGrafico').textContent = '▲';
-      grid.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      // A fileira de períodos fica sempre à vista — basta levar o olho até ela
+      document.getElementById('filtrosPeriodoGraficos').scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
 
     function abrirModalConsulta(tipo) {
@@ -2997,13 +3041,6 @@
     }
 
     /* REQUISIÇÃO 5: ALTERNAR EXIBIÇÃO RECOLHÍVEL DO PERÍODO NOS GRÁFICOS */
-    function alternarFiltroPeriodoGraficos() {
-      const grid = document.getElementById('filtrosPeriodoGraficos');
-      const seta = document.getElementById('setaPeriodoGrafico');
-      grid.classList.toggle('escondido');
-      seta.textContent = grid.classList.contains('escondido') ? '▼' : '▲';
-    }
-
     function setFiltroPeriodoGraficos(periodo, labelTexto) {
       periodoGraficosAtual = periodo;
       labelPeriodoGraficos = labelTexto;
@@ -3011,12 +3048,8 @@
         b.classList.toggle('ativo', b.dataset.periodo === periodo);
       });
 
-      document.getElementById('labelPeriodoGraficoAtual').textContent = 'Período: ' + labelTexto;
-      document.getElementById('filtrosPeriodoGraficos').classList.add('escondido');
-      document.getElementById('setaPeriodoGrafico').textContent = '▼';
       document.getElementById('boxDataCustomGraficos').classList.toggle('escondido', periodo !== 'custom');
       document.getElementById('boxMesFaturaGraficos').classList.toggle('escondido', periodo !== 'fatura');
-      if (periodo === 'custom') document.getElementById('filtrosPeriodoGraficos').classList.remove('escondido');
       atualizarLabelMesFaturaGraficos();
 
       renderizarDashboard();
@@ -3029,9 +3062,7 @@
       const ref = getMesReferencia(faturaMesOffsetGraficos);
       el.textContent = NOMES_MESES[ref.getMonth()] + ' ' + ref.getFullYear();
       if (periodoGraficosAtual === 'fatura') {
-        const rotulo = 'Fatura de ' + NOMES_MESES[ref.getMonth()];
-        labelPeriodoGraficos = rotulo;
-        document.getElementById('labelPeriodoGraficoAtual').textContent = 'Período: ' + rotulo;
+        labelPeriodoGraficos = 'Fatura de ' + NOMES_MESES[ref.getMonth()];
       }
     }
 
@@ -3690,9 +3721,13 @@
       const hDia = parseInt(hoje.slice(8, 10), 10);
       const mesCorrente = (ano === hAno && mes === hMes);
 
-      const descrever = (c) => {
+      // O espaço largo separa as duas informações sem precisar de pontuação —
+      // só faz sentido quando a legenda é uma frase sozinha. Com vários cartões
+      // nomeados na mesma linha, volta a ser um ponto.
+      const descrever = (c, junto) => {
+        const sep = junto ? ' · ' : '    ';
         const dias = diasDoCartao(c.nome);
-        if (!mesCorrente) return `fecha dia ${dias.fecha} · vence dia ${dias.vence}`;
+        if (!mesCorrente) return `fecha dia ${dias.fecha}${sep}vence dia ${dias.vence}`;
         let faltam;
         if (hDia <= dias.fecha) {
           faltam = dias.fecha - hDia;
@@ -3701,11 +3736,14 @@
           faltam = diasNoMes - hDia + dias.fecha;
         }
         const frase = faltam === 0 ? 'fecha hoje' : (faltam === 1 ? 'fecha amanhã' : `fecha em ${faltam} dias`);
-        return `${frase} · vence dia ${dias.vence}`;
+        return `${frase}${sep}vence dia ${dias.vence}`;
       };
 
-      if (cartoes.length === 1) return (mesCorrente ? 'fatura ' : '') + descrever(cartoes[0]);
-      return cartoes.map(c => `${c.nome}: ${descrever(c)}`).join('  ·  ');
+      // Cartões com o mesmo fechamento repetiam a mesma frase com nome na frente
+      // e a legenda quebrava em duas linhas. Só nomeia quando os dias divergem.
+      const iguais = cartoes.every(c => descrever(c) === descrever(cartoes[0]));
+      if (cartoes.length === 1 || iguais) return descrever(cartoes[0]);
+      return cartoes.map(c => `${c.nome}: ${descrever(c, true)}`).join('  ·  ');
     }
 
     function alternarDetalheFatura() {
@@ -3930,12 +3968,16 @@
     function renderizarSecaoEmprestimos(container, cobrancas, devo) {
       const hoje = obterDataBrasilia();
       const emAtraso = c => c.vence && c.vence < hoje;
-      // verde é dinheiro que vem, vermelho é dinheiro que sai — mesma convenção
-      // do resto do app
+      // Perto de vencer é o que já cai na janela de aviso escolhida no lembrete —
+      // assim a cor na tela e o aviso no celular falam da mesma coisa.
+      const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
       // O TOTAL a receber fica amarelo porque ainda não entrou; o valor de cada
       // pessoa fica verde porque uma hora entra. O que eu devo é vermelho nos dois.
       const corTotal = devo ? '#ef5350' : '#ffd166';
-      const cor = devo ? '#ef5350' : '#4caf50';
+      // Vermelho = venceu, precisa resolver. Amarelo = está chegando, dá tempo de
+      // combinar. Verde = no prazo, não precisa fazer nada.
+      const corPessoa = lista => lista.some(emAtraso) ? '#ef5350'
+        : (lista.some(perto) ? '#ffd166' : (devo ? '#ef5350' : '#4caf50'));
 
       const porPessoa = {};
       cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
@@ -3963,9 +4005,13 @@
           const atrasadas = lista.filter(emAtraso).length;
           const proximo = lista.map(c => c.vence).filter(Boolean).sort()[0];
 
+          const chegando = lista.filter(perto).length;
           let legenda = lista.length + (lista.length === 1 ? ' cobrança' : ' cobranças');
           if (atrasadas > 0) legenda += ' · ' + atrasadas + ' em atraso';
-          else if (proximo) legenda += ' · a partir de ' + proximo.split('-').reverse().join('/');
+          else if (chegando > 0) {
+            const faltam = diasAte(proximo);
+            legenda += ' · vence ' + (faltam === 0 ? 'hoje' : faltam === 1 ? 'amanhã' : 'em ' + faltam + ' dias');
+          } else if (proximo) legenda += ' · a partir de ' + proximo.split('-').reverse().join('/');
 
           const bloco = document.createElement('div');
           bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid #2a2a2a;';
@@ -3977,10 +4023,10 @@
           cabecalho.innerHTML = `
             <div class="item-info">
               <strong>${nome}</strong>
-              <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : '#888'};">${legenda}</div>
+              <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : (chegando > 0 ? '#ffd166' : '#888')};">${legenda}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
-              <span style="color:${cor};font-weight:700;">${fmtOculto(totalPessoa)}</span>
+              <span style="color:${corPessoa(lista)};font-weight:700;">${fmtOculto(totalPessoa)}</span>
               <span class="chevron-sec">${aberto ? '▾' : '▸'}</span>
             </div>
           `;
@@ -4261,9 +4307,40 @@
           verdade pras datas de vencimento. Hoje quase nenhum suporta — por isso é
           só um bônus quando existir, nunca a base. */
     const CHAVE_LEMBRETES = 'meu_financeiro_lembretes';
+    const CHAVE_ANTECEDENCIA = 'meu_financeiro_lembrete_dias';
+    // Todo mundo vence no mesmo dia (o do fechamento do cartão), então avisar só
+    // no dia despeja tudo de uma vez e sem tempo de conversar com ninguém. Por
+    // isso a antecedência é escolhida, e o padrão já avisa antes.
+    const OPCOES_ANTECEDENCIA = [
+      { dias: 7, rotulo: '1 semana' },
+      { dias: 3, rotulo: '3 dias' },
+      { dias: 1, rotulo: '1 dia' },
+      { dias: 0, rotulo: 'no dia' }
+    ];
 
     function lembretesLigados() {
       return localStorage.getItem(CHAVE_LEMBRETES) === '1';
+    }
+
+    function diasAntecedencia() {
+      try {
+        const salvo = JSON.parse(localStorage.getItem(CHAVE_ANTECEDENCIA));
+        if (Array.isArray(salvo) && salvo.length) return salvo.slice().sort((a, b) => b - a);
+      } catch (e) { /* valor inválido: usa o padrão */ }
+      return [3, 0];
+    }
+
+    // Quantos dias antes do vencimento a cobrança já entra em "atenção". É a
+    // maior antecedência escolhida — é a partir dela que faz sentido pintar de
+    // amarelo, porque é quando você começa a ser avisado.
+    function janelaAtencao() {
+      return Math.max(...diasAntecedencia(), 0);
+    }
+
+    function diasAte(dataStr) {
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      const alvo = new Date(dataStr + 'T12:00:00');
+      return Math.round((alvo - hoje) / 86400000);
     }
 
     function atualizarBotaoLembretes() {
@@ -4276,37 +4353,102 @@
       if (!suportado) return;
 
       const ligado = lembretesLigados() && Notification.permission === 'granted';
-      btn.textContent = ligado ? '🔔 lembrete ligado — desativar' : '🔔 ativar lembrete de cobrança';
+      btn.textContent = ligado ? '🔔 lembrete ligado — ajustar' : '🔔 ativar lembrete de cobrança';
       aviso.textContent = ligado
-        ? 'O ícone do app mostra quantas cobranças estão vencidas, e você recebe um aviso ao abrir. Pra o aviso aparecer com o app fechado seria preciso um servidor — que este app não tem.'
+        ? `Avisa ${textoAntecedencia()}, num aviso só. O ícone do app mostra quantas cobranças estão vencidas. Pra o aviso aparecer com o app fechado seria preciso um servidor — que este app não tem.`
         : 'Marca o ícone do app com o número de cobranças vencidas e avisa ao abrir.';
     }
 
-    async function alternarLembretesEmprestimo() {
+    function textoAntecedencia() {
+      const dias = diasAntecedencia();
+      const nomes = dias.map(d => (OPCOES_ANTECEDENCIA.find(o => o.dias === d) || { rotulo: d + ' dias' }).rotulo);
+      if (nomes.length === 1) return nomes[0] === 'no dia' ? 'no dia do vencimento' : nomes[0] + ' antes';
+      return nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1];
+    }
+
+    let antecedenciaEditando = [];
+
+    function abrirModalLembretes() {
       if (!('Notification' in window)) return;
-      if (lembretesLigados() && Notification.permission === 'granted') {
-        localStorage.setItem(CHAVE_LEMBRETES, '0');
-        limparBadgeApp();
-      } else {
-        let permissao = Notification.permission;
-        if (permissao !== 'granted') {
-          try { permissao = await Notification.requestPermission(); } catch (e) { permissao = 'denied'; }
-        }
-        if (permissao !== 'granted') {
-          alert('O navegador bloqueou as notificações. Você pode liberar nas configurações do site e tentar de novo — o sinal vermelho no quadro continua funcionando de qualquer forma.');
-          atualizarBotaoLembretes();
-          return;
-        }
-        localStorage.setItem(CHAVE_LEMBRETES, '1');
-        avisarCobrancasVencidas(true);
+      antecedenciaEditando = diasAntecedencia();
+      renderizarChipsAntecedencia();
+      const ligado = lembretesLigados() && Notification.permission === 'granted';
+      document.getElementById('btnDesligarLembrete').classList.toggle('escondido', !ligado);
+      document.querySelector('#modalLembretes .btn-salvar').textContent = ligado ? 'Salvar' : 'Ativar lembrete';
+      document.getElementById('modalLembretes').classList.remove('escondido');
+    }
+
+    function renderizarChipsAntecedencia() {
+      const box = document.getElementById('chipsAntecedencia');
+      box.innerHTML = '';
+      OPCOES_ANTECEDENCIA.forEach(o => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip-antec' + (antecedenciaEditando.includes(o.dias) ? ' on' : '');
+        b.textContent = o.rotulo;
+        b.onclick = () => alternarAntecedencia(o.dias);
+        box.appendChild(b);
+      });
+      const previa = document.getElementById('previaLembrete');
+      if (!antecedenciaEditando.length) {
+        previa.textContent = 'Escolha pelo menos um aviso.';
+        return;
       }
-      atualizarBotaoLembretes();
-      atualizarBadgeApp();
+      const janela = Math.max(...antecedenciaEditando, 0);
+      const quantas = cobrancasAbertas().filter(c => c.vence && diasAte(c.vence) <= janela).length;
+      previa.textContent = `Hoje isso avisaria sobre ${quantas} cobrança${quantas === 1 ? '' : 's'}. `
+        + `No quadro, o que vence dentro de ${janela === 0 ? 'hoje' : janela + ' dias'} fica amarelo e o que já venceu fica vermelho.`;
+    }
+
+    function alternarAntecedencia(dias) {
+      const i = antecedenciaEditando.indexOf(dias);
+      if (i >= 0) antecedenciaEditando.splice(i, 1);
+      else antecedenciaEditando.push(dias);
+      antecedenciaEditando.sort((a, b) => b - a);
+      renderizarChipsAntecedencia();
+    }
+
+    async function salvarLembretes() {
+      if (!antecedenciaEditando.length) {
+        alert('Escolha pelo menos um aviso — 1 semana, 3 dias, 1 dia ou no dia.');
+        return;
+      }
+      let permissao = Notification.permission;
+      if (permissao !== 'granted') {
+        try { permissao = await Notification.requestPermission(); } catch (e) { permissao = 'denied'; }
+      }
+      if (permissao !== 'granted') {
+        alert('O navegador bloqueou as notificações. Você pode liberar nas configurações do site e tentar de novo — as cores no quadro continuam funcionando de qualquer forma.');
+        return;
+      }
+      localStorage.setItem(CHAVE_ANTECEDENCIA, JSON.stringify(antecedenciaEditando));
+      localStorage.setItem(CHAVE_LEMBRETES, '1');
+      fecharModal('modalLembretes');
+      avisarCobrancasVencidas(true);
+      renderizarEmprestimos();
+    }
+
+    function desligarLembretes() {
+      localStorage.setItem(CHAVE_LEMBRETES, '0');
+      limparBadgeApp();
+      fecharModal('modalLembretes');
+      renderizarEmprestimos();
     }
 
     function cobrancasVencidas() {
       const hoje = obterDataBrasilia();
       return cobrancasAbertas().filter(c => c.lanc.emprestimoVence && c.lanc.emprestimoVence <= hoje);
+    }
+
+    // O que o aviso cobre: o que já venceu mais o que cai numa das antecedências
+    // escolhidas. Ficar só no vencido avisaria sempre tarde demais.
+    function cobrancasParaAvisar() {
+      const dias = diasAntecedencia();
+      return cobrancasAbertas().filter(c => {
+        if (!c.vence) return false;
+        const faltam = diasAte(c.vence);
+        return faltam < 0 || dias.includes(faltam);
+      });
     }
 
     // O badge no ícone do app é o único sinal que sobrevive ao app fechado
@@ -4325,20 +4467,27 @@
     function avisarCobrancasVencidas(forcar) {
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       if (!lembretesLigados()) return;
-      const vencidas = cobrancasVencidas();
-      if (!vencidas.length) return;
+      const alvos = cobrancasParaAvisar();
+      if (!alvos.length) return;
 
       // uma vez por dia, pra não repetir a cada abertura
       const hoje = obterDataBrasilia();
       if (!forcar && localStorage.getItem('meu_financeiro_ultimo_aviso') === hoje) return;
       localStorage.setItem('meu_financeiro_ultimo_aviso', hoje);
 
-      const total = vencidas.reduce((sm, c) => sm + c.valor, 0);
-      const nomes = [...new Set(vencidas.map(c => c.nome))];
+      // Um aviso só, com todo mundo junto: como quase todas as cobranças vencem
+      // no mesmo dia, uma notificação por pessoa viraria uma enxurrada.
+      const total = alvos.reduce((sm, c) => sm + c.valor, 0);
+      const nomes = [...new Set(alvos.map(c => c.nome))];
+      const vencidas = alvos.filter(c => diasAte(c.vence) < 0).length;
+      const aVencer = alvos.length - vencidas;
+      const partes = [];
+      if (vencidas) partes.push(vencidas + ' vencida' + (vencidas > 1 ? 's' : ''));
+      if (aVencer) partes.push(aVencer + ' a vencer');
       try {
-        const soDividas = vencidas.every(c => c.devo);
+        const soDividas = alvos.every(c => c.devo);
         new Notification(soDividas ? 'Tem conta pra pagar' : 'Tem gente pra cobrar', {
-          body: `${nomes.join(', ')} — R$ ${total.toFixed(2).replace('.', ',')} vencido`,
+          body: `${nomes.join(', ')} — R$ ${total.toFixed(2).replace('.', ',')} (${partes.join(', ')})`,
           tag: 'emprestimos-vencidos'
         });
       } catch (e) { /* alguns navegadores só permitem via service worker */ }
@@ -4938,6 +5087,32 @@
       popularSelectGrupos();
     }
 
+    // Barrinhas de peso por categoria dentro do modal do grupo. Só despesa:
+    // reembolso não é "gasto por categoria", é dinheiro voltando. Uma cor só
+    // pra todas — a leitura aqui é de proporção, e cor diferente por categoria
+    // (ou vermelho de alerta) só polui.
+    function barrasCategoriasGrupo(porCategoria) {
+      const totais = {};
+      Object.entries(porCategoria).forEach(([cat, itens]) => {
+        const soma = itens.filter(l => l.tipo !== 'receita').reduce((s, l) => s + parseVal(l.valor), 0);
+        if (soma > 0) totais[cat] = soma;
+      });
+      const entradas = Object.entries(totais).sort((a, b) => b[1] - a[1]);
+      // Com uma categoria só, a barra ocuparia 100% e não diria nada
+      if (entradas.length < 2) return '';
+      const total = entradas.reduce((s, [, v]) => s + v, 0);
+      const linhas = entradas.map(([cat, valor]) => {
+        const pct = Math.round((valor / total) * 100);
+        return `
+          <div class="barra-grupo">
+            <div class="barra-grupo-info"><span>${cat}</span><span>${fmtOculto(valor)} · ${pct}%</span></div>
+            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:#42a5f5;"></div></div>
+          </div>
+        `;
+      }).join('');
+      return `<div class="grafico-grupo">${linhas}</div>`;
+    }
+
     function abrirModalGrupo(id) {
       const g = grupos.find(x => x.id === id);
       if (!g) return;
@@ -4977,16 +5152,16 @@
         // seria linha a mais dizendo o mesmo número.
         const temRateio = recebido > 0 || aReceber > 0;
         let html = `
-          <div style="text-align:center;padding:10px 0 12px;border-bottom:1px solid #333;margin-bottom:16px;">
-            <span style="font-size:11px;color:#aaa;text-transform:uppercase;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
-            <h3 style="color:${liquido >= 0 ? '#ef5350' : '#4caf50'};font-size:24px;margin-top:4px;">${fmtVal(liquido)}</h3>
+          <div style="text-align:center;padding:0 0 8px;border-bottom:1px solid #333;margin-bottom:10px;">
+            <span style="font-size:10.5px;color:#aaa;text-transform:uppercase;letter-spacing:.4px;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
+            <h3 style="color:${liquido >= 0 ? '#ef5350' : '#4caf50'};font-size:22px;margin-top:2px;">${fmtVal(liquido)}</h3>
           </div>
         `;
 
         if (temRateio) {
           const seTodosPagarem = liquido - aReceber;
           html += `
-            <div class="box-resumo-modal" style="margin-bottom:16px;">
+            <div class="box-resumo-modal" style="margin-bottom:10px;">
               <div class="linha-subtotal" style="cursor:default;"><span>Lancei no grupo</span><strong>${fmtVal(bruto)}</strong></div>
               <div class="linha-subtotal" style="cursor:default;"><span>(−) já me pagaram</span><strong style="color:#4caf50;">${fmtVal(recebido)}</strong></div>
               <div class="linha-subtotal" style="cursor:default;border-top:1px solid #333;padding-top:6px;margin-top:6px;"><span>(=) saiu do meu bolso</span><strong style="color:#ef5350;">${fmtVal(liquido)}</strong></div>
@@ -4997,6 +5172,11 @@
             </div>
           `;
         }
+
+        // Onde o dinheiro foi parar, em barra: dá a noção de peso de cada
+        // categoria antes de descer pra lista item a item. Todas na mesma cor —
+        // aqui o assunto é proporção, não alerta.
+        html += barrasCategoriasGrupo(porCategoria);
 
         // O gasto é o assunto do grupo; o reembolso é consequência dele. Por isso
         // as categorias de despesa vêm primeiro e as de receita fecham a lista.
@@ -5469,7 +5649,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-6';
+    const APP_VERSION = '2026.08.07-8';
 
     // Inicialização
     carregarLocalStorage();
