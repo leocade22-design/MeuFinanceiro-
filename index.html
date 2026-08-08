@@ -17,6 +17,12 @@
     .app-container { width: 100%; max-width: 480px; }
     
     .resumo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
+    /* Rótulo à esquerda, mês no centro e ações à direita, tudo na mesma linha.
+       As laterais têm a mesma largura (flex:1) pra o mês cair no centro real. */
+    .cabecalho-fatura { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+    .cabecalho-fatura .rotulo-resumo { flex:1; font-size:10.5px; color:#666; text-transform:uppercase; letter-spacing:.5px; }
+    .cabecalho-fatura h3 { flex:0 0 auto; text-align:center; font-size:18px; white-space:nowrap; }
+    .cabecalho-fatura .acoes-resumo { flex:1; display:flex; align-items:center; justify-content:flex-end; gap:8px; }
     .resumo-header span { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .5px; }
     .btn-olho { background: transparent; border: none; color: #aaa; font-size: 17px; cursor: pointer; padding: 4px; }
     /* BOTÃO DE VOZ E MODAL */
@@ -131,6 +137,15 @@
     .valor-receita { color: #4caf50; font-weight: bold; white-space: nowrap; }
     .valor-despesa { color: #ef5350; font-weight: bold; white-space: nowrap; }
     .barra-categoria { margin-bottom: 12px; }
+    /* Versão miúda das barras, pra caber dentro do modal do grupo sem virar
+       um segundo painel de gráficos */
+    .grafico-grupo { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .barra-grupo { margin-bottom: 7px; }
+    .barra-grupo:last-child { margin-bottom: 0; }
+    .barra-grupo-info { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #bbb; margin-bottom: 3px; }
+    .barra-grupo-info span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .barra-grupo-info span:last-child { flex: 0 0 auto; color: #888; }
+    .barra-grupo .barra-bg { height: 6px; }
     .barra-info { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
     /* GRÁFICO DE COLUNAS (vertical) */
     .colunas { display:flex; align-items:flex-end; gap:6px; height:150px; padding:0 2px 4px; overflow-x:auto; }
@@ -154,7 +169,8 @@
     #destinoFormEdicao > .card { background: transparent; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
     #destinoFormEdicao .form-header-linha,
     #destinoFormEdicao #btnCancelarEdit { display: none; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 9px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 9px; }
+    .modal-header h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
     .btn-fechar { background: transparent; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
 
     /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
@@ -180,15 +196,17 @@
     .btn-toggle-filtro { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #2196f3; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
     
     /* MODAL DE AÇÕES (BALÃO SUSPENSO) */
-    .balao-acoes { display: flex; flex-direction: column; gap: 10px; padding: 10px 0; }
+    .balao-acoes { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 0; }
     #listaGruposVinculo { display:flex; flex-direction:column; gap:8px; }
     .btn-opcao-balao.selecionado { border-color:#2e7d32; color:#4caf50; background:rgba(46,125,50,.12); }
-    .bloco-cat { margin-bottom:10px; background:#1a1a1a; padding:9px 10px; border-radius:10px; border:1px solid #333; }
+    /* Sem moldura: com uma categoria por quadro, a maioria virava caixa grande
+       pra duas linhas de conteúdo. O título já separa as seções. */
+    .bloco-cat { margin-bottom:10px; background:transparent; padding:0; border-radius:0; border:none; }
     details.bloco-cat > summary { display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; }
     details.bloco-cat > summary::-webkit-details-marker { display:none; }
     details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px; }
     details.bloco-cat[open] > summary .chevron-sec { transform:rotate(90deg); display:inline-block; }
-    .btn-opcao-balao { padding: 14px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 15px; }
+    .btn-opcao-balao { padding: 11px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 14px; }
     .btn-opcao-balao.danger { color: #ef5350; border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
     textarea { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
     textarea:focus { border-color: #555; }
@@ -362,15 +380,15 @@
     <div id="abaFaturas" class="aba-conteudo">
       <!-- Deslizar o dedo dentro deste card muda o mês (sem trocar de aba) -->
       <div class="card" id="cardResumoFaturas">
-        <div class="resumo-header" style="margin-bottom:8px;">
-          <span>Resumo</span>
-          <div style="display:flex;align-items:center;gap:12px;">
+        <div class="cabecalho-fatura">
+          <span class="rotulo-resumo">Resumo</span>
+          <h3 id="tituloMesFatura">—</h3>
+          <div class="acoes-resumo">
             <button type="button" id="btnMesAtual" class="btn-mini escondido" onclick="voltarMesAtual()">mês atual</button>
             <button class="btn-olho" id="btnOlhoFaturas" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
           </div>
         </div>
-        <h3 id="tituloMesFatura" style="text-align:center;">—</h3>
-        <div style="text-align:center;margin:2px 0 12px;">
+        <div style="text-align:center;margin:0 0 12px;">
           <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:10.5px;color:#777;letter-spacing:.3px;cursor:pointer;padding:2px 6px;border-bottom:1px dotted #444;">—</button>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
@@ -746,11 +764,11 @@
         <h3 id="modalAcoesTitulo">Opções do Lançamento</h3>
         <button class="btn-fechar" onclick="fecharModal('modalAcoes')">&times;</button>
       </div>
-      <div id="infoAcoesLancamento" style="padding:4px 0 16px;border-bottom:1px solid #2a2a2a;margin-bottom:12px;"></div>
+      <div id="infoAcoesLancamento" style="padding:0 0 10px;border-bottom:1px solid #2a2a2a;margin-bottom:10px;"></div>
       <div class="balao-acoes">
-        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar lançamento</button>
-        <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas desta compra</button>
-        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir lançamento</button>
+        <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar</button>
+        <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas</button>
+        <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir</button>
       </div>
     </div>
   </div>
@@ -2455,7 +2473,7 @@
       const eReceita = item.tipo === 'receita';
       const dataFmt = item.data.split('-').reverse().join('/');
       document.getElementById('infoAcoesLancamento').innerHTML = `
-        <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:20px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+        <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:19px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
         <div style="font-size:12px;color:#888;margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
         ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
       `;
@@ -3704,7 +3722,10 @@
         return `${frase} · vence dia ${dias.vence}`;
       };
 
-      if (cartoes.length === 1) return (mesCorrente ? 'fatura ' : '') + descrever(cartoes[0]);
+      // Cartões com o mesmo fechamento repetiam a mesma frase com nome na frente
+      // e a legenda quebrava em duas linhas. Só nomeia quando os dias divergem.
+      const iguais = cartoes.every(c => descrever(c) === descrever(cartoes[0]));
+      if (cartoes.length === 1 || iguais) return (mesCorrente ? 'fatura ' : '') + descrever(cartoes[0]);
       return cartoes.map(c => `${c.nome}: ${descrever(c)}`).join('  ·  ');
     }
 
@@ -4938,6 +4959,32 @@
       popularSelectGrupos();
     }
 
+    // Barrinhas de peso por categoria dentro do modal do grupo. Só despesa:
+    // reembolso não é "gasto por categoria", é dinheiro voltando. Uma cor só
+    // pra todas — a leitura aqui é de proporção, e cor diferente por categoria
+    // (ou vermelho de alerta) só polui.
+    function barrasCategoriasGrupo(porCategoria) {
+      const totais = {};
+      Object.entries(porCategoria).forEach(([cat, itens]) => {
+        const soma = itens.filter(l => l.tipo !== 'receita').reduce((s, l) => s + parseVal(l.valor), 0);
+        if (soma > 0) totais[cat] = soma;
+      });
+      const entradas = Object.entries(totais).sort((a, b) => b[1] - a[1]);
+      // Com uma categoria só, a barra ocuparia 100% e não diria nada
+      if (entradas.length < 2) return '';
+      const total = entradas.reduce((s, [, v]) => s + v, 0);
+      const linhas = entradas.map(([cat, valor]) => {
+        const pct = Math.round((valor / total) * 100);
+        return `
+          <div class="barra-grupo">
+            <div class="barra-grupo-info"><span>${cat}</span><span>${fmtOculto(valor)} · ${pct}%</span></div>
+            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:#42a5f5;"></div></div>
+          </div>
+        `;
+      }).join('');
+      return `<div class="grafico-grupo">${linhas}</div>`;
+    }
+
     function abrirModalGrupo(id) {
       const g = grupos.find(x => x.id === id);
       if (!g) return;
@@ -4977,16 +5024,16 @@
         // seria linha a mais dizendo o mesmo número.
         const temRateio = recebido > 0 || aReceber > 0;
         let html = `
-          <div style="text-align:center;padding:10px 0 12px;border-bottom:1px solid #333;margin-bottom:16px;">
-            <span style="font-size:11px;color:#aaa;text-transform:uppercase;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
-            <h3 style="color:${liquido >= 0 ? '#ef5350' : '#4caf50'};font-size:24px;margin-top:4px;">${fmtVal(liquido)}</h3>
+          <div style="text-align:center;padding:0 0 8px;border-bottom:1px solid #333;margin-bottom:10px;">
+            <span style="font-size:10.5px;color:#aaa;text-transform:uppercase;letter-spacing:.4px;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
+            <h3 style="color:${liquido >= 0 ? '#ef5350' : '#4caf50'};font-size:22px;margin-top:2px;">${fmtVal(liquido)}</h3>
           </div>
         `;
 
         if (temRateio) {
           const seTodosPagarem = liquido - aReceber;
           html += `
-            <div class="box-resumo-modal" style="margin-bottom:16px;">
+            <div class="box-resumo-modal" style="margin-bottom:10px;">
               <div class="linha-subtotal" style="cursor:default;"><span>Lancei no grupo</span><strong>${fmtVal(bruto)}</strong></div>
               <div class="linha-subtotal" style="cursor:default;"><span>(−) já me pagaram</span><strong style="color:#4caf50;">${fmtVal(recebido)}</strong></div>
               <div class="linha-subtotal" style="cursor:default;border-top:1px solid #333;padding-top:6px;margin-top:6px;"><span>(=) saiu do meu bolso</span><strong style="color:#ef5350;">${fmtVal(liquido)}</strong></div>
@@ -4997,6 +5044,11 @@
             </div>
           `;
         }
+
+        // Onde o dinheiro foi parar, em barra: dá a noção de peso de cada
+        // categoria antes de descer pra lista item a item. Todas na mesma cor —
+        // aqui o assunto é proporção, não alerta.
+        html += barrasCategoriasGrupo(porCategoria);
 
         // O gasto é o assunto do grupo; o reembolso é consequência dele. Por isso
         // as categorias de despesa vêm primeiro e as de receita fecham a lista.
@@ -5469,7 +5521,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.07-6';
+    const APP_VERSION = '2026.08.07-7';
 
     // Inicialização
     carregarLocalStorage();
