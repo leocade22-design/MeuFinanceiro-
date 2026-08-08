@@ -408,7 +408,7 @@
           <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:9.5px;color:#6a6a6a;font-weight:400;letter-spacing:.2px;cursor:pointer;padding:1px 4px;white-space:pre;">—</button>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
-          <div class="card-saldo-destaque" onclick="alternarDetalheFatura()">
+          <div class="card-saldo-destaque" onclick="abrirModalResumoFatura()">
             <span>Saldo do mês</span>
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
           </div>
@@ -423,7 +423,6 @@
             </div>
           </div>
         </div>
-        <div id="detalheFaturaMes" class="box-resumo-modal escondido" style="margin-bottom:12px;"></div>
         <div id="listaFaturas"></div>
       </div>
 
@@ -485,25 +484,6 @@
         </div>
       </div>
 
-      <!-- BACKUP E RESTAURAÇÃO (retrátil) -->
-      <div class="card" data-card="backup" data-card-titulo="Backup e restauração">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('backup')">
-          <h3 style="font-size:16px;">Backup e restauração</h3>
-          <span class="chevron-sec" id="chevron-backup">▸</span>
-        </button>
-        <div id="corpo-backup" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados.</p>
-          <div class="backup-actions">
-            <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
-            <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
-          </div>
-          <input type="file" id="importBackupInput" class="escondido" accept="application/json" onchange="importarBackup(event)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a;">
-            <span id="versaoApp" style="font-size:11px;color:#666;">versão —</span>
-            <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div id="abaGraficos" class="aba-conteudo">
@@ -737,6 +717,26 @@
         <h3 style="margin-bottom:4px;">Ordem dos cards — Gráficos</h3>
         <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O gráfico principal fica sempre no topo. Os outros, você escolhe a ordem.</p>
         <div id="ordemCardsAbaGraficos"></div>
+      </div>
+
+      <!-- BACKUP E RESTAURAÇÃO (retrátil, veio da aba Faturas) -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('backup')">
+          <h3 style="font-size:16px;">Backup e restauração</h3>
+          <span class="chevron-sec" id="chevron-backup">▸</span>
+        </button>
+        <div id="corpo-backup" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados.</p>
+          <div class="backup-actions">
+            <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
+            <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
+          </div>
+          <input type="file" id="importBackupInput" class="escondido" accept="application/json" onchange="importarBackup(event)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a;">
+            <span id="versaoApp" style="font-size:11px;color:#666;">versão —</span>
+            <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1075,6 +1075,17 @@
   </div>
 
   <!-- MODAL DE GERENCIAR CATEGORIAS -->
+  <!-- RESUMO DO MÊS (popup enxuto — toque no "Saldo do mês" em Faturas) -->
+  <div id="modalResumoFatura" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalResumoFatura')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloResumoFatura">Resumo do mês</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalResumoFatura')">&times;</button>
+      </div>
+      <div id="corpoResumoFatura"></div>
+    </div>
+  </div>
+
   <div id="modalCategorias" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalCategorias')">
     <div class="modal-content">
       <div class="modal-header">
@@ -1161,6 +1172,7 @@
     let transferencias = [];
     let valoresOcultos = false;
     let faturaMesOffset = 0;
+    let resumoFaturaAtual = null;
     let tipoEvolucao = 'barras';
     let tipoGraficoCategoria = 'barras';
     let lancamentoSelecionadoId = null;
@@ -1294,12 +1306,13 @@
     }
 
     function popularSelectsContas() {
+      const ordenadas = contas.slice().sort((a, b) => (b.favorita ? 1 : 0) - (a.favorita ? 1 : 0));
       ['conta', 'origemAporte', 'contaFixo'].forEach(idSel => {
         const sel = document.getElementById(idSel);
         if (!sel) return;
         const atual = sel.value;
         sel.innerHTML = '';
-        contas.forEach(c => {
+        ordenadas.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.nome;
           opt.textContent = c.nome;
@@ -1311,12 +1324,33 @@
 
     // CATEGORIAS DINÂMICAS
     const CATEGORIAS_PADRAO = ['Alimentação', 'Transporte', 'Viagens ✈️', 'Lazer', 'Saúde', 'Investimento', 'Outros'];
+    const STORAGE_KEY_CATEGORIAS_FAV = "meu_financeiro_categorias_favoritas_v1";
+    let categoriasFavoritas = [];
 
     function salvarCategorias() { localStorage.setItem(STORAGE_KEY_CATEGORIAS, JSON.stringify(categorias)); }
     function carregarCategorias() {
       const d = localStorage.getItem(STORAGE_KEY_CATEGORIAS);
       if (d) { try { categorias = JSON.parse(d) || []; } catch (e) { categorias = []; } }
       if (!Array.isArray(categorias) || categorias.length === 0) categorias = CATEGORIAS_PADRAO.slice();
+      const df = localStorage.getItem(STORAGE_KEY_CATEGORIAS_FAV);
+      if (df) { try { categoriasFavoritas = JSON.parse(df) || []; } catch (e) { categoriasFavoritas = []; } }
+    }
+
+    function salvarCategoriasFavoritas() { localStorage.setItem(STORAGE_KEY_CATEGORIAS_FAV, JSON.stringify(categoriasFavoritas)); }
+
+    function alternarFavoritaCategoria(nome) {
+      const i = categoriasFavoritas.indexOf(nome);
+      if (i >= 0) categoriasFavoritas.splice(i, 1);
+      else categoriasFavoritas.push(nome);
+      salvarCategoriasFavoritas();
+      renderizarListaCategorias();
+      popularSelectsCategorias();
+    }
+
+    // Ordena favoritas primeiro, mantendo a ordem de cadastro dentro de cada grupo
+    function categoriasEmOrdem() {
+      return categorias.slice().sort((a, b) =>
+        (categoriasFavoritas.includes(b) ? 1 : 0) - (categoriasFavoritas.includes(a) ? 1 : 0));
     }
 
     function categoriaPadrao() {
@@ -1324,12 +1358,13 @@
     }
 
     function popularSelectsCategorias() {
+      const ordenadas = categoriasEmOrdem();
       ['categoria', 'categoriaFixo'].forEach(idSel => {
         const sel = document.getElementById(idSel);
         if (!sel) return;
         const atual = sel.value;
         sel.innerHTML = '';
-        categorias.forEach(c => {
+        ordenadas.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c;
           opt.textContent = c;
@@ -1613,16 +1648,29 @@
       document.getElementById('modalContas').classList.remove('escondido');
     }
 
+    // Conta/categoria favorita sobe pro topo dos seletores do formulário — quem
+    // usa sempre a mesma conta ou categoria não precisa mais rolar a lista toda
+    // vez. A ordem de cadastro continua sendo o critério de desempate.
+    function alternarFavoritaConta(id) {
+      const c = contas.find(x => x.id === id);
+      if (!c) return;
+      c.favorita = !c.favorita;
+      salvarContas();
+      renderizarListaContas();
+      popularSelectsContas();
+    }
+
     function renderizarListaContas() {
       const box = document.getElementById('listaContasGerenciar');
       box.innerHTML = '';
-      contas.forEach(c => {
+      contas.slice().sort((a, b) => (b.favorita ? 1 : 0) - (a.favorita ? 1 : 0)).forEach(c => {
         const div = document.createElement('div');
         div.className = 'item-lancamento';
         div.style.cursor = 'default';
         div.innerHTML = `
           <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 fecha dia ' + diasDoCartao(c.nome).fecha + ' · vence dia ' + diasDoCartao(c.nome).vence : 'sem cartão de crédito'}</div></div>
           <div class="item-acoes">
+            <button class="btn-acao" onclick="alternarFavoritaConta('${c.id}')" title="${c.favorita ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="padding:8px 6px;line-height:0;color:${c.favorita ? '#ffd166' : '#8a8a8a'};font-size:16px;">${c.favorita ? '★' : '☆'}</button>
             <button class="btn-acao" onclick="editarConta('${c.id}')" title="Editar" aria-label="Editar" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
             <button class="btn-acao" onclick="excluirConta('${c.id}')" title="Excluir" aria-label="Excluir" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>`;
@@ -1739,13 +1787,16 @@
     function renderizarListaCategorias() {
       const box = document.getElementById('listaCategoriasGerenciar');
       box.innerHTML = '';
-      categorias.forEach((nome, idx) => {
+      categoriasEmOrdem().forEach(nome => {
+        const idx = categorias.indexOf(nome);
+        const fav = categoriasFavoritas.includes(nome);
         const div = document.createElement('div');
         div.className = 'item-lancamento';
         div.style.cursor = 'default';
         div.innerHTML = `
           <div class="item-info"><strong>${nome}</strong></div>
           <div class="item-acoes">
+            <button class="btn-acao" onclick="alternarFavoritaCategoria('${nome.replace(/'/g, "\\'")}')" title="${fav ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="padding:8px 6px;line-height:0;color:${fav ? '#ffd166' : '#8a8a8a'};font-size:16px;">${fav ? '★' : '☆'}</button>
             <button class="btn-acao" onclick="editarCategoria(${idx})" title="Editar" aria-label="Editar" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
             <button class="btn-acao" onclick="excluirCategoria(${idx})" title="Excluir" aria-label="Excluir" style="padding:8px 6px;line-height:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06060" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>`;
@@ -1792,6 +1843,8 @@
             delete orcamentosCategoria[nomeAntigo];
             salvarOrcamentos();
           }
+          const iFav = categoriasFavoritas.indexOf(nomeAntigo);
+          if (iFav >= 0) { categoriasFavoritas[iFav] = nome; salvarCategoriasFavoritas(); }
           categorias[idx] = nome;
         }
       } else {
@@ -1815,6 +1868,8 @@
       categorias.splice(idx, 1);
       delete orcamentosCategoria[nome];
       salvarOrcamentos();
+      const iFav = categoriasFavoritas.indexOf(nome);
+      if (iFav >= 0) { categoriasFavoritas.splice(iFav, 1); salvarCategoriasFavoritas(); }
       salvarCategorias();
       popularSelectsCategorias();
       renderizarListaCategorias();
@@ -3830,10 +3885,6 @@
       return cartoes.map(c => `${c.nome}: ${descrever(c, true)}`).join('  ·  ');
     }
 
-    function alternarDetalheFatura() {
-      document.getElementById('detalheFaturaMes').classList.toggle('escondido');
-    }
-
     // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria,
     // com filtro por conta (segue as contas cadastradas) e toque na linha
     // pra ver os lançamentos daquela categoria/fonte
@@ -3850,18 +3901,23 @@
       const btnAtual = document.getElementById('btnMesAtual');
       if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
 
-      const porConta = {};
+      // saldo líquido por conta no mês: receita soma, despesa subtrai — mesmo
+      // critério de mês de cada lançamento (receita pela data, despesa pela fatura)
+      const porContaNet = {};
       let totalRecebimentos = 0, totalDebito = 0, totalCredito = 0;
       lancamentos.forEach(l => {
         const v = parseVal(l.valor);
         if (l.tipo === 'receita') {
           const d = new Date(l.data + 'T12:00:00');
-          if (d.getMonth() === mes && d.getFullYear() === ano) totalRecebimentos += v;
+          if (d.getMonth() === mes && d.getFullYear() === ano) {
+            totalRecebimentos += v;
+            porContaNet[l.conta] = (porContaNet[l.conta] || 0) + v;
+          }
           return;
         }
         const { mes: mFat, ano: aFat } = getMesFatura(l.data, l.formaModo, l.conta);
         if (mFat === mes && aFat === ano) {
-          porConta[l.conta] = (porConta[l.conta] || 0) + v;
+          porContaNet[l.conta] = (porContaNet[l.conta] || 0) - v;
           if (eCredito(l.formaModo)) totalCredito += v;
           else totalDebito += v;
         }
@@ -3878,11 +3934,9 @@
         else { elFS.textContent = fmtVal(saldoMes); elFR.textContent = fmtVal(totalRecebimentos); elFD.textContent = fmtVal(totalDespMes); }
       }
 
-      document.getElementById('detalheFaturaMes').innerHTML = `
-        <div class="linha-subtotal" onclick="exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebimentos do mês</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
-        <div class="linha-subtotal" onclick="exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Gastos em débito/à vista</span><strong style="color:#ef5350;">${fmtOculto(totalDebito)}</strong></div>
-        <div class="linha-subtotal" onclick="exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Gastos no cartão de crédito</span><strong style="color:#ef5350;">${fmtOculto(totalCredito)}</strong></div>
-      `;
+      // guardado pra montar o popup só quando abrir (abrirModalResumoFatura),
+      // sem duplicar o trabalho de calcular tudo de novo
+      resumoFaturaAtual = { mes, ano, totalRecebimentos, totalDebito, totalCredito, porContaNet };
 
       container.innerHTML = '';
 
@@ -3917,6 +3971,37 @@
       renderizarEmprestimos();
       renderizarPagamentoFaturas();
       atualizarResumosDeCabecalho();
+    }
+
+    // Popup enxuto do "Saldo do mês": os 3 totais de sempre + quanto cada conta
+    // rendeu líquido no mês (receita menos despesa daquela conta). Sem os filtros
+    // de período/categoria do modal de Gráficos — aqui é só o resumo, rápido.
+    function abrirModalResumoFatura() {
+      if (!resumoFaturaAtual) return;
+      const { mes, ano, totalRecebimentos, totalDebito, totalCredito, porContaNet } = resumoFaturaAtual;
+      document.getElementById('tituloResumoFatura').textContent = 'Resumo de ' + NOMES_MESES[mes];
+
+      const linhasConta = Object.entries(porContaNet)
+        .sort((a, b) => b[1] - a[1])
+        .map(([conta, net]) => `
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('conta', ${mes}, ${ano}, '${conta.replace(/'/g, "\\'")}')">
+            <span>${conta}</span>
+            <strong style="color:${net >= 0 ? '#4caf50' : '#ef5350'};">${net >= 0 ? '+' : ''}${fmtOculto(net)}</strong>
+          </div>
+        `).join('');
+
+      document.getElementById('corpoResumoFatura').innerHTML = `
+        <div class="box-resumo-modal" style="margin-bottom:14px;">
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebimentos do mês</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Gastos em débito/à vista</span><strong style="color:#ef5350;">${fmtOculto(totalDebito)}</strong></div>
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Gastos no cartão de crédito</span><strong style="color:#ef5350;">${fmtOculto(totalCredito)}</strong></div>
+        </div>
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
+        <div class="box-resumo-modal" style="margin-top:6px;">
+          ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
+        </div>
+      `;
+      document.getElementById('modalResumoFatura').classList.remove('escondido');
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -4667,7 +4752,7 @@
       atualizarTudo();
     }
 
-    function exibirLancamentosDetalhadosFatura(tipoFiltro, mes, ano) {
+    function exibirLancamentosDetalhadosFatura(tipoFiltro, mes, ano, contaNome) {
       const modal = document.getElementById('modalPanorama');
       const titulo = document.getElementById('modalTitulo');
       const corpo = document.getElementById('modalCorpo');
@@ -4694,11 +4779,22 @@
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
           return l.tipo === 'despesa' && !eCredito(l.formaModo) && m === mes && a === ano;
         });
-      } else {
+      } else if (tipoFiltro === 'credito') {
         titulo.textContent = 'Fatura Crédito de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
           return l.tipo === 'despesa' && eCredito(l.formaModo) && m === mes && a === ano;
+        });
+      } else if (tipoFiltro === 'conta') {
+        titulo.textContent = contaNome + ' em ' + NOMES_MESES[mes];
+        filtrados = lancamentos.filter(l => {
+          if (l.conta !== contaNome) return false;
+          if (l.tipo === 'receita') {
+            const d = new Date(l.data + 'T12:00:00');
+            return d.getMonth() === mes && d.getFullYear() === ano;
+          }
+          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
+          return m === mes && a === ano;
         });
       }
 
@@ -5733,7 +5829,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.08-4';
+    const APP_VERSION = '2026.08.08-5';
 
     // Inicialização
     carregarLocalStorage();
