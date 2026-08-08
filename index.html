@@ -136,6 +136,11 @@
     .btn-acao { background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 14px; padding: 4px; }
     .valor-receita { color: #4caf50; font-weight: bold; white-space: nowrap; }
     .valor-despesa { color: #ef5350; font-weight: bold; white-space: nowrap; }
+    .linha-ordem-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #2a2a2a; font-size: 13.5px; }
+    .linha-ordem-card:last-child { border-bottom: none; }
+    .btn-seta-ordem { width: 30px; height: 30px; border: 1px solid #333; background: #1a1a1a; color: #ccc; border-radius: 7px; font-size: 12px; cursor: pointer; }
+    .btn-seta-ordem:disabled { opacity: 0.3; cursor: default; }
+
     .chips-antecedencia { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #aaa; font-size: 12.5px; cursor: pointer; }
     .chip-antec.on { border-color: #ffd166; color: #ffd166; background: rgba(255,209,102,.1); }
@@ -297,6 +302,7 @@
       <button class="nav-tab" onclick="mudarAba('abaGraficos', this)">Gráficos</button>
       <button class="nav-tab" onclick="mudarAba('abaGrupos', this)">Grupos</button>
       <button class="nav-tab" onclick="mudarAba('abaInvestimentos', this)">Investim.</button>
+      <button class="nav-tab" onclick="mudarAba('abaConfig', this)">Ajustes</button>
     </div>
 
     <div id="abaLancamentos" class="aba-conteudo ativo">
@@ -331,10 +337,7 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;">
-                <label for="conta">Conta / Cartão</label>
-                <button type="button" class="btn-gerenciar-txt" onclick="abrirModalContas()">gerenciar</button>
-              </div>
+              <label for="conta">Conta / Cartão</label>
               <select id="conta" name="conta" onchange="atualizarVisibilidadeForma()"></select>
             </div>
             <div class="form-group" id="grupoFormaModo">
@@ -359,10 +362,7 @@
           </div>
           <div class="form-row">
             <div class="form-group" id="grupoCategoria">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;">
-                <label for="categoria">Categoria</label>
-                <button type="button" class="btn-gerenciar-txt" onclick="abrirModalCategorias()">gerenciar</button>
-              </div>
+              <label for="categoria">Categoria</label>
               <select id="categoria" name="categoria"></select>
             </div>
             <div class="form-group">
@@ -428,7 +428,7 @@
       </div>
 
       <!-- LANÇAMENTOS DO MÊS SELECIONADO (retrátil, aberto por padrão) -->
-      <div class="card">
+      <div class="card" data-card="lancamentosMes" data-card-titulo="Lançamentos">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('lancamentosMes')">
           <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
           <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
@@ -447,7 +447,7 @@
       </div>
 
       <!-- PAGAMENTO DA FATURA (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="pagamentoFatura" data-card-titulo="Fatura do cartão">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('pagamentoFatura')">
           <h3 style="font-size:16px;">Fatura do cartão <span id="badgeFatura" style="font-size:13px;font-weight:400;"></span></h3>
           <span class="chevron-sec" id="chevron-pagamentoFatura">▸</span>
@@ -459,7 +459,7 @@
       </div>
 
       <!-- EMPRÉSTIMOS (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="emprestimos" data-card-titulo="Empréstimos">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('emprestimos')">
           <h3 style="font-size:16px;">Empréstimos <span id="badgeEmprestimos" style="font-size:13px;font-weight:400;color:#ffd166;"></span></h3>
           <span class="chevron-sec" id="chevron-emprestimos">▸</span>
@@ -473,7 +473,7 @@
       </div>
 
       <!-- GASTOS FIXOS (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="fixos" data-card-titulo="Gastos fixos mensais">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('fixos')">
           <h3 style="font-size:16px;">Gastos fixos mensais <span id="badgeFixos" style="font-size:13px;font-weight:400;color:#ffd166;"></span></h3>
           <span class="chevron-sec" id="chevron-fixos">▸</span>
@@ -486,7 +486,7 @@
       </div>
 
       <!-- BACKUP E RESTAURAÇÃO (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="backup" data-card-titulo="Backup e restauração">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('backup')">
           <h3 style="font-size:16px;">Backup e restauração</h3>
           <span class="chevron-sec" id="chevron-backup">▸</span>
@@ -575,7 +575,7 @@
       </div>
 
       <!-- INDICADORES E INSIGHTS (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="indicadores" data-card-titulo="Indicadores do período">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Indicadores do período</h3>
@@ -607,7 +607,7 @@
       </div>
 
       <!-- GASTO POR DIA DA SEMANA (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="gastoDiaSemana" data-card-titulo="Gasto por dia da semana">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('gastoDiaSemana')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Gasto por dia da semana</h3>
@@ -621,7 +621,7 @@
       </div>
 
       <!-- EVOLUÇÃO MENSAL (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="evolucaoMensal" data-card-titulo="Evolução mensal">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('evolucaoMensal')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Evolução mensal</h3>
@@ -639,7 +639,7 @@
       </div>
 
       <!-- RANKING DE MAIORES GASTOS (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="rankingGastos" data-card-titulo="Maiores gastos">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('rankingGastos')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Maiores gastos</h3>
@@ -653,7 +653,7 @@
       </div>
 
       <!-- COMPROMETIDO FUTURO (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="comprometidoFuturo" data-card-titulo="Comprometido nos próximos meses">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('comprometidoFuturo')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Comprometido nos próximos meses</h3>
@@ -668,7 +668,7 @@
       </div>
 
       <!-- METAS POR CATEGORIA (retrátil) -->
-      <div class="card">
+      <div class="card" data-card="metas" data-card-titulo="Metas por categoria">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="color:#ffd166;">Metas por categoria</h3>
@@ -714,6 +714,29 @@
           <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
         </div>
         <div id="listaGrupos"></div>
+      </div>
+    </div>
+
+    <div id="abaConfig" class="aba-conteudo">
+      <div class="card">
+        <h3 style="margin-bottom:10px;">Contas e categorias</h3>
+        <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
+          <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:4px;">Ordem dos cards — Faturas</h3>
+        <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Os outros, você escolhe a ordem.</p>
+        <div id="ordemCardsAbaFaturas"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:4px;">Ordem dos cards — Gráficos</h3>
+        <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O gráfico principal fica sempre no topo. Os outros, você escolhe a ordem.</p>
+        <div id="ordemCardsAbaGraficos"></div>
       </div>
     </div>
   </div>
@@ -1345,6 +1368,66 @@
       uiPrefs['secao_' + nome] = !(uiPrefs['secao_' + nome] === true);
       salvarUiPrefs();
       aplicarSecao(nome);
+    }
+
+    /* ORDEM DOS CARDS (aba Ajustes)
+       Cada card reordenável leva um atributo data-card com uma chave curta. A ordem
+       escolhida fica em uiPrefs.ordemCards[idAba], como uma lista dessas chaves.
+       Cards fora da lista (ex: adicionados depois numa atualização) só entram no
+       final, na ordem em que já estavam no HTML — nunca somem. */
+    function chavesCardsDaAba(idAba) {
+      return [...document.querySelectorAll('#' + idAba + ' > [data-card]')].map(el => el.dataset.card);
+    }
+
+    function aplicarOrdemCards(idAba) {
+      const aba = document.getElementById(idAba);
+      if (!aba) return;
+      const salva = (uiPrefs.ordemCards && uiPrefs.ordemCards[idAba]) || [];
+      const presentes = chavesCardsDaAba(idAba);
+      const ordem = salva.filter(c => presentes.includes(c))
+        .concat(presentes.filter(c => !salva.includes(c)));
+      ordem.forEach(chave => {
+        const el = aba.querySelector(':scope > [data-card="' + chave + '"]');
+        if (el) aba.appendChild(el); // mover um filho existente reordena, não duplica
+      });
+    }
+
+    function moverCard(idAba, chave, delta) {
+      const ordemAtual = uiPrefs.ordemCards && uiPrefs.ordemCards[idAba] && uiPrefs.ordemCards[idAba].length
+        ? uiPrefs.ordemCards[idAba].slice()
+        : chavesCardsDaAba(idAba);
+      const i = ordemAtual.indexOf(chave);
+      const j = i + delta;
+      if (i === -1 || j < 0 || j >= ordemAtual.length) return;
+      [ordemAtual[i], ordemAtual[j]] = [ordemAtual[j], ordemAtual[i]];
+      if (!uiPrefs.ordemCards) uiPrefs.ordemCards = {};
+      uiPrefs.ordemCards[idAba] = ordemAtual;
+      salvarUiPrefs();
+      aplicarOrdemCards(idAba);
+      renderizarOrdemCards(idAba);
+    }
+
+    function renderizarOrdemCards(idAba) {
+      const container = document.getElementById('ordemCards' + idAba.replace('aba', 'Aba'));
+      if (!container) return;
+      const chaves = (uiPrefs.ordemCards && uiPrefs.ordemCards[idAba] && uiPrefs.ordemCards[idAba].length)
+        ? uiPrefs.ordemCards[idAba]
+        : chavesCardsDaAba(idAba);
+      container.innerHTML = '';
+      chaves.forEach((chave, idx) => {
+        const el = document.querySelector('#' + idAba + ' > [data-card="' + chave + '"]');
+        const titulo = el ? el.dataset.cardTitulo : chave;
+        const linha = document.createElement('div');
+        linha.className = 'linha-ordem-card';
+        linha.innerHTML = `
+          <span>${titulo}</span>
+          <div style="display:flex;gap:4px;">
+            <button type="button" class="btn-seta-ordem" ${idx === 0 ? 'disabled' : ''} onclick="moverCard('${idAba}','${chave}',-1)" aria-label="Subir">▲</button>
+            <button type="button" class="btn-seta-ordem" ${idx === chaves.length - 1 ? 'disabled' : ''} onclick="moverCard('${idAba}','${chave}',1)" aria-label="Descer">▼</button>
+          </div>
+        `;
+        container.appendChild(linha);
+      });
     }
 
     // OBSERVAÇÃO DISCRETA (link abaixo da descrição + janelinha)
@@ -2187,6 +2270,7 @@
       if (idAba === 'abaInvestimentos') renderizarInvestimentos();
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
+      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); }
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -5649,7 +5733,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.08-2';
+    const APP_VERSION = '2026.08.08-3';
 
     // Inicialização
     carregarLocalStorage();
@@ -5666,6 +5750,8 @@ function confirmarLancamentoVoz() {
     carregarCategorias();
     popularSelectsCategorias();
     carregarUiPrefs();
+    aplicarOrdemCards('abaFaturas');
+    aplicarOrdemCards('abaGraficos');
     aplicarSecao('indicadores');
     aplicarSecao('metas');
     aplicarSecao('fixos');
