@@ -41,9 +41,15 @@
   justify-content: center;
   transition: transform 0.2s, background-color 0.2s;
 }
-.mic-animando { 
-  animation: pulseMic 1.5s infinite; 
-  background-color: #ef5350 !important; 
+/* Mesmo microfone do lançamento, em tamanho de botão de linha */
+.btn-mic-pergunta {
+  flex: 0 0 auto; width: 38px; height: 38px; border: none; border-radius: 8px;
+  background-color: #2196f3; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; line-height: 0; transition: transform .2s, background-color .2s;
+}
+.mic-animando {
+  animation: pulseMic 1.5s infinite;
+  background-color: #ef5350 !important;
 }
 @keyframes pulseMic { 
   0% { transform: scale(1); } 
@@ -395,12 +401,13 @@
 
       <div class="card">
         <h3 style="margin-bottom:8px;font-size:14px;">Pergunte sobre seus gastos</h3>
-        <p style="font-size:11px;color:#666;margin-bottom:10px;">Ex: "quanto gastei de Uber no mês passado", "fatura do mês que vem", "total de fixos no cartão"</p>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="inputPergunta" placeholder="Digite sua pergunta..." style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
+        <p style="font-size:11px;color:#666;margin-bottom:10px;">Digite ou toque no microfone. Ex: "onde gastei mais esta semana", "quem me deve", "quanto sobrou em julho", "parcelas em aberto"</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="inputPergunta" placeholder="Digite ou fale sua pergunta..." style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
+          <button type="button" id="btnMicPergunta" class="btn-mic-pergunta" onclick="ditarPergunta()" title="Falar a pergunta" aria-label="Falar a pergunta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
           <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
         </div>
-        <p id="respostaPergunta" style="font-size:13px;margin-top:10px;color:#aaa;"></p>
+        <p id="respostaPergunta" style="font-size:13px;margin-top:10px;color:#aaa;line-height:1.55;"></p>
       </div>
     </div>
 
@@ -4041,53 +4048,293 @@
       } else if (/mês que vem|mes que vem|próximo mês|proximo mes/.test(texto)) {
         mes += 1; if (mes > 11) { mes = 0; ano += 1; }
       } else {
-        const idxMes = NOMES_MESES.findIndex(m => texto.includes(m.toLowerCase()));
+        // \b nas pontas: sem isso "maior gasto" casava com "maio" e a resposta
+        // vinha de um mês que ninguém pediu
+        const idxMes = NOMES_MESES.findIndex(m =>
+          new RegExp('\\b' + semAcento(m) + '\\b').test(semAcento(texto)));
         if (idxMes !== -1) mes = idxMes;
       }
       return { mes, ano };
     }
 
-    function responderPergunta() {
+    // Trechos que dizem QUANDO, não O QUÊ. Saem do texto antes de procurar o termo
+    // da busca, senão "gastei com uber esta semana" procura por "semana".
+    const RE_TERMOS_DE_PERIODO = /\b(hoje|ontem|anteontem|esta|essa|nesta|nessa|ultima|ultimo|semana|mes|meses|ano|anos|passado|passada|que vem|proximo|proxima|dia|dias|desde|inicio|sempre|total|ate|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/g;
+
+    /* PERGUNTAS SOBRE OS GASTOS
+       Não é um modelo de linguagem: é um conjunto de padrões lidos em ordem, do
+       mais específico pro mais genérico. Cada bloco sabe responder um tipo de
+       pergunta e devolve texto pronto. Quando nada casa, o app diz o que sabe
+       responder em vez de só dizer "não entendi". */
+
+    // Janela de tempo da pergunta. Devolve um teste (data => bool) e o rótulo pra
+    // resposta, porque "em agosto" e "nos últimos 7 dias" são recortes diferentes.
+    function periodoDaPergunta(texto) {
+      const hojeStr = obterDataBrasilia();
+      const hoje = new Date(hojeStr + 'T12:00:00');
+      const diasAtras = n => { const d = new Date(hoje); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+
+      if (/\bhoje\b/.test(texto))
+        return { teste: d => d === hojeStr, rotulo: 'hoje', mes: hoje.getMonth(), ano: hoje.getFullYear() };
+      if (/\bontem\b/.test(texto)) {
+        const o = diasAtras(1);
+        return { teste: d => d === o, rotulo: 'ontem', mes: hoje.getMonth(), ano: hoje.getFullYear() };
+      }
+      if (/(esta|essa|nesta|nessa|ultima|última)\s+semana|7 dias|sete dias/.test(texto)) {
+        const ini = diasAtras(7);
+        return { teste: d => d >= ini && d <= hojeStr, rotulo: 'nos últimos 7 dias', mes: hoje.getMonth(), ano: hoje.getFullYear() };
+      }
+      if (/30 dias|trinta dias/.test(texto)) {
+        const ini = diasAtras(30);
+        return { teste: d => d >= ini && d <= hojeStr, rotulo: 'nos últimos 30 dias', mes: hoje.getMonth(), ano: hoje.getFullYear() };
+      }
+      if (/(este|esse|neste|nesse)\s+ano|no ano/.test(texto)) {
+        const a = hoje.getFullYear();
+        return { teste: d => d.slice(0, 4) === String(a) && d <= hojeStr, rotulo: 'neste ano', mes: hoje.getMonth(), ano: a, anoTodo: true };
+      }
+      if (/desde o inicio|desde o início|sempre|no total|ate hoje|até hoje/.test(texto))
+        return { teste: d => d <= hojeStr, rotulo: 'desde o início', mes: hoje.getMonth(), ano: hoje.getFullYear(), tudo: true };
+
+      // padrão: um mês (o atual, ou o que a frase indicar)
+      const { mes, ano } = extrairMesPergunta(texto);
+      const alvo = String(ano) + '-' + String(mes + 1).padStart(2, '0');
+      return { teste: d => d.slice(0, 7) === alvo, rotulo: 'em ' + NOMES_MESES[mes], mes, ano, mesUnico: true };
+    }
+
+    function despesasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'despesa' && p.teste(l.data)); }
+    function receitasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'receita' && p.teste(l.data)); }
+    const somar = lista => lista.reduce((s, l) => s + parseVal(l.valor), 0);
+
+    function responderPergunta(textoDitado) {
       const input = document.getElementById('inputPergunta');
       const respEl = document.getElementById('respostaPergunta');
       if (!input || !respEl) return;
-      const texto = (input.value || '').toLowerCase().trim();
+      if (textoDitado) input.value = textoDitado;
+      const texto = semAcento(input.value || '').trim();
       if (!texto) return;
 
-      const { mes, ano } = extrairMesPergunta(texto);
-      const nomeMes = NOMES_MESES[mes];
-      let resposta = null;
+      const p = periodoDaPergunta(texto);
+      const resposta = montarRespostaPergunta(texto, p);
 
-      if (/fatura/.test(texto)) {
-        const total = lancamentos
-          .filter(l => l.tipo === 'despesa' && eCredito(l.formaModo))
-          .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === mes && f.ano === ano; })
-          .reduce((s, l) => s + parseVal(l.valor), 0);
-        resposta = `Fatura de ${nomeMes}: ${fmtOculto(total)}`;
-      } else if (/fixo/.test(texto)) {
-        const noCartao = /cart[ãa]o|cr[ée]dito/.test(texto);
-        const lista = noCartao ? fixos.filter(f => eCredito(f.formaModo) || contaTemCredito(f.conta)) : fixos;
-        const total = lista.reduce((s, f) => s + parseVal(f.valor), 0);
-        resposta = `Total de gastos fixos${noCartao ? ' no cartão' : ''}: ${fmtOculto(total)} (${lista.length} ${lista.length === 1 ? 'item' : 'itens'})`;
-      } else if (/gast/.test(texto)) {
-        const catAchada = categorias.find(c => texto.includes(c.toLowerCase()));
-        let termo = catAchada ? catAchada.toLowerCase() : null;
-        if (!termo) {
-          const palavras = texto.replace(/[?.,!]/g, '').split(/\s+/).filter(p => p && !PALAVRAS_IGNORAR_PERGUNTA.has(p));
-          termo = palavras.length ? palavras[palavras.length - 1] : null;
-        }
-        if (termo) {
-          const total = lancamentos
-            .filter(l => l.tipo === 'despesa')
-            .filter(l => (l.categoria || '').toLowerCase().includes(termo) || (l.descricao || '').toLowerCase().includes(termo))
-            .filter(l => { const d = new Date(l.data + 'T12:00:00'); return d.getMonth() === mes && d.getFullYear() === ano; })
-            .reduce((s, l) => s + parseVal(l.valor), 0);
-          resposta = `Gasto com "${termo}" em ${nomeMes}: ${fmtOculto(total)}`;
-        }
+      respEl.innerHTML = resposta
+        ? resposta
+        : 'Não entendi. Dá pra perguntar sobre: <b>fatura</b>, <b>gastos fixos</b>, <b>quanto gastei</b> (com qualquer categoria, loja ou conta), <b>quanto recebi</b>, <b>saldo</b>, <b>quem me deve</b>, <b>maior gasto</b>, <b>onde gastei mais</b>, <b>quanto sobrou</b> ou <b>parcelas em aberto</b>. Pode incluir o período: "em julho", "esta semana", "neste ano".';
+      respEl.style.color = resposta ? '#ddd' : '#aaa';
+    }
+
+    function montarRespostaPergunta(texto, p) {
+      const R = p.rotulo;
+
+      // --- empréstimos: quem me deve / quanto eu devo ---
+      if (/(quem|quanto).*(me deve|devem|dever)|a receber|emprestei/.test(texto)) {
+        const aReceber = cobrancasAbertas().filter(c => !c.devo);
+        if (!aReceber.length) return 'Ninguém está te devendo nada no momento.';
+        const total = aReceber.reduce((s, c) => s + c.valor, 0);
+        const porPessoa = {};
+        aReceber.forEach(c => { porPessoa[c.nome] = (porPessoa[c.nome] || 0) + c.valor; });
+        const linhas = Object.entries(porPessoa).sort((a, b) => b[1] - a[1])
+          .map(([n, v]) => `• ${n}: ${fmtOculto(v)}`).join('<br>');
+        return `Tem <b>${fmtOculto(total)}</b> pra receber:<br>${linhas}`;
+      }
+      if (/(quanto|o que).*(eu devo|estou devendo)|minhas dividas|minhas dívidas/.test(texto)) {
+        const aPagar = cobrancasAbertas().filter(c => c.devo);
+        if (!aPagar.length) return 'Você não está devendo nada registrado aqui.';
+        const total = aPagar.reduce((s, c) => s + c.valor, 0);
+        const porPessoa = {};
+        aPagar.forEach(c => { porPessoa[c.nome] = (porPessoa[c.nome] || 0) + c.valor; });
+        return `Você deve <b>${fmtOculto(total)}</b>:<br>` +
+          Object.entries(porPessoa).sort((a, b) => b[1] - a[1]).map(([n, v]) => `• ${n}: ${fmtOculto(v)}`).join('<br>');
       }
 
-      respEl.textContent = resposta || 'Não entendi essa pergunta ainda. Tente algo como: "quanto gastei de Uber no mês passado", "fatura do mês que vem" ou "total de fixos no cartão".';
-      respEl.style.color = resposta ? '#4caf50' : '#aaa';
+      // --- fatura do cartão ---
+      if (/fatura/.test(texto)) {
+        const doMes = lancamentos.filter(l => l.tipo === 'despesa' && eCredito(l.formaModo))
+          .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === p.mes && f.ano === p.ano; });
+        const total = somar(doMes);
+        if (!total) return `Nenhuma compra no crédito na fatura de ${NOMES_MESES[p.mes]}.`;
+        const porCartao = {};
+        doMes.forEach(l => { porCartao[l.conta] = (porCartao[l.conta] || 0) + parseVal(l.valor); });
+        const detalhe = Object.keys(porCartao).length > 1
+          ? '<br>' + Object.entries(porCartao).sort((a, b) => b[1] - a[1]).map(([c, v]) => `• ${c}: ${fmtOculto(v)}`).join('<br>')
+          : '';
+        return `Fatura de ${NOMES_MESES[p.mes]}: <b>${fmtOculto(total)}</b> em ${doMes.length} compras.${detalhe}`;
+      }
+
+      // --- gastos fixos ---
+      if (/fixo|assinatura|mensalidade/.test(texto)) {
+        const noCartao = /cartao|credito/.test(texto);
+        const lista = noCartao ? fixos.filter(f => eCredito(formaModoDoFixo(f))) : fixos;
+        if (!lista.length) return 'Nenhum gasto fixo cadastrado ainda.';
+        const total = lista.reduce((s, f) => s + parseVal(f.valor), 0);
+        const maiores = lista.slice().sort((a, b) => parseVal(b.valor) - parseVal(a.valor)).slice(0, 3)
+          .map(f => `• ${f.descricao}: ${fmtOculto(parseVal(f.valor))}`).join('<br>');
+        return `Gastos fixos${noCartao ? ' no cartão' : ''}: <b>${fmtOculto(total)}/mês</b> em ${lista.length} ${lista.length === 1 ? 'item' : 'itens'}.<br>${maiores}`;
+      }
+
+      // --- parcelas / comprometido ---
+      if (/parcel|comprometid|devendo no cartao|faltam pagar/.test(texto)) {
+        const hoje = obterDataBrasilia();
+        const futuras = lancamentos.filter(l => l.tipo === 'despesa' && l.grupoId && l.data > hoje);
+        if (!futuras.length) return 'Nenhuma parcela em aberto pra frente.';
+        const porMes = {};
+        futuras.forEach(l => { const k = l.data.slice(0, 7); porMes[k] = (porMes[k] || 0) + parseVal(l.valor); });
+        const linhas = Object.entries(porMes).sort().slice(0, 4)
+          .map(([k, v]) => { const [a, m] = k.split('-'); return `• ${NOMES_MESES[+m - 1]}: ${fmtOculto(v)}`; }).join('<br>');
+        return `Tem <b>${fmtOculto(somar(futuras))}</b> em ${futuras.length} parcelas ainda por vir:<br>${linhas}`;
+      }
+
+      // --- receitas ---
+      if (/quanto.*(recebi|ganhei|entrou)|minhas receitas|renda/.test(texto)) {
+        const rec = receitasDaPergunta(p);
+        if (!rec.length) return `Nenhuma receita registrada ${R}.`;
+        const porFonte = {};
+        rec.forEach(l => { porFonte[l.descricao] = (porFonte[l.descricao] || 0) + parseVal(l.valor); });
+        const linhas = Object.entries(porFonte).sort((a, b) => b[1] - a[1]).slice(0, 4)
+          .map(([n, v]) => `• ${n}: ${fmtOculto(v)}`).join('<br>');
+        return `Recebi <b>${fmtOculto(somar(rec))}</b> ${R}:<br>${linhas}`;
+      }
+
+      // --- saldo / sobrou ---
+      if (/saldo|sobrou|sobra|quanto tenho|no azul|no vermelho/.test(texto)) {
+        const rec = somar(receitasDaPergunta(p)), desp = somar(despesasDaPergunta(p));
+        const saldo = rec - desp;
+        return `${R.charAt(0).toUpperCase() + R.slice(1)}: entrou ${fmtOculto(rec)}, saiu ${fmtOculto(desp)}.<br>` +
+          `Saldo: <b style="color:${saldo >= 0 ? '#4caf50' : '#ef5350'};">${fmtOculto(saldo)}</b>`;
+      }
+
+      // --- maior gasto ---
+      if (/maior gasto|gasto mais caro|maior despesa|gastei mais em (que|qual)?/.test(texto) && !/onde|categoria/.test(texto)) {
+        const desp = despesasDaPergunta(p);
+        if (!desp.length) return `Nenhuma despesa ${R}.`;
+        const maior = desp.slice().sort((a, b) => parseVal(b.valor) - parseVal(a.valor))[0];
+        return `Maior gasto ${R}: <b>${maior.descricao}</b>, ${fmtOculto(parseVal(maior.valor))} (${maior.data.split('-').reverse().join('/')}, ${maior.conta}).`;
+      }
+
+      // --- onde gastei mais / ranking de categorias ---
+      if (/onde.*(gast|foi)|com o que|top|ranking|categorias|resumo|panorama/.test(texto)) {
+        const desp = despesasDaPergunta(p);
+        if (!desp.length) return `Nenhuma despesa ${R}.`;
+        const porCat = {};
+        desp.forEach(l => { const c = l.categoria || 'Outros'; porCat[c] = (porCat[c] || 0) + parseVal(l.valor); });
+        const total = somar(desp);
+        const linhas = Object.entries(porCat).sort((a, b) => b[1] - a[1]).slice(0, 5)
+          .map(([c, v]) => `• ${c}: ${fmtOculto(v)} (${Math.round(v / total * 100)}%)`).join('<br>');
+        return `Gastei <b>${fmtOculto(total)}</b> ${R}:<br>${linhas}`;
+      }
+
+      // --- média por dia ---
+      if (/media|média|por dia|diario|diária/.test(texto)) {
+        const desp = despesasDaPergunta(p);
+        if (!desp.length) return `Nenhuma despesa ${R}.`;
+        const dias = new Set(desp.map(l => l.data)).size || 1;
+        return `${R.charAt(0).toUpperCase() + R.slice(1)}: ${fmtOculto(somar(desp))} em ${dias} ${dias === 1 ? 'dia' : 'dias'} com gasto — média de <b>${fmtOculto(somar(desp) / dias)}</b> por dia.`;
+      }
+
+      // --- comparação com o mês anterior ---
+      if (/(mais|menos) que|comparad|em rela[cç][aã]o/.test(texto)) {
+        const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+        const mesAtual = String(hoje.getFullYear()) + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+        const ant = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+        const mesAnt = String(ant.getFullYear()) + '-' + String(ant.getMonth() + 1).padStart(2, '0');
+        const a = somar(lancamentos.filter(l => l.tipo === 'despesa' && l.data.slice(0, 7) === mesAtual));
+        const b = somar(lancamentos.filter(l => l.tipo === 'despesa' && l.data.slice(0, 7) === mesAnt));
+        if (!b) return `Não tenho despesa registrada em ${NOMES_MESES[ant.getMonth()]} pra comparar.`;
+        const dif = a - b, pct = Math.round(Math.abs(dif) / b * 100);
+        return `${NOMES_MESES[hoje.getMonth()]}: ${fmtOculto(a)} · ${NOMES_MESES[ant.getMonth()]}: ${fmtOculto(b)}<br>` +
+          `Você gastou <b style="color:${dif > 0 ? '#ef5350' : '#4caf50'};">${pct}% ${dif > 0 ? 'a mais' : 'a menos'}</b> (${fmtOculto(Math.abs(dif))}).`;
+      }
+
+      // --- quantos lançamentos ---
+      if (/quantos lancamentos|quantas compras|quantos gastos/.test(texto)) {
+        const desp = despesasDaPergunta(p);
+        return `${desp.length} ${desp.length === 1 ? 'despesa registrada' : 'despesas registradas'} ${R}, somando ${fmtOculto(somar(desp))}.`;
+      }
+
+      // --- grupo de gastos (viagem, rolê) ---
+      const grupoAchado = grupos.find(g => texto.includes(semAcento(g.nome)) ||
+        semAcento(g.nome).split(/\s+/).filter(w => w.length >= 4).some(w => texto.includes(w)));
+      if (grupoAchado) {
+        const r = resumoGrupo(grupoAchado.id);
+        return `<b>${grupoAchado.nome}</b>: lancei ${fmtOculto(r.bruto)}, já me pagaram ${fmtOculto(r.recebido)}.<br>` +
+          `Saiu do seu bolso: <b>${fmtOculto(r.liquido)}</b>` + (r.aReceber > 0 ? ` · ainda a receber ${fmtOculto(r.aReceber)}` : '');
+      }
+
+      // --- gasto por conta/cartão ---
+      const contaAchada = contas.find(c => texto.includes(semAcento(c.nome)));
+      if (contaAchada && /gast|us|paguei/.test(texto)) {
+        const desp = despesasDaPergunta(p).filter(l => l.conta === contaAchada.nome);
+        return `No ${contaAchada.nome} ${R}: <b>${fmtOculto(somar(desp))}</b> em ${desp.length} ${desp.length === 1 ? 'lançamento' : 'lançamentos'}.`;
+      }
+
+      // --- gasto com categoria / loja / termo livre (o caso mais comum) ---
+      if (/gast|paguei|comprei|quanto/.test(texto)) {
+        const catAchada = categorias.find(c => texto.includes(semAcento(c)));
+        let termo = catAchada ? semAcento(catAchada) : null;
+        if (!termo) {
+          const semPeriodo = texto.replace(RE_TERMOS_DE_PERIODO, ' ');
+          const palavras = semPeriodo.replace(/[?.,!]/g, '').split(/\s+/)
+            .filter(w => w && !PALAVRAS_IGNORAR_PERGUNTA.has(w) && w.length > 2);
+          termo = palavras.length ? palavras[palavras.length - 1] : null;
+        }
+        // "quanto gastei hoje" não tem termo nenhum — a pergunta é o total do
+        // período, então responde o total em vez de dizer que não entendeu
+        if (!termo) {
+          const desp = despesasDaPergunta(p);
+          if (!desp.length) return `Nenhuma despesa ${R}.`;
+          const porCat = {};
+          desp.forEach(l => { const c = l.categoria || 'Outros'; porCat[c] = (porCat[c] || 0) + parseVal(l.valor); });
+          const linhas = Object.entries(porCat).sort((a, b) => b[1] - a[1]).slice(0, 3)
+            .map(([c, v]) => `• ${c}: ${fmtOculto(v)}`).join('<br>');
+          return `Gastei <b>${fmtOculto(somar(desp))}</b> ${R}, em ${desp.length} ${desp.length === 1 ? 'lançamento' : 'lançamentos'}:<br>${linhas}`;
+        }
+        const casa = l => semAcento(l.categoria || '').includes(termo) || semAcento(l.descricao || '').includes(termo);
+        const achados = despesasDaPergunta(p).filter(casa);
+        if (!achados.length) return `Não achei nenhuma despesa com "${termo}" ${R}.`;
+        const total = somar(achados);
+        const ultimos = achados.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 3)
+          .map(l => `• ${l.descricao}: ${fmtOculto(parseVal(l.valor))} (${l.data.split('-').reverse().join('/')})`).join('<br>');
+        return `"${termo}" ${R}: <b>${fmtOculto(total)}</b> em ${achados.length} ${achados.length === 1 ? 'lançamento' : 'lançamentos'}.<br>${ultimos}`;
+      }
+
+      return null;
+    }
+
+    /* Ditar a pergunta: mesmo reconhecimento de voz do lançamento, só que a fala
+       vai direto pro campo de pergunta em vez de virar lançamento. */
+    let reconhecimentoPergunta = null;
+
+    function ditarPergunta() {
+      const btn = document.getElementById('btnMicPergunta');
+      if (reconhecimentoPergunta) {
+        try { reconhecimentoPergunta.abort(); } catch (e) { /* já parou */ }
+        reconhecimentoPergunta = null;
+        if (btn) btn.classList.remove('mic-animando');
+        return;
+      }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { alert('Seu navegador não reconhece voz. Use o Chrome ou o Safari atualizados.'); return; }
+
+      const rec = new SR();
+      rec.lang = 'pt-BR';
+      rec.interimResults = true;   // mostra o texto se formando, pra você ver que está ouvindo
+      rec.maxAlternatives = 1;
+      const input = document.getElementById('inputPergunta');
+
+      rec.onstart = () => { if (btn) btn.classList.add('mic-animando'); };
+      rec.onresult = ev => {
+        let txt = '';
+        for (let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+        input.value = txt;
+        if (ev.results[ev.results.length - 1].isFinal) {
+          rec.stop();
+          responderPergunta();
+        }
+      };
+      rec.onerror = () => { reconhecimentoPergunta = null; if (btn) btn.classList.remove('mic-animando'); };
+      rec.onend = () => { reconhecimentoPergunta = null; if (btn) btn.classList.remove('mic-animando'); };
+
+      reconhecimentoPergunta = rec;
+      rec.start();
     }
 
     function mudarMesFatura(delta) {
@@ -5913,6 +6160,30 @@ function semAcento(t) {
   return (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
+/* MEMÓRIA DO HISTÓRICO
+   Procura no que já foi lançado uma descrição que apareça na fala. Confere do
+   lançamento mais recente pro mais antigo e devolve o primeiro que casar — assim
+   se você mudou de cartão pro mercado mês passado, ele usa o novo. Só aceita
+   palavras de 4 letras ou mais, senão "uma", "com" e afins casariam com tudo. */
+function lembrarDoHistorico(fala) {
+  const texto = ' ' + semAcento(fala) + ' ';
+  const recentes = lancamentos
+    .filter(l => l.tipo === 'despesa' && l.descricao)
+    .sort((a, b) => (a.data < b.data ? 1 : -1));
+
+  for (const l of recentes) {
+    const palavras = semAcento(l.descricao)
+      .replace(/\(\d+\/\d+\)/g, '')          // ignora o "(2/6)" das parceladas
+      .split(/[^a-z0-9]+/)
+      .filter(w => w.length >= 4);
+    if (!palavras.length) continue;
+    if (palavras.some(w => texto.includes(' ' + w))) {
+      return { categoria: l.categoria, conta: l.conta, formaModo: l.formaModo };
+    }
+  }
+  return null;
+}
+
 function interpretarFala(fala) {
   let resto = ' ' + semAcento(fala).replace(/\s+/g, ' ').trim() + ' ';
   const original = resto;
@@ -5933,9 +6204,35 @@ function interpretarFala(fala) {
   let valorFormatoPadrao = null;
   // o grupo com pontos precisa de + (e não *): com * ele casava só "240" de "2400"
   // e sobrava um "0" solto que ia parar na descrição
+  // Os centavos ditos por extenso vêm DEPOIS do número: "22 e noventa" é 22,90.
+  // Só valem as palavras que são mesmo número — parar no vocabulário evita que
+  // "22 e noventa no chess" engula a frase inteira como se fosse valor.
+  const centavosPorExtenso = (numTexto, texto) => {
+    const m = texto.match(new RegExp('\\b' + numTexto.replace('.', '\\.') + '\\s+e\\s+([a-z\\s]+)'));
+    if (!m) return null;
+    const palavras = [];
+    for (const w of m[1].trim().split(/\s+/)) {
+      if (NUM_EXTENSO[w] === undefined && w !== 'e') break;
+      palavras.push(w);
+    }
+    if (!palavras.length) return null;
+    const cent = extenseParaNumero(palavras);
+    return (cent > 0 && cent < 100) ? { cent, trecho: ' e ' + palavras.join(' ') } : null;
+  };
+
+  // Os centavos são lidos ANTES de consumir o valor — depois de consumido, o
+  // número já saiu do texto e a busca por "22 e noventa" não acharia mais nada
+  const mBrutoValor = resto.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?)\s*(?:reais|real|conto|contos|mangos|pila)?/);
+  const centavosDetectados = (mBrutoValor && !mBrutoValor[1].includes(','))
+    ? centavosPorExtenso(mBrutoValor[1], resto) : null;
+
   const mValor = achar(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?)\s*(?:reais|real|conto|contos|mangos|pila)?/);
   if (mValor) {
     let v = mValor[1];
+    if (!v.includes(',') && centavosDetectados) {
+      v += ',' + String(centavosDetectados.cent).padStart(2, '0');
+      consumir(centavosDetectados.trecho);
+    }
     if (!v.includes(',')) v += ',00';
     valorFormatoPadrao = v;
   } else {
@@ -5976,10 +6273,14 @@ function interpretarFala(fala) {
   const mParcelas = achar(/\b(?:em\s*)?(\d{1,2})\s*(?:x|vezes|parcelas)\b/);
   if (mParcelas) numParcelasVoz = mParcelas[1];
 
-  if (achar(/\b(dinheiro|especie|em espécie)\b/)) formaModo = 'Dinheiro';
-  else if (achar(/\b(debito|pix|transferencia)\b/)) formaModo = 'À Vista / Débito';
+  // guarda se a forma foi dita em voz alta — o histórico não pode sobrescrever
+  // o que você acabou de falar
+  let faladoExplicito = false;
+  if (achar(/\b(dinheiro|especie|em espécie)\b/)) { formaModo = 'Dinheiro'; faladoExplicito = true; }
+  else if (achar(/\b(debito|pix|transferencia)\b/)) { formaModo = 'À Vista / Débito'; faladoExplicito = true; }
   else if (achar(/\b(credito|cartao|parcelado)\b/) || mParcelas) {
     formaModo = (mParcelas && parseInt(numParcelasVoz, 10) > 1) ? 'Crédito Parcelado' : 'Crédito à Vista';
+    faladoExplicito = true;
   }
   if (formaModo !== 'Crédito Parcelado') numParcelasVoz = '1';
 
@@ -5992,15 +6293,48 @@ function interpretarFala(fala) {
   };
   if (achar(/\banteontem\b/)) data = deslocar(-2);
   else if (achar(/\bontem\b/)) data = deslocar(-1);
-  else achar(/\bhoje\b/);
+  else if (achar(/\bsemana passada\b/)) data = deslocar(-7);
+  else {
+    // "dia 5", "no dia 12" — mês corrente, ou o anterior se a data ainda não chegou
+    const mDia = achar(/\bdia (\d{1,2})\b/);
+    if (mDia) {
+      const dia = parseInt(mDia[1], 10);
+      if (dia >= 1 && dia <= 31) {
+        const hoje = new Date(data + 'T12:00:00');
+        let alvo = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+        if (alvo > hoje) alvo = new Date(hoje.getFullYear(), hoje.getMonth() - 1, dia);
+        data = alvo.toISOString().slice(0, 10);
+      }
+    } else {
+      // "segunda", "sexta passada" — volta pro dia da semana mais recente
+      const DIAS_SEMANA = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 };
+      const mDs = achar(/\b(domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira| feira)?\b/);
+      if (mDs) {
+        const alvoDs = DIAS_SEMANA[mDs[1]];
+        const hoje = new Date(data + 'T12:00:00');
+        let volta = (hoje.getDay() - alvoDs + 7) % 7;
+        if (volta === 0) volta = 7;   // "na segunda" com hoje sendo segunda = a semana passada
+        data = deslocar(-volta);
+      } else achar(/\bhoje\b/);
+    }
+  }
+
+  // --- empréstimo: "emprestei 50 pro Bernardo" / "o Bernardo me deve" ---
+  let emprestimoPara = '';
+  const mEmprestimo = achar(/\b(?:emprestei|emprestado)\s+(?:pro|para o|para a|pra|pro?)\s+([a-z]+)/)
+                   || achar(/\b(?:cobrar|cobra)\s+(?:do|da|de)\s+([a-z]+)/);
+  if (mEmprestimo) emprestimoPara = mEmprestimo[1].charAt(0).toUpperCase() + mEmprestimo[1].slice(1);
 
   // --- categoria: por palavra-chave, sem consumir (a palavra costuma SER a descrição) ---
   let categoria = 'Outros';
-  if (/(mercado|cerveja|cervej|comida|almoco|jantar|lanche|ifood|padaria|bar|restaurante|pizza)/.test(resto)) categoria = 'Alimentação';
-  else if (/(uber|99|onibus|gasolina|estacionamento|pedagio|carro|combustivel)/.test(resto)) categoria = 'Transporte';
-  else if (/(farmacia|remedio|medico|saude|consulta|dentista)/.test(resto)) categoria = 'Saúde';
-  else if (/(viagem|hotel|passagem|aeroporto|airbnb|pousada)/.test(resto)) categoria = 'Viagens ✈️';
-  else if (/(festa|cinema|jogo|ingresso|show|role)/.test(resto)) categoria = 'Lazer';
+  if (/(mercado|supermercado|feira|acougue|hortifruti|cerveja|cervej|comida|almoco|jantar|janta|lanche|ifood|rappi|padaria|bar|restaurante|pizza|hamburguer|churrasco|cafe|sorvete|doce)/.test(resto)) categoria = 'Alimentação';
+  else if (/(uber|99|onibus|metro|trem|gasolina|alcool|estacionamento|pedagio|carro|combustivel|mecanico|oficina|pneu|lavagem|bilhete)/.test(resto)) categoria = 'Transporte';
+  else if (/(farmacia|remedio|medico|saude|consulta|dentista|exame|laboratorio|plano de saude|academia|gympass|psicolog)/.test(resto)) categoria = 'Saúde';
+  else if (/(viagem|hotel|passagem|aeroporto|airbnb|pousada|hostel|excursao|passeio)/.test(resto)) categoria = 'Viagens ✈️';
+  else if (/(festa|cinema|jogo|ingresso|show|role|teatro|bar|balada|netflix|spotify|streaming|assinatura)/.test(resto)) categoria = 'Lazer';
+  else if (/(aluguel|condominio|luz|energia|agua|gas|internet|wifi|faxina|movel|reforma|casa)/.test(resto)) categoria = 'Casa';
+  else if (/(roupa|sapato|tenis|shopping|presente|loja|magazine|amazon|shopee|mercado livre)/.test(resto)) categoria = 'Shopping';
+  else if (/(curso|faculdade|livro|escola|aula|matricula|apostila)/.test(resto)) categoria = 'Educação';
   if (!categorias.includes(categoria)) categoria = categoriaPadrao();
 
   // padrões que você mesmo descreveu continuam valendo e têm a palavra final
@@ -6012,6 +6346,17 @@ function interpretarFala(fala) {
       if (regra.numParcelas) numParcelasVoz = regra.numParcelas;
     }
   });
+
+  // O que você já lançou vale mais que qualquer regra escrita à mão: se a fala
+  // bate com uma descrição do histórico, o lançamento herda a categoria, a conta
+  // e a forma que VOCÊ usou da última vez. É o "aprendizado" possível sem
+  // servidor — e melhora sozinho conforme o app é usado.
+  const memoria = lembrarDoHistorico(resto);
+  if (memoria) {
+    if (memoria.categoria && categorias.includes(memoria.categoria)) categoria = memoria.categoria;
+    if (memoria.conta && contas.some(c => c.nome === memoria.conta)) conta = memoria.conta;
+    if (memoria.formaModo && !faladoExplicito) formaModo = memoria.formaModo;
+  }
   if (!contas.some(c => c.nome === conta)) conta = primeiraConta();
 
   // --- descrição: o que sobrou, sem verbos, conectivos e palavras de comando ---
@@ -6019,10 +6364,11 @@ function interpretarFala(fala) {
   let descricao = resto.replace(RUIDO, ' ').replace(/[^\wÀ-ÿ\s]/g, ' ').replace(/\s+/g, ' ').trim();
   descricao = descricao.split(' ').slice(0, 5).join(' ');
   descricao = descricao ? descricao.charAt(0).toUpperCase() + descricao.slice(1)
-                        : (tipo === 'receita' ? 'Receita extra' : 'Lançamento rápido');
+    : (emprestimoPara ? 'Empréstimo — ' + emprestimoPara
+       : (tipo === 'receita' ? 'Receita extra' : 'Lançamento rápido'));
 
   lancamentoVozPendente = { tipo, valor: valorFormatoPadrao, descricao, categoria, conta, formaModo,
-                            numParcelas: numParcelasVoz, data, grupoId, grupoNome };
+                            numParcelas: numParcelasVoz, data, grupoId, grupoNome, emprestimoPara };
 
   document.getElementById('vozTipo').textContent = tipo === 'receita' ? 'RECEITA 📈' : 'DESPESA 📉';
   document.getElementById('vozTipo').style.color = tipo === 'receita' ? '#4caf50' : '#ef5350';
@@ -6032,6 +6378,7 @@ function interpretarFala(fala) {
   document.getElementById('vozForma').textContent =
     (tipo === 'receita' ? conta : `${conta} (${formaModo}${numParcelasVoz !== '1' ? ' ' + numParcelasVoz + 'x' : ''})`)
     + (grupoNome ? ' · ' + grupoNome : '')
+    + (emprestimoPara ? ' · empréstimo p/ ' + emprestimoPara : '')
     + (data !== obterDataBrasilia() ? ' · ' + data.split('-').reverse().join('/') : '');
 
   document.getElementById('modalVoz').classList.remove('escondido');
@@ -6064,9 +6411,22 @@ function preencherFormularioVoz() {
 
   document.getElementById('dataCompra').value = lancamentoVozPendente.data || obterDataBrasilia();
   document.getElementById('observacao').value = 'Lançamento via voz';
-  document.getElementById('emprestimoPara').value = '';
-  document.getElementById('emprestimoVence').value = '';
+  // "emprestei 50 pro Bernardo" já entra como cobrança em aberto, com prazo no
+  // vencimento do cartão — sem precisar reabrir o formulário depois
+  const paraQuem = lancamentoVozPendente.emprestimoPara || '';
+  document.getElementById('emprestimoPara').value = paraQuem;
+  document.getElementById('emprestimoVence').value = paraQuem ? prazoPadraoEmprestimo(lancamentoVozPendente.conta) : '';
   atualizarLinkEmprestimo();
+}
+
+// Prazo sugerido pra quem te deve: o vencimento da fatura do cartão usado —
+// é quando o dinheiro realmente sai do seu bolso
+function prazoPadraoEmprestimo(conta) {
+  const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+  const dia = diasDoCartao(conta).vence;
+  let alvo = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+  if (alvo <= hoje) alvo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, dia);
+  return alvo.toISOString().slice(0, 10);
 }
 
 // Botão "Editar": preenche o formulário e deixa você ajustar/revisar antes de tocar em Salvar
@@ -6094,7 +6454,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.08-6';
+    const APP_VERSION = '2026.08.09-1';
 
     // Inicialização
     carregarLocalStorage();
