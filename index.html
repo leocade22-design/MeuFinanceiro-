@@ -431,16 +431,21 @@
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
           </div>
           <div class="painel-direita">
-            <div class="card-mini" onclick="abrirNoGraficos('receita')">
-              <span>Receitas</span>
+            <div class="card-mini" onclick="verRecebimentosDoMes()">
+              <span>Recebido</span>
               <h4 class="val-receita" id="faturaReceita">R$ 0,00</h4>
             </div>
-            <div class="card-mini" onclick="abrirNoGraficos('despesa')">
-              <span>Despesas</span>
+            <div class="card-mini" onclick="verSaiuDaConta()">
+              <span>Saiu da conta</span>
               <h4 class="val-despesa" id="faturaDespesa">R$ 0,00</h4>
             </div>
           </div>
         </div>
+        <!-- O que está no crédito e ainda não foi pago: não é despesa realizada,
+             mas sem este aviso um mês só de cartão pareceria folgado. -->
+        <button type="button" id="avisoFaturaAberta" class="escondido" onclick="irParaPagamentoFatura()"
+          aria-label="Ver fatura em aberto"
+          style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:#888;cursor:pointer;padding:0;margin:-6px 0 10px;"></button>
         <div id="listaFaturas"></div>
       </div>
 
@@ -554,12 +559,17 @@
           <span>Receitas</span><strong class="val-receita" id="graficoReceita">R$ 0,00</strong>
         </button>
         <button type="button" onclick="abrirModalConsulta('despesa')">
-          <span>Despesas</span><strong class="val-despesa" id="graficoDespesa">R$ 0,00</strong>
+          <span>Gastos</span><strong class="val-despesa" id="graficoDespesa">R$ 0,00</strong>
         </button>
         <button type="button" onclick="abrirModalConsulta('saldo')">
-          <span>Saldo</span><strong class="val-saldo" id="graficoSaldo">R$ 0,00</strong>
+          <span>Resultado</span><strong class="val-saldo" id="graficoSaldo">R$ 0,00</strong>
         </button>
       </div>
+      <!-- Aqui a régua é o CONSUMO (débito + crédito, pela data da compra). Na aba
+           Faturas a régua é a CONTA. Os dois números são diferentes de propósito. -->
+      <p style="font-size:10px;color:#666;text-align:center;margin-top:8px;line-height:1.5;">
+        gasto do período, incluindo o que foi no crédito · o saldo da conta fica em Faturas
+      </p>
       </div>
 
       <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
@@ -2122,8 +2132,8 @@
 
       const insights = [];
       insights.push(saldo >= 0
-        ? `Você fechou o período com resultado positivo de ${fmtOculto(saldo)}.`
-        : `Você fechou o período com resultado negativo de ${fmtOculto(Math.abs(saldo))}.`);
+        ? `Contando o que foi no crédito, o período fechou positivo em ${fmtOculto(saldo)}.`
+        : `Contando o que foi no crédito, o período fechou negativo em ${fmtOculto(Math.abs(saldo))}.`);
       if (categoriaLider) insights.push(`Categoria que mais pesou no período: ${categoriaLider[0]} (${fmtOculto(categoriaLider[1])}).`);
       if (maiorGasto) insights.push(`Maior gasto: ${maiorGasto.descricao} por ${fmtOculto(maiorGasto.valor)}.`);
       insights.push(`Média de gasto por dia no período: ${fmtOculto(mediaDiaria)}.`);
@@ -4195,11 +4205,23 @@
       }
 
       // --- saldo / sobrou ---
+      // Mesma régua da aba Faturas: saldo é o que passou pela conta. Compra no
+      // crédito entra quando a fatura é paga, e vai citada à parte pra não parecer
+      // que sumiu.
       if (/saldo|sobrou|sobra|quanto tenho|no azul|no vermelho/.test(texto)) {
-        const rec = somar(receitasDaPergunta(p)), desp = somar(despesasDaPergunta(p));
-        const saldo = rec - desp;
-        return `${R.charAt(0).toUpperCase() + R.slice(1)}: entrou ${fmtOculto(rec)}, saiu ${fmtOculto(desp)}.<br>` +
-          `Saldo: <b style="color:${saldo >= 0 ? '#4caf50' : '#ef5350'};">${fmtOculto(saldo)}</b>`;
+        const rec = somar(receitasDaPergunta(p));
+        const desps = despesasDaPergunta(p);
+        const emDebito = somar(desps.filter(l => !eCredito(l.formaModo)));
+        const noCredito = somar(desps.filter(l => eCredito(l.formaModo)));
+        const pagas = Object.values(faturasPagas)
+          .filter(pg => pg && pg.data && p.teste(pg.data))
+          .reduce((s, pg) => s + parseVal(pg.valorPago), 0);
+        const saiu = emDebito + pagas;
+        const saldo = rec - saiu;
+        return `${R.charAt(0).toUpperCase() + R.slice(1)}: entrou ${fmtOculto(rec)}, saiu da conta ${fmtOculto(saiu)}` +
+          (pagas > 0 ? ` (sendo ${fmtOculto(pagas)} de fatura paga)` : '') + `.<br>` +
+          `Saldo: <b style="color:${saldo >= 0 ? '#4caf50' : '#ef5350'};">${fmtOculto(saldo)}</b>` +
+          (noCredito > 0 ? `<br><span style="color:#ffd166;">${fmtOculto(noCredito)} foi no crédito e ainda não saiu da conta.</span>` : '');
       }
 
       // --- maior gasto ---
@@ -4424,42 +4446,83 @@
       const btnAtual = document.getElementById('btnMesAtual');
       if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
 
-      // saldo líquido por conta no mês: receita soma, despesa subtrai — mesmo
-      // critério de mês de cada lançamento (receita pela data, despesa pela fatura)
+      /* SALDO DO MÊS = O QUE REALMENTE SAIU DA CONTA (regime de caixa)
+         Compra no crédito não tira dinheiro da conta no dia da compra — ela vira
+         fatura, e o dinheiro só sai quando a fatura é paga. Por isso o saldo soma:
+           receitas do mês − gastos em débito/dinheiro − faturas PAGAS neste mês
+         (pelo valor real que você digitou ao marcar como paga, não pelo somado
+         aqui). O que está no crédito e ainda não foi pago aparece à parte, como
+         compromisso — não como despesa já realizada. */
       const porContaNet = {};
-      let totalRecebimentos = 0, totalDebito = 0, totalCredito = 0;
+      let totalRecebimentos = 0, saiuEmDebito = 0, compradoNoCredito = 0;
       lancamentos.forEach(l => {
         const v = parseVal(l.valor);
+        const d = new Date(l.data + 'T12:00:00');
+        const noMesDaData = d.getMonth() === mes && d.getFullYear() === ano;
+
         if (l.tipo === 'receita') {
-          const d = new Date(l.data + 'T12:00:00');
-          if (d.getMonth() === mes && d.getFullYear() === ano) {
+          if (noMesDaData) {
             totalRecebimentos += v;
             porContaNet[l.conta] = (porContaNet[l.conta] || 0) + v;
           }
           return;
         }
-        const { mes: mFat, ano: aFat } = getMesFatura(l.data, l.formaModo, l.conta);
-        if (mFat === mes && aFat === ano) {
+        if (eCredito(l.formaModo)) {
+          // conta pra fatura (mês de fatura), não pro saldo
+          const f = getMesFatura(l.data, l.formaModo, l.conta);
+          if (f.mes === mes && f.ano === ano) compradoNoCredito += v;
+          return;
+        }
+        // débito/dinheiro sai na hora: entra pela data da compra
+        if (noMesDaData) {
+          saiuEmDebito += v;
           porContaNet[l.conta] = (porContaNet[l.conta] || 0) - v;
-          if (eCredito(l.formaModo)) totalCredito += v;
-          else totalDebito += v;
         }
       });
 
-      // Atualizar cards de resumo do mês
-      const totalDespMes = totalDebito + totalCredito;
-      const saldoMes = totalRecebimentos - totalDespMes;
+      // faturas efetivamente pagas neste mês, pelo valor real informado
+      let faturasPagasNoMes = 0;
+      const chaveMes = String(ano) + '-' + String(mes + 1).padStart(2, '0');
+      Object.entries(faturasPagas).forEach(([chave, pg]) => {
+        if (!pg || !pg.data || pg.data.slice(0, 7) !== chaveMes) return;
+        const v = parseVal(pg.valorPago);
+        faturasPagasNoMes += v;
+        const conta = chave.split('|')[0];
+        porContaNet[conta] = (porContaNet[conta] || 0) - v;
+      });
+
+      // fatura ainda em aberto do mês (compromisso, não despesa realizada)
+      let faturaEmAberto = 0;
+      contas.filter(c => c.temCredito).forEach(c => {
+        if (faturasPagas[chaveFatura(c.nome, mes, ano)]) return;
+        faturaEmAberto += totalFaturaConta(c.nome, mes, ano);
+      });
+
+      const saiuDaConta = saiuEmDebito + faturasPagasNoMes;
+      const saldoMes = totalRecebimentos - saiuDaConta;
       const elFS = document.getElementById('faturaSaldo');
       const elFR = document.getElementById('faturaReceita');
       const elFD = document.getElementById('faturaDespesa');
       if (elFS) {
         if (valoresOcultos) { elFS.textContent = '••••••'; elFR.textContent = '••••••'; elFD.textContent = '••••••'; }
-        else { elFS.textContent = fmtVal(saldoMes); elFR.textContent = fmtVal(totalRecebimentos); elFD.textContent = fmtVal(totalDespMes); }
+        else { elFS.textContent = fmtVal(saldoMes); elFR.textContent = fmtVal(totalRecebimentos); elFD.textContent = fmtVal(saiuDaConta); }
+      }
+
+      // Aviso do que ainda vai sair: sem isto, um mês só de compras no crédito
+      // mostraria saldo cheio e passaria a impressão errada de folga
+      const elAberto = document.getElementById('avisoFaturaAberta');
+      if (elAberto) {
+        elAberto.classList.toggle('escondido', faturaEmAberto <= 0);
+        if (faturaEmAberto > 0) {
+          elAberto.innerHTML = `💳 <span style="color:#888;">fatura em aberto:</span> <strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong>` +
+            `<span style="color:#666;"> · ainda não saiu da conta</span>`;
+        }
       }
 
       // guardado pra montar o popup só quando abrir (abrirModalResumoFatura),
       // sem duplicar o trabalho de calcular tudo de novo
-      resumoFaturaAtual = { mes, ano, totalRecebimentos, totalDebito, totalCredito, porContaNet };
+      resumoFaturaAtual = { mes, ano, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
+                            compradoNoCredito, faturaEmAberto, saiuDaConta, porContaNet };
 
       container.innerHTML = '';
 
@@ -4514,7 +4577,8 @@
     // de período/categoria do modal de Gráficos — aqui é só o resumo, rápido.
     function abrirModalResumoFatura() {
       if (!resumoFaturaAtual) return;
-      const { mes, ano, totalRecebimentos, totalDebito, totalCredito, porContaNet } = resumoFaturaAtual;
+      const { mes, ano, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
+              compradoNoCredito, faturaEmAberto, porContaNet } = resumoFaturaAtual;
       document.getElementById('tituloResumoFatura').textContent = 'Resumo de ' + NOMES_MESES[mes];
 
       const linhasConta = Object.entries(porContaNet)
@@ -4526,18 +4590,49 @@
           </div>
         `).join('');
 
+      // Duas caixas separadas de propósito: em cima só o dinheiro que entrou e
+      // saiu de verdade (é isso que forma o saldo); embaixo o cartão, que ainda
+      // não mexeu na conta. Misturar os dois é o que fazia o número divergir.
       document.getElementById('corpoResumoFatura').innerHTML = `
         <div class="box-resumo-modal" style="margin-bottom:14px;">
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebimentos do mês</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Gastos em débito/à vista</span><strong style="color:#ef5350;">${fmtOculto(totalDebito)}</strong></div>
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Gastos no cartão de crédito</span><strong style="color:#ef5350;">${fmtOculto(totalCredito)}</strong></div>
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebido</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Saiu em débito/dinheiro</span><strong style="color:#ef5350;">${fmtOculto(saiuEmDebito)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;"><span>🧾 Faturas pagas no mês</span><strong style="color:#ef5350;">${fmtOculto(faturasPagasNoMes)}</strong></div>
+        </div>
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">No cartão · ainda não saiu da conta</span>
+        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:#ffd166;">${fmtOculto(compradoNoCredito)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong></div>
         </div>
         <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
         <div class="box-resumo-modal" style="margin-top:6px;">
           ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
         </div>
+        <p style="font-size:10.5px;color:#777;margin-top:10px;line-height:1.5;">
+          O saldo conta só o que passou pela conta: compra no crédito entra quando você marca a fatura como paga, pelo valor real que digitar.
+        </p>
       `;
       document.getElementById('modalResumoFatura').classList.remove('escondido');
+    }
+
+    // Atalhos dos dois cards pequenos: eles abrem exatamente a lista que forma o
+    // próprio número — antes caíam nos Gráficos, que somam por outra régua.
+    function verRecebimentosDoMes() {
+      if (!resumoFaturaAtual) return;
+      exibirLancamentosDetalhadosFatura('receita', resumoFaturaAtual.mes, resumoFaturaAtual.ano);
+    }
+
+    function verSaiuDaConta() {
+      if (!resumoFaturaAtual) return;
+      exibirLancamentosDetalhadosFatura('saiu', resumoFaturaAtual.mes, resumoFaturaAtual.ano);
+    }
+
+    function irParaPagamentoFatura() {
+      uiPrefs['secao_pagamentoFatura'] = true;
+      salvarUiPrefs();
+      aplicarSecao('pagamentoFatura');
+      const card = document.querySelector('[data-card="pagamentoFatura"]');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -5285,12 +5380,27 @@
           const d = new Date(l.data + 'T12:00:00');
           return l.tipo === 'receita' && d.getMonth() === mes && d.getFullYear() === ano;
         });
-      } else if (tipoFiltro === 'debito') {
-        titulo.textContent = 'Débito / À Vista de ' + NOMES_MESES[mes];
+      } else if (tipoFiltro === 'debito' || tipoFiltro === 'saiu') {
+        titulo.textContent = (tipoFiltro === 'saiu' ? 'Saiu da conta em ' : 'Débito / À Vista de ') + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
           return l.tipo === 'despesa' && !eCredito(l.formaModo) && m === mes && a === ano;
         });
+        // As faturas pagas não são lançamentos, então não cabem na lista abaixo —
+        // mas fazem parte do total do card. Vão como subtotal, no topo.
+        if (tipoFiltro === 'saiu') {
+          const chaveMes = String(ano) + '-' + String(mes + 1).padStart(2, '0');
+          const pagas = Object.entries(faturasPagas)
+            .filter(([, pg]) => pg && pg.data && pg.data.slice(0, 7) === chaveMes);
+          if (pagas.length) {
+            boxSubFat.innerHTML = pagas.map(([chave, pg]) => `
+              <div class="linha-subtotal" style="cursor:default;">
+                <span>🧾 Fatura ${chave.split('|')[0]} paga em ${pg.data.split('-').reverse().join('/')}</span>
+                <strong style="color:#ef5350;">${fmtOculto(parseVal(pg.valorPago))}</strong>
+              </div>`).join('');
+            boxSubFat.classList.remove('escondido');
+          }
+        }
       } else if (tipoFiltro === 'credito') {
         titulo.textContent = 'Fatura Crédito de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
@@ -5298,16 +5408,24 @@
           return l.tipo === 'despesa' && eCredito(l.formaModo) && m === mes && a === ano;
         });
       } else if (tipoFiltro === 'conta') {
+        // Mesma régua do saldo por conta: o que passou pela conta no mês. Compra
+        // no crédito fica de fora aqui — ela só chega via pagamento da fatura.
         titulo.textContent = contaNome + ' em ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           if (l.conta !== contaNome) return false;
-          if (l.tipo === 'receita') {
-            const d = new Date(l.data + 'T12:00:00');
-            return d.getMonth() === mes && d.getFullYear() === ano;
-          }
-          const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
-          return m === mes && a === ano;
+          if (l.tipo === 'despesa' && eCredito(l.formaModo)) return false;
+          const d = new Date(l.data + 'T12:00:00');
+          return d.getMonth() === mes && d.getFullYear() === ano;
         });
+        const pg = faturasPagas[chaveFatura(contaNome, mes, ano)];
+        if (pg && pg.data) {
+          boxSubFat.innerHTML = `
+            <div class="linha-subtotal" style="cursor:default;">
+              <span>🧾 Fatura paga em ${pg.data.split('-').reverse().join('/')}</span>
+              <strong style="color:#ef5350;">${fmtOculto(parseVal(pg.valorPago))}</strong>
+            </div>`;
+          boxSubFat.classList.remove('escondido');
+        }
       }
 
       corpo.innerHTML = '';
@@ -6454,7 +6572,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.09-1';
+    const APP_VERSION = '2026.08.09-2';
 
     // Inicialização
     carregarLocalStorage();
