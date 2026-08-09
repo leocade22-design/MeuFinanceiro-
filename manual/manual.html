@@ -19,20 +19,19 @@
     page-break-after: always; text-align: center;
   }
   .capa .marca {
-    width: 76px; height: 76px; margin: 0 auto 26px; border-radius: 20px;
-    background: #111; color: #e9c46a; font-size: 40px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
+    width: 104px; height: 104px; margin: 0 auto 26px; display: block;
+    border-radius: 24px; box-shadow: 0 6px 22px rgba(0,0,0,.28);
   }
   .capa h1 { font-size: 34pt; line-height: 1.05; }
   .capa .sub { font-size: 14pt; color: #6b7480; margin-top: 12px; font-weight: 500; }
-  .capa .linha { width: 54px; height: 3px; background: #2196f3; margin: 28px auto; border-radius: 2px; }
+  .capa .linha { width: 54px; height: 3px; background: #5f9933; margin: 28px auto; border-radius: 2px; }
   .capa .rodape { font-size: 9.5pt; color: #8c95a0; margin-top: 6px; }
 
   /* ---------- estrutura ---------- */
   section { page-break-inside: avoid; margin-bottom: 18px; }
   .numero {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 23px; height: 23px; border-radius: 50%; background: #2196f3; color: #fff;
+    width: 23px; height: 23px; border-radius: 50%; background: #4e8b2a; color: #fff;
     font-size: 11pt; font-weight: 700; margin-right: 9px; flex-shrink: 0;
   }
   h2 { font-size: 15.5pt; display: flex; align-items: center; margin-bottom: 4px; }
@@ -55,11 +54,11 @@
 
   /* ---------- destaques ---------- */
   .nota {
-    background: #f2f7fd; border-left: 3px solid #2196f3; padding: 9px 13px;
+    background: #f1f7ec; border-left: 3px solid #5f9933; padding: 9px 13px;
     border-radius: 0 7px 7px 0; margin: 10px 0; font-size: 10pt;
   }
   .atencao { background: #fdf6ec; border-left-color: #e0a63a; }
-  .nota strong { color: #12508f; }
+  .nota strong { color: #2f5e12; }
   .atencao strong { color: #8a5d0d; }
 
   table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.8pt; }
@@ -78,7 +77,7 @@
 <body>
 
 <div class="capa">
-  <div class="marca">$</div>
+  <img class="marca" src="img/icone.png" alt="MeuFinanceiro">
   <h1>MeuFinanceiro</h1>
   <div class="sub">Manual de uso</div>
   <div class="linha"></div>
@@ -332,6 +331,7 @@
     <p><strong>Vou mostrar a tela para alguém.</strong> Toque no ícone de olho para esconder todos os valores.</p>
 
     <div class="fim">
+      <img src="img/icone.png" alt="" style="width:34px;height:34px;border-radius:9px;vertical-align:middle;margin-right:8px;opacity:.9;">
       MeuFinanceiro · seus dados ficam no seu aparelho, sempre.
     </div>
   </div>
