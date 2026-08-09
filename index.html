@@ -112,6 +112,7 @@
     .card-mini span { display: block; font-size: 10px; color: #aaa; margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
     .card-mini h4 { font-size: 14px; font-weight: bold; }
 
+    .valor-transferencia { color: #42a5f5; font-weight: bold; white-space: nowrap; }
     .val-saldo { color: #2196f3; }
     .val-receita { color: #4caf50; }
     .val-despesa { color: #ef5350; }
@@ -746,6 +747,32 @@
       </div>
 
       <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('contatos')">
+          <h3 style="font-size:16px;">Contatos de cobrança</h3>
+          <span class="chevron-sec" id="chevron-contatos">▸</span>
+        </button>
+        <div id="corpo-contatos" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Os números que o app usa pra abrir o WhatsApp. Ficam só neste aparelho.</p>
+          <div id="listaContatos"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('sons')">
+          <h3 style="font-size:16px;">Sons</h3>
+          <span class="chevron-sec" id="chevron-sons">▸</span>
+        </button>
+        <div id="corpo-sons" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Um é sorteado a cada receita salva. Toque pra ouvir.</p>
+          <div id="listaSons"></div>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="chkSomLigado" onchange="alternarSomLigado()" aria-label="Tocar som ao salvar receita" style="width:auto;margin:0;">
+            <span>Tocar som ao salvar receita</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
         <h3 style="margin-bottom:4px;">Ordem dos cards — Faturas</h3>
         <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
         <div id="ordemCardsAbaFaturas"></div>
@@ -1113,6 +1140,53 @@
     </div>
   </div>
 
+  <!-- WHATSAPP DA PESSOA (pedido uma única vez, na primeira cobrança) -->
+  <div id="modalContatoCobranca" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalContatoCobranca')">
+    <div class="modal-content" style="max-width:320px;">
+      <div class="modal-header">
+        <h3 id="tituloContatoCobranca" style="font-size:16px;">WhatsApp</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalContatoCobranca')">&times;</button>
+      </div>
+      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Guardado só aqui no aparelho. Na próxima cobrança dessa pessoa já vai direto.</p>
+      <button type="button" id="btnEscolherDaAgenda" class="btn-backup escondido" style="margin-bottom:10px;" onclick="escolherDaAgenda()">📇 Escolher da agenda</button>
+      <div class="form-group">
+        <label for="inputTelefoneCobranca">Número com DDD</label>
+        <input type="tel" id="inputTelefoneCobranca" placeholder="(11) 98765-4321" inputmode="tel">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRMAÇÃO DA TRANSFERÊNCIA -->
+  <div id="modalConfirmaTransferencia" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalConfirmaTransferencia')">
+    <div class="modal-content" style="max-width:300px;text-align:center;">
+      <div class="modal-header">
+        <h3 style="font-size:16px;">Confirmar transferência</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalConfirmaTransferencia')">&times;</button>
+      </div>
+      <div id="resumoConfirmaTransf" style="padding:6px 0 4px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalConfirmaTransferencia')">Voltar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarTransferencia()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPÇÕES DA TRANSFERÊNCIA (toque na linha da lista) -->
+  <div id="modalAcoesTransferencia" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAcoesTransferencia')">
+    <div class="modal-content" style="max-width:300px;">
+      <div class="modal-header">
+        <h3 style="font-size:16px;">Transferência</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAcoesTransferencia')">&times;</button>
+      </div>
+      <div id="infoAcoesTransferencia" style="margin-bottom:14px;"></div>
+      <button type="button" class="btn-backup danger" onclick="excluirTransferencia()">Excluir transferência</button>
+    </div>
+  </div>
+
   <!-- MODAL DE GERENCIAR CATEGORIAS -->
   <!-- OPÇÕES DA CONTA (toque na linha em Gerenciar contas) -->
   <div id="modalAcoesConta" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAcoesConta')">
@@ -1380,6 +1454,39 @@
         if (!c.diaVencimento) { c.diaVencimento = DIA_VENCIMENTO_CARTAO; ajustou = true; }
       });
       if (ajustou) salvarContas();
+    }
+
+    /* CONTATOS PARA COBRANÇA
+       Mapa simples nome-do-empréstimo → telefone. O nome já existe em
+       `emprestimoPara`, então não há cadastro novo a preencher: o número é pedido
+       uma única vez, na primeira cobrança daquela pessoa. */
+    let contatos = {};
+    const STORAGE_KEY_CONTATOS = 'meu_financeiro_contatos_v1';
+    function salvarContatos() { localStorage.setItem(STORAGE_KEY_CONTATOS, JSON.stringify(contatos)); }
+    function carregarContatos() {
+      const d = localStorage.getItem(STORAGE_KEY_CONTATOS);
+      if (d) { try { contatos = JSON.parse(d) || {}; } catch (e) { contatos = {}; } }
+      if (!contatos || typeof contatos !== 'object') contatos = {};
+    }
+
+    // O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
+    // qualquer formato ((11) 98765-4321, +55 11 98765 4321, 11987654321) e resolve.
+    function normalizarTelefone(bruto) {
+      let d = String(bruto || '').replace(/\D/g, '');
+      if (!d) return '';
+      if (d.startsWith('00')) d = d.slice(2);
+      // 10 ou 11 dígitos = número nacional sem o país; qualquer coisa maior já veio
+      // com DDI (não assume 55 pra número estrangeiro que o usuário digitou inteiro)
+      if (d.length === 10 || d.length === 11) d = '55' + d;
+      return d.length >= 12 && d.length <= 15 ? d : '';
+    }
+
+    function telefoneVisivel(tel) {
+      const d = String(tel || '').replace(/\D/g, '');
+      if (d.length < 12) return tel || '';
+      const nac = d.slice(2);
+      const ddd = nac.slice(0, 2), resto = nac.slice(2);
+      return `(${ddd}) ${resto.slice(0, resto.length - 4)}-${resto.slice(-4)}`;
     }
 
     function contaTemCredito(nome) {
@@ -2215,7 +2322,9 @@
         orcamentosCategoria,
         faturasPagas,
         contas,
-        categorias
+        categorias,
+        transferencias,
+        contatos
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -2243,6 +2352,8 @@
           faturasPagas = data.faturasPagas && typeof data.faturasPagas === 'object' ? data.faturasPagas : {};
           if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
+          transferencias = Array.isArray(data.transferencias) ? data.transferencias : [];
+          contatos = data.contatos && typeof data.contatos === 'object' ? data.contatos : {};
 
           // um backup gerado antes da correção traz de volta as parcelas com o
           // mesmo prazo; por isso a correção roda de novo aqui, forçada
@@ -2255,6 +2366,8 @@
           salvarOrcamentos();
           salvarFaturasPagas();
           salvarContas();
+          salvarTransferencias();
+          salvarContatos();
           popularSelectsContas();
           salvarCategorias();
           popularSelectsCategorias();
@@ -2460,62 +2573,195 @@
       });
     }
 
-    // SONS DE CELEBRAÇÃO DE RECEITA
-    // 24 variações curtas (todas abaixo de 2,5s), sintetizadas no aparelho com Web Audio —
-    // sem arquivos de áudio, funciona offline. Uma é sorteada a cada receita salva.
-    // base = frequência da tônica; notas = semitons acima da base; passo = intervalo entre notas.
-    const SONS_RECEITA = [
-      { base: 523.25, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.09, dur: 0.30, vol: 0.16 }, // arpejo Dó maior
-      { base: 587.33, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.08, dur: 0.28, vol: 0.16 }, // arpejo Ré maior
-      { base: 659.25, onda: 'triangle', notas: [0, 4, 7, 12],        passo: 0.10, dur: 0.32, vol: 0.18 }, // arpejo Mi maior
-      { base: 440.00, onda: 'triangle', notas: [0, 4, 7, 12, 16],    passo: 0.09, dur: 0.30, vol: 0.18 }, // arpejo Lá estendido
-      { base: 493.88, onda: 'sine',     notas: [0, 7, 12, 19],       passo: 0.10, dur: 0.35, vol: 0.16 }, // quintas ascendentes
-      { base: 523.25, onda: 'triangle', notas: [0, 5, 9, 12],        passo: 0.11, dur: 0.33, vol: 0.18 }, // arpejo suspenso
-      { base: 523.25, onda: 'sine',     notas: [0, 2, 4, 7, 9, 12],  passo: 0.07, dur: 0.22, vol: 0.15 }, // escala pentatônica rápida
-      { base: 587.33, onda: 'triangle', notas: [0, 2, 4, 7, 12],     passo: 0.08, dur: 0.25, vol: 0.16 }, // pentatônica Ré
-      { base: 783.99, onda: 'square',   notas: [0, 5],               passo: 0.09, dur: 0.40, vol: 0.07 }, // moeda clássica
-      { base: 880.00, onda: 'square',   notas: [0, 7],               passo: 0.08, dur: 0.35, vol: 0.06 }, // moeda aguda
-      { base: 659.25, onda: 'square',   notas: [0, 12],              passo: 0.10, dur: 0.40, vol: 0.06 }, // moeda em oitava
-      { base: 523.25, onda: 'sine',     notas: [0, 0, 7],            passo: 0.14, dur: 0.45, vol: 0.17 }, // fanfarra curta
-      { base: 587.33, onda: 'triangle', notas: [0, 0, 5, 9],         passo: 0.13, dur: 0.40, vol: 0.17 }, // fanfarra dupla
-      { base: 440.00, onda: 'sine',     notas: [0, 5, 9, 14],        passo: 0.12, dur: 0.42, vol: 0.16 }, // subida brilhante
-      { base: 1046.5, onda: 'sine',     notas: [0],                  passo: 0.00, dur: 1.40, vol: 0.15 }, // sino agudo
-      { base: 880.00, onda: 'triangle', notas: [0],                  passo: 0.00, dur: 1.30, vol: 0.16 }, // sino médio
-      { base: 659.25, onda: 'sine',     notas: [0, 12],              passo: 0.30, dur: 0.90, vol: 0.14 }, // dois sinos
-      { base: 523.25, onda: 'sine',     notas: [12, 7, 12, 16],      passo: 0.10, dur: 0.30, vol: 0.15 }, // saltinho alegre
-      { base: 587.33, onda: 'triangle', notas: [7, 12, 16, 19],      passo: 0.09, dur: 0.28, vol: 0.15 }, // subida ao topo
-      { base: 493.88, onda: 'sine',     notas: [0, 4, 7, 4, 7, 12],  passo: 0.08, dur: 0.24, vol: 0.14 }, // trinado
-      { base: 523.25, onda: 'triangle', notas: [0, 4, 7],            passo: 0.00, dur: 1.00, vol: 0.10 }, // acorde maior (junto)
-      { base: 587.33, onda: 'sine',     notas: [0, 4, 7, 12],        passo: 0.00, dur: 1.10, vol: 0.09 }, // acorde com oitava
-      { base: 698.46, onda: 'sine',     notas: [0, 9, 16],           passo: 0.11, dur: 0.50, vol: 0.15 }, // brilho em Fá
-      { base: 523.25, onda: 'sine',     notas: [0, 7, 16, 24],       passo: 0.10, dur: 0.38, vol: 0.13 }  // foguetinho
-    ];
+    /* SONS — sintetizados no aparelho com Web Audio: nenhum arquivo de áudio, então
+       funciona offline e não pesa um byte no download. Cinco variações de receita,
+       sorteadas a cada entrada, mais um sopro curto pra transferência. */
     let audioCtxReceita = null;
+
+    function ctxAudio() {
+      if (!audioCtxReceita) audioCtxReceita = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtxReceita.state === 'suspended') audioCtxReceita.resume();
+      return audioCtxReceita;
+    }
+
+    // Ruído branco reaproveitado por quem precisa de chiado em vez de nota: a gaveta
+    // da caixa registradora e o sopro do vento.
+    let bufferRuido = null;
+    function ruidoBranco(ctx) {
+      if (!bufferRuido) {
+        bufferRuido = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const d = bufferRuido.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = bufferRuido;
+      return src;
+    }
+
+    // Uma nota: onda, frequência, início, duração, volume. freqFim faz o tom deslizar
+    // (é o que dá o apito de desenho animado).
+    function nota(ctx, { onda = 'sine', freq, ini, dur, vol, freqFim }) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = onda;
+      osc.frequency.setValueAtTime(freq, ini);
+      if (freqFim) osc.frequency.exponentialRampToValueAtTime(freqFim, ini + dur);
+      g.gain.setValueAtTime(0.0001, ini);
+      g.gain.linearRampToValueAtTime(vol, ini + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, ini + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(ini); osc.stop(ini + dur + 0.05);
+    }
+
+    // Ruído passado por um filtro que pode varrer: baque grave (gaveta) ou sopro (vento).
+    function chiado(ctx, { ini, dur, vol, tipo = 'lowpass', freq = 400, freqFim, q = 1 }) {
+      const src = ruidoBranco(ctx);
+      const filtro = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      filtro.type = tipo;
+      filtro.frequency.setValueAtTime(freq, ini);
+      if (freqFim) filtro.frequency.linearRampToValueAtTime(freqFim, ini + dur);
+      filtro.Q.value = q;
+      g.gain.setValueAtTime(0.0001, ini);
+      g.gain.linearRampToValueAtTime(vol, ini + dur * 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, ini + dur);
+      src.connect(filtro); filtro.connect(g); g.connect(ctx.destination);
+      src.start(ini); src.stop(ini + dur + 0.05);
+    }
+
+    const SONS_RECEITA = [
+      // CAIXA REGISTRADORA — o tinido metálico são dois parciais desafinados de
+      // propósito (metal não é harmônico); atrás vem o baque da gaveta abrindo.
+      { nome: 'Caixa registradora', tocar(ctx, t) {
+        [0, 0.07].forEach((atraso, i) => {
+          const v = i ? 0.7 : 1;
+          nota(ctx, { onda:'triangle', freq:2100, ini:t + atraso, dur:0.30, vol:0.10 * v });
+          nota(ctx, { onda:'triangle', freq:3170, ini:t + atraso, dur:0.26, vol:0.07 * v });
+        });
+        chiado(ctx, { ini:t + 0.15, dur:0.22, vol:0.11, freq:400, freqFim:140 });
+      } },
+
+      // CASCATA DE MOEDAS — blips curtos em alturas sorteadas dentro de uma
+      // pentatônica, caindo de volume: soa como prêmio de caça-níquel.
+      { nome: 'Cascata de moedas', tocar(ctx, t) {
+        const graus = [0, 2, 4, 7, 9, 12, 14, 16];
+        for (let i = 0; i < 13; i++) {
+          const g = graus[Math.floor(Math.random() * graus.length)];
+          nota(ctx, { onda:'square', freq: 880 * Math.pow(2, g / 12),
+                      ini: t + i * 0.045, dur: 0.09, vol: 0.055 * (1 - i / 18) });
+        }
+      } },
+
+      // FANFARRA — três notas curtas e uma longa, o "tá-tá-tá-DÁÁÁ". A segunda voz
+      // uma quinta acima, levemente desafinada, dá o corpo de metal.
+      { nome: 'Fanfarra', tocar(ctx, t) {
+        const base = 392.00; // Sol
+        [[0, 0.00, 0.11], [0, 0.13, 0.11], [4, 0.26, 0.11], [7, 0.39, 0.70]].forEach(([st, atraso, dur]) => {
+          nota(ctx, { onda:'square',   freq: base * Math.pow(2, st / 12),        ini:t + atraso, dur, vol:0.055 });
+          nota(ctx, { onda:'triangle', freq: base * Math.pow(2, st / 12) * 1.005, ini:t + atraso, dur, vol:0.075 });
+        });
+      } },
+
+      // LEVEL UP — escada de fliperama subindo em onda quadrada, terminando numa
+      // nota sustentada duas oitavas acima.
+      { nome: 'Level up', tocar(ctx, t) {
+        [0, 4, 7, 12, 16, 19].forEach((st, i) => {
+          nota(ctx, { onda:'square', freq: 523.25 * Math.pow(2, st / 12),
+                      ini: t + i * 0.055, dur: 0.10, vol: 0.05 });
+        });
+        nota(ctx, { onda:'square', freq: 523.25 * Math.pow(2, 24 / 12), ini: t + 0.33, dur: 0.55, vol: 0.055 });
+      } },
+
+      // APITO DESLIZANTE — um tom só, subindo em rampa. O vibrato leve é o que
+      // tira o ar de sirene e deixa com cara de desenho animado.
+      { nome: 'Apito subindo', tocar(ctx, t) {
+        nota(ctx, { onda:'sine', freq: 620, freqFim: 2500, ini: t, dur: 0.45, vol: 0.11 });
+        nota(ctx, { onda:'sine', freq: 624, freqFim: 2515, ini: t, dur: 0.45, vol: 0.05 });
+      } }
+    ];
 
     function tocarSomReceita() {
       try {
-        if (!audioCtxReceita) audioCtxReceita = new (window.AudioContext || window.webkitAudioContext)();
-        const ctx = audioCtxReceita;
-        if (ctx.state === 'suspended') ctx.resume();
+        const ctx = ctxAudio();
         const s = SONS_RECEITA[Math.floor(Math.random() * SONS_RECEITA.length)];
-        const t0 = ctx.currentTime + 0.02;
-        s.notas.forEach((semitons, i) => {
-          const osc = ctx.createOscillator();
-          const g = ctx.createGain();
-          osc.type = s.onda;
-          osc.frequency.value = s.base * Math.pow(2, semitons / 12);
-          const ini = t0 + i * s.passo;
-          const fim = ini + s.dur;
-          g.gain.setValueAtTime(0, ini);
-          g.gain.linearRampToValueAtTime(s.vol, ini + 0.015);
-          g.gain.exponentialRampToValueAtTime(0.001, fim);
-          osc.connect(g);
-          g.connect(ctx.destination);
-          osc.start(ini);
-          osc.stop(fim + 0.05);
-        });
+        s.tocar(ctx, ctx.currentTime + 0.02);
+        window.__ultimoSomReceita = s.nome;
         window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1;
       } catch (e) { /* sem áudio disponível, segue o jogo em silêncio */ }
+    }
+
+    // Transferência não é dinheiro entrando, é dinheiro andando — por isso um sopro
+    // passando de um lado pro outro, e não uma celebração.
+    function tocarSomTransferencia() {
+      try {
+        const ctx = ctxAudio();
+        const t = ctx.currentTime + 0.02;
+        chiado(ctx, { ini:t, dur:0.55, vol:0.09, tipo:'bandpass', freq:380, freqFim:1900, q:0.8 });
+        chiado(ctx, { ini:t + 0.10, dur:0.45, vol:0.05, tipo:'bandpass', freq:600, freqFim:2600, q:1.2 });
+        window.__sonsTransferenciaTocados = (window.__sonsTransferenciaTocados || 0) + 1;
+      } catch (e) { /* idem */ }
+    }
+
+    // Toca um som específico — usado pelos botões de teste em Ajustes.
+    function testarSom(indice) {
+      try {
+        const ctx = ctxAudio();
+        if (indice === 'transferencia') return tocarSomTransferencia();
+        SONS_RECEITA[indice].tocar(ctx, ctx.currentTime + 0.02);
+      } catch (e) { /* idem */ }
+    }
+
+    function somLigado() { return localStorage.getItem('meu_financeiro_som') !== '0'; }
+
+    function alternarSomLigado() {
+      const on = document.getElementById('chkSomLigado').checked;
+      localStorage.setItem('meu_financeiro_som', on ? '1' : '0');
+      if (on) tocarSomReceita();
+    }
+
+    function renderizarSons() {
+      const box = document.getElementById('listaSons');
+      if (!box) return;
+      const chk = document.getElementById('chkSomLigado');
+      if (chk) chk.checked = somLigado();
+      box.innerHTML = '';
+      SONS_RECEITA.concat([{ nome: 'Vento (transferência)' }]).forEach((s, i) => {
+        const ehTransf = i === SONS_RECEITA.length;
+        const linha = document.createElement('div');
+        linha.className = 'item-lancamento';
+        linha.style.cursor = 'pointer';
+        linha.onclick = () => testarSom(ehTransf ? 'transferencia' : i);
+        linha.innerHTML = `
+          <div class="item-info"><strong style="font-size:13.5px;">${s.nome}</strong></div>
+          <span style="font-size:11px;color:#888;">▶ ouvir</span>
+        `;
+        box.appendChild(linha);
+      });
+    }
+
+    function renderizarContatos() {
+      const box = document.getElementById('listaContatos');
+      if (!box) return;
+      const nomes = Object.keys(contatos).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+      if (!nomes.length) {
+        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum número salvo ainda. Eles são pedidos na primeira cobrança de cada pessoa.</p>';
+        return;
+      }
+      box.innerHTML = '';
+      nomes.forEach(nome => {
+        const linha = document.createElement('div');
+        linha.className = 'item-lancamento';
+        linha.style.cursor = 'pointer';
+        linha.onclick = () => { cobrancaPendente = null; abrirModalContatoCobranca(nome); };
+        linha.innerHTML = `
+          <div class="item-info">
+            <strong style="font-size:13.5px;">${nome}</strong>
+            <div style="font-size:11px;color:#888;">${telefoneVisivel(contatos[nome])}</div>
+          </div>
+          <span style="font-size:11px;color:#888;">editar</span>
+        `;
+        box.appendChild(linha);
+      });
     }
 
     function alternarVisibilidade() {
@@ -2602,7 +2848,7 @@
       if (idAba === 'abaInvestimentos') renderizarInvestimentos();
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
-      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); }
+      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); }
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -2828,20 +3074,24 @@
       if (titulo) titulo.textContent = termo ? 'Resultados da busca' : (escopoMes ? 'Lançamentos de ' + NOMES_MESES[ref.getMonth()] : 'Todos os lançamentos');
       if (btnEscopo) btnEscopo.textContent = mostrarTodosLancamentos ? 'ver só o mês' : 'ver todos';
 
-      if (lancamentos.length === 0) {
+      if (lancamentos.length === 0 && transferencias.length === 0) {
         container.innerHTML = '<p style="color:#aaa; font-size:13px; padding:10px 0;">Nenhum lançamento cadastrado.</p>';
         return;
       }
 
       const hoje = obterDataBrasilia();
-      const filtrados = lancamentos.filter(item => {
+      // As transferências entram na mesma lista, com o mesmo filtro de mês e busca.
+      // Elas continuam fora de qualquer soma de receita/despesa — aqui é só registro.
+      const universo = lancamentos.concat(transferencias.map(transferenciaComoItem));
+      const filtrados = universo.filter(item => {
         if (termo) {
           const desc = textoSeguro(item.descricao || '');
           const conta = textoSeguro(item.conta || '');
           const cat = textoSeguro(item.categoria || '');
           const obs = textoSeguro(item.observacao || '');
           const grupo = textoSeguro(item.grupoViagemNome || '');
-          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo) || obs.includes(termo) || grupo.includes(termo);
+          const destino = textoSeguro(item.contaDestino || '');
+          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo) || obs.includes(termo) || grupo.includes(termo) || destino.includes(termo);
         }
         if (escopoMes) return (item.data || '').slice(0, 7) === chaveMesSel;
         // "ver todos": parcelas futuras não aparecem — efetivam conforme o vencimento
@@ -2871,6 +3121,23 @@
             cab.className = 'data-grupo';
             cab.textContent = `${DIAS_SEMANA_ABREV[d.getDay()]} · ${String(d.getDate()).padStart(2, '0')} ${MESES_ABREV[d.getMonth()]}${item.data > hoje ? ' · agendado' : ''}`;
             container.appendChild(cab);
+          }
+
+          if (item.__transf) {
+            const linhaT = document.createElement('div');
+            linhaT.className = 'item-lancamento';
+            linhaT.onclick = () => abrirAcoesTransferencia(item.id);
+            linhaT.innerHTML = `
+              <div class="item-info">
+                <strong style="color:#cfcfcf;">${item.conta} <span style="color:#42a5f5;">→</span> ${item.contaDestino}</strong>
+                <div style="font-size:11px;color:#888;">transferência entre contas</div>
+              </div>
+              <div class="item-acoes">
+                <span class="valor-transferencia">⇄ R$ ${item.valor}</span>
+              </div>
+            `;
+            container.appendChild(linhaT);
+            return;
           }
 
           const eReceita = item.tipo === 'receita';
@@ -3223,7 +3490,7 @@
       }
 
       salvarLocalStorage();
-      if (!idEditando && tipoAtual === 'receita') tocarSomReceita();
+      if (!idEditando && tipoAtual === 'receita' && somLigado()) tocarSomReceita();
       cancelarEdicao();
       atualizarTudo();
     }
@@ -3441,6 +3708,10 @@
       document.getElementById('modalTransferencia').classList.remove('escondido');
     }
 
+    // Transferir é irreversível na vida real e some da tela depois de salvo, então
+    // vale a conferida: o popup repete origem, destino e valor por extenso.
+    let transferenciaPendente = null;
+
     function salvarTransferencia() {
       const origem = document.getElementById('transfOrigem').value;
       const destino = document.getElementById('transfDestino').value;
@@ -3451,9 +3722,67 @@
       if (origem === destino) { alert('Escolha duas contas diferentes.'); return; }
       if (!valor || valor <= 0) { alert('Digite um valor válido.'); return; }
 
-      transferencias.unshift({ id: Date.now(), data, origem, destino, valor: valor.toFixed(2).replace('.', ',') });
+      transferenciaPendente = { id: Date.now(), data, origem, destino, valor: valor.toFixed(2).replace('.', ',') };
+      document.getElementById('resumoConfirmaTransf').innerHTML = `
+        <strong style="color:#42a5f5;font-size:22px;">${fmtVal(valor)}</strong>
+        <div style="margin-top:10px;font-size:14px;color:#ddd;">
+          <div>${origem}</div>
+          <div style="color:#42a5f5;font-size:18px;line-height:1.2;">↓</div>
+          <div>${destino}</div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#888;">${data.split('-').reverse().join('/')}</div>
+      `;
+      document.getElementById('modalConfirmaTransferencia').classList.remove('escondido');
+    }
+
+    function confirmarTransferencia() {
+      if (!transferenciaPendente) return;
+      transferencias.unshift(transferenciaPendente);
+      transferenciaPendente = null;
       salvarTransferencias();
+      if (somLigado()) tocarSomTransferencia();
+      fecharModal('modalConfirmaTransferencia');
       fecharModal('modalTransferencia');
+      renderizarLancamentos();
+      atualizarFaturas();
+    }
+
+    // A transferência aparece na lista de lançamentos como um item próprio, em azul,
+    // pra não ser confundida com receita nem despesa — é o mesmo dinheiro trocando
+    // de bolso. Este molde é o que a lista consome.
+    function transferenciaComoItem(t) {
+      return {
+        __transf: true,
+        id: t.id,
+        data: t.data,
+        valor: t.valor,
+        descricao: t.origem + ' → ' + t.destino,
+        conta: t.origem,
+        contaDestino: t.destino
+      };
+    }
+
+    let transferenciaSelecionadaId = null;
+
+    function abrirAcoesTransferencia(id) {
+      const t = transferencias.find(x => x.id === id);
+      if (!t) return;
+      transferenciaSelecionadaId = id;
+      document.getElementById('infoAcoesTransferencia').innerHTML = `
+        <span style="color:#42a5f5;font-size:19px;font-weight:bold;">${fmtOculto(parseVal(t.valor))}</span>
+        <div style="font-size:12px;color:#888;margin-top:2px;">${t.data.split('-').reverse().join('/')} • ${t.origem} → ${t.destino}</div>
+      `;
+      document.getElementById('modalAcoesTransferencia').classList.remove('escondido');
+    }
+
+    function excluirTransferencia() {
+      if (!transferenciaSelecionadaId) return;
+      transferencias = transferencias.filter(t => t.id !== transferenciaSelecionadaId);
+      transferenciaSelecionadaId = null;
+      salvarTransferencias();
+      fecharModal('modalAcoesTransferencia');
+      renderizarLancamentos();
+      atualizarFaturas();
     }
 
     /* REQUISIÇÃO 5: ALTERNAR EXIBIÇÃO RECOLHÍVEL DO PERÍODO NOS GRÁFICOS */
@@ -4480,6 +4809,17 @@
         }
       });
 
+      // Transferência não muda o saldo do mês (o dinheiro continua com você), mas
+      // muda o saldo DE CADA CONTA — que é justamente o número usado pra decidir se
+      // dá pra pagar a fatura. Sem isto, mover de uma conta pra outra não aparecia.
+      transferencias.forEach(t => {
+        const d = new Date(t.data + 'T12:00:00');
+        if (d.getMonth() !== mes || d.getFullYear() !== ano) return;
+        const v = parseVal(t.valor);
+        porContaNet[t.origem] = (porContaNet[t.origem] || 0) - v;
+        porContaNet[t.destino] = (porContaNet[t.destino] || 0) + v;
+      });
+
       // faturas efetivamente pagas neste mês, pelo valor real informado
       let faturasPagasNoMes = 0;
       const chaveMes = String(ano) + '-' + String(mes + 1).padStart(2, '0');
@@ -4633,6 +4973,130 @@
       aplicarSecao('pagamentoFatura');
       const card = document.querySelector('[data-card="pagamentoFatura"]');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* COBRANÇA PELO WHATSAPP
+       O texto sai pronto do que já está no app e chega ESCRITO na caixa de mensagem
+       do WhatsApp — não enviado. Você lê, ajusta se quiser e toca em enviar. Disparo
+       sozinho exigiria a API oficial da Meta e um servidor; isto aqui não precisa de
+       nada além do próprio celular. */
+    let cobrancaPendente = null;
+
+    /* O tom segue a mesma regra da cor na tela: basta uma cobrança vencida pra
+       pessoa inteira virar "atrasado". Assim o texto nunca sai mais leve do que o
+       vermelho que você está vendo. */
+    function tomDaCobranca(lista, emAtraso, perto) {
+      if (lista.some(emAtraso)) return 'atrasado';
+      if (lista.some(perto)) return 'chegando';
+      return 'tranquilo';
+    }
+
+    function textoDaCobranca(nome, lista, devo) {
+      const hoje = obterDataBrasilia();
+      const total = lista.reduce((sm, c) => sm + c.valor, 0);
+      // dd/mm basta na mensagem: o ano só polui uma frase curta de WhatsApp
+      const dia = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
+
+      // Uma linha por compra, não por parcela: "Airbnb (venceu 05/08)" é o que a
+      // pessoa reconhece, "parcela 2/4" não.
+      const porCompra = {};
+      lista.forEach(c => {
+        const k = chaveCompra(c.lanc);
+        (porCompra[k] = porCompra[k] || { desc: descricaoBaseCompra(c.lanc.descricao), valor: 0, vence: null }).valor += c.valor;
+        const p = porCompra[k];
+        if (c.vence && (!p.vence || c.vence < p.vence)) p.vence = c.vence;
+      });
+      // Com uma compra só, o valor já foi dito na abertura — repetir soa de robô.
+      const compras = Object.values(porCompra);
+      const umaSo = compras.length === 1;
+      const itens = compras.map(p => {
+        const prazo = p.vence ? (p.vence < hoje ? ' (venceu ' + dia(p.vence) + ')' : ' (vence ' + dia(p.vence) + ')') : '';
+        return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
+      });
+
+      // Três tons: lembrete leve pra quem ainda vai vencer, cobrança direta (mas sem
+      // grosseria — são amigos) pra quem já passou do prazo, e um recado neutro pra
+      // quando você só quer combinar antes da hora.
+      const emAtraso = c => c.vence && c.vence < hoje;
+      const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
+      const tom = tomDaCobranca(lista, emAtraso, perto);
+      const detalhe = itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0];
+
+      if (devo) {
+        const abertura = tom === 'atrasado'
+          ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
+          : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
+        return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
+      }
+
+      if (tom === 'atrasado') {
+        const totalVencido = lista.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
+        const quanto = Math.abs(totalVencido - total) < 0.01
+          ? `dos ${fmtVal(total)}`
+          : `dos ${fmtVal(totalVencido)} que já venceram (de ${fmtVal(total)} no total)`;
+        return `Oi ${nome}! 👋 Tudo certo? Passando aqui por causa ${quanto}`
+          + detalhe + '\n\nConsegue dar um jeito nessa semana? Qualquer coisa a gente combina 🙏';
+      }
+
+      if (tom === 'chegando') {
+        const proxima = lista.map(c => c.vence).filter(Boolean).sort()[0];
+        const faltam = diasAte(proxima);
+        const quando = faltam === 0 ? 'vence hoje' : faltam === 1 ? 'vence amanhã' : `vence em ${faltam} dias`;
+        // com uma compra só, a data entre parênteses repetiria o "vence em X dias"
+        const corpo = umaSo ? ' — ' + compras[0].desc : detalhe;
+        return `Oi ${nome}! 👋 Só passando pra lembrar que ${quando}: ${fmtVal(total)}`
+          + corpo + '\n\nSem pressa, é só pra não passar batido 😄';
+      }
+
+      return `Oi ${nome}! 👋 Passando pra alinhar os ${fmtVal(total)}` + detalhe
+        + '\n\nQuando puder me dá um toque 🙏';
+    }
+
+    function abrirCobrancaWhatsApp(nome, chaves, devo) {
+      const abertas = cobrancasAbertas().filter(c => chaves.includes(c.chave));
+      if (!abertas.length) return;
+      cobrancaPendente = { nome, texto: textoDaCobranca(nome, abertas, devo) };
+      const tel = normalizarTelefone(contatos[nome]);
+      if (tel) return dispararWhatsApp(tel);
+      abrirModalContatoCobranca(nome);
+    }
+
+    function dispararWhatsApp(tel) {
+      if (!cobrancaPendente) return;
+      window.open(`https://wa.me/${tel}?text=${encodeURIComponent(cobrancaPendente.texto)}`, '_blank');
+      cobrancaPendente = null;
+    }
+
+    function abrirModalContatoCobranca(nome) {
+      document.getElementById('tituloContatoCobranca').textContent = 'WhatsApp de ' + nome;
+      document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(contatos[nome] || '');
+      document.getElementById('inputTelefoneCobranca').dataset.nome = nome;
+      // A agenda do celular só está disponível no Chrome do Android; no iPhone o
+      // botão some e sobra o campo manual, que funciona em qualquer aparelho.
+      const btnAgenda = document.getElementById('btnEscolherDaAgenda');
+      const temPicker = !!(navigator.contacts && navigator.contacts.select);
+      btnAgenda.classList.toggle('escondido', !temPicker);
+      document.getElementById('modalContatoCobranca').classList.remove('escondido');
+    }
+
+    async function escolherDaAgenda() {
+      try {
+        const sel = await navigator.contacts.select(['name', 'tel'], { multiple: false });
+        if (!sel || !sel.length || !sel[0].tel || !sel[0].tel.length) return;
+        document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(normalizarTelefone(sel[0].tel[0])) || sel[0].tel[0];
+      } catch (e) { /* usuário cancelou a agenda, segue com o campo manual */ }
+    }
+
+    function salvarContatoCobranca() {
+      const campo = document.getElementById('inputTelefoneCobranca');
+      const nome = campo.dataset.nome;
+      const tel = normalizarTelefone(campo.value);
+      if (!tel) { alert('Número inválido. Inclua o DDD — ex: (11) 98765-4321.'); return; }
+      contatos[nome] = tel;
+      salvarContatos();
+      fecharModal('modalContatoCobranca');
+      renderizarEmprestimos();
+      if (cobrancaPendente) dispararWhatsApp(tel);
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -4820,6 +5284,9 @@
               <span class="chevron-sec">${aberto ? '▾' : '▸'}</span>
             </div>
           `;
+
+          // A linha fechada não ganha botão nenhum: a cor já diz o que precisa de
+          // atenção. Quem está amarelo ou vermelho você abre, e a ação está lá dentro.
           bloco.appendChild(cabecalho);
 
           if (aberto) {
@@ -4911,6 +5378,22 @@
               btnTudo.onclick = () => abrirReceberEmprestimo(lista.map(c => c.chave));
               listaEl.appendChild(btnTudo);
             }
+
+            // A ação mora só aqui dentro. O rótulo acompanha o status, pra você já
+            // saber o tom da mensagem que vai sair antes de tocar.
+            const tom = tomDaCobranca(lista, emAtraso, perto);
+            const btnZapCheio = document.createElement('button');
+            btnZapCheio.type = 'button';
+            btnZapCheio.className = 'btn-mini';
+            btnZapCheio.style.cssText = 'margin-top:8px;margin-left:6px;'
+              + (tom === 'atrasado' ? 'color:#ef5350;border-color:rgba(239,83,80,.35);'
+                : tom === 'chegando' ? 'color:#ffd166;border-color:rgba(255,209,102,.35);' : '');
+            btnZapCheio.textContent = devo
+              ? '💬 Falar com ' + nome
+              : (tom === 'atrasado' ? '💬 Cobrar ' + nome : tom === 'chegando' ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
+            btnZapCheio.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
+            listaEl.appendChild(btnZapCheio);
+
             bloco.appendChild(listaEl);
           }
 
@@ -5353,7 +5836,7 @@
       });
 
       salvarLocalStorage();
-      if (!devo) tocarSomReceita();   // o som celebra dinheiro entrando
+      if (!devo && somLigado()) tocarSomReceita();   // o som celebra dinheiro entrando
       fecharModal('modalReceberEmprestimo');
       recebimentoEmprestimoChaves = [];
       atualizarTudo();
@@ -5417,13 +5900,27 @@
           const d = new Date(l.data + 'T12:00:00');
           return d.getMonth() === mes && d.getFullYear() === ano;
         });
+        // Fatura paga e transferências não são lançamentos, mas mexem no saldo desta
+        // conta — então precisam aparecer aqui, senão a lista não fecha com o número.
+        const extras = [];
         const pg = faturasPagas[chaveFatura(contaNome, mes, ano)];
-        if (pg && pg.data) {
-          boxSubFat.innerHTML = `
+        if (pg && pg.data) extras.push({
+          rotulo: '🧾 Fatura paga em ' + pg.data.split('-').reverse().join('/'),
+          valor: -parseVal(pg.valorPago)
+        });
+        transferencias.forEach(t => {
+          const d = new Date(t.data + 'T12:00:00');
+          if (d.getMonth() !== mes || d.getFullYear() !== ano) return;
+          const dataFmt = t.data.split('-').reverse().join('/');
+          if (t.origem === contaNome) extras.push({ rotulo: `⇄ Enviado para ${t.destino} em ${dataFmt}`, valor: -parseVal(t.valor) });
+          if (t.destino === contaNome) extras.push({ rotulo: `⇄ Recebido de ${t.origem} em ${dataFmt}`, valor: parseVal(t.valor) });
+        });
+        if (extras.length) {
+          boxSubFat.innerHTML = extras.map(x => `
             <div class="linha-subtotal" style="cursor:default;">
-              <span>🧾 Fatura paga em ${pg.data.split('-').reverse().join('/')}</span>
-              <strong style="color:#ef5350;">${fmtOculto(parseVal(pg.valorPago))}</strong>
-            </div>`;
+              <span>${x.rotulo}</span>
+              <strong style="color:${x.valor >= 0 ? '#4caf50' : '#ef5350'};">${x.valor >= 0 ? '+' : '−'}${fmtOculto(Math.abs(x.valor))}</strong>
+            </div>`).join('');
           boxSubFat.classList.remove('escondido');
         }
       }
@@ -6572,7 +7069,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.09-2';
+    const APP_VERSION = '2026.08.09-4';
 
     // Inicialização
     carregarLocalStorage();
@@ -6582,6 +7079,7 @@ function confirmarLancamentoVoz() {
     carregarInvest();
     carregarGrupos();
     carregarTransferencias();
+    carregarContatos();
     carregarOrcamentos();
     carregarFaturasPagas();
     carregarContas();
@@ -6595,6 +7093,8 @@ function confirmarLancamentoVoz() {
     aplicarSecao('metas');
     aplicarSecao('fixos');
     aplicarSecao('backup');
+    aplicarSecao('contatos');
+    aplicarSecao('sons');
     aplicarSecao('emprestimos');
     aplicarSecao('pagamentoFatura');
     if (uiPrefs['secao_lancamentosMes'] === undefined) uiPrefs['secao_lancamentosMes'] = true;

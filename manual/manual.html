@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>MeuFinanceiro — Manual de uso</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #23282e; margin: 0; font-size: 10.5pt; line-height: 1.55;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
+
+  /* ---------- capa ---------- */
+  .capa {
+    height: 250mm; display: flex; flex-direction: column; justify-content: center;
+    page-break-after: always; text-align: center;
+  }
+  .capa .marca {
+    width: 76px; height: 76px; margin: 0 auto 26px; border-radius: 20px;
+    background: #111; color: #e9c46a; font-size: 40px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .capa h1 { font-size: 34pt; line-height: 1.05; }
+  .capa .sub { font-size: 14pt; color: #6b7480; margin-top: 12px; font-weight: 500; }
+  .capa .linha { width: 54px; height: 3px; background: #2196f3; margin: 28px auto; border-radius: 2px; }
+  .capa .rodape { font-size: 9.5pt; color: #8c95a0; margin-top: 6px; }
+
+  /* ---------- estrutura ---------- */
+  section { page-break-inside: avoid; margin-bottom: 18px; }
+  .numero {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 23px; height: 23px; border-radius: 50%; background: #2196f3; color: #fff;
+    font-size: 11pt; font-weight: 700; margin-right: 9px; flex-shrink: 0;
+  }
+  h2 { font-size: 15.5pt; display: flex; align-items: center; margin-bottom: 4px; }
+  .resumo { color: #5c656f; margin: 0 0 12px 32px; font-size: 10.5pt; }
+  h3 { font-size: 11pt; margin: 14px 0 4px; color: #1b1f24; }
+  p { margin: 0 0 8px; }
+  ul { margin: 0 0 8px; padding-left: 18px; }
+  li { margin-bottom: 4px; }
+  .conteudo { margin-left: 32px; }
+
+  /* ---------- imagens ---------- */
+  .tela { margin: 10px 0; text-align: center; }
+  .tela img {
+    max-width: 60%; border-radius: 10px; border: 1px solid #d6dbe0;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+  }
+  .tela.metade img { max-width: 46%; }
+  .tela.pequena img { max-width: 38%; }
+  .legenda { font-size: 8.8pt; color: #8c95a0; margin-top: 5px; font-style: italic; }
+
+  /* ---------- destaques ---------- */
+  .nota {
+    background: #f2f7fd; border-left: 3px solid #2196f3; padding: 9px 13px;
+    border-radius: 0 7px 7px 0; margin: 10px 0; font-size: 10pt;
+  }
+  .atencao { background: #fdf6ec; border-left-color: #e0a63a; }
+  .nota strong { color: #12508f; }
+  .atencao strong { color: #8a5d0d; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.8pt; }
+  th { text-align: left; background: #f4f6f8; padding: 7px 10px; font-weight: 700; border-bottom: 2px solid #e2e6ea; }
+  td { padding: 7px 10px; border-bottom: 1px solid #edf0f2; vertical-align: top; }
+  .cor { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
+  code {
+    background: #f0f2f4; padding: 1px 5px; border-radius: 4px;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9.2pt;
+  }
+  .quebra { page-break-before: always; }
+  .fim { margin-top: 26px; padding-top: 14px; border-top: 1px solid #e2e6ea; color: #8c95a0; font-size: 9pt; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <div class="marca">$</div>
+  <h1>MeuFinanceiro</h1>
+  <div class="sub">Manual de uso</div>
+  <div class="linha"></div>
+  <p style="color:#5c656f;max-width:105mm;margin:0 auto;font-size:11pt;">
+    Controle de gastos que funciona no seu celular, sem conta pra criar,
+    sem internet e sem ninguém vendo seus dados.
+  </p>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.08.09 · Leia em 10 minutos</div>
+</div>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">1</span>Antes de tudo: como o app guarda seus dados</h2>
+  <p class="resumo">Três coisas que mudam a forma de usar.</p>
+  <div class="conteudo">
+    <ul>
+      <li><strong>Tudo fica no seu aparelho.</strong> Não existe servidor, não existe cadastro, ninguém tem acesso aos seus números — nem quem fez o app.</li>
+      <li><strong>Funciona sem internet.</strong> Depois de instalado, abre e lança normalmente no avião, no elevador, no sítio.</li>
+      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Exporte de vez em quando (item 12).</li>
+    </ul>
+    <div class="nota atencao">
+      <strong>Instale na tela inicial.</strong> Abra o link no Chrome → menu <code>⋮</code> → <em>Adicionar à tela inicial</em>.
+      Assim ele vira um ícone como qualquer outro app, abre em tela cheia e funciona offline.
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="numero">2</span>As seis abas</h2>
+  <p class="resumo">Deslize o dedo para os lados para trocar de aba.</p>
+  <div class="conteudo">
+    <div class="tela"><img src="img/abas.png" alt="As abas do app"></div>
+    <table>
+      <tr><th style="width:26%;">Aba</th><th>Para que serve</th></tr>
+      <tr><td><strong>Lançamentos</strong></td><td>Registrar o que entrou e o que saiu. É onde você passa 90% do tempo.</td></tr>
+      <tr><td><strong>Faturas</strong></td><td>O painel do mês: saldo, cartão, gastos fixos, empréstimos.</td></tr>
+      <tr><td><strong>Gráficos</strong></td><td>Para onde o dinheiro foi, por categoria, com metas.</td></tr>
+      <tr><td><strong>Grupos</strong></td><td>Juntar gastos de uma viagem ou evento e ver o total fechado.</td></tr>
+      <tr><td><strong>Investim.</strong></td><td>Anotar aplicações e acompanhar o patrimônio.</td></tr>
+      <tr><td><strong>Ajustes</strong></td><td>Contas, categorias, ordem dos cards, sons e backup.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="quebra">
+  <h2><span class="numero">3</span>Lançar um gasto</h2>
+  <p class="resumo">Descrição, valor, e pronto. O resto o app preenche sozinho.</p>
+  <div class="conteudo">
+    <div class="tela metade"><img src="img/form.png" alt="Formulário de novo lançamento"></div>
+    <ul>
+      <li><strong>Despesa ou Receita</strong> — os dois botões no topo.</li>
+      <li><strong>Forma</strong> — a escolha mais importante do formulário. Veja o item 5.</li>
+      <li><strong>Parcelado</strong> — digite o valor <em>total</em> e o número de parcelas. O app cria todas as parcelas futuras sozinho, cada uma no seu mês.</li>
+      <li><strong>Vincular a um grupo</strong> — marque para somar esse gasto numa viagem ou evento.</li>
+      <li><strong>Emprestei para alguém</strong> — marque e diga o nome. Vira uma cobrança na aba Faturas.</li>
+    </ul>
+    <div class="nota">
+      <strong>Pelo microfone.</strong> Toque no ícone de microfone e fale naturalmente:
+      <em>“paguei 35 reais de uber ontem”</em> ou <em>“comprei um notebook de 4500 em 10 vezes no cartão”</em>.
+      O app entende valor, data, categoria, conta e parcelas, e ainda aprende com o seu histórico:
+      se você já lançou “Mercado” no débito do PicPay, da próxima vez ele já sugere igual.
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">4</span>Perguntar em português</h2>
+  <p class="resumo">Ainda na aba Lançamentos, lá embaixo.</p>
+  <div class="conteudo">
+    <div class="tela"><img src="img/perguntas.png" alt="Campo de perguntas"></div>
+    <p>Digite ou fale. Funciona com perguntas do dia a dia:</p>
+    <ul>
+      <li><em>quanto gastei com uber esta semana</em></li>
+      <li><em>onde gastei mais este mês</em></li>
+      <li><em>quem me deve</em> · <em>quanto sobrou em julho</em></li>
+      <li><em>qual foi meu maior gasto</em> · <em>parcelas em aberto</em></li>
+      <li><em>gastei mais que mês passado?</em> · <em>média por dia</em></li>
+    </ul>
+    <p>Dá para incluir o período em qualquer uma: <em>hoje</em>, <em>esta semana</em>, <em>em julho</em>, <em>neste ano</em>, <em>desde o início</em>.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="quebra">
+  <h2><span class="numero">5</span>A regra mais importante: débito × crédito</h2>
+  <p class="resumo">É isso que faz o número do app bater com o extrato do banco.</p>
+  <div class="conteudo">
+    <p>Comprar no crédito <strong>não tira dinheiro da sua conta no dia da compra</strong>. Vira fatura. O dinheiro só sai quando você paga a fatura. O app segue exatamente essa lógica:</p>
+    <table>
+      <tr><th style="width:34%;">Você lançou como</th><th>O que acontece com o saldo</th></tr>
+      <tr><td><strong>À vista / Débito</strong><br><span style="color:#6b7480;">ou dinheiro, Pix</span></td><td>Sai da conta <strong>na hora</strong>, pela data da compra.</td></tr>
+      <tr><td><strong>Crédito à vista</strong><br><strong>Crédito parcelado</strong></td><td>Não mexe no saldo. Entra na <strong>fatura</strong> do cartão e só sai quando a fatura for paga.</td></tr>
+    </table>
+    <div class="tela"><img src="img/resumo.png" alt="Resumo do mês na aba Faturas"></div>
+    <ul>
+      <li><strong>Saldo do mês</strong> — recebido menos o que realmente saiu da conta.</li>
+      <li><strong>Recebido</strong> — tudo que entrou no mês.</li>
+      <li><strong>Saiu da conta</strong> — gastos no débito <em>mais</em> faturas pagas neste mês.</li>
+      <li><strong>Fatura em aberto</strong> — o que está no cartão e ainda vai sair. Toque para ir direto ao pagamento.</li>
+    </ul>
+    <p>Toque em <strong>Saldo do mês</strong> para abrir o detalhamento:</p>
+    <div class="tela metade"><img src="img/popup_saldo.png" alt="Popup do saldo do mês"></div>
+    <div class="legenda">Em cima, o dinheiro que passou pela conta. Embaixo, o cartão — que ainda não passou.</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="quebra">
+  <h2><span class="numero">6</span>Pagar a fatura do cartão</h2>
+  <p class="resumo">O passo que fecha a conta do mês.</p>
+  <div class="conteudo">
+    <div class="tela"><img src="img/fatura.png" alt="Card de pagamento da fatura"></div>
+    <p>Quando o banco cobrar a fatura, marque aqui e <strong>digite o valor real que você pagou</strong> — não o que o app calculou.</p>
+    <div class="nota">
+      <strong>E se não bater?</strong> Se o valor do banco for diferente do somado aqui, o app cria sozinho um lançamento
+      <em>“Ajuste de fatura — não identificado”</em> com a diferença exata. Aí você investiga com calma
+      qual compra faltou registrar, em vez de ficar caçando centavos.
+    </div>
+    <p>Depois de marcada como paga, aquele valor entra em <strong>Saiu da conta</strong> e o saldo do mês se acerta.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">7</span>Gastos fixos</h2>
+  <p class="resumo">Aluguel, streaming, academia — o que se repete todo mês.</p>
+  <div class="conteudo">
+    <div class="tela"><img src="img/fixos.png" alt="Card de gastos fixos"></div>
+    <p>Cadastre uma vez e o app mostra, mês a mês, o que já foi lançado e o que ainda não foi.
+       O total por mês e quanto disso cai no cartão ficam no topo do card — útil para saber
+       o piso do seu custo de vida.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="quebra">
+  <h2><span class="numero">8</span>Empréstimos e cobrança pelo WhatsApp</h2>
+  <p class="resumo">Quem te deve, quanto, desde quando — e como cobrar sem constrangimento.</p>
+  <div class="conteudo">
+    <p>Ao lançar um gasto, marque <strong>“Emprestei para alguém”</strong> e diga o nome.
+       Ele aparece aqui agrupado por pessoa, com um sinal de trânsito:</p>
+    <table>
+      <tr><th style="width:22%;">Cor</th><th>Significa</th></tr>
+      <tr><td><span class="cor" style="background:#4caf50;"></span><strong>Verde</strong></td><td>No prazo. Não precisa fazer nada.</td></tr>
+      <tr><td><span class="cor" style="background:#ffd166;"></span><strong>Amarelo</strong></td><td>Está chegando o vencimento. Vale um lembrete.</td></tr>
+      <tr><td><span class="cor" style="background:#ef5350;"></span><strong>Vermelho</strong></td><td>Já venceu. Pode cobrar.</td></tr>
+    </table>
+    <div class="tela"><img src="img/emprestimos.png" alt="Card de empréstimos com o botão de cobrança"></div>
+    <p>Toque no nome da pessoa para abrir o que ela deve. Lá dentro aparece o botão de mensagem,
+       e <strong>o texto muda conforme a cor</strong>:</p>
+    <ul>
+      <li><strong>Cobrar</strong> (vermelho) — direto, separando o que já venceu do total.</li>
+      <li><strong>Lembrar</strong> (amarelo) — leve, com o prazo em dias.</li>
+      <li><strong>Combinar com</strong> (verde) — neutro, para alinhar antes da hora.</li>
+    </ul>
+    <p>Na primeira cobrança de cada pessoa o app pede o WhatsApp dela — dá para escolher da agenda
+       do celular ou digitar. Depois disso, vai direto.</p>
+    <div class="nota">
+      <strong>A mensagem não é enviada sozinha.</strong> Ela chega <em>escrita</em> na caixa de texto do WhatsApp,
+      já com nome, valor e vencimento. Você lê, ajusta se quiser, e toca em enviar.
+    </div>
+    <p>Quer ser avisado sem precisar abrir? Toque em <strong>“ativar lembrete de cobrança”</strong> e escolha
+       a antecedência (1 semana, 3 dias, 1 dia, no dia). O ícone do app passa a mostrar quantas cobranças estão vencidas.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">9</span>Transferência entre suas contas</h2>
+  <p class="resumo">Passar dinheiro do PicPay para o Itaú não é gasto nem receita.</p>
+  <div class="conteudo">
+    <div class="tela metade"><img src="img/transferencia.png" alt="Modal de transferência"></div>
+    <p>Use o botão <code>⇄</code> no topo da aba Lançamentos. O app pede confirmação, mostra a transferência
+       na lista <strong>em azul</strong> e ajusta o saldo de cada conta — mas <strong>não</strong> conta como
+       despesa nem receita, porque o dinheiro continua sendo seu.</p>
+    <p>É o que você faz antes de pagar a fatura, quando precisa juntar o valor numa conta só.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">10</span>Gráficos e metas</h2>
+  <p class="resumo">Para onde o dinheiro foi, e se você está dentro do combinado.</p>
+  <div class="conteudo">
+    <div class="tela metade"><img src="img/graficos_topo.png" alt="Filtros de período"></div>
+    <p>Escolha o período na primeira linha. O olho ao lado esconde todos os valores — útil para
+       mostrar a tela para alguém sem expor seus números.</p>
+    <div class="nota">
+      Aqui a régua é o <strong>consumo</strong>: soma débito e crédito pela data da compra. É de propósito
+      diferente do saldo da aba Faturas — senão o gráfico por categoria ficaria cego para o que você gastou no cartão.
+    </div>
+    <div class="tela metade"><img src="img/graficos_barras.png" alt="Gráfico de despesas por categoria"></div>
+    <p>Em <strong>Metas</strong> você define um teto mensal por categoria. A meta acompanha o período escolhido:
+       R$ 100 por mês vira R$ 1.200 quando você olha o ano inteiro.</p>
+    <div class="tela metade"><img src="img/metas.png" alt="Card de metas"></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">11</span>Grupos: viagens e eventos</h2>
+  <p class="resumo">Quanto custou a viagem inteira, no fim das contas.</p>
+  <div class="conteudo">
+    <div class="tela"><img src="img/grupos.png" alt="Aba de grupos"></div>
+    <p>Crie um grupo (“Viagem Ubatuba”, “Aniversário”, “Reforma”) e marque os gastos que pertencem a ele
+       na hora de lançar. O app soma tudo, mostra por categoria e permite fechar o grupo quando acabar.</p>
+    <p>Funciona junto com os empréstimos: se você pagou a pousada e vai dividir depois, marque as duas coisas.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">12</span>Ajustes</h2>
+  <p class="resumo">Onde você deixa o app com a sua cara.</p>
+  <div class="conteudo">
+    <ul>
+      <li><strong>Contas e cartões</strong> — cadastre seus bancos, marque quais têm crédito e informe o dia de fechamento e vencimento de cada cartão. Isso é o que faz a fatura cair no mês certo.</li>
+      <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.</li>
+      <li><strong>Ordem dos cards</strong> — arraste pelas listrinhas para deixar no topo o que você olha primeiro.</li>
+      <li><strong>Contatos de cobrança</strong> — os números do WhatsApp já salvos, para corrigir.</li>
+      <li><strong>Sons</strong> — cinco comemorações diferentes tocam quando você lança uma receita. Toque para ouvir, ou desligue tudo.</li>
+      <li><strong>Backup e restauração</strong> — o item mais importante desta lista.</li>
+    </ul>
+    <div class="nota atencao">
+      <strong>Faça backup.</strong> Exporte um arquivo e guarde no Drive ou mande para você mesmo no WhatsApp.
+      É a única forma de levar seu histórico para outro celular. Uma vez por mês já resolve.
+    </div>
+    <div class="tela metade"><img src="img/ajustes.png" alt="Aba de ajustes"></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="quebra">
+  <h2><span class="numero">13</span>Rotina que funciona</h2>
+  <div class="conteudo">
+    <table>
+      <tr><th style="width:26%;">Quando</th><th>O que fazer</th></tr>
+      <tr><td><strong>Na hora do gasto</strong></td><td>Lance na hora, pelo microfone se estiver com pressa. O que fica para depois não é lançado.</td></tr>
+      <tr><td><strong>Toda semana</strong></td><td>Abra a aba Faturas e confira o saldo. Olhe as cores dos empréstimos.</td></tr>
+      <tr><td><strong>Quando a fatura vier</strong></td><td>Marque como paga com o valor real do banco e investigue o ajuste, se houver.</td></tr>
+      <tr><td><strong>Uma vez por mês</strong></td><td>Passe pelos Gráficos para ver as categorias, e exporte o backup.</td></tr>
+    </table>
+
+    <h3>Dúvidas rápidas</h3>
+    <p><strong>Lancei errado, e agora?</strong> Toque no lançamento na lista e escolha editar ou excluir.</p>
+    <p><strong>Comprei parcelado, preciso lançar todo mês?</strong> Não. Lance uma vez com o total e o número de parcelas.</p>
+    <p><strong>O saldo não bate com o banco.</strong> Quase sempre é forma de pagamento trocada: um gasto no crédito lançado como débito (ou o contrário). Confira em <em>Saldo do mês</em>.</p>
+    <p><strong>Troquei de celular.</strong> Instale o app, vá em Ajustes → Backup → Importar e escolha o arquivo que você exportou.</p>
+    <p><strong>Vou mostrar a tela para alguém.</strong> Toque no ícone de olho para esconder todos os valores.</p>
+
+    <div class="fim">
+      MeuFinanceiro · seus dados ficam no seu aparelho, sempre.
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
