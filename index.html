@@ -4982,6 +4982,15 @@
        nada além do próprio celular. */
     let cobrancaPendente = null;
 
+    /* O tom segue a mesma regra da cor na tela: basta uma cobrança vencida pra
+       pessoa inteira virar "atrasado". Assim o texto nunca sai mais leve do que o
+       vermelho que você está vendo. */
+    function tomDaCobranca(lista, emAtraso, perto) {
+      if (lista.some(emAtraso)) return 'atrasado';
+      if (lista.some(perto)) return 'chegando';
+      return 'tranquilo';
+    }
+
     function textoDaCobranca(nome, lista, devo) {
       const hoje = obterDataBrasilia();
       const total = lista.reduce((sm, c) => sm + c.valor, 0);
@@ -4997,16 +5006,50 @@
         const p = porCompra[k];
         if (c.vence && (!p.vence || c.vence < p.vence)) p.vence = c.vence;
       });
-      const itens = Object.values(porCompra).map(p => {
+      // Com uma compra só, o valor já foi dito na abertura — repetir soa de robô.
+      const compras = Object.values(porCompra);
+      const umaSo = compras.length === 1;
+      const itens = compras.map(p => {
         const prazo = p.vence ? (p.vence < hoje ? ' (venceu ' + dia(p.vence) + ')' : ' (vence ' + dia(p.vence) + ')') : '';
-        return `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
+        return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
       });
 
-      const abertura = devo
-        ? `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`
-        : `Oi ${nome}! 👋 Passando pra lembrar dos ${fmtVal(total)}`;
-      const fecho = devo ? '\n\nMe manda a chave que eu já resolvo 🙏' : '\n\nQuando puder me dá um toque 🙏';
-      return abertura + (itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0]) + fecho;
+      // Três tons: lembrete leve pra quem ainda vai vencer, cobrança direta (mas sem
+      // grosseria — são amigos) pra quem já passou do prazo, e um recado neutro pra
+      // quando você só quer combinar antes da hora.
+      const emAtraso = c => c.vence && c.vence < hoje;
+      const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
+      const tom = tomDaCobranca(lista, emAtraso, perto);
+      const detalhe = itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0];
+
+      if (devo) {
+        const abertura = tom === 'atrasado'
+          ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
+          : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
+        return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
+      }
+
+      if (tom === 'atrasado') {
+        const totalVencido = lista.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
+        const quanto = Math.abs(totalVencido - total) < 0.01
+          ? `dos ${fmtVal(total)}`
+          : `dos ${fmtVal(totalVencido)} que já venceram (de ${fmtVal(total)} no total)`;
+        return `Oi ${nome}! 👋 Tudo certo? Passando aqui por causa ${quanto}`
+          + detalhe + '\n\nConsegue dar um jeito nessa semana? Qualquer coisa a gente combina 🙏';
+      }
+
+      if (tom === 'chegando') {
+        const proxima = lista.map(c => c.vence).filter(Boolean).sort()[0];
+        const faltam = diasAte(proxima);
+        const quando = faltam === 0 ? 'vence hoje' : faltam === 1 ? 'vence amanhã' : `vence em ${faltam} dias`;
+        // com uma compra só, a data entre parênteses repetiria o "vence em X dias"
+        const corpo = umaSo ? ' — ' + compras[0].desc : detalhe;
+        return `Oi ${nome}! 👋 Só passando pra lembrar que ${quando}: ${fmtVal(total)}`
+          + corpo + '\n\nSem pressa, é só pra não passar batido 😄';
+      }
+
+      return `Oi ${nome}! 👋 Passando pra alinhar os ${fmtVal(total)}` + detalhe
+        + '\n\nQuando puder me dá um toque 🙏';
     }
 
     function abrirCobrancaWhatsApp(nome, chaves, devo) {
@@ -5242,29 +5285,9 @@
             </div>
           `;
 
-          // O balãozinho de cobrar só existe quando há motivo pra cobrar: venceu ou
-          // está chegando. No verde ele não aparece, e a linha fica igual à de hoje.
-          // Fica fora do <button> do cabeçalho de propósito — botão dentro de botão
-          // é HTML inválido e quebra o toque em alguns navegadores.
-          const podeCobrar = atrasadas > 0 || chegando > 0;
-          if (podeCobrar) {
-            cabecalho.style.flex = '1';
-            cabecalho.style.minWidth = '0';
-            const linhaCab = document.createElement('div');
-            linhaCab.style.cssText = 'display:flex;align-items:center;gap:2px;';
-            const btnZap = document.createElement('button');
-            btnZap.type = 'button';
-            btnZap.setAttribute('aria-label', (devo ? 'Falar com ' : 'Cobrar ') + nome + ' no WhatsApp');
-            btnZap.title = devo ? 'Falar no WhatsApp' : 'Cobrar no WhatsApp';
-            btnZap.style.cssText = 'background:transparent;border:none;padding:3px 4px;line-height:0;cursor:pointer;flex-shrink:0;opacity:.45;color:' + corPessoa(lista) + ';';
-            btnZap.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.9-.9L3 20.5l1.6-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>';
-            btnZap.onclick = (ev) => { ev.stopPropagation(); abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo); };
-            linhaCab.appendChild(cabecalho);
-            linhaCab.appendChild(btnZap);
-            bloco.appendChild(linhaCab);
-          } else {
-            bloco.appendChild(cabecalho);
-          }
+          // A linha fechada não ganha botão nenhum: a cor já diz o que precisa de
+          // atenção. Quem está amarelo ou vermelho você abre, e a ação está lá dentro.
+          bloco.appendChild(cabecalho);
 
           if (aberto) {
             const listaEl = document.createElement('div');
@@ -5356,13 +5379,18 @@
               listaEl.appendChild(btnTudo);
             }
 
-            // Com o bloco aberto a ação aparece por extenso, inclusive pra quem está
-            // no prazo — às vezes você só quer combinar antes de vencer.
+            // A ação mora só aqui dentro. O rótulo acompanha o status, pra você já
+            // saber o tom da mensagem que vai sair antes de tocar.
+            const tom = tomDaCobranca(lista, emAtraso, perto);
             const btnZapCheio = document.createElement('button');
             btnZapCheio.type = 'button';
             btnZapCheio.className = 'btn-mini';
-            btnZapCheio.style.cssText = 'margin-top:8px;margin-left:6px;';
-            btnZapCheio.textContent = (devo ? '💬 Falar com ' : '💬 Cobrar ') + nome;
+            btnZapCheio.style.cssText = 'margin-top:8px;margin-left:6px;'
+              + (tom === 'atrasado' ? 'color:#ef5350;border-color:rgba(239,83,80,.35);'
+                : tom === 'chegando' ? 'color:#ffd166;border-color:rgba(255,209,102,.35);' : '');
+            btnZapCheio.textContent = devo
+              ? '💬 Falar com ' + nome
+              : (tom === 'atrasado' ? '💬 Cobrar ' + nome : tom === 'chegando' ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
             btnZapCheio.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
             listaEl.appendChild(btnZapCheio);
 
@@ -7041,7 +7069,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.09-3';
+    const APP_VERSION = '2026.08.09-4';
 
     // Inicialização
     carregarLocalStorage();
