@@ -8,7 +8,7 @@
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #23282e; margin: 0; font-size: 10.5pt; line-height: 1.55;
+    color: #23282e; margin: 0; font-size: 13pt; line-height: 1.6;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
@@ -19,25 +19,24 @@
     page-break-after: always; text-align: center;
   }
   .capa .marca {
-    width: 76px; height: 76px; margin: 0 auto 26px; border-radius: 20px;
-    background: #111; color: #e9c46a; font-size: 40px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
+    width: 104px; height: 104px; margin: 0 auto 26px; display: block;
+    border-radius: 24px; box-shadow: 0 6px 22px rgba(0,0,0,.28);
   }
-  .capa h1 { font-size: 34pt; line-height: 1.05; }
-  .capa .sub { font-size: 14pt; color: #6b7480; margin-top: 12px; font-weight: 500; }
-  .capa .linha { width: 54px; height: 3px; background: #2196f3; margin: 28px auto; border-radius: 2px; }
-  .capa .rodape { font-size: 9.5pt; color: #8c95a0; margin-top: 6px; }
+  .capa h1 { font-size: 38pt; line-height: 1.05; }
+  .capa .sub { font-size: 16pt; color: #6b7480; margin-top: 12px; font-weight: 500; }
+  .capa .linha { width: 54px; height: 3px; background: #5f9933; margin: 28px auto; border-radius: 2px; }
+  .capa .rodape { font-size: 11pt; color: #8c95a0; margin-top: 6px; }
 
   /* ---------- estrutura ---------- */
   section { page-break-inside: avoid; margin-bottom: 18px; }
   .numero {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 23px; height: 23px; border-radius: 50%; background: #2196f3; color: #fff;
-    font-size: 11pt; font-weight: 700; margin-right: 9px; flex-shrink: 0;
+    width: 23px; height: 23px; border-radius: 50%; background: #4e8b2a; color: #fff;
+    font-size: 13pt; font-weight: 700; margin-right: 9px; flex-shrink: 0;
   }
-  h2 { font-size: 15.5pt; display: flex; align-items: center; margin-bottom: 4px; }
-  .resumo { color: #5c656f; margin: 0 0 12px 32px; font-size: 10.5pt; }
-  h3 { font-size: 11pt; margin: 14px 0 4px; color: #1b1f24; }
+  h2 { font-size: 19pt; display: flex; align-items: center; margin-bottom: 5px; }
+  .resumo { color: #5c656f; margin: 0 0 14px 32px; font-size: 12.5pt; }
+  h3 { font-size: 14pt; margin: 16px 0 5px; color: #1b1f24; }
   p { margin: 0 0 8px; }
   ul { margin: 0 0 8px; padding-left: 18px; }
   li { margin-bottom: 4px; }
@@ -46,43 +45,43 @@
   /* ---------- imagens ---------- */
   .tela { margin: 10px 0; text-align: center; }
   .tela img {
-    max-width: 60%; border-radius: 10px; border: 1px solid #d6dbe0;
+    max-width: 66%; border-radius: 10px; border: 1px solid #d6dbe0;
     box-shadow: 0 2px 10px rgba(0,0,0,.12);
   }
-  .tela.metade img { max-width: 46%; }
-  .tela.pequena img { max-width: 38%; }
-  .legenda { font-size: 8.8pt; color: #8c95a0; margin-top: 5px; font-style: italic; }
+  .tela.metade img { max-width: 52%; }
+  .tela.pequena img { max-width: 44%; }
+  .legenda { font-size: 11pt; color: #8c95a0; margin-top: 6px; font-style: italic; }
 
   /* ---------- destaques ---------- */
   .nota {
-    background: #f2f7fd; border-left: 3px solid #2196f3; padding: 9px 13px;
-    border-radius: 0 7px 7px 0; margin: 10px 0; font-size: 10pt;
+    background: #f1f7ec; border-left: 3px solid #5f9933; padding: 9px 13px;
+    border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 12.5pt;
   }
   .atencao { background: #fdf6ec; border-left-color: #e0a63a; }
-  .nota strong { color: #12508f; }
+  .nota strong { color: #2f5e12; }
   .atencao strong { color: #8a5d0d; }
 
-  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.8pt; }
-  th { text-align: left; background: #f4f6f8; padding: 7px 10px; font-weight: 700; border-bottom: 2px solid #e2e6ea; }
-  td { padding: 7px 10px; border-bottom: 1px solid #edf0f2; vertical-align: top; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12.5pt; }
+  th { text-align: left; background: #f4f6f8; padding: 9px 11px; font-weight: 700; border-bottom: 2px solid #e2e6ea; }
+  td { padding: 9px 11px; border-bottom: 1px solid #edf0f2; vertical-align: top; }
   .cor { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
 
   code {
     background: #f0f2f4; padding: 1px 5px; border-radius: 4px;
-    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9.2pt;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11.5pt;
   }
   .quebra { page-break-before: always; }
-  .fim { margin-top: 26px; padding-top: 14px; border-top: 1px solid #e2e6ea; color: #8c95a0; font-size: 9pt; text-align: center; }
+  .fim { margin-top: 26px; padding-top: 14px; border-top: 1px solid #e2e6ea; color: #8c95a0; font-size: 11pt; text-align: center; }
 </style>
 </head>
 <body>
 
 <div class="capa">
-  <div class="marca">$</div>
+  <img class="marca" src="img/icone.png" alt="MeuFinanceiro">
   <h1>MeuFinanceiro</h1>
   <div class="sub">Manual de uso</div>
   <div class="linha"></div>
-  <p style="color:#5c656f;max-width:105mm;margin:0 auto;font-size:11pt;">
+  <p style="color:#5c656f;max-width:115mm;margin:0 auto;font-size:13pt;">
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
@@ -332,6 +331,7 @@
     <p><strong>Vou mostrar a tela para alguém.</strong> Toque no ícone de olho para esconder todos os valores.</p>
 
     <div class="fim">
+      <img src="img/icone.png" alt="" style="width:34px;height:34px;border-radius:9px;vertical-align:middle;margin-right:8px;opacity:.9;">
       MeuFinanceiro · seus dados ficam no seu aparelho, sempre.
     </div>
   </div>
