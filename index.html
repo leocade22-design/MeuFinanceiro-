@@ -137,6 +137,13 @@
     .btn-cancelar { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 8px; background-color: transparent; color: #aaa; font-size: 13px; cursor: pointer; margin-top: 6px; }
     .escondido { display: none !important; }
     .item-lancamento { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer; }
+    /* A barra da esquerda responde "esse dinheiro passou pela conta?" — a mesma
+       pergunta do saldo. Cinza = saiu; amarelo = está no cartão e ainda não saiu;
+       verde = entrou; azul = só mudou de conta. Custa 3px e nenhuma palavra. */
+    .item-lancamento.forma { border-left: 3px solid #3d3d3d; padding-left: 11px; }
+    .item-lancamento.forma-credito { border-left-color: #ffd166; }
+    .item-lancamento.forma-receita { border-left-color: #4caf50; }
+    .item-lancamento.forma-transf { border-left-color: #42a5f5; }
     .item-lancamento:last-child { border-bottom: none; }
     .item-info { flex: 1; min-width: 0; padding-right: 8px; }
     .item-acoes { display: flex; align-items: center; gap: 8px; }
@@ -461,6 +468,14 @@
             <div id="resumo24h" style="font-size:10.5px;line-height:1.5;color:#777;"></div>
             <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
+          <!-- Separa o que passou pela conta do que está no cartão, sem tirar nada
+               da lista: "Tudo" continua sendo a visão cronológica do dia a dia. -->
+          <div class="chips-periodo" style="margin-bottom:10px;">
+            <button type="button" class="btn-periodo ativo" data-forma="tudo" onclick="setFiltroFormaLanc('tudo')">Tudo</button>
+            <button type="button" class="btn-periodo" data-forma="conta" onclick="setFiltroFormaLanc('conta')">Conta</button>
+            <button type="button" class="btn-periodo" data-forma="cartao" onclick="setFiltroFormaLanc('cartao')">Cartão</button>
+          </div>
+          <div id="subtotalFormaLanc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.7;"></div>
           <div class="busca-box">
             <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
@@ -3059,6 +3074,25 @@
       renderizarLancamentos();
     }
 
+    /* FILTRO POR FORMA — "conta" é tudo que passou pela conta (receita, débito,
+       dinheiro e transferência); "cartão" é só o que virou fatura. É a mesma régua
+       do saldo do mês, aplicada à lista. */
+    let filtroFormaLanc = 'tudo';
+
+    function setFiltroFormaLanc(forma) {
+      filtroFormaLanc = forma;
+      document.querySelectorAll('#corpo-lancamentosMes .btn-periodo').forEach(b => {
+        b.classList.toggle('ativo', b.dataset.forma === forma);
+      });
+      renderizarLancamentos();
+    }
+
+    function passaNoFiltroForma(item) {
+      if (filtroFormaLanc === 'tudo') return true;
+      const noCartao = !item.__transf && item.tipo === 'despesa' && eCredito(item.formaModo);
+      return filtroFormaLanc === 'cartao' ? noCartao : !noCartao;
+    }
+
     function renderizarLancamentos() {
       const container = document.getElementById('listaLancamentos');
       if (!container) return;
@@ -3084,6 +3118,7 @@
       // Elas continuam fora de qualquer soma de receita/despesa — aqui é só registro.
       const universo = lancamentos.concat(transferencias.map(transferenciaComoItem));
       const filtrados = universo.filter(item => {
+        if (!passaNoFiltroForma(item)) return false;
         if (termo) {
           const desc = textoSeguro(item.descricao || '');
           const conta = textoSeguro(item.conta || '');
@@ -3098,8 +3133,31 @@
         return item.data <= hoje;
       });
 
+      // O subtotal fala do que está na tela agora — inclusive quando o filtro está
+      // em "Tudo", onde ele separa as duas réguas em vez de somar uma coisa só.
+      const boxSub = document.getElementById('subtotalFormaLanc');
+      if (boxSub) {
+        const soma = f => filtrados.filter(f).reduce((s, l) => s + parseVal(l.valor), 0);
+        const noCartao = l => !l.__transf && l.tipo === 'despesa' && eCredito(l.formaModo);
+        const saiu = soma(l => !l.__transf && l.tipo === 'despesa' && !eCredito(l.formaModo));
+        const cartao = soma(noCartao);
+        const entrou = soma(l => !l.__transf && l.tipo === 'receita');
+        const pedaco = (rotulo, valor, cor) => `<span style="white-space:nowrap;"><span style="color:#777;">${rotulo}</span> <strong style="color:${cor};">${fmtOculto(valor)}</strong></span>`;
+        const pedacos = [];
+        if (filtroFormaLanc !== 'cartao') {
+          if (entrou > 0) pedacos.push(pedaco('entrou', entrou, '#4caf50'));
+          if (saiu > 0) pedacos.push(pedaco('saiu', saiu, '#ef5350'));
+        }
+        if (filtroFormaLanc !== 'conta' && cartao > 0) pedacos.push(pedaco('cartão', cartao, '#ffd166'));
+        boxSub.innerHTML = pedacos.join('<span style="color:#444;"> &nbsp;·&nbsp; </span>');
+        boxSub.classList.toggle('escondido', pedacos.length === 0);
+      }
+
       if (filtrados.length === 0) {
-        container.innerHTML = `<p style="color:#aaa; font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : 'Nenhum lançamento neste mês.'}</p>`;
+        const vazio = filtroFormaLanc === 'cartao' ? 'Nenhuma compra no cartão neste período.'
+          : filtroFormaLanc === 'conta' ? 'Nada passou pela conta neste período.'
+          : 'Nenhum lançamento neste mês.';
+        container.innerHTML = `<p style="color:#aaa; font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : vazio}</p>`;
         return;
       }
 
@@ -3125,7 +3183,7 @@
 
           if (item.__transf) {
             const linhaT = document.createElement('div');
-            linhaT.className = 'item-lancamento';
+            linhaT.className = 'item-lancamento forma forma-transf';
             linhaT.onclick = () => abrirAcoesTransferencia(item.id);
             linhaT.innerHTML = `
               <div class="item-info">
@@ -3142,18 +3200,28 @@
 
           const eReceita = item.tipo === 'receita';
           const numP = parseInt(item.numParcelas, 10) || 1;
+          const noCredito = !eReceita && eCredito(item.formaModo);
 
           const div = document.createElement('div');
-          div.className = 'item-lancamento';
+          div.className = 'item-lancamento forma' + (eReceita ? ' forma-receita' : (noCredito ? ' forma-credito' : ''));
           if (item.data > hoje) div.style.opacity = '.6';
           div.onclick = () => abrirAcoesLancamento(item.id);
           const parcelasPendentes = contarParcelasPendentes(item);
+
+          // A categoria vem primeiro porque é o que muda de linha pra linha; a conta
+          // se repete tanto que virava ruído. "parcelado" some quando a descrição já
+          // carrega o (1/6), que diz a mesma coisa com mais informação.
+          const jaTemParcela = /\(\d+\/\d+\)/.test(item.descricao || '');
+          const partes = [];
+          if (!eReceita && item.categoria) partes.push(item.categoria);
+          if (item.conta) partes.push(item.conta);
+          if (numP > 1 && !jaTemParcela) partes.push(numP + 'x');
+          if (item.grupoViagemNome) partes.push(item.grupoViagemNome);
+
           div.innerHTML = `
             <div class="item-info">
               <strong>${item.descricao}</strong>
-              <div style="font-size: 11px; color: #888;">
-                ${item.conta}${eReceita ? '' : (item.categoria ? ' • ' + item.categoria : '')}${numP > 1 ? ' • parcelado' : ''}${item.grupoViagemNome ? ' • ' + item.grupoViagemNome : ''}
-              </div>
+              <div style="font-size: 11px; color: #888;">${partes.join(' · ')}</div>
               ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
               ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
             </div>
@@ -5438,6 +5506,16 @@
       }
     }
 
+    // Quais cartões estão com o extrato aberto. Por padrão vem tudo fechado: o card
+    // continua sendo, de bate-pronto, "quanto é e quando vence".
+    let faturasExpandidas = new Set();
+
+    function alternarFaturaExpandida(conta) {
+      if (faturasExpandidas.has(conta)) faturasExpandidas.delete(conta);
+      else faturasExpandidas.add(conta);
+      renderizarPagamentoFaturas();
+    }
+
     function renderizarPagamentoFaturas() {
       const box = document.getElementById('listaPagamentoFatura');
       if (!box) return;
@@ -5452,15 +5530,23 @@
         const pago = faturasPagas[chaveFatura(c.nome, mes, ano)];
         if (total <= 0 && !pago) return;
 
+        const compras = lancamentos.filter(l => {
+          if (l.tipo !== 'despesa' || l.conta !== c.nome || !eCredito(l.formaModo)) return false;
+          const f = getMesFatura(l.data, l.formaModo, l.conta);
+          return f.mes === mes && f.ano === ano;
+        }).sort((a, b) => (a.data < b.data ? 1 : -1));
+
+        const aberto = faturasExpandidas.has(c.nome);
+
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
         linha.innerHTML = `
           <div class="item-info">
-            <strong>${c.nome}</strong>
+            <strong>${c.nome} ${compras.length ? `<span class="chevron-sec" style="font-size:11px;color:#777;">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
             <div style="font-size:11px;color:${pago ? '#4caf50' : '#888'};">
               ${pago
                 ? '✓ paga em ' + pago.data.split('-').reverse().join('/') + ' · ' + fmtOculto(parseVal(pago.valorPago))
-                : 'vence dia ' + diasDoCartao(c.nome).vence}
+                : 'vence dia ' + diasDoCartao(c.nome).vence + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
@@ -5468,8 +5554,27 @@
             <button type="button" class="btn-mini">${pago ? 'desfazer' : 'pagar'}</button>
           </div>
         `;
-        linha.querySelector('button').onclick = () => pago ? desfazerPagamentoFatura(c.nome, mes, ano) : abrirPagarFatura(c.nome, mes, ano);
+        linha.querySelector('button').onclick = (ev) => {
+          ev.stopPropagation();
+          pago ? desfazerPagamentoFatura(c.nome, mes, ano) : abrirPagarFatura(c.nome, mes, ano);
+        };
+        if (compras.length) linha.onclick = () => alternarFaturaExpandida(c.nome);
         box.appendChild(linha);
+
+        // O extrato: sem isto o card mostrava um total sem dizer do que era feito.
+        if (aberto && compras.length) {
+          const det = document.createElement('div');
+          det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid #333;';
+          det.innerHTML = compras.map(l => `
+            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid #2a2a2a;cursor:default;">
+              <div class="item-info">
+                <strong style="font-size:13px;">${l.descricao}</strong>
+                <div style="font-size:10.5px;color:#888;">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}</div>
+              </div>
+              <span class="valor-despesa" style="font-size:13px;">${fmtOculto(parseVal(l.valor))}</span>
+            </div>`).join('');
+          box.appendChild(det);
+        }
       });
 
       if (!box.children.length) {
@@ -7069,7 +7174,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.09-4';
+    const APP_VERSION = '2026.08.10-1';
 
     // Inicialização
     carregarLocalStorage();
