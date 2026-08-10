@@ -8,7 +8,7 @@
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    color: #23282e; margin: 0; font-size: 13pt; line-height: 1.6;
+    color: #23282e; margin: 0; font-size: 14.5pt; line-height: 1.6;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
@@ -22,21 +22,21 @@
     width: 104px; height: 104px; margin: 0 auto 26px; display: block;
     border-radius: 24px; box-shadow: 0 6px 22px rgba(0,0,0,.28);
   }
-  .capa h1 { font-size: 38pt; line-height: 1.05; }
-  .capa .sub { font-size: 16pt; color: #6b7480; margin-top: 12px; font-weight: 500; }
+  .capa h1 { font-size: 40pt; line-height: 1.05; }
+  .capa .sub { font-size: 17pt; color: #6b7480; margin-top: 12px; font-weight: 500; }
   .capa .linha { width: 54px; height: 3px; background: #5f9933; margin: 28px auto; border-radius: 2px; }
-  .capa .rodape { font-size: 11pt; color: #8c95a0; margin-top: 6px; }
+  .capa .rodape { font-size: 12pt; color: #8c95a0; margin-top: 6px; }
 
   /* ---------- estrutura ---------- */
   section { page-break-inside: avoid; margin-bottom: 18px; }
   .numero {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 23px; height: 23px; border-radius: 50%; background: #4e8b2a; color: #fff;
-    font-size: 13pt; font-weight: 700; margin-right: 9px; flex-shrink: 0;
+    width: 26px; height: 26px; border-radius: 50%; background: #4e8b2a; color: #fff;
+    font-size: 14pt; font-weight: 700; margin-right: 9px; flex-shrink: 0;
   }
-  h2 { font-size: 19pt; display: flex; align-items: center; margin-bottom: 5px; }
-  .resumo { color: #5c656f; margin: 0 0 14px 32px; font-size: 12.5pt; }
-  h3 { font-size: 14pt; margin: 16px 0 5px; color: #1b1f24; }
+  h2 { font-size: 21pt; display: flex; align-items: center; margin-bottom: 5px; }
+  .resumo { color: #5c656f; margin: 0 0 14px 32px; font-size: 14pt; }
+  h3 { font-size: 15.5pt; margin: 16px 0 5px; color: #1b1f24; }
   p { margin: 0 0 8px; }
   ul { margin: 0 0 8px; padding-left: 18px; }
   li { margin-bottom: 4px; }
@@ -50,28 +50,29 @@
   }
   .tela.metade img { max-width: 52%; }
   .tela.pequena img { max-width: 44%; }
-  .legenda { font-size: 11pt; color: #8c95a0; margin-top: 6px; font-style: italic; }
+  .legenda { font-size: 12pt; color: #8c95a0; margin-top: 6px; font-style: italic; }
 
   /* ---------- destaques ---------- */
   .nota {
     background: #f1f7ec; border-left: 3px solid #5f9933; padding: 9px 13px;
-    border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 12.5pt;
+    border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 14pt;
   }
   .atencao { background: #fdf6ec; border-left-color: #e0a63a; }
   .nota strong { color: #2f5e12; }
   .atencao strong { color: #8a5d0d; }
 
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5pt; }
   th { text-align: left; background: #f4f6f8; padding: 9px 11px; font-weight: 700; border-bottom: 2px solid #e2e6ea; }
   td { padding: 9px 11px; border-bottom: 1px solid #edf0f2; vertical-align: top; }
   .cor { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
 
   code {
     background: #f0f2f4; padding: 1px 5px; border-radius: 4px;
-    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11.5pt;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5pt;
   }
   .quebra { page-break-before: always; }
-  .fim { margin-top: 26px; padding-top: 14px; border-top: 1px solid #e2e6ea; color: #8c95a0; font-size: 11pt; text-align: center; }
+  .longa { page-break-inside: auto; }
+  .fim { margin-top: 26px; padding-top: 14px; border-top: 1px solid #e2e6ea; color: #8c95a0; font-size: 12pt; text-align: center; }
 </style>
 </head>
 <body>
@@ -81,11 +82,11 @@
   <h1>MeuFinanceiro</h1>
   <div class="sub">Manual de uso</div>
   <div class="linha"></div>
-  <p style="color:#5c656f;max-width:115mm;margin:0 auto;font-size:13pt;">
+  <p style="color:#5c656f;max-width:115mm;margin:0 auto;font-size:14pt;">
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.08.09 · Leia em 10 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.08.10 · Leia em 10 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -96,7 +97,7 @@
     <ul>
       <li><strong>Tudo fica no seu aparelho.</strong> Não existe servidor, não existe cadastro, ninguém tem acesso aos seus números — nem quem fez o app.</li>
       <li><strong>Funciona sem internet.</strong> Depois de instalado, abre e lança normalmente no avião, no elevador, no sítio.</li>
-      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Exporte de vez em quando (item 12).</li>
+      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Exporte de vez em quando (item 13).</li>
     </ul>
     <div class="nota atencao">
       <strong>Instale na tela inicial.</strong> Abra o link no Chrome → menu <code>⋮</code> → <em>Adicionar à tela inicial</em>.
@@ -187,8 +188,39 @@
 </section>
 
 <!-- ============================================================ -->
-<section class="quebra">
-  <h2><span class="numero">6</span>Pagar a fatura do cartão</h2>
+<section class="quebra longa">
+  <h2><span class="numero">6</span>Ler a lista de lançamentos</h2>
+  <p class="resumo">A cor da barra diz se o dinheiro já saiu da conta.</p>
+  <div class="conteudo">
+    <p>Cada linha tem uma barrinha na borda esquerda que responde a única pergunta que
+       importa depois da regra acima: <strong>esse dinheiro passou pela conta?</strong></p>
+    <table>
+      <tr><th style="width:24%;">Barra</th><th>Significa</th></tr>
+      <tr><td><span class="cor" style="background:#3d3d3d;border:1px solid #999;"></span><strong>Cinza</strong></td><td>Saiu da conta — débito, dinheiro ou Pix.</td></tr>
+      <tr><td><span class="cor" style="background:#ffd166;"></span><strong>Amarelo</strong></td><td>Está no cartão. Ainda não saiu.</td></tr>
+      <tr><td><span class="cor" style="background:#4caf50;"></span><strong>Verde</strong></td><td>Entrou na conta.</td></tr>
+      <tr><td><span class="cor" style="background:#42a5f5;"></span><strong>Azul</strong></td><td>Só mudou de conta (transferência).</td></tr>
+    </table>
+    <div class="tela"><img src="img/lista.png" alt="Lista de lançamentos com as barras coloridas"></div>
+    <h3>Os três filtros</h3>
+    <p>No topo da lista, <strong>Tudo · Conta · Cartão</strong>, com o subtotal do que está na tela:</p>
+    <ul>
+      <li><strong>Tudo</strong> — a ordem do dia a dia, tudo junto e em ordem de data. É aqui que você confere se lançou tudo do dia.</li>
+      <li><strong>Conta</strong> — só o que passou pela conta: receitas, débito, dinheiro e transferências.</li>
+      <li><strong>Cartão</strong> — só o que virou fatura.</li>
+    </ul>
+    <div class="tela metade"><img src="img/lista_cartao.png" alt="Lista filtrada só no cartão"></div>
+    <div class="legenda">O filtro Cartão isolando o que ainda vai virar fatura.</div>
+    <div class="nota">
+      A busca funciona dentro do filtro escolhido. E o amarelo da barra é o mesmo do
+      <em>fatura em aberto</em> lá no resumo — então a leitura é a mesma nos dois lugares.
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="quebra longa">
+  <h2><span class="numero">7</span>Pagar a fatura do cartão</h2>
   <p class="resumo">O passo que fecha a conta do mês.</p>
   <div class="conteudo">
     <div class="tela"><img src="img/fatura.png" alt="Card de pagamento da fatura"></div>
@@ -199,12 +231,16 @@
       qual compra faltou registrar, em vez de ficar caçando centavos.
     </div>
     <p>Depois de marcada como paga, aquele valor entra em <strong>Saiu da conta</strong> e o saldo do mês se acerta.</p>
+    <h3>Ver o que está na fatura</h3>
+    <p>Toque no nome do cartão e a fatura abre, listando as compras que formam aquele valor,
+       com data e categoria. É o extrato do mês, do lado de cá.</p>
+    <div class="tela"><img src="img/fatura_extrato.png" alt="Fatura aberta mostrando as compras"></div>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">7</span>Gastos fixos</h2>
+  <h2><span class="numero">8</span>Gastos fixos</h2>
   <p class="resumo">Aluguel, streaming, academia — o que se repete todo mês.</p>
   <div class="conteudo">
     <div class="tela"><img src="img/fixos.png" alt="Card de gastos fixos"></div>
@@ -216,7 +252,7 @@
 
 <!-- ============================================================ -->
 <section class="quebra">
-  <h2><span class="numero">8</span>Empréstimos e cobrança pelo WhatsApp</h2>
+  <h2><span class="numero">9</span>Empréstimos e cobrança pelo WhatsApp</h2>
   <p class="resumo">Quem te deve, quanto, desde quando — e como cobrar sem constrangimento.</p>
   <div class="conteudo">
     <p>Ao lançar um gasto, marque <strong>“Emprestei para alguém”</strong> e diga o nome.
@@ -248,7 +284,7 @@
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">9</span>Transferência entre suas contas</h2>
+  <h2><span class="numero">10</span>Transferência entre suas contas</h2>
   <p class="resumo">Passar dinheiro do PicPay para o Itaú não é gasto nem receita.</p>
   <div class="conteudo">
     <div class="tela metade"><img src="img/transferencia.png" alt="Modal de transferência"></div>
@@ -261,7 +297,7 @@
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">10</span>Gráficos e metas</h2>
+  <h2><span class="numero">11</span>Gráficos e metas</h2>
   <p class="resumo">Para onde o dinheiro foi, e se você está dentro do combinado.</p>
   <div class="conteudo">
     <div class="tela metade"><img src="img/graficos_topo.png" alt="Filtros de período"></div>
@@ -280,7 +316,7 @@
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">11</span>Grupos: viagens e eventos</h2>
+  <h2><span class="numero">12</span>Grupos: viagens e eventos</h2>
   <p class="resumo">Quanto custou a viagem inteira, no fim das contas.</p>
   <div class="conteudo">
     <div class="tela"><img src="img/grupos.png" alt="Aba de grupos"></div>
@@ -292,7 +328,7 @@
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">12</span>Ajustes</h2>
+  <h2><span class="numero">13</span>Ajustes</h2>
   <p class="resumo">Onde você deixa o app com a sua cara.</p>
   <div class="conteudo">
     <ul>
@@ -313,7 +349,7 @@
 
 <!-- ============================================================ -->
 <section class="quebra">
-  <h2><span class="numero">13</span>Rotina que funciona</h2>
+  <h2><span class="numero">14</span>Rotina que funciona</h2>
   <div class="conteudo">
     <table>
       <tr><th style="width:26%;">Quando</th><th>O que fazer</th></tr>
