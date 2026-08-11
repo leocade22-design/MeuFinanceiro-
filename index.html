@@ -459,21 +459,26 @@
 
       <!-- LANÇAMENTOS DO MÊS SELECIONADO (retrátil, aberto por padrão) -->
       <div class="card" data-card="lancamentosMes" data-card-titulo="Lançamentos">
+        <!-- O resumo de 24h sobe pra linha do título e o "ver todos" desce pra linha
+             dos filtros: duas linhas a menos, e cada informação encostada no canto
+             oposto da que ela acompanha. -->
         <button type="button" class="card-header-toggle" onclick="alternarSecao('lancamentosMes')">
           <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
-          <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
+          <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;">
+            <div id="resumo24h" style="font-size:10px;line-height:1.35;color:#777;text-align:right;"></div>
+            <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
+          </div>
         </button>
         <div id="corpo-lancamentosMes" class="escondido" style="margin-top:12px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
-            <div id="resumo24h" style="font-size:10.5px;line-height:1.5;color:#777;"></div>
-            <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
-          </div>
           <!-- Separa o que passou pela conta do que está no cartão, sem tirar nada
                da lista: "Tudo" continua sendo a visão cronológica do dia a dia. -->
-          <div class="chips-periodo" style="margin-bottom:10px;">
-            <button type="button" class="btn-periodo ativo" data-forma="tudo" onclick="setFiltroFormaLanc('tudo')">Tudo</button>
-            <button type="button" class="btn-periodo" data-forma="conta" onclick="setFiltroFormaLanc('conta')">Conta</button>
-            <button type="button" class="btn-periodo" data-forma="cartao" onclick="setFiltroFormaLanc('cartao')">Cartão</button>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div class="chips-periodo">
+              <button type="button" class="btn-periodo ativo" data-forma="tudo" onclick="setFiltroFormaLanc('tudo')">Tudo</button>
+              <button type="button" class="btn-periodo" data-forma="conta" onclick="setFiltroFormaLanc('conta')">Conta</button>
+              <button type="button" class="btn-periodo" data-forma="cartao" onclick="setFiltroFormaLanc('cartao')">Cartão</button>
+            </div>
+            <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
           <div id="subtotalFormaLanc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.7;"></div>
           <div class="busca-box">
@@ -1689,9 +1694,13 @@
     function renderizarOrdemCards(idAba) {
       const container = document.getElementById('ordemCards' + idAba.replace('aba', 'Aba'));
       if (!container) return;
-      const chaves = (uiPrefs.ordemCards && uiPrefs.ordemCards[idAba] && uiPrefs.ordemCards[idAba].length)
-        ? uiPrefs.ordemCards[idAba]
-        : chavesCardsDaAba(idAba);
+      // Mesmo filtro do aplicarOrdemCards: só entra card que existe NESTA aba hoje.
+      // Sem isso, um card que mudou de aba (o Backup foi pra Ajustes) ficava de
+      // fantasma na lista, ocupando linha e não reordenando nada.
+      const salva = (uiPrefs.ordemCards && uiPrefs.ordemCards[idAba]) || [];
+      const presentes = chavesCardsDaAba(idAba);
+      const chaves = salva.filter(c => presentes.includes(c))
+        .concat(presentes.filter(c => !salva.includes(c)));
       container.innerHTML = '';
       chaves.forEach(chave => {
         const el = document.querySelector('#' + idAba + ' > [data-card="' + chave + '"]');
@@ -2818,8 +2827,8 @@
       if (!toqueValido || direcaoTravada || e.touches.length !== 1) return;
       const dx = e.touches[0].clientX - toqueIniX;
       const dy = e.touches[0].clientY - toqueIniY;
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'horizontal' : 'vertical';
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
@@ -2828,8 +2837,11 @@
       const dx = e.changedTouches[0].clientX - toqueIniX;
       const dy = e.changedTouches[0].clientY - toqueIniY;
       // arrasto demorado é navegação lenta, não gesto rápido de troca
-      if (Date.now() - toqueIniT > 700) return;
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      // Limites folgados de propósito: a direção já travou no touchmove, então
+      // não há risco de rolagem virar troca de aba. Antes exigia gesto rápido
+      // (700ms) e longo (60px) ao mesmo tempo, e o dedo mais calmo não passava.
+      if (Date.now() - toqueIniT > 1200) return;
+      if (Math.abs(dx) < 42) return;
       const idxAtual = ORDEM_ABAS.findIndex(id => {
         const el = document.getElementById(id);
         return el && el.classList.contains('ativo');
@@ -4998,29 +5010,68 @@
           </div>
         `).join('');
 
-      // Duas caixas separadas de propósito: em cima só o dinheiro que entrou e
-      // saiu de verdade (é isso que forma o saldo); embaixo o cartão, que ainda
-      // não mexeu na conta. Misturar os dois é o que fazia o número divergir.
+      /* A ordem responde na sequência em que a pergunta aparece: primeiro
+         "quanto eu tenho e onde", depois "o que passou pela conta", e só então
+         o cartão, que é a outra régua. */
+
+      // Quando a fatura DESTE mês já foi paga, "comprado no crédito" vira
+      // histórico e "em aberto" fica zerado — o que está de fato em aberto é a
+      // próxima. Sem apontar pra ela, o card parecia quebrado.
+      const proxima = proximaFaturaEmAberto(mes, ano);
+      const faturaDoMesPaga = faturaEmAberto <= 0 && compradoNoCredito > 0;
+
+      const blocoCartao = faturaDoMesPaga
+        ? `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>✓ Fatura de ${NOMES_MESES[mes]} · paga</span><strong style="color:#4caf50;">${fmtOculto(compradoNoCredito)}</strong></div>`
+          + (proxima
+              ? `<div class="linha-subtotal" style="margin-bottom:0;" onclick="fecharModal('modalResumoFatura');irParaFatura(${proxima.mes}, ${proxima.ano})"><span>⏳ Próxima · ${NOMES_MESES[proxima.mes]} <span style="color:#666;">›</span></span><strong style="color:#ffd166;">${fmtOculto(proxima.total)}</strong></div>`
+              : `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span style="color:#888;">Nenhuma fatura em aberto à frente</span><strong style="color:#4caf50;">—</strong></div>`)
+        : `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:#ffd166;">${fmtOculto(compradoNoCredito)}</strong></div>`
+          + `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong></div>`;
+
       document.getElementById('corpoResumoFatura').innerHTML = `
-        <div class="box-resumo-modal" style="margin-bottom:14px;">
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
+        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
+          ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
+        </div>
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">O que passou pela conta</span>
+        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
           <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebido</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
           <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Saiu em débito/dinheiro</span><strong style="color:#ef5350;">${fmtOculto(saiuEmDebito)}</strong></div>
-          <div class="linha-subtotal" style="cursor:default;"><span>🧾 Faturas pagas no mês</span><strong style="color:#ef5350;">${fmtOculto(faturasPagasNoMes)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>🧾 Faturas pagas no mês</span><strong style="color:#ef5350;">${fmtOculto(faturasPagasNoMes)}</strong></div>
         </div>
         <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">No cartão · ainda não saiu da conta</span>
-        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:#ffd166;">${fmtOculto(compradoNoCredito)}</strong></div>
-          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong></div>
-        </div>
-        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
         <div class="box-resumo-modal" style="margin-top:6px;">
-          ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
+          ${blocoCartao}
         </div>
         <p style="font-size:10.5px;color:#777;margin-top:10px;line-height:1.5;">
           O saldo conta só o que passou pela conta: compra no crédito entra quando você marca a fatura como paga, pelo valor real que digitar.
         </p>
       `;
       document.getElementById('modalResumoFatura').classList.remove('escondido');
+    }
+
+    // Primeira fatura ainda não paga a partir de um mês, olhando 12 meses à frente.
+    function proximaFaturaEmAberto(mesBase, anoBase) {
+      for (let i = 1; i <= 12; i++) {
+        const d = new Date(anoBase, mesBase + i, 1);
+        const m = d.getMonth(), a = d.getFullYear();
+        let total = 0;
+        contas.filter(c => c.temCredito).forEach(c => {
+          if (faturasPagas[chaveFatura(c.nome, m, a)]) return;
+          total += totalFaturaConta(c.nome, m, a);
+        });
+        if (total > 0) return { mes: m, ano: a, total };
+      }
+      return null;
+    }
+
+    // Leva a aba Faturas pro mês pedido, calculando o deslocamento em relação ao atual.
+    function irParaFatura(mes, ano) {
+      const agora = getMesReferencia(0);
+      faturaMesOffset = (ano - agora.getFullYear()) * 12 + (mes - agora.getMonth());
+      atualizarFaturas();
+      const card = document.getElementById('cardResumoFaturas');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // Atalhos dos dois cards pequenos: eles abrem exatamente a lista que forma o
@@ -5293,9 +5344,9 @@
       // Perto de vencer é o que já cai na janela de aviso escolhida no lembrete —
       // assim a cor na tela e o aviso no celular falam da mesma coisa.
       const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
-      // O TOTAL a receber fica amarelo porque ainda não entrou; o valor de cada
-      // pessoa fica verde porque uma hora entra. O que eu devo é vermelho nos dois.
-      const corTotal = devo ? '#ef5350' : '#ffd166';
+      // Verde nos dois: é dinheiro que volta pra você. O amarelo ficou reservado
+      // pro cartão, que é a outra régua — misturar as duas confundia.
+      const corTotal = devo ? '#ef5350' : '#4caf50';
       // Vermelho = venceu, precisa resolver. Amarelo = está chegando, dá tempo de
       // combinar. Verde = no prazo, não precisa fazer nada.
       const corPessoa = lista => lista.some(emAtraso) ? '#ef5350'
@@ -5500,8 +5551,11 @@
         const recentes = lancamentos.filter(l => l.data >= limite && l.data <= hoje);
         const rec = recentes.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
         const desp = recentes.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
+        // Compacto porque agora divide a linha com o título do card: duas linhas
+        // curtas em vez de três, com as setas fazendo o papel dos rótulos.
         box24.innerHTML = (rec > 0 || desp > 0)
-          ? `<div style="color:#3d8b40;">↑ ${fmtOculto(rec)}</div><div style="color:#a83e3b;">↓ ${fmtOculto(desp)}</div><div style="color:#5a5a5a;">últimas 24h</div>`
+          ? `<div style="color:#5a5a5a;">últimas 24h</div>` +
+            `<div><span style="color:#3d8b40;">↑ ${fmtOculto(rec)}</span> <span style="color:#a83e3b;">↓ ${fmtOculto(desp)}</span></div>`
           : '';
       }
     }
@@ -6028,6 +6082,20 @@
             </div>`).join('');
           boxSubFat.classList.remove('escondido');
         }
+      }
+
+      // O total vem antes da lista: sem ele você precisava somar de cabeça pra
+      // saber se aquela lista fecha com o número do card que a abriu.
+      if (filtrados.length) {
+        const somaLista = filtrados.reduce((s, l) => s + parseVal(l.valor) * (l.tipo === 'receita' ? 1 : -1), 0);
+        const extrasBox = boxSubFat.innerHTML;
+        const positivo = somaLista >= 0;
+        boxSubFat.innerHTML = `
+          <div class="linha-subtotal" style="cursor:default;border-bottom:1px solid #333;padding-bottom:8px;margin-bottom:8px;">
+            <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${filtrados.length} lançamento${filtrados.length > 1 ? 's' : ''}</span>
+            <strong style="font-size:16px;color:${positivo ? '#4caf50' : '#ef5350'};">${positivo ? '+' : '−'}${fmtOculto(Math.abs(somaLista))}</strong>
+          </div>` + extrasBox;
+        boxSubFat.classList.remove('escondido');
       }
 
       corpo.innerHTML = '';
@@ -7174,7 +7242,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.10-1';
+    const APP_VERSION = '2026.08.10-2';
 
     // Inicialização
     carregarLocalStorage();
