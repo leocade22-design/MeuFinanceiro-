@@ -858,7 +858,10 @@
           </div>
           <input type="file" id="importBackupInput" class="escondido" aria-label="Arquivo de backup para importar" accept="application/json" onchange="importarBackup(event)">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a;">
-            <span id="versaoApp" style="font-size:11px;color:#666;">versão —</span>
+            <div style="min-width:0;">
+              <div id="versaoApp" style="font-size:11px;color:#666;">versão —</div>
+              <div style="font-size:11px;color:#5f9933;font-weight:600;letter-spacing:.2px;">By: Leonardo Cade</div>
+            </div>
             <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
           </div>
         </div>
@@ -1223,6 +1226,17 @@
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
       </div>
+    </div>
+  </div>
+
+  <!-- AVISO DO APP — substitui o alert() do navegador, que estampava
+       "leocade22-design.github.io diz" em cima de toda mensagem de erro -->
+  <div id="modalAviso" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAviso')">
+    <div class="modal-content" style="max-width:320px;text-align:center;">
+      <div id="avisoEmoji" style="font-size:38px;line-height:1;margin:4px 0 10px;">🤨</div>
+      <div id="avisoTexto" style="font-size:15px;line-height:1.5;color:#eee;margin-bottom:6px;"></div>
+      <div id="avisoDetalhe" style="font-size:12px;color:#888;line-height:1.45;"></div>
+      <button type="button" class="btn-salvar" style="margin-top:18px;width:100%;" onclick="fecharModal('modalAviso')">Beleza</button>
     </div>
   </div>
 
@@ -2066,11 +2080,11 @@
 
     function salvarConta() {
       const nome = document.getElementById('nomeConta').value.trim();
-      if (!nome) { alert('Digite o nome da conta.'); return; }
+      if (!nome) { avisar('semNome', 'Digite o nome da conta.'); return; }
       const temCredito = document.getElementById('contaTemCreditoChk').checked;
       const idEdit = document.getElementById('idContaEditando').value;
       const duplicada = contas.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== idEdit);
-      if (duplicada) { alert('Já existe uma conta com esse nome.'); return; }
+      if (duplicada) { avisar('duplicado', 'Já existe uma conta com esse nome.'); return; }
 
       if (idEdit) {
         const c = contas.find(x => x.id === idEdit);
@@ -2110,7 +2124,7 @@
     }
 
     function excluirConta(id) {
-      if (contas.length <= 1) { alert('É preciso ter pelo menos uma conta.'); return; }
+      if (contas.length <= 1) { avisar('minimoUm', 'É preciso ter pelo menos uma conta.'); return; }
       const c = contas.find(x => x.id === id);
       if (!c) return;
       if (!confirm(`Excluir a conta "${c.nome}"? Os lançamentos antigos continuam com esse nome no histórico.`)) return;
@@ -2196,10 +2210,10 @@
 
     function salvarCategoria() {
       const nome = document.getElementById('nomeCategoria').value.trim();
-      if (!nome) { alert('Digite o nome da categoria.'); return; }
+      if (!nome) { avisar('semNome', 'Digite o nome da categoria.'); return; }
       const idxEdit = document.getElementById('idxCategoriaEditando').value;
       const duplicada = categorias.some((c, i) => c.toLowerCase() === nome.toLowerCase() && String(i) !== idxEdit);
-      if (duplicada) { alert('Já existe uma categoria com esse nome.'); return; }
+      if (duplicada) { avisar('duplicado', 'Já existe uma categoria com esse nome.'); return; }
 
       if (idxEdit !== '') {
         const idx = parseInt(idxEdit, 10);
@@ -2235,7 +2249,7 @@
     }
 
     function excluirCategoria(idx) {
-      if (categorias.length <= 1) { alert('É preciso ter pelo menos uma categoria.'); return; }
+      if (categorias.length <= 1) { avisar('minimoUm', 'É preciso ter pelo menos uma categoria.'); return; }
       const nome = categorias[idx];
       if (nome === undefined) return;
       if (!confirm(`Excluir a categoria "${nome}"? Os lançamentos antigos continuam com esse nome no histórico.`)) return;
@@ -2475,9 +2489,9 @@
           renderizarInvestimentos();
           renderizarGrupos();
           popularSelectGrupos(document.getElementById('grupoViagem') ? document.getElementById('grupoViagem').value : '');
-          alert('Backup importado com sucesso.');
+          avisar('backupOk');
         } catch (err) {
-          alert('Não foi possível importar o backup.');
+          avisar('backupErro');
         } finally {
           e.target.value = '';
         }
@@ -2868,6 +2882,104 @@
         }
         box.appendChild(linha);
       });
+    }
+
+    /* AVISOS DO APP
+       O alert() do navegador estampa o domínio em cima da mensagem
+       ("leocade22-design.github.io diz"), e não dá pra tirar. Este popup é do app,
+       então a mensagem aparece sozinha — e ainda dá pra caçoar de você.
+
+       Cada chave tem várias versões; sai uma sorteada, pra não cansar de tanto
+       repetir. O `detalhe` é a explicação séria embaixo da piada: quem abriu o app
+       pela primeira vez precisa entender o que fazer, não só levar a zoada. */
+    const AVISOS = {
+      semValor: { emoji: '🤨', detalhe: 'Preencha o campo Valor antes de salvar.', frases: [
+        'Você é pateta ou o quê? Salvar lançamento sem valor?',
+        'Um gasto de R$ 0,00? Me poupe.',
+        'Cadê o valor, campeão? Adivinhação não é comigo.',
+        'Lançamento sem valor é igual pizza sem queijo: não existe.',
+        'Tá economizando até no número, é?'
+      ] },
+      valorInvalido: { emoji: '🧮', detalhe: 'O valor precisa ser maior que zero.', frases: [
+        'Esse valor aí não existe nem na sua imaginação.',
+        'Zero, negativo ou hieróglifo? Nenhum dos três serve.',
+        'Matemática básica, meu consagrado: tem que ser maior que zero.',
+        'Isso não é um valor, é um enigma.'
+      ] },
+      semDescricao: { emoji: '📝', detalhe: 'Escreva uma descrição pra saber o que foi esse gasto.', frases: [
+        'Gasto sem nome? Daqui a um mês você não vai lembrar nem sob tortura.',
+        'Batiza esse lançamento, vai.',
+        '"Sem descrição" não conta como descrição.',
+        'Escreve alguma coisa aí, nem que seja "sei lá".'
+      ] },
+      semNome: { emoji: '🏷️', detalhe: 'Digite um nome.', frases: [
+        'Nome em branco? Nem o RG aceita isso.',
+        'Sem nome não rola, chefe.',
+        'Como é que eu chamo isso? "Coisa"?'
+      ] },
+      duplicado: { emoji: '👯', detalhe: 'Já existe um com esse nome — escolha outro.', frases: [
+        'Já tem um com esse nome. Criatividade, por favor.',
+        'Clone detectado. Inventa outro nome.',
+        'Esse nome já tá ocupado, tenta de novo.'
+      ] },
+      minimoUm: { emoji: '🫠', detalhe: 'É preciso ter pelo menos um.', frases: [
+        'Quer apagar o último? Aí não sobra nada, gênio.',
+        'Se eu deixar apagar esse, o app vira enfeite.',
+        'Pelo menos um tem que ficar. Regra da casa.'
+      ] },
+      contasIguais: { emoji: '🔁', detalhe: 'Escolha duas contas diferentes.', frases: [
+        'Transferir de uma conta pra ela mesma? Isso é dinheiro andando em círculo.',
+        'Origem igual ao destino. Você reinventou o ficar parado.',
+        'Mesma conta dos dois lados não move nada, meu velho.'
+      ] },
+      telefoneInvalido: { emoji: '📵', detalhe: 'Inclua o DDD — ex: (11) 98765-4321.', frases: [
+        'Esse número não existe nem em filme.',
+        'Faltou DDD, sobrou pressa.',
+        'Com esse número você liga pro além.'
+      ] },
+      semVoz: { emoji: '🎙️', detalhe: 'Use o Chrome ou o Safari atualizados.', frases: [
+        'Seu navegador é surdo. Tenta no Chrome.',
+        'Esse navegador não entende voz — nem a minha, nem a sua.'
+      ] },
+      vozNaoEntendi: { emoji: '👂', detalhe: 'Tente de novo, falando um pouco mais devagar.', frases: [
+        'Não entendi nada do que você falou.',
+        'Foi mal, saiu tudo embolado aqui.',
+        'Repete? Achei que você tinha falado outra língua.'
+      ] },
+      vozSemValor: { emoji: '💸', detalhe: 'Tente algo como: "paguei 30 reais de uber".', frases: [
+        'Você falou bonito, mas esqueceu o valor.',
+        'Cadê o dinheiro na frase, poeta?',
+        'Beleza, e custou quanto?'
+      ] },
+      semAviso: { emoji: '🔔', detalhe: 'Escolha pelo menos um: 1 semana, 3 dias, 1 dia ou no dia.', frases: [
+        'Lembrete sem prazo nenhum é só um botão bonito.',
+        'Marca pelo menos um, senão não aviso nada.'
+      ] },
+      notificacaoBloqueada: { emoji: '🚫', detalhe: 'Libere as notificações nas configurações do site e tente de novo. As cores no quadro continuam funcionando de qualquer forma.', frases: [
+        'O navegador barrou as notificações.',
+        'Bloquearam meu grito de alerta.'
+      ] },
+      jaExisteNaLista: { emoji: '♻️', detalhe: 'Esse lançamento já voltou pra lista.', frases: [
+        'Esse aí já tá de volta. Calma.',
+        'Restaurar duas vezes não duplica, graças a Deus.'
+      ] },
+      backupOk: { emoji: '✅', detalhe: 'Seus dados voltaram inteiros.', frases: [
+        'Backup importado com sucesso!'
+      ] },
+      backupErro: { emoji: '💥', detalhe: 'Confira se o arquivo é o .json exportado por este app.', frases: [
+        'Esse arquivo aí não é backup coisa nenhuma.',
+        'Não consegui ler esse arquivo.'
+      ] }
+    };
+
+    function avisar(chave, detalheExtra) {
+      const a = AVISOS[chave];
+      const texto = a ? a.frases[Math.floor(Math.random() * a.frases.length)] : String(chave);
+      document.getElementById('avisoEmoji').textContent = a ? a.emoji : '⚠️';
+      document.getElementById('avisoTexto').textContent = texto;
+      document.getElementById('avisoDetalhe').textContent = detalheExtra || (a ? a.detalhe : '');
+      document.getElementById('modalAviso').classList.remove('escondido');
+      window.__ultimoAviso = chave;
     }
 
     function salvarMeuNome() {
@@ -3507,9 +3619,9 @@
       event.preventDefault();
       const idEditando = document.getElementById('idEditando').value;
       const valorBruto = document.getElementById('valor').value.replace('R$', '').trim();
-      if (!valorBruto) { alert('Digite um valor.'); return; }
+      if (!valorBruto) { avisar('semValor'); return; }
       const valorTotal = parseVal(valorBruto);
-      if (!valorTotal || valorTotal <= 0) { alert('Digite um valor válido.'); return; }
+      if (!valorTotal || valorTotal <= 0) { avisar('valorInvalido'); return; }
 
       if (!idEditando) {
         abrirConfirmacaoLancamento(valorTotal);
@@ -3884,7 +3996,7 @@
         if (!transferencias.some(t => t.id === limpo.id)) transferencias.unshift(limpo);
         salvarTransferencias();
       } else {
-        if (lancamentos.some(l => l.id === limpo.id)) { alert('Esse lançamento já está na lista.'); return; }
+        if (lancamentos.some(l => l.id === limpo.id)) { avisar('jaExisteNaLista'); return; }
         lancamentos.unshift(limpo);
         // devolver um reembolso volta a quitar a cobrança que ele pagava
         if (limpo.reembolsoDe) {
@@ -4036,8 +4148,8 @@
       const valor = parseVal(valorBruto);
       const data = document.getElementById('transfData').value || obterDataBrasilia();
 
-      if (origem === destino) { alert('Escolha duas contas diferentes.'); return; }
-      if (!valor || valor <= 0) { alert('Digite um valor válido.'); return; }
+      if (origem === destino) { avisar('contasIguais'); return; }
+      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
 
       transferenciaPendente = { id: Date.now(), data, origem, destino, valor: valor.toFixed(2).replace('.', ',') };
       document.getElementById('resumoConfirmaTransf').innerHTML = `
@@ -5022,7 +5134,7 @@
         return;
       }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { alert('Seu navegador não reconhece voz. Use o Chrome ou o Safari atualizados.'); return; }
+      if (!SR) { avisar('semVoz'); return; }
 
       const rec = new SR();
       rec.lang = 'pt-BR';
@@ -5588,7 +5700,7 @@
       const campo = document.getElementById('inputTelefoneCobranca');
       const nome = campo.dataset.nome;
       const tel = normalizarTelefone(campo.value);
-      if (!tel) { alert('Número inválido. Inclua o DDD — ex: (11) 98765-4321.'); return; }
+      if (!tel) { avisar('telefoneInvalido'); return; }
       const tomEscolhido = (document.querySelector('#tonsCobranca .btn-periodo.ativo') || {}).dataset;
       contatos[nome] = { tel, tom: (tomEscolhido && tomEscolhido.tom) || 'neutro' };
       salvarContatos();
@@ -6286,7 +6398,7 @@
 
     async function salvarLembretes() {
       if (!antecedenciaEditando.length) {
-        alert('Escolha pelo menos um aviso — 1 semana, 3 dias, 1 dia ou no dia.');
+        avisar('semAviso');
         return;
       }
       let permissao = Notification.permission;
@@ -6294,7 +6406,7 @@
         try { permissao = await Notification.requestPermission(); } catch (e) { permissao = 'denied'; }
       }
       if (permissao !== 'granted') {
-        alert('O navegador bloqueou as notificações. Você pode liberar nas configurações do site e tentar de novo — as cores no quadro continuam funcionando de qualquer forma.');
+        avisar('notificacaoBloqueada');
         return;
       }
       localStorage.setItem(CHAVE_ANTECEDENCIA, JSON.stringify(antecedenciaEditando));
@@ -6650,9 +6762,9 @@
     function salvarFixoModal(e) {
       e.preventDefault();
       const descricao = document.getElementById('descFixo').value.trim();
-      if (!descricao) { alert('Digite a descrição.'); return; }
+      if (!descricao) { avisar('semDescricao'); return; }
       const valor = parseVal(document.getElementById('valorFixo').value.replace('R$', '').trim());
-      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
+      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
 
       const idEdit = document.getElementById('idFixoEditando').value;
       const contaEscolhida = document.getElementById('contaFixo').value || primeiraConta();
@@ -6894,7 +7006,7 @@
       e.preventDefault();
       const valorStr = document.getElementById('valorAporte').value.replace('R$', '').trim();
       const valor = parseVal(valorStr);
-      if (!valor || valor <= 0) { alert('Valor inválido.'); return; }
+      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
 
       const origem = document.getElementById('origemAporte').value;
       const data = obterDataBrasilia();
@@ -7234,7 +7346,7 @@
 
     function salvarRenomearGrupo() {
       const novoNome = document.getElementById('inputNovoNomeGrupo').value.trim();
-      if (!novoNome) { alert('Digite um nome.'); return; }
+      if (!novoNome) { avisar('semNome'); return; }
       const g = grupos.find(x => x.id === grupoModalAtualId);
       if (!g) return;
       g.nome = novoNome;
@@ -7292,7 +7404,7 @@ function iniciarReconhecimentoVoz() {
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    alert('O seu navegador não suporta reconhecimento de voz nativo (recomendado usar Chrome ou Safari atualizados).');
+    avisar('semVoz');
     return;
   }
 
@@ -7320,7 +7432,7 @@ function iniciarReconhecimentoVoz() {
     const foiCancelamento = vozCanceladaManual || event.error === 'aborted';
     desligarMic();
     if (foiCancelamento) return; // desligar o mic de propósito não é erro
-    alert('Não foi possível reconhecer a voz. Tente novamente.');
+    avisar('vozNaoEntendi');
   };
 
   // rede de segurança: qualquer encerramento (timeout, silêncio, troca de app)
@@ -7489,7 +7601,7 @@ function interpretarFala(fala) {
     }
   }
   if (!valorFormatoPadrao) {
-    alert('Não consegui identificar um valor no que você falou. Tente algo como: "paguei 30 reais de uber".');
+    avisar('vozSemValor');
     return;
   }
 
@@ -7700,7 +7812,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.11-2';
+    const APP_VERSION = '2026.08.11-3';
 
     // Inicialização
     carregarLocalStorage();
