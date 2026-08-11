@@ -788,6 +788,21 @@
       </div>
 
       <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('lixeira')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">Lançamentos excluídos</h3>
+            <span id="contadorLixeira" style="font-size:11px;color:#aaa;">vazia</span>
+          </div>
+          <span class="chevron-sec" id="chevron-lixeira">▸</span>
+        </button>
+        <div id="corpo-lixeira" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 200.</p>
+          <div id="listaLixeira"></div>
+          <button type="button" class="btn-backup danger" style="margin-top:12px;" onclick="esvaziarLixeira()">Esvaziar lixeira</button>
+        </div>
+      </div>
+
+      <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('sons')">
           <h3 style="font-size:16px;">Sons</h3>
           <span class="chevron-sec" id="chevron-sons">▸</span>
@@ -2385,7 +2400,8 @@
         contas,
         categorias,
         transferencias,
-        contatos
+        contatos,
+        lixeira
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -2415,6 +2431,7 @@
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
           transferencias = Array.isArray(data.transferencias) ? data.transferencias : [];
           contatos = data.contatos && typeof data.contatos === 'object' ? data.contatos : {};
+          lixeira = Array.isArray(data.lixeira) ? data.lixeira : [];
 
           // um backup gerado antes da correção traz de volta as parcelas com o
           // mesmo prazo; por isso a correção roda de novo aqui, forçada
@@ -2429,6 +2446,7 @@
           salvarContas();
           salvarTransferencias();
           salvarContatos();
+          salvarLixeira();
           popularSelectsContas();
           salvarCategorias();
           popularSelectsCategorias();
@@ -2956,7 +2974,7 @@
       if (idAba === 'abaInvestimentos') renderizarInvestimentos();
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
-      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); }
+      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); }
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -3768,25 +3786,148 @@
 
       const irmas = item.grupoId ? lancamentos.filter(l => l.grupoId === item.grupoId && l.id !== id) : [];
 
+      // Excluir um reembolso deixava a cobrança marcada como quitada e o dinheiro
+      // sumia — a dívida some da lista sem ninguém ter pagado. Avisar e reabrir é
+      // o único desfecho que não mente sobre o que aconteceu.
+      const avisoReembolso = item.reembolsoDe
+        ? '\n\nEste lançamento é o recebimento de um empréstimo. Ao excluir, a cobrança volta a aparecer em aberto.'
+        : '';
+
+      let removidos = [];
       if (irmas.length > 0) {
         const excluirTudo = confirm(
           'Esta é uma parcela de uma compra parcelada (' + (irmas.length + 1) + ' parcelas no total).\n\n' +
           'OK = excluir TODAS as parcelas dessa compra\n' +
-          'Cancelar = excluir somente esta parcela'
+          'Cancelar = excluir somente esta parcela' + avisoReembolso
         );
         if (excluirTudo) {
+          removidos = lancamentos.filter(l => l.grupoId === item.grupoId);
           lancamentos = lancamentos.filter(l => l.grupoId !== item.grupoId);
         } else {
-          if (!confirm('Excluir somente esta parcela?')) return;
+          if (!confirm('Excluir somente esta parcela?' + avisoReembolso)) return;
+          removidos = [item];
           lancamentos = lancamentos.filter(l => l.id !== id);
         }
       } else {
-        if (!confirm('Excluir este lançamento?')) return;
+        if (!confirm('Excluir este lançamento?' + avisoReembolso)) return;
+        removidos = [item];
         lancamentos = lancamentos.filter(l => l.id !== id);
       }
 
+      removidos.forEach(l => { reabrirCobrancaDoReembolso(l); mandarPraLixeira(l, 'lancamento'); });
       salvarLocalStorage();
       atualizarTudo();
+    }
+
+    /* LIXEIRA
+       Excluir era definitivo e silencioso: some da lista, some dos totais, e não
+       sobra como conferir depois se aquele valor entrou ou não numa fatura ou num
+       grupo. Aqui o que foi apagado fica guardado, com data, e volta inteiro. */
+    let lixeira = [];
+    const STORAGE_KEY_LIXEIRA = 'meu_financeiro_lixeira_v1';
+    const LIMITE_LIXEIRA = 200;
+
+    function salvarLixeira() { localStorage.setItem(STORAGE_KEY_LIXEIRA, JSON.stringify(lixeira)); }
+    function carregarLixeira() {
+      const d = localStorage.getItem(STORAGE_KEY_LIXEIRA);
+      if (d) { try { lixeira = JSON.parse(d) || []; } catch (e) { lixeira = []; } }
+      if (!Array.isArray(lixeira)) lixeira = [];
+    }
+
+    function mandarPraLixeira(registro, tipoReg) {
+      lixeira.unshift(Object.assign({}, registro, {
+        __excluidoEm: new Date().toISOString(),
+        __tipoReg: tipoReg
+      }));
+      // teto pra a lixeira não crescer sem fim dentro do localStorage
+      if (lixeira.length > LIMITE_LIXEIRA) lixeira.length = LIMITE_LIXEIRA;
+      salvarLixeira();
+    }
+
+    // Ao apagar um "Reembolso X", a cobrança original precisa voltar a aparecer:
+    // ela nunca foi paga de verdade se o dinheiro não existe mais.
+    function reabrirCobrancaDoReembolso(l) {
+      if (!l.reembolsoDe) return;
+      const original = lancamentos.find(x => x.id === l.reembolsoDe);
+      if (!original) return;
+      if (Array.isArray(original.emprestimoRateio) && original.emprestimoRateio.length) {
+        const alvo = original.emprestimoRateio.find(d => l.descricao && l.descricao.includes(d.nome));
+        if (alvo) alvo.quitado = false;
+        original.emprestimoQuitado = original.emprestimoRateio.every(d => d.quitado);
+      } else {
+        original.emprestimoQuitado = false;
+      }
+    }
+
+    function restaurarDaLixeira(indice) {
+      const reg = lixeira[indice];
+      if (!reg) return;
+      const limpo = Object.assign({}, reg);
+      delete limpo.__excluidoEm; delete limpo.__tipoReg;
+
+      if (reg.__tipoReg === 'transferencia') {
+        if (!transferencias.some(t => t.id === limpo.id)) transferencias.unshift(limpo);
+        salvarTransferencias();
+      } else {
+        if (lancamentos.some(l => l.id === limpo.id)) { alert('Esse lançamento já está na lista.'); return; }
+        lancamentos.unshift(limpo);
+        // devolver um reembolso volta a quitar a cobrança que ele pagava
+        if (limpo.reembolsoDe) {
+          const original = lancamentos.find(x => x.id === limpo.reembolsoDe);
+          if (original) original.emprestimoQuitado = true;
+        }
+        salvarLocalStorage();
+      }
+      lixeira.splice(indice, 1);
+      salvarLixeira();
+      renderizarLixeira();
+      atualizarTudo();
+    }
+
+    function esvaziarLixeira() {
+      if (!lixeira.length) return;
+      if (!confirm('Apagar de vez os ' + lixeira.length + ' registros da lixeira? Isso não tem volta.')) return;
+      lixeira = [];
+      salvarLixeira();
+      renderizarLixeira();
+    }
+
+    function renderizarLixeira() {
+      const box = document.getElementById('listaLixeira');
+      if (!box) return;
+      const contador = document.getElementById('contadorLixeira');
+      if (contador) contador.textContent = lixeira.length ? lixeira.length + (lixeira.length === 1 ? ' item' : ' itens') : 'vazia';
+
+      if (!lixeira.length) {
+        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nada excluído por aqui. O que você apagar aparece nesta lista e pode voltar.</p>';
+        return;
+      }
+      box.innerHTML = '';
+      lixeira.forEach((reg, i) => {
+        const quando = new Date(reg.__excluidoEm);
+        const eTransf = reg.__tipoReg === 'transferencia';
+        const eReceita = reg.tipo === 'receita';
+        const cor = eTransf ? '#42a5f5' : (eReceita ? '#4caf50' : '#ef5350');
+        const desc = eTransf ? `${reg.origem} → ${reg.destino}` : reg.descricao;
+        const linha = document.createElement('div');
+        linha.className = 'item-lancamento';
+        linha.style.cursor = 'default';
+        linha.innerHTML = `
+          <div class="item-info" style="min-width:0;">
+            <strong style="font-size:13.5px;">${desc}</strong>
+            <div style="font-size:10.5px;color:#888;">
+              ${(reg.data || '').split('-').reverse().join('/')}${reg.conta ? ' · ' + reg.conta : ''}${reg.categoria ? ' · ' + reg.categoria : ''}
+            </div>
+            <div style="font-size:10px;color:#666;">excluído em ${quando.toLocaleDateString('pt-BR')} às ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="color:${cor};font-weight:700;font-size:13px;">${fmtOculto(parseVal(reg.valor))}</span>
+            <button type="button" class="btn-mini">restaurar</button>
+          </div>
+        `;
+        linha.querySelector('button').onclick = () => restaurarDaLixeira(i);
+        box.appendChild(linha);
+      });
     }
 
     /* SISTEMA DE CONSULTA & FILTROS DE PERÍODO NO RESUMO DO TOPO */
@@ -3938,6 +4079,8 @@
 
     function excluirTransferencia() {
       if (!transferenciaSelecionadaId) return;
+      const alvo = transferencias.find(t => t.id === transferenciaSelecionadaId);
+      if (alvo) mandarPraLixeira(alvo, 'transferencia');
       transferencias = transferencias.filter(t => t.id !== transferenciaSelecionadaId);
       transferenciaSelecionadaId = null;
       salvarTransferencias();
@@ -7542,7 +7685,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.10-4';
+    const APP_VERSION = '2026.08.11-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -7553,6 +7696,7 @@ function confirmarLancamentoVoz() {
     carregarGrupos();
     carregarTransferencias();
     carregarContatos();
+    carregarLixeira();
     carregarOrcamentos();
     carregarFaturasPagas();
     carregarContas();
@@ -7567,6 +7711,7 @@ function confirmarLancamentoVoz() {
     aplicarSecao('fixos');
     aplicarSecao('backup');
     aplicarSecao('contatos');
+    aplicarSecao('lixeira');
     aplicarSecao('sons');
     aplicarSecao('emprestimos');
     aplicarSecao('pagamentoFatura');
