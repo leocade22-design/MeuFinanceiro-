@@ -773,6 +773,12 @@
         </button>
         <div id="corpo-contatos" class="escondido" style="margin-top:10px;">
           <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Os números que o app usa pra abrir o WhatsApp. Ficam só neste aparelho.</p>
+          <!-- Quem está atrasado recebe mensagem do "assistente", não sua. O nome
+               entra na apresentação dele: "sou o assistente do Léo". -->
+          <div class="form-group">
+            <label for="inputMeuNome">Seu nome (o assistente usa nas cobranças)</label>
+            <input type="text" id="inputMeuNome" placeholder="ex: Léo" onchange="salvarMeuNome()">
+          </div>
           <div id="listaContatos"></div>
         </div>
       </div>
@@ -1173,6 +1179,12 @@
         <label for="inputTelefoneCobranca">Número com DDD</label>
         <input type="tel" id="inputTelefoneCobranca" placeholder="(11) 98765-4321" inputmode="tel">
       </div>
+      <!-- O tom define o texto que sai. Atrasado sempre vem do "assistente"; o
+           tom só muda o quanto ele é brincalhão. -->
+      <div class="form-group">
+        <label>Tom das mensagens</label>
+        <div class="chips-periodo" id="tonsCobranca"></div>
+      </div>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
@@ -1487,7 +1499,28 @@
       const d = localStorage.getItem(STORAGE_KEY_CONTATOS);
       if (d) { try { contatos = JSON.parse(d) || {}; } catch (e) { contatos = {}; } }
       if (!contatos || typeof contatos !== 'object') contatos = {};
+      // A primeira versão guardava só o telefone como texto. Agora cada contato é
+      // { tel, tom }, e o formato antigo é lido sem migração destrutiva.
+      Object.keys(contatos).forEach(nome => {
+        if (typeof contatos[nome] === 'string') contatos[nome] = { tel: contatos[nome], tom: 'neutro' };
+      });
     }
+
+    function telDoContato(nome) {
+      const c = contatos[nome];
+      return c ? (typeof c === 'string' ? c : c.tel) : '';
+    }
+
+    function tomDoContato(nome) {
+      const c = contatos[nome];
+      return (c && c.tom) || 'neutro';
+    }
+
+    const TONS_COBRANCA = [
+      { id: 'zoeira',    rotulo: '😂 Zoeira',    dica: 'pros moleques' },
+      { id: 'carinhoso', rotulo: '💛 Carinhoso', dica: 'mais gentil' },
+      { id: 'neutro',    rotulo: '😐 Neutro',    dica: 'direto ao ponto' }
+    ];
 
     // O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
     // qualquer formato ((11) 98765-4321, +55 11 98765 4321, 11987654321) e resolve.
@@ -2763,7 +2796,14 @@
       });
     }
 
+    function salvarMeuNome() {
+      uiPrefs.meuNome = document.getElementById('inputMeuNome').value.trim();
+      salvarUiPrefs();
+    }
+
     function renderizarContatos() {
+      const campoNome = document.getElementById('inputMeuNome');
+      if (campoNome) campoNome.value = uiPrefs.meuNome || '';
       const box = document.getElementById('listaContatos');
       if (!box) return;
       const nomes = Object.keys(contatos).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
@@ -2780,7 +2820,7 @@
         linha.innerHTML = `
           <div class="item-info">
             <strong style="font-size:13.5px;">${nome}</strong>
-            <div style="font-size:11px;color:#888;">${telefoneVisivel(contatos[nome])}</div>
+            <div style="font-size:11px;color:#888;">${telefoneVisivel(telDoContato(nome))} · ${(TONS_COBRANCA.find(t => t.id === tomDoContato(nome)) || {}).rotulo || ''}</div>
           </div>
           <span style="font-size:11px;color:#888;">editar</span>
         `;
@@ -5106,7 +5146,10 @@
        vermelho que você está vendo. */
     function tomDaCobranca(lista, emAtraso, perto) {
       if (lista.some(emAtraso)) return 'atrasado';
-      if (lista.some(perto)) return 'chegando';
+      // Adiada duas vezes é enrolação, não acordo — a mensagem tem que falar a
+      // mesma língua da cor vermelha que a linha já mostra, mesmo com prazo à frente.
+      if (lista.some(c => (c.adiamentos || 0) >= 2)) return 'atrasado';
+      if (lista.some(perto) || lista.some(c => (c.adiamentos || 0) === 1)) return 'chegando';
       return 'tranquilo';
     }
 
@@ -5133,49 +5176,130 @@
         return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
       });
 
-      // Três tons: lembrete leve pra quem ainda vai vencer, cobrança direta (mas sem
-      // grosseria — são amigos) pra quem já passou do prazo, e um recado neutro pra
-      // quando você só quer combinar antes da hora.
       const emAtraso = c => c.vence && c.vence < hoje;
       const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
-      const tom = tomDaCobranca(lista, emAtraso, perto);
+      const situacao = tomDaCobranca(lista, emAtraso, perto);
       const detalhe = itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0];
 
       if (devo) {
-        const abertura = tom === 'atrasado'
+        const abertura = situacao === 'atrasado'
           ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
           : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
         return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
       }
 
-      if (tom === 'atrasado') {
-        const totalVencido = lista.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
-        const quanto = Math.abs(totalVencido - total) < 0.01
-          ? `dos ${fmtVal(total)}`
-          : `dos ${fmtVal(totalVencido)} que já venceram (de ${fmtVal(total)} no total)`;
-        return `Oi ${nome}! 👋 Tudo certo? Passando aqui por causa ${quanto}`
-          + detalhe + '\n\nConsegue dar um jeito nessa semana? Qualquer coisa a gente combina 🙏';
-      }
+      const tom = tomDoContato(nome);
+      const ctx = {
+        nome, total: fmtVal(total), detalhe, compras, umaSo,
+        meu: meuNome(),
+        contas: contas.length,
+        adiada: Math.max(0, ...lista.map(c => c.adiamentos || 0)),
+        quando: (() => {
+          const prox = lista.map(c => c.vence).filter(Boolean).sort()[0];
+          const f = diasAte(prox);
+          return f === 0 ? 'hoje' : f === 1 ? 'amanhã' : 'em ' + f + ' dias';
+        })()
+      };
+      // Quem já venceu tem dias de atraso; quem só foi adiado, não — e "venceram há
+      // 0 dias" é frase de robô quebrado. Um texto só cobre os dois casos.
+      const vencidas = lista.filter(emAtraso);
+      const valorVencido = vencidas.reduce((sm, c) => sm + c.valor, 0);
+      ctx.vencido = fmtVal(valorVencido > 0 ? valorVencido : total);
+      ctx.desde = vencidas.length
+        ? 'vencidos há ' + Math.abs(diasAte(vencidas.map(c => c.vence).sort()[0])) + ' dias'
+        : 'com o prazo já adiado ' + ctx.adiada + ' vezes';
+      return frasePronta(situacao, tom, ctx);
+    }
 
-      if (tom === 'chegando') {
-        const proxima = lista.map(c => c.vence).filter(Boolean).sort()[0];
-        const faltam = diasAte(proxima);
-        const quando = faltam === 0 ? 'vence hoje' : faltam === 1 ? 'vence amanhã' : `vence em ${faltam} dias`;
-        // com uma compra só, a data entre parênteses repetiria o "vence em X dias"
-        const corpo = umaSo ? ' — ' + compras[0].desc : detalhe;
-        return `Oi ${nome}! 👋 Só passando pra lembrar que ${quando}: ${fmtVal(total)}`
-          + corpo + '\n\nSem pressa, é só pra não passar batido 😄';
-      }
+    /* MENSAGENS COM PERSONALIDADE
+       Três tons por pessoa (definidos junto com o telefone) × três situações, e
+       três variações de cada, sorteadas pelo MÊS — assim a mesma pessoa não recebe
+       o mesmo texto duas vezes seguidas, e ninguém compara mensagens iguais.
 
-      return `Oi ${nome}! 👋 Passando pra alinhar os ${fmtVal(total)}` + detalhe
-        + '\n\nQuando puder me dá um toque 🙏';
+       Quem está atrasado não recebe mensagem "sua": recebe do ASSISTENTE, que é um
+       personagem. Tira o peso de você cobrar amigo e ainda é engraçado. */
+    function meuNome() {
+      return (uiPrefs.meuNome || '').trim() || 'o chefe';
+    }
+
+    const FRASES_COBRANCA = {
+      chegando: {
+        zoeira: [
+          c => `Fala ${c.nome}! 👀 Tá chegando o dia dos ${c.total} (${c.quando}), hein${c.detalhe}\n\nJá vai separando pra não ter que fingir que esqueceu 😂`,
+          c => `${c.nome}, meu parceiro! Aviso amigável: ${c.total} vencem ${c.quando}${c.detalhe}\n\nTô de olho, viu 👁️`,
+          c => `Opa ${c.nome}! Lembrete carinhoso de que ${c.quando} vencem ${c.total}${c.detalhe}\n\nNão me obriga a mandar o assistente 😬`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 💛 Passando só pra lembrar dos ${c.total}, que vencem ${c.quando}${c.detalhe}\n\nSem pressa nenhuma, tá? Só pra não passar batido 😊`,
+          c => `Oi ${c.nome}! Tudo bem? Uma lembrancinha: ${c.total} ${c.quando}${c.detalhe}\n\nQualquer coisa a gente ajeita 💛`,
+          c => `Ei ${c.nome}! ✨ ${c.quando} vencem os ${c.total}${c.detalhe}\n\nSe precisar de mais prazo é só falar 🤗`
+        ],
+        neutro: [
+          c => `Oi ${c.nome}! 👋 Lembrete: ${c.total} vencem ${c.quando}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
+          c => `Oi ${c.nome}! Passando pra avisar que ${c.quando} vencem ${c.total}${c.detalhe}`,
+          c => `Fala ${c.nome}! Só sinalizando: ${c.total}, ${c.quando}${c.detalhe}\n\nAbraço!`
+        ]
+      },
+
+      /* O ASSISTENTE. Personagem fixo, com sotaque de filme de máfia — cobra sem
+         que a mensagem soe como você brigando com um amigo. */
+      atrasado: {
+        zoeira: [
+          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o assistente pessoal d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}. Fui contratado pra cuidar das ${c.contas} contas dele, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido} ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
+          c => `${c.nome}. 🕴️\n\nO assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} falando. Sabe, eu cuido das ${c.contas} contas dele e tenho uma planilha muito organizada. Muito organizada mesmo${c.detalhe}\n\nO seu nome tá em vermelho aqui — ${c.vencido}, ${c.desde} — e eu não gosto de vermelho. Vamo resolver isso como pessoas civilizadas? 🤝`,
+          c => `Ei, caloteiro! 😤 (é o assistente falando, o ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nEu fui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático 🤌`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 🌷 Aqui quem fala é o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} — ele é tímido demais pra cobrar${c.detalhe}\n\nSão ${c.vencido}, ${c.desde}. Se estiver apertado, me avisa que a gente combina outro prazo, tá? 💛`,
+          c => `Oi ${c.nome}! Assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} na área 🙋\n\nPassando com jeitinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nSem estresse — só me diz quando dá 😊`,
+          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}, cuido das contas dele.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`
+        ],
+        neutro: [
+          c => `Olá ${c.nome}. Aqui é o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}.\n\nConsta em aberto: ${c.vencido}, ${c.desde}${c.detalhe}\n\nPode acertar essa semana?`,
+          c => `${c.nome}, boa! Assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} falando.\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nMe confirma quando conseguir resolver 🙏`,
+          c => `Olá ${c.nome}. Passando pra regularizar ${c.vencido}, ${c.desde}${c.detalhe}\n\nFico no aguardo.`
+        ]
+      },
+
+      tranquilo: {
+        zoeira: [
+          c => `Fala ${c.nome}! Nada urgente, só registrando aqui os ${c.total} pra memória não falhar 😅${c.detalhe}`,
+          c => `${c.nome}! Passando pra alinhar os ${c.total}${c.detalhe}\n\nTá tranquilo, é só pra deixar combinado 👊`,
+          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe} 😄`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 💛 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder, a gente combina 😊`,
+          c => `Oi ${c.nome}! Tudo bem? Só organizando as contas por aqui: ${c.total}${c.detalhe} 🌷`,
+          c => `Ei ${c.nome}! ✨ Nada urgente — só pra deixar combinado: ${c.total}${c.detalhe}`
+        ],
+        neutro: [
+          c => `Oi ${c.nome}! 👋 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
+          c => `Oi ${c.nome}! Só registrando os ${c.total} pra a gente combinar${c.detalhe}`,
+          c => `Fala ${c.nome}! Alinhando aqui: ${c.total}${c.detalhe}\n\nAbraço!`
+        ]
+      }
+    };
+
+    /* O mês é a semente: a variação muda sozinha ao longo do ano sem precisar de
+       sorteio guardado. Quem adiou mais de uma vez pula direto pra variação mais
+       insistente, independente do mês. */
+    function frasePronta(situacao, tom, ctx) {
+      const banco = (FRASES_COBRANCA[situacao] || FRASES_COBRANCA.tranquilo);
+      const lista = banco[tom] || banco.neutro;
+      const mes = new Date(obterDataBrasilia() + 'T12:00:00').getMonth();
+      const i = ctx.adiada >= 2 ? lista.length - 1 : (mes + ctx.adiada) % lista.length;
+      let texto = lista[i](ctx);
+      if (ctx.adiada >= 2 && situacao === 'atrasado') {
+        texto += `\n\n(P.S.: essa é a ${ctx.adiada + 1}ª vez que esse prazo muda. Minha planilha tá anotando. 📋)`;
+      }
+      return texto;
     }
 
     function abrirCobrancaWhatsApp(nome, chaves, devo) {
       const abertas = cobrancasAbertas().filter(c => chaves.includes(c.chave));
       if (!abertas.length) return;
       cobrancaPendente = { nome, texto: textoDaCobranca(nome, abertas, devo) };
-      const tel = normalizarTelefone(contatos[nome]);
+      const tel = normalizarTelefone(telDoContato(nome));
       if (tel) return dispararWhatsApp(tel);
       abrirModalContatoCobranca(nome);
     }
@@ -5183,18 +5307,33 @@
     function dispararWhatsApp(tel) {
       if (!cobrancaPendente) return;
       window.open(`https://wa.me/${tel}?text=${encodeURIComponent(cobrancaPendente.texto)}`, '_blank');
+      // Registra a cobrança pra o app saber depois quem foi cobrado e não respondeu
+      registrarCobranca(cobrancaPendente.nome);
       cobrancaPendente = null;
+      renderizarEmprestimos();
     }
 
     function abrirModalContatoCobranca(nome) {
       document.getElementById('tituloContatoCobranca').textContent = 'WhatsApp de ' + nome;
-      document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(contatos[nome] || '');
+      document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(telDoContato(nome));
       document.getElementById('inputTelefoneCobranca').dataset.nome = nome;
       // A agenda do celular só está disponível no Chrome do Android; no iPhone o
       // botão some e sobra o campo manual, que funciona em qualquer aparelho.
       const btnAgenda = document.getElementById('btnEscolherDaAgenda');
       const temPicker = !!(navigator.contacts && navigator.contacts.select);
       btnAgenda.classList.toggle('escondido', !temPicker);
+
+      const atual = tomDoContato(nome);
+      const boxTons = document.getElementById('tonsCobranca');
+      boxTons.innerHTML = TONS_COBRANCA.map(t =>
+        `<button type="button" class="btn-periodo${t.id === atual ? ' ativo' : ''}" data-tom="${t.id}" title="${t.dica}">${t.rotulo}</button>`
+      ).join('');
+      boxTons.querySelectorAll('.btn-periodo').forEach(b => {
+        b.onclick = () => {
+          boxTons.querySelectorAll('.btn-periodo').forEach(x => x.classList.remove('ativo'));
+          b.classList.add('ativo');
+        };
+      });
       document.getElementById('modalContatoCobranca').classList.remove('escondido');
     }
 
@@ -5211,7 +5350,8 @@
       const nome = campo.dataset.nome;
       const tel = normalizarTelefone(campo.value);
       if (!tel) { alert('Número inválido. Inclua o DDD — ex: (11) 98765-4321.'); return; }
-      contatos[nome] = tel;
+      const tomEscolhido = (document.querySelector('#tonsCobranca .btn-periodo.ativo') || {}).dataset;
+      contatos[nome] = { tel, tom: (tomEscolhido && tomEscolhido.tom) || 'neutro' };
       salvarContatos();
       fecharModal('modalContatoCobranca');
       renderizarEmprestimos();
@@ -5243,14 +5383,16 @@
         return l.emprestimoRateio.map((d, i) => ({
           chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado,
-          vence: d.vence || l.emprestimoVence, rotulo: d.rotulo
+          vence: d.vence || l.emprestimoVence, rotulo: d.rotulo,
+          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || ''
         }));
       }
       if (l.emprestimoPara) {
         return [{
           chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado,
-          vence: l.emprestimoVence
+          vence: l.emprestimoVence,
+          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || ''
         }];
       }
       return [];
@@ -5308,9 +5450,28 @@
             if (d.vence) d.vence = somarMeses(d.vence, delta);
           });
         }
+        /* CONTADOR DE ADIAMENTOS
+           Adiar joga a cobrança pro futuro, e ela sai do vermelho — some do
+           radar sem ter sido paga. Guardando quantas vezes foi adiada, a linha
+           continua acusando, e some a dúvida de "será que o app empurrou
+           sozinho?": só este botão mexe nisso. Voltar (−1) desconta. */
+        const n = (l.adiamentos || 0) + (delta > 0 ? 1 : -1);
+        l.adiamentos = Math.max(0, n);
+        if (delta > 0) l.ultimoAdiamento = obterDataBrasilia();
       });
       salvarLocalStorage();
       renderizarEmprestimos();
+    }
+
+    // Marca que a pessoa foi cobrada hoje. Serve pra saber depois quem recebeu
+    // mensagem e não deu retorno — que é diferente de quem nunca foi cobrado.
+    function registrarCobranca(nome) {
+      const hoje = obterDataBrasilia();
+      lancamentos.forEach(l => {
+        if (l.emprestimoPara === nome) l.ultimaCobranca = hoje;
+        if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => d.nome === nome)) l.ultimaCobranca = hoje;
+      });
+      salvarLocalStorage();
     }
 
     function renderizarEmprestimos() {
@@ -5347,10 +5508,22 @@
       // Verde nos dois: é dinheiro que volta pra você. O amarelo ficou reservado
       // pro cartão, que é a outra régua — misturar as duas confundia.
       const corTotal = devo ? '#ef5350' : '#4caf50';
-      // Vermelho = venceu, precisa resolver. Amarelo = está chegando, dá tempo de
-      // combinar. Verde = no prazo, não precisa fazer nada.
-      const corPessoa = lista => lista.some(emAtraso) ? '#ef5350'
-        : (lista.some(perto) ? '#ffd166' : (devo ? '#ef5350' : '#4caf50'));
+
+      /* Adiar joga a data pro futuro e a cobrança sairia do vermelho sem ter sido
+         paga. Duas vezes adiada é enrolação, não acordo: continua vermelha mesmo
+         com prazo à frente. Uma vez, amarela. Mesma coisa pra quem foi cobrado e
+         não deu retorno em uma semana. */
+      const DIAS_SEM_RETORNO = 7;
+      const enrolando = c => (c.adiamentos || 0) >= 2;
+      const semRetorno = c => c.ultimaCobranca && !emAtraso(c)
+        && diasAte(c.ultimaCobranca) <= -DIAS_SEM_RETORNO;
+      const suspeita = c => enrolando(c) || semRetorno(c);
+      const adiadaUmaVez = c => (c.adiamentos || 0) === 1;
+
+      // Vermelho = venceu ou está enrolando. Amarelo = está chegando ou já foi
+      // adiada uma vez. Verde = no prazo, não precisa fazer nada.
+      const corPessoa = lista => (lista.some(emAtraso) || lista.some(suspeita)) ? '#ef5350'
+        : ((lista.some(perto) || lista.some(adiadaUmaVez)) ? '#ffd166' : (devo ? '#ef5350' : '#4caf50'));
 
       const porPessoa = {};
       cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
@@ -5369,7 +5542,8 @@
 
       // quem tem cobrança vencida aparece primeiro
       Object.entries(porPessoa)
-        .sort((a, b) => (a[1].some(emAtraso) ? 0 : 1) - (b[1].some(emAtraso) ? 0 : 1)
+        .sort((a, b) => ((a[1].some(emAtraso) || a[1].some(suspeita)) ? 0 : 1)
+                      - ((b[1].some(emAtraso) || b[1].some(suspeita)) ? 0 : 1)
           || a[0].localeCompare(b[0], 'pt-BR', { sensitivity: 'base' }))
         .forEach(([nome, lista]) => {
           const totalPessoa = lista.reduce((sm, c) => sm + c.valor, 0);
@@ -5386,6 +5560,13 @@
             legenda += ' · vence ' + (faltam === 0 ? 'hoje' : faltam === 1 ? 'amanhã' : 'em ' + faltam + ' dias');
           } else if (proximo) legenda += ' · a partir de ' + proximo.split('-').reverse().join('/');
 
+          // O que denuncia a enrolação vem depois do prazo, porque é a explicação
+          // de por que aquela linha está vermelha apesar da data estar no futuro.
+          const maxAdiada = Math.max(0, ...lista.map(c => c.adiamentos || 0));
+          if (maxAdiada > 0) legenda += ' · adiada ' + maxAdiada + 'x';
+          const cobradaSemRetorno = lista.filter(semRetorno)[0];
+          if (cobradaSemRetorno) legenda += ' · cobrado há ' + Math.abs(diasAte(cobradaSemRetorno.ultimaCobranca)) + ' dias';
+
           const bloco = document.createElement('div');
           bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid #2a2a2a;';
 
@@ -5396,7 +5577,7 @@
           cabecalho.innerHTML = `
             <div class="item-info">
               <strong>${nome}</strong>
-              <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : (chegando > 0 ? '#ffd166' : '#888')};">${legenda}</div>
+              <div style="font-size:11px;color:${(atrasadas > 0 || lista.some(suspeita)) ? '#ef5350' : ((chegando > 0 || lista.some(adiadaUmaVez)) ? '#ffd166' : '#888')};">${legenda}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="color:${corPessoa(lista)};font-weight:700;">${fmtOculto(totalPessoa)}</span>
@@ -7242,7 +7423,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.10-2';
+    const APP_VERSION = '2026.08.10-3';
 
     // Inicialização
     carregarLocalStorage();
