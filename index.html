@@ -459,21 +459,26 @@
 
       <!-- LANÇAMENTOS DO MÊS SELECIONADO (retrátil, aberto por padrão) -->
       <div class="card" data-card="lancamentosMes" data-card-titulo="Lançamentos">
+        <!-- O resumo de 24h sobe pra linha do título e o "ver todos" desce pra linha
+             dos filtros: duas linhas a menos, e cada informação encostada no canto
+             oposto da que ela acompanha. -->
         <button type="button" class="card-header-toggle" onclick="alternarSecao('lancamentosMes')">
           <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
-          <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
+          <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;">
+            <div id="resumo24h" style="font-size:10px;line-height:1.35;color:#777;text-align:right;"></div>
+            <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
+          </div>
         </button>
         <div id="corpo-lancamentosMes" class="escondido" style="margin-top:12px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;">
-            <div id="resumo24h" style="font-size:10.5px;line-height:1.5;color:#777;"></div>
-            <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
-          </div>
           <!-- Separa o que passou pela conta do que está no cartão, sem tirar nada
                da lista: "Tudo" continua sendo a visão cronológica do dia a dia. -->
-          <div class="chips-periodo" style="margin-bottom:10px;">
-            <button type="button" class="btn-periodo ativo" data-forma="tudo" onclick="setFiltroFormaLanc('tudo')">Tudo</button>
-            <button type="button" class="btn-periodo" data-forma="conta" onclick="setFiltroFormaLanc('conta')">Conta</button>
-            <button type="button" class="btn-periodo" data-forma="cartao" onclick="setFiltroFormaLanc('cartao')">Cartão</button>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div class="chips-periodo">
+              <button type="button" class="btn-periodo ativo" data-forma="tudo" onclick="setFiltroFormaLanc('tudo')">Tudo</button>
+              <button type="button" class="btn-periodo" data-forma="conta" onclick="setFiltroFormaLanc('conta')">Conta</button>
+              <button type="button" class="btn-periodo" data-forma="cartao" onclick="setFiltroFormaLanc('cartao')">Cartão</button>
+            </div>
+            <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
           <div id="subtotalFormaLanc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.7;"></div>
           <div class="busca-box">
@@ -650,6 +655,10 @@
           <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
         </button>
         <div id="corpo-gastoDiaSemana" class="escondido" style="margin-top:12px;">
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <button type="button" class="btn-mini ativo" id="btnDiaBarras" onclick="setTipoDiaSemana('barras')">Barras</button>
+            <button type="button" class="btn-mini" id="btnDiaColunas" onclick="setTipoDiaSemana('colunas')">Colunas</button>
+          </div>
           <div id="containerGastoDiaSemana"></div>
         </div>
       </div>
@@ -753,11 +762,16 @@
 
     <div id="abaConfig" class="aba-conteudo">
       <div class="card">
-        <h3 style="margin-bottom:10px;">Contas e categorias</h3>
-        <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
-          <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('contasCategorias')">
+          <h3 style="font-size:16px;">Contas e categorias</h3>
+          <span class="chevron-sec" id="chevron-contasCategorias">▸</span>
+        </button>
+        <div id="corpo-contasCategorias" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
+            <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
+          </div>
         </div>
       </div>
 
@@ -768,7 +782,28 @@
         </button>
         <div id="corpo-contatos" class="escondido" style="margin-top:10px;">
           <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Os números que o app usa pra abrir o WhatsApp. Ficam só neste aparelho.</p>
+          <!-- Quem está atrasado recebe mensagem do "assistente", não sua. O nome
+               entra na apresentação dele: "sou o assistente do Léo". -->
+          <div class="form-group">
+            <label for="inputMeuNome">Seu nome (o assistente usa nas cobranças)</label>
+            <input type="text" id="inputMeuNome" placeholder="ex: Léo" onchange="salvarMeuNome()">
+          </div>
           <div id="listaContatos"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('lixeira')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">Lançamentos excluídos</h3>
+            <span id="contadorLixeira" style="font-size:11px;color:#aaa;">vazia</span>
+          </div>
+          <span class="chevron-sec" id="chevron-lixeira">▸</span>
+        </button>
+        <div id="corpo-lixeira" class="escondido" style="margin-top:10px;">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 200.</p>
+          <div id="listaLixeira"></div>
+          <button type="button" class="btn-backup danger" style="margin-top:12px;" onclick="esvaziarLixeira()">Esvaziar lixeira</button>
         </div>
       </div>
 
@@ -778,7 +813,7 @@
           <span class="chevron-sec" id="chevron-sons">▸</span>
         </button>
         <div id="corpo-sons" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Um é sorteado a cada receita salva. Toque pra ouvir.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Toque na linha pra ouvir. Toque no ✓ pra tirar ou botar o som no sorteio — a cada receita, um dos marcados toca.</p>
           <div id="listaSons"></div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="chkSomLigado" onchange="alternarSomLigado()" aria-label="Tocar som ao salvar receita" style="width:auto;margin:0;">
@@ -788,15 +823,25 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom:4px;">Ordem dos cards — Faturas</h3>
-        <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
-        <div id="ordemCardsAbaFaturas"></div>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemFaturas')">
+          <h3 style="font-size:16px;">Ordem dos cards — Faturas</h3>
+          <span class="chevron-sec" id="chevron-ordemFaturas">▸</span>
+        </button>
+        <div id="corpo-ordemFaturas" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <div id="ordemCardsAbaFaturas"></div>
+        </div>
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom:4px;">Ordem dos cards — Gráficos</h3>
-        <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
-        <div id="ordemCardsAbaGraficos"></div>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemGraficos')">
+          <h3 style="font-size:16px;">Ordem dos cards — Gráficos</h3>
+          <span class="chevron-sec" id="chevron-ordemGraficos">▸</span>
+        </button>
+        <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <div id="ordemCardsAbaGraficos"></div>
+        </div>
       </div>
 
       <!-- BACKUP E RESTAURAÇÃO (retrátil, veio da aba Faturas) -->
@@ -1168,6 +1213,12 @@
         <label for="inputTelefoneCobranca">Número com DDD</label>
         <input type="tel" id="inputTelefoneCobranca" placeholder="(11) 98765-4321" inputmode="tel">
       </div>
+      <!-- O tom define o texto que sai. Atrasado sempre vem do "assistente"; o
+           tom só muda o quanto ele é brincalhão. -->
+      <div class="form-group">
+        <label>Tom das mensagens</label>
+        <div class="chips-periodo" id="tonsCobranca"></div>
+      </div>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
@@ -1482,7 +1533,28 @@
       const d = localStorage.getItem(STORAGE_KEY_CONTATOS);
       if (d) { try { contatos = JSON.parse(d) || {}; } catch (e) { contatos = {}; } }
       if (!contatos || typeof contatos !== 'object') contatos = {};
+      // A primeira versão guardava só o telefone como texto. Agora cada contato é
+      // { tel, tom }, e o formato antigo é lido sem migração destrutiva.
+      Object.keys(contatos).forEach(nome => {
+        if (typeof contatos[nome] === 'string') contatos[nome] = { tel: contatos[nome], tom: 'neutro' };
+      });
     }
+
+    function telDoContato(nome) {
+      const c = contatos[nome];
+      return c ? (typeof c === 'string' ? c : c.tel) : '';
+    }
+
+    function tomDoContato(nome) {
+      const c = contatos[nome];
+      return (c && c.tom) || 'neutro';
+    }
+
+    const TONS_COBRANCA = [
+      { id: 'zoeira',    rotulo: '😂 Zoeira',    dica: 'pros moleques' },
+      { id: 'carinhoso', rotulo: '💛 Carinhoso', dica: 'mais gentil' },
+      { id: 'neutro',    rotulo: '😐 Neutro',    dica: 'direto ao ponto' }
+    ];
 
     // O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
     // qualquer formato ((11) 98765-4321, +55 11 98765 4321, 11987654321) e resolve.
@@ -1689,9 +1761,13 @@
     function renderizarOrdemCards(idAba) {
       const container = document.getElementById('ordemCards' + idAba.replace('aba', 'Aba'));
       if (!container) return;
-      const chaves = (uiPrefs.ordemCards && uiPrefs.ordemCards[idAba] && uiPrefs.ordemCards[idAba].length)
-        ? uiPrefs.ordemCards[idAba]
-        : chavesCardsDaAba(idAba);
+      // Mesmo filtro do aplicarOrdemCards: só entra card que existe NESTA aba hoje.
+      // Sem isso, um card que mudou de aba (o Backup foi pra Ajustes) ficava de
+      // fantasma na lista, ocupando linha e não reordenando nada.
+      const salva = (uiPrefs.ordemCards && uiPrefs.ordemCards[idAba]) || [];
+      const presentes = chavesCardsDaAba(idAba);
+      const chaves = salva.filter(c => presentes.includes(c))
+        .concat(presentes.filter(c => !salva.includes(c)));
       container.innerHTML = '';
       chaves.forEach(chave => {
         const el = document.querySelector('#' + idAba + ' > [data-card="' + chave + '"]');
@@ -2339,7 +2415,8 @@
         contas,
         categorias,
         transferencias,
-        contatos
+        contatos,
+        lixeira
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -2369,6 +2446,7 @@
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
           transferencias = Array.isArray(data.transferencias) ? data.transferencias : [];
           contatos = data.contatos && typeof data.contatos === 'object' ? data.contatos : {};
+          lixeira = Array.isArray(data.lixeira) ? data.lixeira : [];
 
           // um backup gerado antes da correção traz de volta as parcelas com o
           // mesmo prazo; por isso a correção roda de novo aqui, forçada
@@ -2383,6 +2461,7 @@
           salvarContas();
           salvarTransferencias();
           salvarContatos();
+          salvarLixeira();
           popularSelectsContas();
           salvarCategorias();
           popularSelectsCategorias();
@@ -2695,10 +2774,34 @@
       } }
     ];
 
+    /* Quais sons entram no sorteio. Guardado como lista de índices; vazio ou
+       ausente significa "todos", que é o padrão de quem nunca mexeu. */
+    function sonsAtivos() {
+      const d = localStorage.getItem('meu_financeiro_sons_ativos');
+      if (!d) return SONS_RECEITA.map((_, i) => i);
+      try {
+        const lista = JSON.parse(d);
+        const validos = Array.isArray(lista) ? lista.filter(i => i >= 0 && i < SONS_RECEITA.length) : [];
+        return validos.length ? validos : SONS_RECEITA.map((_, i) => i);
+      } catch (e) { return SONS_RECEITA.map((_, i) => i); }
+    }
+
+    function alternarSomAtivo(indice) {
+      const atuais = new Set(sonsAtivos());
+      if (atuais.has(indice)) atuais.delete(indice);
+      else atuais.add(indice);
+      // Desmarcar o último deixaria a receita muda sem querer: o toggle não passa daí.
+      if (!atuais.size) return;
+      localStorage.setItem('meu_financeiro_sons_ativos', JSON.stringify([...atuais].sort((a, b) => a - b)));
+      renderizarSons();
+      testarSom(indice);
+    }
+
     function tocarSomReceita() {
       try {
         const ctx = ctxAudio();
-        const s = SONS_RECEITA[Math.floor(Math.random() * SONS_RECEITA.length)];
+        const ativos = sonsAtivos();
+        const s = SONS_RECEITA[ativos[Math.floor(Math.random() * ativos.length)]];
         s.tocar(ctx, ctx.currentTime + 0.02);
         window.__ultimoSomReceita = s.nome;
         window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1;
@@ -2740,21 +2843,41 @@
       const chk = document.getElementById('chkSomLigado');
       if (chk) chk.checked = somLigado();
       box.innerHTML = '';
+      const ativos = new Set(sonsAtivos());
       SONS_RECEITA.concat([{ nome: 'Vento (transferência)' }]).forEach((s, i) => {
         const ehTransf = i === SONS_RECEITA.length;
+        const ligado = ehTransf || ativos.has(i);
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
         linha.style.cursor = 'pointer';
         linha.onclick = () => testarSom(ehTransf ? 'transferencia' : i);
+        // O tique verde marca quem entra no sorteio. O vento não tem tique: ele não
+        // é sorteado, toca sempre que há transferência.
         linha.innerHTML = `
-          <div class="item-info"><strong style="font-size:13.5px;">${s.nome}</strong></div>
+          <div class="item-info" style="display:flex;align-items:center;gap:9px;">
+            <span style="font-size:14px;line-height:1;color:${ligado ? '#4caf50' : '#3a3a3a'};">✓</span>
+            <strong style="font-size:13.5px;color:${ligado ? '#fff' : '#777'};">${s.nome}</strong>
+          </div>
           <span style="font-size:11px;color:#888;">▶ ouvir</span>
         `;
+        if (!ehTransf) {
+          const tique = linha.querySelector('span');
+          tique.style.cursor = 'pointer';
+          tique.style.padding = '4px 2px';
+          tique.onclick = (ev) => { ev.stopPropagation(); alternarSomAtivo(i); };
+        }
         box.appendChild(linha);
       });
     }
 
+    function salvarMeuNome() {
+      uiPrefs.meuNome = document.getElementById('inputMeuNome').value.trim();
+      salvarUiPrefs();
+    }
+
     function renderizarContatos() {
+      const campoNome = document.getElementById('inputMeuNome');
+      if (campoNome) campoNome.value = uiPrefs.meuNome || '';
       const box = document.getElementById('listaContatos');
       if (!box) return;
       const nomes = Object.keys(contatos).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
@@ -2771,7 +2894,7 @@
         linha.innerHTML = `
           <div class="item-info">
             <strong style="font-size:13.5px;">${nome}</strong>
-            <div style="font-size:11px;color:#888;">${telefoneVisivel(contatos[nome])}</div>
+            <div style="font-size:11px;color:#888;">${telefoneVisivel(telDoContato(nome))} · ${(TONS_COBRANCA.find(t => t.id === tomDoContato(nome)) || {}).rotulo || ''}</div>
           </div>
           <span style="font-size:11px;color:#888;">editar</span>
         `;
@@ -2818,8 +2941,8 @@
       if (!toqueValido || direcaoTravada || e.touches.length !== 1) return;
       const dx = e.touches[0].clientX - toqueIniX;
       const dy = e.touches[0].clientY - toqueIniY;
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'horizontal' : 'vertical';
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
@@ -2828,8 +2951,11 @@
       const dx = e.changedTouches[0].clientX - toqueIniX;
       const dy = e.changedTouches[0].clientY - toqueIniY;
       // arrasto demorado é navegação lenta, não gesto rápido de troca
-      if (Date.now() - toqueIniT > 700) return;
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      // Limites folgados de propósito: a direção já travou no touchmove, então
+      // não há risco de rolagem virar troca de aba. Antes exigia gesto rápido
+      // (700ms) e longo (60px) ao mesmo tempo, e o dedo mais calmo não passava.
+      if (Date.now() - toqueIniT > 1200) return;
+      if (Math.abs(dx) < 42) return;
       const idxAtual = ORDEM_ABAS.findIndex(id => {
         const el = document.getElementById(id);
         return el && el.classList.contains('ativo');
@@ -2863,7 +2989,7 @@
       if (idAba === 'abaInvestimentos') renderizarInvestimentos();
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
-      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); }
+      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); }
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -3675,25 +3801,148 @@
 
       const irmas = item.grupoId ? lancamentos.filter(l => l.grupoId === item.grupoId && l.id !== id) : [];
 
+      // Excluir um reembolso deixava a cobrança marcada como quitada e o dinheiro
+      // sumia — a dívida some da lista sem ninguém ter pagado. Avisar e reabrir é
+      // o único desfecho que não mente sobre o que aconteceu.
+      const avisoReembolso = item.reembolsoDe
+        ? '\n\nEste lançamento é o recebimento de um empréstimo. Ao excluir, a cobrança volta a aparecer em aberto.'
+        : '';
+
+      let removidos = [];
       if (irmas.length > 0) {
         const excluirTudo = confirm(
           'Esta é uma parcela de uma compra parcelada (' + (irmas.length + 1) + ' parcelas no total).\n\n' +
           'OK = excluir TODAS as parcelas dessa compra\n' +
-          'Cancelar = excluir somente esta parcela'
+          'Cancelar = excluir somente esta parcela' + avisoReembolso
         );
         if (excluirTudo) {
+          removidos = lancamentos.filter(l => l.grupoId === item.grupoId);
           lancamentos = lancamentos.filter(l => l.grupoId !== item.grupoId);
         } else {
-          if (!confirm('Excluir somente esta parcela?')) return;
+          if (!confirm('Excluir somente esta parcela?' + avisoReembolso)) return;
+          removidos = [item];
           lancamentos = lancamentos.filter(l => l.id !== id);
         }
       } else {
-        if (!confirm('Excluir este lançamento?')) return;
+        if (!confirm('Excluir este lançamento?' + avisoReembolso)) return;
+        removidos = [item];
         lancamentos = lancamentos.filter(l => l.id !== id);
       }
 
+      removidos.forEach(l => { reabrirCobrancaDoReembolso(l); mandarPraLixeira(l, 'lancamento'); });
       salvarLocalStorage();
       atualizarTudo();
+    }
+
+    /* LIXEIRA
+       Excluir era definitivo e silencioso: some da lista, some dos totais, e não
+       sobra como conferir depois se aquele valor entrou ou não numa fatura ou num
+       grupo. Aqui o que foi apagado fica guardado, com data, e volta inteiro. */
+    let lixeira = [];
+    const STORAGE_KEY_LIXEIRA = 'meu_financeiro_lixeira_v1';
+    const LIMITE_LIXEIRA = 200;
+
+    function salvarLixeira() { localStorage.setItem(STORAGE_KEY_LIXEIRA, JSON.stringify(lixeira)); }
+    function carregarLixeira() {
+      const d = localStorage.getItem(STORAGE_KEY_LIXEIRA);
+      if (d) { try { lixeira = JSON.parse(d) || []; } catch (e) { lixeira = []; } }
+      if (!Array.isArray(lixeira)) lixeira = [];
+    }
+
+    function mandarPraLixeira(registro, tipoReg) {
+      lixeira.unshift(Object.assign({}, registro, {
+        __excluidoEm: new Date().toISOString(),
+        __tipoReg: tipoReg
+      }));
+      // teto pra a lixeira não crescer sem fim dentro do localStorage
+      if (lixeira.length > LIMITE_LIXEIRA) lixeira.length = LIMITE_LIXEIRA;
+      salvarLixeira();
+    }
+
+    // Ao apagar um "Reembolso X", a cobrança original precisa voltar a aparecer:
+    // ela nunca foi paga de verdade se o dinheiro não existe mais.
+    function reabrirCobrancaDoReembolso(l) {
+      if (!l.reembolsoDe) return;
+      const original = lancamentos.find(x => x.id === l.reembolsoDe);
+      if (!original) return;
+      if (Array.isArray(original.emprestimoRateio) && original.emprestimoRateio.length) {
+        const alvo = original.emprestimoRateio.find(d => l.descricao && l.descricao.includes(d.nome));
+        if (alvo) alvo.quitado = false;
+        original.emprestimoQuitado = original.emprestimoRateio.every(d => d.quitado);
+      } else {
+        original.emprestimoQuitado = false;
+      }
+    }
+
+    function restaurarDaLixeira(indice) {
+      const reg = lixeira[indice];
+      if (!reg) return;
+      const limpo = Object.assign({}, reg);
+      delete limpo.__excluidoEm; delete limpo.__tipoReg;
+
+      if (reg.__tipoReg === 'transferencia') {
+        if (!transferencias.some(t => t.id === limpo.id)) transferencias.unshift(limpo);
+        salvarTransferencias();
+      } else {
+        if (lancamentos.some(l => l.id === limpo.id)) { alert('Esse lançamento já está na lista.'); return; }
+        lancamentos.unshift(limpo);
+        // devolver um reembolso volta a quitar a cobrança que ele pagava
+        if (limpo.reembolsoDe) {
+          const original = lancamentos.find(x => x.id === limpo.reembolsoDe);
+          if (original) original.emprestimoQuitado = true;
+        }
+        salvarLocalStorage();
+      }
+      lixeira.splice(indice, 1);
+      salvarLixeira();
+      renderizarLixeira();
+      atualizarTudo();
+    }
+
+    function esvaziarLixeira() {
+      if (!lixeira.length) return;
+      if (!confirm('Apagar de vez os ' + lixeira.length + ' registros da lixeira? Isso não tem volta.')) return;
+      lixeira = [];
+      salvarLixeira();
+      renderizarLixeira();
+    }
+
+    function renderizarLixeira() {
+      const box = document.getElementById('listaLixeira');
+      if (!box) return;
+      const contador = document.getElementById('contadorLixeira');
+      if (contador) contador.textContent = lixeira.length ? lixeira.length + (lixeira.length === 1 ? ' item' : ' itens') : 'vazia';
+
+      if (!lixeira.length) {
+        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nada excluído por aqui. O que você apagar aparece nesta lista e pode voltar.</p>';
+        return;
+      }
+      box.innerHTML = '';
+      lixeira.forEach((reg, i) => {
+        const quando = new Date(reg.__excluidoEm);
+        const eTransf = reg.__tipoReg === 'transferencia';
+        const eReceita = reg.tipo === 'receita';
+        const cor = eTransf ? '#42a5f5' : (eReceita ? '#4caf50' : '#ef5350');
+        const desc = eTransf ? `${reg.origem} → ${reg.destino}` : reg.descricao;
+        const linha = document.createElement('div');
+        linha.className = 'item-lancamento';
+        linha.style.cursor = 'default';
+        linha.innerHTML = `
+          <div class="item-info" style="min-width:0;">
+            <strong style="font-size:13.5px;">${desc}</strong>
+            <div style="font-size:10.5px;color:#888;">
+              ${(reg.data || '').split('-').reverse().join('/')}${reg.conta ? ' · ' + reg.conta : ''}${reg.categoria ? ' · ' + reg.categoria : ''}
+            </div>
+            <div style="font-size:10px;color:#666;">excluído em ${quando.toLocaleDateString('pt-BR')} às ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="color:${cor};font-weight:700;font-size:13px;">${fmtOculto(parseVal(reg.valor))}</span>
+            <button type="button" class="btn-mini">restaurar</button>
+          </div>
+        `;
+        linha.querySelector('button').onclick = () => restaurarDaLixeira(i);
+        box.appendChild(linha);
+      });
     }
 
     /* SISTEMA DE CONSULTA & FILTROS DE PERÍODO NO RESUMO DO TOPO */
@@ -3845,6 +4094,8 @@
 
     function excluirTransferencia() {
       if (!transferenciaSelecionadaId) return;
+      const alvo = transferencias.find(t => t.id === transferenciaSelecionadaId);
+      if (alvo) mandarPraLixeira(alvo, 'transferencia');
       transferencias = transferencias.filter(t => t.id !== transferenciaSelecionadaId);
       transferenciaSelecionadaId = null;
       salvarTransferencias();
@@ -4322,6 +4573,18 @@
     }
 
     // Soma das despesas do período por dia da semana (domingo a sábado, nessa ordem)
+    let tipoDiaSemana = 'barras';
+
+    function setTipoDiaSemana(tipo) {
+      tipoDiaSemana = tipo;
+      const bB = document.getElementById('btnDiaBarras'), bC = document.getElementById('btnDiaColunas');
+      if (bB) bB.classList.toggle('ativo', tipo === 'barras');
+      if (bC) bC.classList.toggle('ativo', tipo === 'colunas');
+      uiPrefs.tipoDiaSemana = tipo;
+      salvarUiPrefs();
+      atualizarResumoEGraficos();
+    }
+
     function renderizarGastoPorDiaSemana(itensPeriodo) {
       const container = document.getElementById('containerGastoDiaSemana');
       if (!container) return;
@@ -4332,6 +4595,34 @@
         const d = new Date(l.data + 'T12:00:00');
         porDia[NOMES_DIAS[d.getDay()]] += parseVal(l.valor);
       });
+
+      // Em colunas os sete dias ficam lado a lado na ordem da semana, que é como a
+      // gente pensa "domingo pesa mais que quarta" — a barra deitada obriga a ler
+      // de cima a baixo pra chegar na mesma conclusão.
+      if (tipoDiaSemana === 'colunas') {
+        container.innerHTML = '';
+        const max = Math.max(...Object.values(porDia), 0.01);
+        const box = document.createElement('div');
+        box.className = 'colunas';
+        box.style.height = '160px';
+        NOMES_DIAS.forEach(nome => {
+          const v = porDia[nome];
+          const item = document.createElement('div');
+          item.className = 'coluna-item';
+          item.title = `${nome} · ${fmtVal(v)}`;
+          item.innerHTML = `
+            <span class="coluna-valor" style="color:#ab47bc;">${valoresOcultos ? '•••' : fmtVal(v).replace('R$ ', '')}</span>
+            <div class="coluna-par">
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((v / max) * 100))}%;background-color:#ab47bc;"></div>
+            </div>
+            <span class="coluna-rotulo">${nome.slice(0, 3)}</span>
+          `;
+          box.appendChild(item);
+        });
+        container.appendChild(box);
+        return;
+      }
+
       renderizarBarrasOrdem(container, porDia, '#ab47bc');
     }
 
@@ -4998,29 +5289,68 @@
           </div>
         `).join('');
 
-      // Duas caixas separadas de propósito: em cima só o dinheiro que entrou e
-      // saiu de verdade (é isso que forma o saldo); embaixo o cartão, que ainda
-      // não mexeu na conta. Misturar os dois é o que fazia o número divergir.
+      /* A ordem responde na sequência em que a pergunta aparece: primeiro
+         "quanto eu tenho e onde", depois "o que passou pela conta", e só então
+         o cartão, que é a outra régua. */
+
+      // Quando a fatura DESTE mês já foi paga, "comprado no crédito" vira
+      // histórico e "em aberto" fica zerado — o que está de fato em aberto é a
+      // próxima. Sem apontar pra ela, o card parecia quebrado.
+      const proxima = proximaFaturaEmAberto(mes, ano);
+      const faturaDoMesPaga = faturaEmAberto <= 0 && compradoNoCredito > 0;
+
+      const blocoCartao = faturaDoMesPaga
+        ? `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>✓ Fatura de ${NOMES_MESES[mes]} · paga</span><strong style="color:#4caf50;">${fmtOculto(compradoNoCredito)}</strong></div>`
+          + (proxima
+              ? `<div class="linha-subtotal" style="margin-bottom:0;" onclick="fecharModal('modalResumoFatura');irParaFatura(${proxima.mes}, ${proxima.ano})"><span>⏳ Próxima · ${NOMES_MESES[proxima.mes]} <span style="color:#666;">›</span></span><strong style="color:#ffd166;">${fmtOculto(proxima.total)}</strong></div>`
+              : `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span style="color:#888;">Nenhuma fatura em aberto à frente</span><strong style="color:#4caf50;">—</strong></div>`)
+        : `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:#ffd166;">${fmtOculto(compradoNoCredito)}</strong></div>`
+          + `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong></div>`;
+
       document.getElementById('corpoResumoFatura').innerHTML = `
-        <div class="box-resumo-modal" style="margin-bottom:14px;">
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
+        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
+          ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
+        </div>
+        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">O que passou pela conta</span>
+        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
           <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebido</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
           <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Saiu em débito/dinheiro</span><strong style="color:#ef5350;">${fmtOculto(saiuEmDebito)}</strong></div>
-          <div class="linha-subtotal" style="cursor:default;"><span>🧾 Faturas pagas no mês</span><strong style="color:#ef5350;">${fmtOculto(faturasPagasNoMes)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>🧾 Faturas pagas no mês</span><strong style="color:#ef5350;">${fmtOculto(faturasPagasNoMes)}</strong></div>
         </div>
         <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">No cartão · ainda não saiu da conta</span>
-        <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:#ffd166;">${fmtOculto(compradoNoCredito)}</strong></div>
-          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong></div>
-        </div>
-        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
         <div class="box-resumo-modal" style="margin-top:6px;">
-          ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
+          ${blocoCartao}
         </div>
         <p style="font-size:10.5px;color:#777;margin-top:10px;line-height:1.5;">
           O saldo conta só o que passou pela conta: compra no crédito entra quando você marca a fatura como paga, pelo valor real que digitar.
         </p>
       `;
       document.getElementById('modalResumoFatura').classList.remove('escondido');
+    }
+
+    // Primeira fatura ainda não paga a partir de um mês, olhando 12 meses à frente.
+    function proximaFaturaEmAberto(mesBase, anoBase) {
+      for (let i = 1; i <= 12; i++) {
+        const d = new Date(anoBase, mesBase + i, 1);
+        const m = d.getMonth(), a = d.getFullYear();
+        let total = 0;
+        contas.filter(c => c.temCredito).forEach(c => {
+          if (faturasPagas[chaveFatura(c.nome, m, a)]) return;
+          total += totalFaturaConta(c.nome, m, a);
+        });
+        if (total > 0) return { mes: m, ano: a, total };
+      }
+      return null;
+    }
+
+    // Leva a aba Faturas pro mês pedido, calculando o deslocamento em relação ao atual.
+    function irParaFatura(mes, ano) {
+      const agora = getMesReferencia(0);
+      faturaMesOffset = (ano - agora.getFullYear()) * 12 + (mes - agora.getMonth());
+      atualizarFaturas();
+      const card = document.getElementById('cardResumoFaturas');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // Atalhos dos dois cards pequenos: eles abrem exatamente a lista que forma o
@@ -5055,7 +5385,10 @@
        vermelho que você está vendo. */
     function tomDaCobranca(lista, emAtraso, perto) {
       if (lista.some(emAtraso)) return 'atrasado';
-      if (lista.some(perto)) return 'chegando';
+      // Adiada duas vezes é enrolação, não acordo — a mensagem tem que falar a
+      // mesma língua da cor vermelha que a linha já mostra, mesmo com prazo à frente.
+      if (lista.some(c => (c.adiamentos || 0) >= 2)) return 'atrasado';
+      if (lista.some(perto) || lista.some(c => (c.adiamentos || 0) === 1)) return 'chegando';
       return 'tranquilo';
     }
 
@@ -5082,49 +5415,130 @@
         return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
       });
 
-      // Três tons: lembrete leve pra quem ainda vai vencer, cobrança direta (mas sem
-      // grosseria — são amigos) pra quem já passou do prazo, e um recado neutro pra
-      // quando você só quer combinar antes da hora.
       const emAtraso = c => c.vence && c.vence < hoje;
       const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
-      const tom = tomDaCobranca(lista, emAtraso, perto);
+      const situacao = tomDaCobranca(lista, emAtraso, perto);
       const detalhe = itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0];
 
       if (devo) {
-        const abertura = tom === 'atrasado'
+        const abertura = situacao === 'atrasado'
           ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
           : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
         return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
       }
 
-      if (tom === 'atrasado') {
-        const totalVencido = lista.filter(emAtraso).reduce((sm, c) => sm + c.valor, 0);
-        const quanto = Math.abs(totalVencido - total) < 0.01
-          ? `dos ${fmtVal(total)}`
-          : `dos ${fmtVal(totalVencido)} que já venceram (de ${fmtVal(total)} no total)`;
-        return `Oi ${nome}! 👋 Tudo certo? Passando aqui por causa ${quanto}`
-          + detalhe + '\n\nConsegue dar um jeito nessa semana? Qualquer coisa a gente combina 🙏';
-      }
+      const tom = tomDoContato(nome);
+      const ctx = {
+        nome, total: fmtVal(total), detalhe, compras, umaSo,
+        meu: meuNome(),
+        contas: contas.length,
+        adiada: Math.max(0, ...lista.map(c => c.adiamentos || 0)),
+        quando: (() => {
+          const prox = lista.map(c => c.vence).filter(Boolean).sort()[0];
+          const f = diasAte(prox);
+          return f === 0 ? 'hoje' : f === 1 ? 'amanhã' : 'em ' + f + ' dias';
+        })()
+      };
+      // Quem já venceu tem dias de atraso; quem só foi adiado, não — e "venceram há
+      // 0 dias" é frase de robô quebrado. Um texto só cobre os dois casos.
+      const vencidas = lista.filter(emAtraso);
+      const valorVencido = vencidas.reduce((sm, c) => sm + c.valor, 0);
+      ctx.vencido = fmtVal(valorVencido > 0 ? valorVencido : total);
+      ctx.desde = vencidas.length
+        ? 'vencidos há ' + Math.abs(diasAte(vencidas.map(c => c.vence).sort()[0])) + ' dias'
+        : 'com o prazo já adiado ' + ctx.adiada + ' vezes';
+      return frasePronta(situacao, tom, ctx);
+    }
 
-      if (tom === 'chegando') {
-        const proxima = lista.map(c => c.vence).filter(Boolean).sort()[0];
-        const faltam = diasAte(proxima);
-        const quando = faltam === 0 ? 'vence hoje' : faltam === 1 ? 'vence amanhã' : `vence em ${faltam} dias`;
-        // com uma compra só, a data entre parênteses repetiria o "vence em X dias"
-        const corpo = umaSo ? ' — ' + compras[0].desc : detalhe;
-        return `Oi ${nome}! 👋 Só passando pra lembrar que ${quando}: ${fmtVal(total)}`
-          + corpo + '\n\nSem pressa, é só pra não passar batido 😄';
-      }
+    /* MENSAGENS COM PERSONALIDADE
+       Três tons por pessoa (definidos junto com o telefone) × três situações, e
+       três variações de cada, sorteadas pelo MÊS — assim a mesma pessoa não recebe
+       o mesmo texto duas vezes seguidas, e ninguém compara mensagens iguais.
 
-      return `Oi ${nome}! 👋 Passando pra alinhar os ${fmtVal(total)}` + detalhe
-        + '\n\nQuando puder me dá um toque 🙏';
+       Quem está atrasado não recebe mensagem "sua": recebe do ASSISTENTE, que é um
+       personagem. Tira o peso de você cobrar amigo e ainda é engraçado. */
+    function meuNome() {
+      return (uiPrefs.meuNome || '').trim() || 'o chefe';
+    }
+
+    const FRASES_COBRANCA = {
+      chegando: {
+        zoeira: [
+          c => `Fala ${c.nome}! 👀 Tá chegando o dia dos ${c.total} (${c.quando}), hein${c.detalhe}\n\nJá vai separando pra não ter que fingir que esqueceu 😂`,
+          c => `${c.nome}, meu parceiro! Aviso amigável: ${c.total} vencem ${c.quando}${c.detalhe}\n\nTô de olho, viu 👁️`,
+          c => `Opa ${c.nome}! Lembrete carinhoso de que ${c.quando} vencem ${c.total}${c.detalhe}\n\nNão me obriga a mandar o assistente 😬`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 💛 Passando só pra lembrar dos ${c.total}, que vencem ${c.quando}${c.detalhe}\n\nSem pressa nenhuma, tá? Só pra não passar batido 😊`,
+          c => `Oi ${c.nome}! Tudo bem? Uma lembrancinha: ${c.total} ${c.quando}${c.detalhe}\n\nQualquer coisa a gente ajeita 💛`,
+          c => `Ei ${c.nome}! ✨ ${c.quando} vencem os ${c.total}${c.detalhe}\n\nSe precisar de mais prazo é só falar 🤗`
+        ],
+        neutro: [
+          c => `Oi ${c.nome}! 👋 Lembrete: ${c.total} vencem ${c.quando}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
+          c => `Oi ${c.nome}! Passando pra avisar que ${c.quando} vencem ${c.total}${c.detalhe}`,
+          c => `Fala ${c.nome}! Só sinalizando: ${c.total}, ${c.quando}${c.detalhe}\n\nAbraço!`
+        ]
+      },
+
+      /* O ASSISTENTE. Personagem fixo, com sotaque de filme de máfia — cobra sem
+         que a mensagem soe como você brigando com um amigo. */
+      atrasado: {
+        zoeira: [
+          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o assistente pessoal d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}. Fui contratado pra cuidar das ${c.contas} contas dele, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido} ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
+          c => `${c.nome}. 🕴️\n\nO assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} falando. Sabe, eu cuido das ${c.contas} contas dele e tenho uma planilha muito organizada. Muito organizada mesmo${c.detalhe}\n\nO seu nome tá em vermelho aqui — ${c.vencido}, ${c.desde} — e eu não gosto de vermelho. Vamo resolver isso como pessoas civilizadas? 🤝`,
+          c => `Ei, caloteiro! 😤 (é o assistente falando, o ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nEu fui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático 🤌`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 🌷 Aqui quem fala é o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} — ele é tímido demais pra cobrar${c.detalhe}\n\nSão ${c.vencido}, ${c.desde}. Se estiver apertado, me avisa que a gente combina outro prazo, tá? 💛`,
+          c => `Oi ${c.nome}! Assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} na área 🙋\n\nPassando com jeitinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nSem estresse — só me diz quando dá 😊`,
+          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}, cuido das contas dele.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`
+        ],
+        neutro: [
+          c => `Olá ${c.nome}. Aqui é o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}.\n\nConsta em aberto: ${c.vencido}, ${c.desde}${c.detalhe}\n\nPode acertar essa semana?`,
+          c => `${c.nome}, boa! Assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} falando.\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nMe confirma quando conseguir resolver 🙏`,
+          c => `Olá ${c.nome}. Passando pra regularizar ${c.vencido}, ${c.desde}${c.detalhe}\n\nFico no aguardo.`
+        ]
+      },
+
+      tranquilo: {
+        zoeira: [
+          c => `Fala ${c.nome}! Nada urgente, só registrando aqui os ${c.total} pra memória não falhar 😅${c.detalhe}`,
+          c => `${c.nome}! Passando pra alinhar os ${c.total}${c.detalhe}\n\nTá tranquilo, é só pra deixar combinado 👊`,
+          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe} 😄`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 💛 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder, a gente combina 😊`,
+          c => `Oi ${c.nome}! Tudo bem? Só organizando as contas por aqui: ${c.total}${c.detalhe} 🌷`,
+          c => `Ei ${c.nome}! ✨ Nada urgente — só pra deixar combinado: ${c.total}${c.detalhe}`
+        ],
+        neutro: [
+          c => `Oi ${c.nome}! 👋 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
+          c => `Oi ${c.nome}! Só registrando os ${c.total} pra a gente combinar${c.detalhe}`,
+          c => `Fala ${c.nome}! Alinhando aqui: ${c.total}${c.detalhe}\n\nAbraço!`
+        ]
+      }
+    };
+
+    /* O mês é a semente: a variação muda sozinha ao longo do ano sem precisar de
+       sorteio guardado. Quem adiou mais de uma vez pula direto pra variação mais
+       insistente, independente do mês. */
+    function frasePronta(situacao, tom, ctx) {
+      const banco = (FRASES_COBRANCA[situacao] || FRASES_COBRANCA.tranquilo);
+      const lista = banco[tom] || banco.neutro;
+      const mes = new Date(obterDataBrasilia() + 'T12:00:00').getMonth();
+      const i = ctx.adiada >= 2 ? lista.length - 1 : (mes + ctx.adiada) % lista.length;
+      let texto = lista[i](ctx);
+      if (ctx.adiada >= 2 && situacao === 'atrasado') {
+        texto += `\n\n(P.S.: essa é a ${ctx.adiada + 1}ª vez que esse prazo muda. Minha planilha tá anotando. 📋)`;
+      }
+      return texto;
     }
 
     function abrirCobrancaWhatsApp(nome, chaves, devo) {
       const abertas = cobrancasAbertas().filter(c => chaves.includes(c.chave));
       if (!abertas.length) return;
       cobrancaPendente = { nome, texto: textoDaCobranca(nome, abertas, devo) };
-      const tel = normalizarTelefone(contatos[nome]);
+      const tel = normalizarTelefone(telDoContato(nome));
       if (tel) return dispararWhatsApp(tel);
       abrirModalContatoCobranca(nome);
     }
@@ -5132,18 +5546,33 @@
     function dispararWhatsApp(tel) {
       if (!cobrancaPendente) return;
       window.open(`https://wa.me/${tel}?text=${encodeURIComponent(cobrancaPendente.texto)}`, '_blank');
+      // Registra a cobrança pra o app saber depois quem foi cobrado e não respondeu
+      registrarCobranca(cobrancaPendente.nome);
       cobrancaPendente = null;
+      renderizarEmprestimos();
     }
 
     function abrirModalContatoCobranca(nome) {
       document.getElementById('tituloContatoCobranca').textContent = 'WhatsApp de ' + nome;
-      document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(contatos[nome] || '');
+      document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(telDoContato(nome));
       document.getElementById('inputTelefoneCobranca').dataset.nome = nome;
       // A agenda do celular só está disponível no Chrome do Android; no iPhone o
       // botão some e sobra o campo manual, que funciona em qualquer aparelho.
       const btnAgenda = document.getElementById('btnEscolherDaAgenda');
       const temPicker = !!(navigator.contacts && navigator.contacts.select);
       btnAgenda.classList.toggle('escondido', !temPicker);
+
+      const atual = tomDoContato(nome);
+      const boxTons = document.getElementById('tonsCobranca');
+      boxTons.innerHTML = TONS_COBRANCA.map(t =>
+        `<button type="button" class="btn-periodo${t.id === atual ? ' ativo' : ''}" data-tom="${t.id}" title="${t.dica}">${t.rotulo}</button>`
+      ).join('');
+      boxTons.querySelectorAll('.btn-periodo').forEach(b => {
+        b.onclick = () => {
+          boxTons.querySelectorAll('.btn-periodo').forEach(x => x.classList.remove('ativo'));
+          b.classList.add('ativo');
+        };
+      });
       document.getElementById('modalContatoCobranca').classList.remove('escondido');
     }
 
@@ -5160,7 +5589,8 @@
       const nome = campo.dataset.nome;
       const tel = normalizarTelefone(campo.value);
       if (!tel) { alert('Número inválido. Inclua o DDD — ex: (11) 98765-4321.'); return; }
-      contatos[nome] = tel;
+      const tomEscolhido = (document.querySelector('#tonsCobranca .btn-periodo.ativo') || {}).dataset;
+      contatos[nome] = { tel, tom: (tomEscolhido && tomEscolhido.tom) || 'neutro' };
       salvarContatos();
       fecharModal('modalContatoCobranca');
       renderizarEmprestimos();
@@ -5192,14 +5622,16 @@
         return l.emprestimoRateio.map((d, i) => ({
           chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado,
-          vence: d.vence || l.emprestimoVence, rotulo: d.rotulo
+          vence: d.vence || l.emprestimoVence, rotulo: d.rotulo,
+          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || ''
         }));
       }
       if (l.emprestimoPara) {
         return [{
           chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado,
-          vence: l.emprestimoVence
+          vence: l.emprestimoVence,
+          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || ''
         }];
       }
       return [];
@@ -5257,9 +5689,28 @@
             if (d.vence) d.vence = somarMeses(d.vence, delta);
           });
         }
+        /* CONTADOR DE ADIAMENTOS
+           Adiar joga a cobrança pro futuro, e ela sai do vermelho — some do
+           radar sem ter sido paga. Guardando quantas vezes foi adiada, a linha
+           continua acusando, e some a dúvida de "será que o app empurrou
+           sozinho?": só este botão mexe nisso. Voltar (−1) desconta. */
+        const n = (l.adiamentos || 0) + (delta > 0 ? 1 : -1);
+        l.adiamentos = Math.max(0, n);
+        if (delta > 0) l.ultimoAdiamento = obterDataBrasilia();
       });
       salvarLocalStorage();
       renderizarEmprestimos();
+    }
+
+    // Marca que a pessoa foi cobrada hoje. Serve pra saber depois quem recebeu
+    // mensagem e não deu retorno — que é diferente de quem nunca foi cobrado.
+    function registrarCobranca(nome) {
+      const hoje = obterDataBrasilia();
+      lancamentos.forEach(l => {
+        if (l.emprestimoPara === nome) l.ultimaCobranca = hoje;
+        if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => d.nome === nome)) l.ultimaCobranca = hoje;
+      });
+      salvarLocalStorage();
     }
 
     function renderizarEmprestimos() {
@@ -5293,13 +5744,25 @@
       // Perto de vencer é o que já cai na janela de aviso escolhida no lembrete —
       // assim a cor na tela e o aviso no celular falam da mesma coisa.
       const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
-      // O TOTAL a receber fica amarelo porque ainda não entrou; o valor de cada
-      // pessoa fica verde porque uma hora entra. O que eu devo é vermelho nos dois.
-      const corTotal = devo ? '#ef5350' : '#ffd166';
-      // Vermelho = venceu, precisa resolver. Amarelo = está chegando, dá tempo de
-      // combinar. Verde = no prazo, não precisa fazer nada.
-      const corPessoa = lista => lista.some(emAtraso) ? '#ef5350'
-        : (lista.some(perto) ? '#ffd166' : (devo ? '#ef5350' : '#4caf50'));
+      // Verde nos dois: é dinheiro que volta pra você. O amarelo ficou reservado
+      // pro cartão, que é a outra régua — misturar as duas confundia.
+      const corTotal = devo ? '#ef5350' : '#4caf50';
+
+      /* Adiar joga a data pro futuro e a cobrança sairia do vermelho sem ter sido
+         paga. Duas vezes adiada é enrolação, não acordo: continua vermelha mesmo
+         com prazo à frente. Uma vez, amarela. Mesma coisa pra quem foi cobrado e
+         não deu retorno em uma semana. */
+      const DIAS_SEM_RETORNO = 7;
+      const enrolando = c => (c.adiamentos || 0) >= 2;
+      const semRetorno = c => c.ultimaCobranca && !emAtraso(c)
+        && diasAte(c.ultimaCobranca) <= -DIAS_SEM_RETORNO;
+      const suspeita = c => enrolando(c) || semRetorno(c);
+      const adiadaUmaVez = c => (c.adiamentos || 0) === 1;
+
+      // Vermelho = venceu ou está enrolando. Amarelo = está chegando ou já foi
+      // adiada uma vez. Verde = no prazo, não precisa fazer nada.
+      const corPessoa = lista => (lista.some(emAtraso) || lista.some(suspeita)) ? '#ef5350'
+        : ((lista.some(perto) || lista.some(adiadaUmaVez)) ? '#ffd166' : (devo ? '#ef5350' : '#4caf50'));
 
       const porPessoa = {};
       cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
@@ -5318,7 +5781,8 @@
 
       // quem tem cobrança vencida aparece primeiro
       Object.entries(porPessoa)
-        .sort((a, b) => (a[1].some(emAtraso) ? 0 : 1) - (b[1].some(emAtraso) ? 0 : 1)
+        .sort((a, b) => ((a[1].some(emAtraso) || a[1].some(suspeita)) ? 0 : 1)
+                      - ((b[1].some(emAtraso) || b[1].some(suspeita)) ? 0 : 1)
           || a[0].localeCompare(b[0], 'pt-BR', { sensitivity: 'base' }))
         .forEach(([nome, lista]) => {
           const totalPessoa = lista.reduce((sm, c) => sm + c.valor, 0);
@@ -5335,6 +5799,13 @@
             legenda += ' · vence ' + (faltam === 0 ? 'hoje' : faltam === 1 ? 'amanhã' : 'em ' + faltam + ' dias');
           } else if (proximo) legenda += ' · a partir de ' + proximo.split('-').reverse().join('/');
 
+          // O que denuncia a enrolação vem depois do prazo, porque é a explicação
+          // de por que aquela linha está vermelha apesar da data estar no futuro.
+          const maxAdiada = Math.max(0, ...lista.map(c => c.adiamentos || 0));
+          if (maxAdiada > 0) legenda += ' · adiada ' + maxAdiada + 'x';
+          const cobradaSemRetorno = lista.filter(semRetorno)[0];
+          if (cobradaSemRetorno) legenda += ' · cobrado há ' + Math.abs(diasAte(cobradaSemRetorno.ultimaCobranca)) + ' dias';
+
           const bloco = document.createElement('div');
           bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid #2a2a2a;';
 
@@ -5345,7 +5816,7 @@
           cabecalho.innerHTML = `
             <div class="item-info">
               <strong>${nome}</strong>
-              <div style="font-size:11px;color:${atrasadas > 0 ? '#ef5350' : (chegando > 0 ? '#ffd166' : '#888')};">${legenda}</div>
+              <div style="font-size:11px;color:${(atrasadas > 0 || lista.some(suspeita)) ? '#ef5350' : ((chegando > 0 || lista.some(adiadaUmaVez)) ? '#ffd166' : '#888')};">${legenda}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="color:${corPessoa(lista)};font-weight:700;">${fmtOculto(totalPessoa)}</span>
@@ -5500,8 +5971,11 @@
         const recentes = lancamentos.filter(l => l.data >= limite && l.data <= hoje);
         const rec = recentes.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
         const desp = recentes.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
+        // Compacto porque agora divide a linha com o título do card: duas linhas
+        // curtas em vez de três, com as setas fazendo o papel dos rótulos.
         box24.innerHTML = (rec > 0 || desp > 0)
-          ? `<div style="color:#3d8b40;">↑ ${fmtOculto(rec)}</div><div style="color:#a83e3b;">↓ ${fmtOculto(desp)}</div><div style="color:#5a5a5a;">últimas 24h</div>`
+          ? `<div style="color:#5a5a5a;">últimas 24h</div>` +
+            `<div><span style="color:#3d8b40;">↑ ${fmtOculto(rec)}</span> <span style="color:#a83e3b;">↓ ${fmtOculto(desp)}</span></div>`
           : '';
       }
     }
@@ -5524,6 +5998,42 @@
       const comCredito = contas.filter(c => c.temCredito);
 
       box.innerHTML = '';
+
+      /* LINHA DO TEMPO DO CARTÃO
+         O card mostrava só o mês selecionado, sem contexto: você via um número e
+         não sabia se vinha de uma fatura fechada, da que está aberta, ou quanto já
+         está indo pra próxima. Estas três linhas respondem isso de bate-pronto. */
+      if (!comCredito.length) {
+        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum cartão de crédito cadastrado.</p>';
+        return;
+      }
+      const somaMes = (m, a) => comCredito.reduce((s, c) => s + totalFaturaConta(c.nome, m, a), 0);
+      const pagoMes = (m, a) => comCredito.every(c => totalFaturaConta(c.nome, m, a) <= 0
+        || faturasPagas[chaveFatura(c.nome, m, a)]);
+      const ant = new Date(ano, mes - 1, 1), prox = new Date(ano, mes + 1, 1);
+      const linhaTempo = [
+        { rot: NOMES_MESES[ant.getMonth()], total: somaMes(ant.getMonth(), ant.getFullYear()),
+          pago: pagoMes(ant.getMonth(), ant.getFullYear()), m: ant.getMonth(), a: ant.getFullYear(), estado: 'anterior' },
+        { rot: NOMES_MESES[mes], total: somaMes(mes, ano), pago: pagoMes(mes, ano), m: mes, a: ano, estado: 'atual' },
+        { rot: NOMES_MESES[prox.getMonth()], total: somaMes(prox.getMonth(), prox.getFullYear()),
+          pago: false, m: prox.getMonth(), a: prox.getFullYear(), estado: 'proxima' }
+      ];
+      const boxTempo = document.createElement('div');
+      boxTempo.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
+      boxTempo.dataset.linhaTempo = '1';
+      boxTempo.innerHTML = linhaTempo.map(f => {
+        const destaque = f.estado === 'atual';
+        const cor = (f.total <= 0 || f.estado === 'proxima') ? '#888' : (f.pago ? '#4caf50' : '#ef5350');
+        const nota = f.estado === 'proxima' ? 'em formação' : (f.total <= 0 ? 'sem fatura' : (f.pago ? 'paga' : 'em aberto'));
+        return `<button type="button" onclick="irParaFatura(${f.m}, ${f.a})"
+          style="flex:1;min-width:0;background:${destaque ? '#1f1f1f' : 'transparent'};border:1px solid ${destaque ? '#444' : '#2e2e2e'};
+                 border-radius:10px;padding:7px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:9.5px;color:#777;text-transform:uppercase;letter-spacing:.4px;">${f.rot.slice(0, 3)}</div>
+          <div style="font-size:12.5px;font-weight:700;color:${cor};margin:2px 0;">${fmtOculto(f.total)}</div>
+          <div style="font-size:9px;color:#666;">${nota}</div>
+        </button>`;
+      }).join('');
+      box.appendChild(boxTempo);
 
       comCredito.forEach(c => {
         const total = totalFaturaConta(c.nome, mes, ano);
@@ -5577,7 +6087,9 @@
         }
       });
 
-      if (!box.children.length) {
+      // A linha do tempo sempre entra, então "vazio" é não ter nenhuma linha de
+      // cartão — e nesse caso ela também não faz sentido sozinha.
+      if (!box.querySelector('.item-lancamento')) {
         box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
       }
     }
@@ -6028,6 +6540,20 @@
             </div>`).join('');
           boxSubFat.classList.remove('escondido');
         }
+      }
+
+      // O total vem antes da lista: sem ele você precisava somar de cabeça pra
+      // saber se aquela lista fecha com o número do card que a abriu.
+      if (filtrados.length) {
+        const somaLista = filtrados.reduce((s, l) => s + parseVal(l.valor) * (l.tipo === 'receita' ? 1 : -1), 0);
+        const extrasBox = boxSubFat.innerHTML;
+        const positivo = somaLista >= 0;
+        boxSubFat.innerHTML = `
+          <div class="linha-subtotal" style="cursor:default;border-bottom:1px solid #333;padding-bottom:8px;margin-bottom:8px;">
+            <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${filtrados.length} lançamento${filtrados.length > 1 ? 's' : ''}</span>
+            <strong style="font-size:16px;color:${positivo ? '#4caf50' : '#ef5350'};">${positivo ? '+' : '−'}${fmtOculto(Math.abs(somaLista))}</strong>
+          </div>` + extrasBox;
+        boxSubFat.classList.remove('escondido');
       }
 
       corpo.innerHTML = '';
@@ -7174,7 +7700,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.10-1';
+    const APP_VERSION = '2026.08.11-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -7185,6 +7711,7 @@ function confirmarLancamentoVoz() {
     carregarGrupos();
     carregarTransferencias();
     carregarContatos();
+    carregarLixeira();
     carregarOrcamentos();
     carregarFaturasPagas();
     carregarContas();
@@ -7199,6 +7726,10 @@ function confirmarLancamentoVoz() {
     aplicarSecao('fixos');
     aplicarSecao('backup');
     aplicarSecao('contatos');
+    aplicarSecao('lixeira');
+    aplicarSecao('contasCategorias');
+    aplicarSecao('ordemFaturas');
+    aplicarSecao('ordemGraficos');
     aplicarSecao('sons');
     aplicarSecao('emprestimos');
     aplicarSecao('pagamentoFatura');
@@ -7206,6 +7737,7 @@ function confirmarLancamentoVoz() {
     aplicarSecao('lancamentosMes');
     aplicarSecao('evolucaoMensal');
     if (uiPrefs.tipoEvolucao === 'colunas') setTipoEvolucao('colunas');
+    if (uiPrefs.tipoDiaSemana === 'colunas') setTipoDiaSemana('colunas');
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');

@@ -110,11 +110,20 @@ fs.mkdirSync(OUT, { recursive: true });
   // 6) lançamentos do mês (com a transferência azul)
   await secao('lancamentosMes', true);
   await tiro('lista', '[data-card="lancamentosMes"]', { });
+  // a mesma lista com o filtro "Cartão" ligado, pra mostrar a separação
+  await page.click('#corpo-lancamentosMes .btn-periodo[data-forma="cartao"]');
+  await page.waitForTimeout(400);
+  await tiro('lista_cartao', '[data-card="lancamentosMes"]');
+  await page.click('#corpo-lancamentosMes .btn-periodo[data-forma="tudo"]');
+  await page.waitForTimeout(300);
   await secao('lancamentosMes', false);
 
   // 7) pagamento da fatura
   await secao('pagamentoFatura', true);
   await tiro('fatura', '[data-card="pagamentoFatura"]');
+  await page.click('#listaPagamentoFatura .item-lancamento');
+  await page.waitForTimeout(450);
+  await tiro('fatura_extrato', '[data-card="pagamentoFatura"]');
   await secao('pagamentoFatura', false);
 
   // 8) fixos
