@@ -655,6 +655,10 @@
           <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
         </button>
         <div id="corpo-gastoDiaSemana" class="escondido" style="margin-top:12px;">
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <button type="button" class="btn-mini ativo" id="btnDiaBarras" onclick="setTipoDiaSemana('barras')">Barras</button>
+            <button type="button" class="btn-mini" id="btnDiaColunas" onclick="setTipoDiaSemana('colunas')">Colunas</button>
+          </div>
           <div id="containerGastoDiaSemana"></div>
         </div>
       </div>
@@ -789,7 +793,7 @@
           <span class="chevron-sec" id="chevron-sons">▸</span>
         </button>
         <div id="corpo-sons" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Um é sorteado a cada receita salva. Toque pra ouvir.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Toque na linha pra ouvir. Toque no ✓ pra tirar ou botar o som no sorteio — a cada receita, um dos marcados toca.</p>
           <div id="listaSons"></div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="chkSomLigado" onchange="alternarSomLigado()" aria-label="Tocar som ao salvar receita" style="width:auto;margin:0;">
@@ -2737,10 +2741,34 @@
       } }
     ];
 
+    /* Quais sons entram no sorteio. Guardado como lista de índices; vazio ou
+       ausente significa "todos", que é o padrão de quem nunca mexeu. */
+    function sonsAtivos() {
+      const d = localStorage.getItem('meu_financeiro_sons_ativos');
+      if (!d) return SONS_RECEITA.map((_, i) => i);
+      try {
+        const lista = JSON.parse(d);
+        const validos = Array.isArray(lista) ? lista.filter(i => i >= 0 && i < SONS_RECEITA.length) : [];
+        return validos.length ? validos : SONS_RECEITA.map((_, i) => i);
+      } catch (e) { return SONS_RECEITA.map((_, i) => i); }
+    }
+
+    function alternarSomAtivo(indice) {
+      const atuais = new Set(sonsAtivos());
+      if (atuais.has(indice)) atuais.delete(indice);
+      else atuais.add(indice);
+      // Desmarcar o último deixaria a receita muda sem querer: o toggle não passa daí.
+      if (!atuais.size) return;
+      localStorage.setItem('meu_financeiro_sons_ativos', JSON.stringify([...atuais].sort((a, b) => a - b)));
+      renderizarSons();
+      testarSom(indice);
+    }
+
     function tocarSomReceita() {
       try {
         const ctx = ctxAudio();
-        const s = SONS_RECEITA[Math.floor(Math.random() * SONS_RECEITA.length)];
+        const ativos = sonsAtivos();
+        const s = SONS_RECEITA[ativos[Math.floor(Math.random() * ativos.length)]];
         s.tocar(ctx, ctx.currentTime + 0.02);
         window.__ultimoSomReceita = s.nome;
         window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1;
@@ -2782,16 +2810,29 @@
       const chk = document.getElementById('chkSomLigado');
       if (chk) chk.checked = somLigado();
       box.innerHTML = '';
+      const ativos = new Set(sonsAtivos());
       SONS_RECEITA.concat([{ nome: 'Vento (transferência)' }]).forEach((s, i) => {
         const ehTransf = i === SONS_RECEITA.length;
+        const ligado = ehTransf || ativos.has(i);
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
         linha.style.cursor = 'pointer';
         linha.onclick = () => testarSom(ehTransf ? 'transferencia' : i);
+        // O tique verde marca quem entra no sorteio. O vento não tem tique: ele não
+        // é sorteado, toca sempre que há transferência.
         linha.innerHTML = `
-          <div class="item-info"><strong style="font-size:13.5px;">${s.nome}</strong></div>
+          <div class="item-info" style="display:flex;align-items:center;gap:9px;">
+            <span style="font-size:14px;line-height:1;color:${ligado ? '#4caf50' : '#3a3a3a'};">✓</span>
+            <strong style="font-size:13.5px;color:${ligado ? '#fff' : '#777'};">${s.nome}</strong>
+          </div>
           <span style="font-size:11px;color:#888;">▶ ouvir</span>
         `;
+        if (!ehTransf) {
+          const tique = linha.querySelector('span');
+          tique.style.cursor = 'pointer';
+          tique.style.padding = '4px 2px';
+          tique.onclick = (ev) => { ev.stopPropagation(); alternarSomAtivo(i); };
+        }
         box.appendChild(linha);
       });
     }
@@ -4374,6 +4415,18 @@
     }
 
     // Soma das despesas do período por dia da semana (domingo a sábado, nessa ordem)
+    let tipoDiaSemana = 'barras';
+
+    function setTipoDiaSemana(tipo) {
+      tipoDiaSemana = tipo;
+      const bB = document.getElementById('btnDiaBarras'), bC = document.getElementById('btnDiaColunas');
+      if (bB) bB.classList.toggle('ativo', tipo === 'barras');
+      if (bC) bC.classList.toggle('ativo', tipo === 'colunas');
+      uiPrefs.tipoDiaSemana = tipo;
+      salvarUiPrefs();
+      atualizarResumoEGraficos();
+    }
+
     function renderizarGastoPorDiaSemana(itensPeriodo) {
       const container = document.getElementById('containerGastoDiaSemana');
       if (!container) return;
@@ -4384,6 +4437,34 @@
         const d = new Date(l.data + 'T12:00:00');
         porDia[NOMES_DIAS[d.getDay()]] += parseVal(l.valor);
       });
+
+      // Em colunas os sete dias ficam lado a lado na ordem da semana, que é como a
+      // gente pensa "domingo pesa mais que quarta" — a barra deitada obriga a ler
+      // de cima a baixo pra chegar na mesma conclusão.
+      if (tipoDiaSemana === 'colunas') {
+        container.innerHTML = '';
+        const max = Math.max(...Object.values(porDia), 0.01);
+        const box = document.createElement('div');
+        box.className = 'colunas';
+        box.style.height = '160px';
+        NOMES_DIAS.forEach(nome => {
+          const v = porDia[nome];
+          const item = document.createElement('div');
+          item.className = 'coluna-item';
+          item.title = `${nome} · ${fmtVal(v)}`;
+          item.innerHTML = `
+            <span class="coluna-valor" style="color:#ab47bc;">${valoresOcultos ? '•••' : fmtVal(v).replace('R$ ', '')}</span>
+            <div class="coluna-par">
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((v / max) * 100))}%;background-color:#ab47bc;"></div>
+            </div>
+            <span class="coluna-rotulo">${nome.slice(0, 3)}</span>
+          `;
+          box.appendChild(item);
+        });
+        container.appendChild(box);
+        return;
+      }
+
       renderizarBarrasOrdem(container, porDia, '#ab47bc');
     }
 
@@ -5760,6 +5841,42 @@
 
       box.innerHTML = '';
 
+      /* LINHA DO TEMPO DO CARTÃO
+         O card mostrava só o mês selecionado, sem contexto: você via um número e
+         não sabia se vinha de uma fatura fechada, da que está aberta, ou quanto já
+         está indo pra próxima. Estas três linhas respondem isso de bate-pronto. */
+      if (!comCredito.length) {
+        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum cartão de crédito cadastrado.</p>';
+        return;
+      }
+      const somaMes = (m, a) => comCredito.reduce((s, c) => s + totalFaturaConta(c.nome, m, a), 0);
+      const pagoMes = (m, a) => comCredito.every(c => totalFaturaConta(c.nome, m, a) <= 0
+        || faturasPagas[chaveFatura(c.nome, m, a)]);
+      const ant = new Date(ano, mes - 1, 1), prox = new Date(ano, mes + 1, 1);
+      const linhaTempo = [
+        { rot: NOMES_MESES[ant.getMonth()], total: somaMes(ant.getMonth(), ant.getFullYear()),
+          pago: pagoMes(ant.getMonth(), ant.getFullYear()), m: ant.getMonth(), a: ant.getFullYear(), estado: 'anterior' },
+        { rot: NOMES_MESES[mes], total: somaMes(mes, ano), pago: pagoMes(mes, ano), m: mes, a: ano, estado: 'atual' },
+        { rot: NOMES_MESES[prox.getMonth()], total: somaMes(prox.getMonth(), prox.getFullYear()),
+          pago: false, m: prox.getMonth(), a: prox.getFullYear(), estado: 'proxima' }
+      ];
+      const boxTempo = document.createElement('div');
+      boxTempo.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
+      boxTempo.dataset.linhaTempo = '1';
+      boxTempo.innerHTML = linhaTempo.map(f => {
+        const destaque = f.estado === 'atual';
+        const cor = (f.total <= 0 || f.estado === 'proxima') ? '#888' : (f.pago ? '#4caf50' : '#ef5350');
+        const nota = f.estado === 'proxima' ? 'em formação' : (f.total <= 0 ? 'sem fatura' : (f.pago ? 'paga' : 'em aberto'));
+        return `<button type="button" onclick="irParaFatura(${f.m}, ${f.a})"
+          style="flex:1;min-width:0;background:${destaque ? '#1f1f1f' : 'transparent'};border:1px solid ${destaque ? '#444' : '#2e2e2e'};
+                 border-radius:10px;padding:7px 4px;cursor:pointer;text-align:center;">
+          <div style="font-size:9.5px;color:#777;text-transform:uppercase;letter-spacing:.4px;">${f.rot.slice(0, 3)}</div>
+          <div style="font-size:12.5px;font-weight:700;color:${cor};margin:2px 0;">${fmtOculto(f.total)}</div>
+          <div style="font-size:9px;color:#666;">${nota}</div>
+        </button>`;
+      }).join('');
+      box.appendChild(boxTempo);
+
       comCredito.forEach(c => {
         const total = totalFaturaConta(c.nome, mes, ano);
         const pago = faturasPagas[chaveFatura(c.nome, mes, ano)];
@@ -5812,7 +5929,9 @@
         }
       });
 
-      if (!box.children.length) {
+      // A linha do tempo sempre entra, então "vazio" é não ter nenhuma linha de
+      // cartão — e nesse caso ela também não faz sentido sozinha.
+      if (!box.querySelector('.item-lancamento')) {
         box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
       }
     }
@@ -7423,7 +7542,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.10-3';
+    const APP_VERSION = '2026.08.10-4';
 
     // Inicialização
     carregarLocalStorage();
@@ -7455,6 +7574,7 @@ function confirmarLancamentoVoz() {
     aplicarSecao('lancamentosMes');
     aplicarSecao('evolucaoMensal');
     if (uiPrefs.tipoEvolucao === 'colunas') setTipoEvolucao('colunas');
+    if (uiPrefs.tipoDiaSemana === 'colunas') setTipoDiaSemana('colunas');
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
