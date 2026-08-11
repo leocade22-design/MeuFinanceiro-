@@ -762,11 +762,16 @@
 
     <div id="abaConfig" class="aba-conteudo">
       <div class="card">
-        <h3 style="margin-bottom:10px;">Contas e categorias</h3>
-        <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
-          <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('contasCategorias')">
+          <h3 style="font-size:16px;">Contas e categorias</h3>
+          <span class="chevron-sec" id="chevron-contasCategorias">▸</span>
+        </button>
+        <div id="corpo-contasCategorias" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
+            <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
+          </div>
         </div>
       </div>
 
@@ -818,15 +823,25 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom:4px;">Ordem dos cards — Faturas</h3>
-        <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
-        <div id="ordemCardsAbaFaturas"></div>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemFaturas')">
+          <h3 style="font-size:16px;">Ordem dos cards — Faturas</h3>
+          <span class="chevron-sec" id="chevron-ordemFaturas">▸</span>
+        </button>
+        <div id="corpo-ordemFaturas" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <div id="ordemCardsAbaFaturas"></div>
+        </div>
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom:4px;">Ordem dos cards — Gráficos</h3>
-        <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
-        <div id="ordemCardsAbaGraficos"></div>
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemGraficos')">
+          <h3 style="font-size:16px;">Ordem dos cards — Gráficos</h3>
+          <span class="chevron-sec" id="chevron-ordemGraficos">▸</span>
+        </button>
+        <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <div id="ordemCardsAbaGraficos"></div>
+        </div>
       </div>
 
       <!-- BACKUP E RESTAURAÇÃO (retrátil, veio da aba Faturas) -->
@@ -7685,7 +7700,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.11-1';
+    const APP_VERSION = '2026.08.11-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -7712,6 +7727,9 @@ function confirmarLancamentoVoz() {
     aplicarSecao('backup');
     aplicarSecao('contatos');
     aplicarSecao('lixeira');
+    aplicarSecao('contasCategorias');
+    aplicarSecao('ordemFaturas');
+    aplicarSecao('ordemGraficos');
     aplicarSecao('sons');
     aplicarSecao('emprestimos');
     aplicarSecao('pagamentoFatura');
