@@ -864,7 +864,7 @@
           <span class="chevron-sec" id="chevron-backup">▸</span>
         </button>
         <div id="corpo-backup" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados. Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — <strong style="color:#ccc;font-weight:600;">Salvar no Drive</strong>, Arquivos, WhatsApp. No computador, abre o "salvar como" pra apontar a pasta.</p>
           <div class="backup-actions">
             <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
@@ -2443,7 +2443,7 @@
       abaAntesDaEdicao = null;
     }
 
-    function exportarBackup() {
+    async function exportarBackup() {
       const payload = {
         versao: 3,
         exportadoEm: new Date().toISOString(),
@@ -2460,11 +2460,57 @@
         contatos,
         lixeira
       };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const nome = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
+      const texto = JSON.stringify(payload, null, 2);
+      const blob = new Blob([texto], { type: 'application/json' });
+
+      /* ESCOLHER ONDE SALVAR
+         O navegador não deixa um site gravar direto numa pasta sua nem mandar pro
+         Drive por conta própria — e ainda bem, senão qualquer site faria isso. O
+         que existe são dois caminhos, e o app usa o melhor disponível:
+
+         1. A FOLHA DE COMPARTILHAMENTO do celular (Web Share). É ela que traz
+            "Salvar no Drive", "Salvar em Arquivos", WhatsApp, Gmail — quem escolhe
+            o destino e a pasta é você, na tela do próprio Android.
+         2. O SALVAR COMO do computador (File System Access), que abre o explorador
+            de arquivos pra você apontar a pasta. Só existe no desktop.
+
+         Sem nenhum dos dois, cai no download comum, como era antes. */
+      try {
+        const arquivo = new File([blob], nome, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+          await navigator.share({
+            files: [arquivo],
+            title: 'Backup do MeuFinanceiro',
+            text: 'Backup de ' + obterDataBrasilia().split('-').reverse().join('/')
+          });
+          return;
+        }
+      } catch (e) {
+        // cancelar a folha de compartilhamento não é erro: o usuário desistiu
+        if (e && e.name === 'AbortError') return;
+      }
+
+      try {
+        if (window.showSaveFilePicker) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: nome,
+            types: [{ description: 'Backup do MeuFinanceiro', accept: { 'application/json': ['.json'] } }]
+          });
+          const escrever = await handle.createWritable();
+          await escrever.write(blob);
+          await escrever.close();
+          avisar('backupSalvo');
+          return;
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
+      a.download = nome;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 0);
     }
@@ -2997,6 +3043,10 @@
       backupErro: { emoji: '💥', detalhe: 'Confira se o arquivo é o .json exportado por este app.', frases: [
         'Esse arquivo aí não é backup coisa nenhuma.',
         'Não consegui ler esse arquivo.'
+      ] },
+      backupSalvo: { emoji: '💾', detalhe: 'O arquivo foi gravado na pasta que você escolheu.', frases: [
+        'Backup salvo onde você mandou.',
+        'Guardado. Agora é só não perder a pasta.'
       ] }
     };
 
@@ -8075,7 +8125,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.12-1';
+    const APP_VERSION = '2026.08.12-2';
 
     // Inicialização
     carregarLocalStorage();
