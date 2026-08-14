@@ -397,7 +397,12 @@
           </div>
           <div class="form-group">
             <label for="valor" id="labelValor">Valor</label>
-            <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+            <div style="position:relative;">
+              <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" style="padding-right:44px;">
+              <button type="button" onclick="abrirCalculadora()" title="Calculadora" aria-label="Abrir calculadora"
+                style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;
+                       font-size:19px;line-height:1;padding:6px;cursor:pointer;opacity:.65;">🧮</button>
+            </div>
           </div>
           <div class="row-botoes-form">
             <button type="submit" id="btnSubmit" class="btn-salvar">Salvar</button>
@@ -593,24 +598,32 @@
       </p>
       </div>
 
-      <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas) -->
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;gap:6px;">
-            <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
-            <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
-            <button class="btn-mini" id="btnVerContas" onclick="setVisaoGrafico('contas')">Contas</button>
+      <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas / Contas)
+           O título vem primeiro porque é ele que diz o que você está olhando;
+           os filtros vêm logo abaixo, como controles do que já foi anunciado.
+           Antes o título aparecia DEPOIS dos filtros, no meio do card. -->
+      <div class="card" id="cardGraficoPrincipal">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('graficoPrincipal')">
+          <h3 id="tituloGraficoUnico" style="color:#ef5350;">Gastos por Categoria</h3>
+          <span class="chevron-sec" id="chevron-graficoPrincipal">▾</span>
+        </button>
+        <div id="corpo-graficoPrincipal" style="margin-top:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;gap:6px;">
+              <button class="btn-mini ativo" id="btnVerDespesas" onclick="setVisaoGrafico('despesas')">Despesas</button>
+              <button class="btn-mini" id="btnVerReceitas" onclick="setVisaoGrafico('receitas')">Receitas</button>
+              <button class="btn-mini" id="btnVerContas" onclick="setVisaoGrafico('contas')">Contas</button>
+            </div>
+            <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
+              <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
+              <button class="btn-mini" id="btnColunas" onclick="setTipoGrafico('colunas')">Colunas</button>
+              <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
+            </div>
           </div>
-          <div style="display:flex;gap:6px;" id="boxTipoGraficoDespesas">
-            <button class="btn-mini ativo" id="btnBarras" onclick="setTipoGrafico('barras')">Barras</button>
-            <button class="btn-mini" id="btnColunas" onclick="setTipoGrafico('colunas')">Colunas</button>
-            <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
-          </div>
+          <div id="containerGraficoCategorias"></div>
+          <div id="containerGraficoReceitas" class="escondido"></div>
+          <div id="containerGraficoContas" class="escondido"></div>
         </div>
-        <h3 id="tituloGraficoUnico" style="color:#ef5350;margin-bottom:14px;">Gastos por Categoria</h3>
-        <div id="containerGraficoCategorias"></div>
-        <div id="containerGraficoReceitas" class="escondido"></div>
-        <div id="containerGraficoContas" class="escondido"></div>
       </div>
 
       <!-- INDICADORES E INSIGHTS (retrátil) -->
@@ -801,7 +814,7 @@
           <span class="chevron-sec" id="chevron-lixeira">▸</span>
         </button>
         <div id="corpo-lixeira" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 200.</p>
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 30.</p>
           <div id="listaLixeira"></div>
           <button type="button" class="btn-backup danger" style="margin-top:12px;" onclick="esvaziarLixeira()">Esvaziar lixeira</button>
         </div>
@@ -1226,6 +1239,21 @@
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CALCULADORA DO CAMPO DE VALOR -->
+  <div id="modalCalculadora" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalCalculadora')">
+    <div class="modal-content" style="max-width:320px;">
+      <div class="modal-header">
+        <h3 style="font-size:16px;">Calculadora</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalCalculadora')">&times;</button>
+      </div>
+      <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:12px 14px;margin-bottom:12px;text-align:right;">
+        <div id="calcExpressao" style="font-size:12.5px;color:#888;min-height:17px;word-break:break-all;">&nbsp;</div>
+        <div id="calcResultado" style="font-size:26px;font-weight:700;color:#2196f3;">R$ 0,00</div>
+      </div>
+      <div id="tecladoCalc" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
     </div>
   </div>
 
@@ -2982,6 +3010,109 @@
       window.__ultimoAviso = chave;
     }
 
+    /* CALCULADORA DO CAMPO DE VALOR
+       Serve pro caso "dividi a conta em 3" ou "foram 4 x 12,50": em vez de fazer a
+       conta de cabeça e digitar o resultado, faz aqui e o valor já sai formatado
+       como moeda no campo. O teclado é do app, não do celular, porque os sinais de
+       operação não cabem num teclado numérico.
+
+       Nada de eval(): a expressão é lida à mão, com multiplicação e divisão antes
+       de soma e subtração, como na matemática. */
+    let calcExp = '';
+
+    const TECLAS_CALC = [
+      ['7','7'], ['8','8'], ['9','9'], ['÷','/'],
+      ['4','4'], ['5','5'], ['6','6'], ['×','*'],
+      ['1','1'], ['2','2'], ['3','3'], ['−','-'],
+      ['0','0'], ['00','00'], [',',','], ['+','+'],
+      ['C','C'], ['⌫','B'], ['=','='], ['OK','OK']
+    ];
+
+    function abrirCalculadora() {
+      // começa do que já está no campo, pra dar pra continuar a conta
+      const atual = document.getElementById('valor').value.replace(/[^\d,]/g, '');
+      calcExp = atual && parseVal(atual) > 0 ? atual : '';
+      montarTecladoCalc();
+      atualizarVisorCalc();
+      document.getElementById('modalCalculadora').classList.remove('escondido');
+    }
+
+    function montarTecladoCalc() {
+      const box = document.getElementById('tecladoCalc');
+      if (box.dataset.pronto) return;
+      box.dataset.pronto = '1';
+      box.innerHTML = '';
+      TECLAS_CALC.forEach(([rotulo, cod]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        const operador = '/*-+'.includes(cod);
+        const destaque = cod === 'OK';
+        b.textContent = rotulo;
+        b.style.cssText = `padding:14px 0;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;border:1px solid #333;
+          background:${destaque ? '#d7ccc8' : (operador ? '#2a2a2a' : '#1e1e1e')};
+          color:${destaque ? '#121212' : (operador ? '#64b5f6' : (cod === 'C' ? '#ef5350' : '#eee'))};`;
+        b.onclick = () => teclaCalc(cod);
+        box.appendChild(b);
+      });
+    }
+
+    function teclaCalc(cod) {
+      if (cod === 'C') calcExp = '';
+      else if (cod === 'B') calcExp = calcExp.slice(0, -1);
+      else if (cod === '=') { const v = calcularExp(calcExp); if (v !== null) calcExp = fmtNumeroCalc(v); }
+      else if (cod === 'OK') {
+        const v = calcularExp(calcExp);
+        if (v === null || v <= 0) { avisar('valorInvalido'); return; }
+        const campo = document.getElementById('valor');
+        campo.value = 'R$ ' + v.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+,)/g, '$1.');
+        fecharModal('modalCalculadora');
+        return;
+      }
+      else if ('/*-+'.includes(cod)) {
+        if (!calcExp) return;                                   // conta não começa com operador
+        if ('/*-+'.includes(calcExp.slice(-1))) calcExp = calcExp.slice(0, -1);  // troca o operador
+        calcExp += cod;
+      }
+      else calcExp += cod;
+      atualizarVisorCalc();
+    }
+
+    function fmtNumeroCalc(v) {
+      return String(Math.round(v * 100) / 100).replace('.', ',');
+    }
+
+    // Lê a expressão sem eval: separa números de operadores, resolve × e ÷ numa
+    // passada e depois + e − na outra.
+    function calcularExp(exp) {
+      if (!exp) return null;
+      const tokens = String(exp).match(/(\d+(?:,\d*)?|[+\-*/])/g);
+      if (!tokens || !tokens.length) return null;
+      if ('/*-+'.includes(tokens[tokens.length - 1])) tokens.pop();   // ignora operador solto no fim
+      if (!tokens.length) return null;
+
+      const nums = [parseFloat(String(tokens[0]).replace(',', '.'))];
+      const ops = [];
+      for (let i = 1; i < tokens.length; i += 2) {
+        const op = tokens[i], n = parseFloat(String(tokens[i + 1]).replace(',', '.'));
+        if (isNaN(n)) break;
+        if (op === '*' || op === '/') {
+          const a = nums.pop();
+          if (op === '/' && n === 0) return null;
+          nums.push(op === '*' ? a * n : a / n);
+        } else { ops.push(op); nums.push(n); }
+      }
+      let total = nums[0];
+      ops.forEach((op, i) => { total = op === '+' ? total + nums[i + 1] : total - nums[i + 1]; });
+      return isNaN(total) ? null : total;
+    }
+
+    function atualizarVisorCalc() {
+      const bonito = calcExp.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ').replace(/\+/g, ' + ').replace(/-/g, ' − ');
+      document.getElementById('calcExpressao').innerHTML = bonito || '&nbsp;';
+      const v = calcularExp(calcExp);
+      document.getElementById('calcResultado').textContent = v === null ? 'R$ 0,00' : fmtVal(v);
+    }
+
     function salvarMeuNome() {
       uiPrefs.meuNome = document.getElementById('inputMeuNome').value.trim();
       salvarUiPrefs();
@@ -3952,7 +4083,7 @@
        grupo. Aqui o que foi apagado fica guardado, com data, e volta inteiro. */
     let lixeira = [];
     const STORAGE_KEY_LIXEIRA = 'meu_financeiro_lixeira_v1';
-    const LIMITE_LIXEIRA = 200;
+    const LIMITE_LIXEIRA = 30;
 
     function salvarLixeira() { localStorage.setItem(STORAGE_KEY_LIXEIRA, JSON.stringify(lixeira)); }
     function carregarLixeira() {
@@ -4121,7 +4252,38 @@
     }
 
     function fecharModal(modalId) {
-      document.getElementById(modalId).classList.add('escondido');
+      const el = document.getElementById(modalId);
+      el.classList.add('escondido');
+      el.style.zIndex = '';   // devolve o empilhamento pro padrão do CSS
+    }
+
+    /* EMPILHAMENTO DE MODAIS
+       Todos os modais dividem o mesmo z-index (1000), então quem fica por cima é
+       simplesmente quem vem depois no HTML. As janelas de observação, grupo e
+       empréstimo estão ANTES da janela de edição no arquivo — abrir uma delas de
+       dentro da edição jogava a janela pra trás, invisível, e era preciso fechar
+       a edição pra enxergar.
+
+       Em vez de caçar z-index um a um (e errar de novo no próximo modal novo),
+       um observador cuida disso: todo modal que abre sobe um degrau acima do mais
+       alto que já estiver aberto. Como o fechar zera, o contador nunca escala. */
+    function empilharModal(el) {
+      const abertos = [...document.querySelectorAll('.modal-overlay:not(.escondido)')].filter(m => m !== el);
+      const topo = abertos.reduce((max, m) => Math.max(max, parseInt(m.style.zIndex, 10) || 1000), 1000);
+      el.style.zIndex = topo + 1;
+    }
+
+    function ativarEmpilhamentoDeModais() {
+      const obs = new MutationObserver(muts => {
+        muts.forEach(m => {
+          const el = m.target;
+          if (!el.classList || !el.classList.contains('modal-overlay')) return;
+          if (el.classList.contains('escondido')) { el.style.zIndex = ''; return; }
+          if (!el.style.zIndex) empilharModal(el);
+        });
+      });
+      document.querySelectorAll('.modal-overlay').forEach(m =>
+        obs.observe(m, { attributes: true, attributeFilter: ['class'] }));
     }
 
     // TRANSFERÊNCIA ENTRE CONTAS PRÓPRIAS — fica num array separado (`transferencias`),
@@ -5495,12 +5657,32 @@
     /* O tom segue a mesma regra da cor na tela: basta uma cobrança vencida pra
        pessoa inteira virar "atrasado". Assim o texto nunca sai mais leve do que o
        vermelho que você está vendo. */
+    /* A situação escolhe o balde de frases pelo QUANTO FALTA (ou quanto já passou):
+       lembrete de uma semana tem outro peso que o do dia, e quem passou de duas
+       semanas — ou já adiou duas vezes — cai no balde pesado. */
+    const DIAS_MUITO_ATRASO = 15;
+
     function tomDaCobranca(lista, emAtraso, perto) {
-      if (lista.some(emAtraso)) return 'atrasado';
+      const vencidas = lista.filter(emAtraso);
+      if (vencidas.length) {
+        const maisAntiga = vencidas.map(c => c.vence).sort()[0];
+        const diasAtraso = Math.abs(diasAte(maisAntiga));
+        const jaAdiou = lista.some(c => (c.adiamentos || 0) >= 2);
+        return (diasAtraso >= DIAS_MUITO_ATRASO || jaAdiou) ? 'muitoAtrasado' : 'atrasado';
+      }
       // Adiada duas vezes é enrolação, não acordo — a mensagem tem que falar a
       // mesma língua da cor vermelha que a linha já mostra, mesmo com prazo à frente.
-      if (lista.some(c => (c.adiamentos || 0) >= 2)) return 'atrasado';
-      if (lista.some(perto) || lista.some(c => (c.adiamentos || 0) === 1)) return 'chegando';
+      if (lista.some(c => (c.adiamentos || 0) >= 2)) return 'muitoAtrasado';
+
+      /* Os baldes de prazo não podem depender da janela de lembrete: ela é
+         configurável (3 dias por padrão) e, com ela mandando, o balde "uma semana
+         antes" nunca dispararia. Aqui o corte é do calendário mesmo. */
+      const prazos = lista.map(c => c.vence).filter(Boolean).sort();
+      if (!prazos.length) return 'tranquilo';
+      const faltam = diasAte(prazos[0]);
+      if (faltam <= 1) return 'hoje';
+      if (faltam <= 4) return 'dias';
+      if (faltam <= 10 || lista.some(perto) || lista.some(c => (c.adiamentos || 0) === 1)) return 'semana';
       return 'tranquilo';
     }
 
@@ -5533,7 +5715,7 @@
       const detalhe = itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0];
 
       if (devo) {
-        const abertura = situacao === 'atrasado'
+        const abertura = /atrasado/i.test(situacao)
           ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
           : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
         return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
@@ -5549,7 +5731,15 @@
           const prox = lista.map(c => c.vence).filter(Boolean).sort()[0];
           const f = diasAte(prox);
           return f === 0 ? 'hoje' : f === 1 ? 'amanhã' : 'em ' + f + ' dias';
-        })()
+        })(),
+        diasFalta: (() => {
+          const prox = lista.map(c => c.vence).filter(Boolean).sort()[0];
+          return prox ? Math.max(0, diasAte(prox)) : 0;
+        })(),
+        // "do Léo" x "da Ana": sem isso o assistente falava "d o Léo" ou errava o
+        // gênero de quem usa o app
+        artigo: /a$/i.test(meuNome()) && meuNome() !== 'o chefe' ? 'a ' : (meuNome() === 'o chefe' ? '' : 'o '),
+        ele: /a$/i.test(meuNome()) && meuNome() !== 'o chefe' ? 'ela' : 'ele'
       };
       // Quem já venceu tem dias de atraso; quem só foi adiado, não — e "venceram há
       // 0 dias" é frase de robô quebrado. Um texto só cobre os dois casos.
@@ -5573,42 +5763,117 @@
       return (uiPrefs.meuNome || '').trim() || 'o chefe';
     }
 
+    /* O banco é dividido pelo QUANTO FALTA, não só por "vai vencer / venceu":
+       lembrete de uma semana tem outro peso que o do dia, e quem passou de duas
+       semanas merece o capanga. Cada balde tem os três tons, e o mês sorteia a
+       variação — a mesma pessoa não recebe a mesma frase duas vezes seguidas.
+
+       O personagem do zoeira é o CAPANGA de um agiota de brincadeira: cobra em
+       nome do "seu Léo", fala em juros absurdos e faz ameaças obviamente ridículas
+       (pastel, grupo da família, story) — nunca nada que soe como ameaça de
+       verdade. A graça está no exagero, não no medo. */
     const FRASES_COBRANCA = {
-      chegando: {
+      // ---------- falta uma semana ou mais ----------
+      semana: {
         zoeira: [
-          c => `Fala ${c.nome}! 👀 Tá chegando o dia dos ${c.total} (${c.quando}), hein${c.detalhe}\n\nJá vai separando pra não ter que fingir que esqueceu 😂`,
-          c => `${c.nome}, meu parceiro! Aviso amigável: ${c.total} vencem ${c.quando}${c.detalhe}\n\nTô de olho, viu 👁️`,
-          c => `Opa ${c.nome}! Lembrete carinhoso de que ${c.quando} vencem ${c.total}${c.detalhe}\n\nNão me obriga a mandar o assistente 😬`
+          c => `Fala ${c.nome}! 👀 Passando pra avisar com carinho: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nÉ só um aviso amigável. Por enquanto. 😌`,
+          c => `${c.nome}, meu chapa! O setor de cobrança d${c.artigo}${c.meu} me pediu pra "passar um recadinho gentil" 📋${c.detalhe}\n\n${c.total}, vencendo em ${c.diasFalta} dias. Tô sendo simpático agora, aproveita.`,
+          c => `Opa ${c.nome}! Marquei aqui na agenda: ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nAgenda bonita, caneta vermelha do lado. Só dizendo. ✍️`
         ],
         carinhoso: [
-          c => `Oi ${c.nome}! 💛 Passando só pra lembrar dos ${c.total}, que vencem ${c.quando}${c.detalhe}\n\nSem pressa nenhuma, tá? Só pra não passar batido 😊`,
-          c => `Oi ${c.nome}! Tudo bem? Uma lembrancinha: ${c.total} ${c.quando}${c.detalhe}\n\nQualquer coisa a gente ajeita 💛`,
-          c => `Ei ${c.nome}! ✨ ${c.quando} vencem os ${c.total}${c.detalhe}\n\nSe precisar de mais prazo é só falar 🤗`
+          c => `Oi ${c.nome}! 💛 Só passando pra avisar com antecedência: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}\n\nDá tempo de sobra, tá? Só pra você se organizar 😊`,
+          c => `Oi ${c.nome}! Tudo bem? Lembrete tranquilo: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nQualquer coisa a gente conversa 🌷`,
+          c => `Ei ${c.nome}! ✨ Anotando aqui que em ${c.diasFalta} dias vencem ${c.total}${c.detalhe}\n\nSem pressa nenhuma 🤗`
         ],
         neutro: [
-          c => `Oi ${c.nome}! 👋 Lembrete: ${c.total} vencem ${c.quando}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
-          c => `Oi ${c.nome}! Passando pra avisar que ${c.quando} vencem ${c.total}${c.detalhe}`,
-          c => `Fala ${c.nome}! Só sinalizando: ${c.total}, ${c.quando}${c.detalhe}\n\nAbraço!`
+          c => `Oi ${c.nome}! 👋 Lembrete: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}`,
+          c => `Fala ${c.nome}! Só sinalizando com antecedência: ${c.total}, daqui a ${c.diasFalta} dias${c.detalhe}`,
+          c => `Oi ${c.nome}! Passando pra avisar dos ${c.total} que vencem em ${c.diasFalta} dias${c.detalhe}\n\nAbraço!`
         ]
       },
 
-      /* O ASSISTENTE. Personagem fixo, com sotaque de filme de máfia — cobra sem
-         que a mensagem soe como você brigando com um amigo. */
-      atrasado: {
+      // ---------- faltam poucos dias ----------
+      dias: {
         zoeira: [
-          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o assistente pessoal d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}. Fui contratado pra cuidar das ${c.contas} contas dele, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido} ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
-          c => `${c.nome}. 🕴️\n\nO assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} falando. Sabe, eu cuido das ${c.contas} contas dele e tenho uma planilha muito organizada. Muito organizada mesmo${c.detalhe}\n\nO seu nome tá em vermelho aqui — ${c.vencido}, ${c.desde} — e eu não gosto de vermelho. Vamo resolver isso como pessoas civilizadas? 🤝`,
-          c => `Ei, caloteiro! 😤 (é o assistente falando, o ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nEu fui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático 🤌`
+          c => `${c.nome}! ⏰ Faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nO relógio tá correndo e o meu chefe tá olhando pra planilha com cara feia. 👀`,
+          c => `Ô ${c.nome}, ${c.quando} vencem ${c.total}${c.detalhe}\n\nDepois disso eu começo a cobrar juros em pastel. E eu como muito pastel. 🥟`,
+          c => `Fala ${c.nome}! Aviso de ${c.diasFalta} dias: ${c.total}${c.detalhe}\n\nAinda tô na fase simpática do meu trabalho. Não me faz mudar de fase. 😇`
         ],
         carinhoso: [
-          c => `Oi ${c.nome}! 🌷 Aqui quem fala é o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} — ele é tímido demais pra cobrar${c.detalhe}\n\nSão ${c.vencido}, ${c.desde}. Se estiver apertado, me avisa que a gente combina outro prazo, tá? 💛`,
-          c => `Oi ${c.nome}! Assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} na área 🙋\n\nPassando com jeitinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nSem estresse — só me diz quando dá 😊`,
-          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}, cuido das contas dele.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`
+          c => `Oi ${c.nome}! 💛 ${c.quando.charAt(0).toUpperCase() + c.quando.slice(1)} vencem os ${c.total}${c.detalhe}\n\nSó pra não passar batido 😊`,
+          c => `Oi ${c.nome}! Passando com jeitinho: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nSe precisar de mais prazo, é só falar 💛`,
+          c => `Ei ${c.nome}! Um lembrete fofo de que ${c.quando} vencem ${c.total} 🌸${c.detalhe}`
         ],
         neutro: [
-          c => `Olá ${c.nome}. Aqui é o assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu}.\n\nConsta em aberto: ${c.vencido}, ${c.desde}${c.detalhe}\n\nPode acertar essa semana?`,
-          c => `${c.nome}, boa! Assistente d${c.meu === 'o chefe' ? 'o chefe' : 'o ' + c.meu} falando.\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nMe confirma quando conseguir resolver 🙏`,
+          c => `Oi ${c.nome}! ${c.quando.charAt(0).toUpperCase() + c.quando.slice(1)}: ${c.total}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
+          c => `Fala ${c.nome}! Faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}`,
+          c => `Oi ${c.nome}! Lembrete: ${c.total}, ${c.quando}${c.detalhe}`
+        ]
+      },
+
+      // ---------- vence hoje ou amanhã ----------
+      hoje: {
+        zoeira: [
+          c => `${c.nome}. 🚨 É ${c.quando}. ${c.total}${c.detalhe}\n\nDepois da meia-noite eu viro outra pessoa. Uma pessoa com planilha. 📊`,
+          c => `Fala ${c.nome}! Dia D chegou: ${c.total} ${c.quando}${c.detalhe}\n\nPix hoje e a gente continua amigo. Amanhã eu já tenho que "seguir o protocolo" 🕴️`,
+          c => `${c.nome}, ${c.quando}! ⏳ ${c.total}${c.detalhe}\n\nTô com o dedo no botão de mandar o capanga. E o capanga sou eu mesmo, mas de mau humor. 😤`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 💛 Passando pra lembrar que ${c.quando} vencem os ${c.total}${c.detalhe}\n\nSe não der hoje, me avisa que a gente reajusta 😊`,
+          c => `Oi ${c.nome}! É ${c.quando} 🌷 ${c.total}${c.detalhe}\n\nQualquer coisa me chama, tá?`,
+          c => `Ei ${c.nome}! Só lembrando com carinho: ${c.quando}, ${c.total}${c.detalhe} 💛`
+        ],
+        neutro: [
+          c => `Oi ${c.nome}! ${c.quando.charAt(0).toUpperCase() + c.quando.slice(1)}: ${c.total}${c.detalhe}`,
+          c => `Fala ${c.nome}! Vence ${c.quando} — ${c.total}${c.detalhe}\n\nMe confirma quando resolver 🙏`,
+          c => `Oi ${c.nome}! Passando pra avisar: ${c.total}, ${c.quando}${c.detalhe}`
+        ]
+      },
+
+      /* ---------- atrasado: entra o ASSISTENTE ----------
+         Quem está atrasado não recebe mensagem sua. Recebe do personagem — tira o
+         peso de cobrar amigo e a piada faz o trabalho pesado. */
+      atrasado: {
+        zoeira: [
+          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o capanga d${c.artigo}${c.meu}. Cuido das ${c.contas} contas dele, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido}, ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
+          c => `${c.nome}. 🕴️\n\nO assistente d${c.artigo}${c.meu} falando. Eu tenho uma planilha. Ela é muito organizada. E o seu nome tá em vermelho nela${c.detalhe}\n\n${c.vencido}, ${c.desde}. Vamo resolver como pessoas civilizadas? 🤝`,
+          c => `Ei, caloteiro! 😤 (é o capanga falando — ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nFui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático. 🥟`,
+          c => `Alô ${c.nome}. Departamento de cobrança d${c.artigo}${c.meu}, setor "amigos que esquecem". 📋${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros aqui são cobrados em cerveja, e a taxa tá subindo. 🍺`,
+          c => `${c.nome}, meu caro. 🤌 Sou o braço direito d${c.artigo}${c.meu} — e também o esquerdo, porque a folha tá apertada${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me poupa de ter que aparecer aí com essa cara de sério.`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome}! 🌷 Aqui quem fala é o assistente d${c.artigo}${c.meu} — ${c.ele} é tímido demais pra cobrar${c.detalhe}\n\nSão ${c.vencido}, ${c.desde}. Se estiver apertado, me avisa que a gente combina outro prazo, tá? 💛`,
+          c => `Oi ${c.nome}! Assistente d${c.artigo}${c.meu} na área 🙋\n\nPassando com jeitinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nSem estresse — só me diz quando dá 😊`,
+          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.artigo}${c.meu}, cuido das contas dele.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`,
+          c => `Oi ${c.nome}! ✨ Aqui é a secretária particular d${c.artigo}${c.meu} (na verdade é um aplicativo, mas eu me esforço)${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me avisa como fica melhor pra você 🌸`
+        ],
+        neutro: [
+          c => `Olá ${c.nome}. Aqui é o assistente d${c.artigo}${c.meu}.\n\nConsta em aberto: ${c.vencido}, ${c.desde}${c.detalhe}\n\nPode acertar essa semana?`,
+          c => `${c.nome}, boa! Assistente d${c.artigo}${c.meu} falando.\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nMe confirma quando conseguir resolver 🙏`,
           c => `Olá ${c.nome}. Passando pra regularizar ${c.vencido}, ${c.desde}${c.detalhe}\n\nFico no aguardo.`
+        ]
+      },
+
+      /* ---------- muito atrasado: o capanga perde a paciência ----------
+         Passou de duas semanas, ou o prazo já foi adiado duas vezes. As ameaças
+         são absurdas de propósito: o exagero é a piada. */
+      muitoAtrasado: {
+        zoeira: [
+          c => `${c.nome}. 🕴️🕴️\n\nAgora somos dois. Eu e a planilha${c.detalhe}\n\n${c.vencido}, ${c.desde}. Se não resolver, eu vou ser obrigado a tomar a medida extrema: te adicionar no grupo da família d${c.artigo}${c.meu}. Lá tem corrente de bom dia. Todo dia. 📿`,
+          c => `Escuta aqui, ${c.nome}. 🤌\n\n${c.vencido}, ${c.desde}. Eu já fui simpático, já fui paciente, e agora tô na fase em que eu apareço no seu story respondendo "e o dinheiro?" em todos${c.detalhe}\n\nNão me obriga. Eu tenho tempo livre. ⏰`,
+          c => `${c.nome}, o seu caso subiu pro meu supervisor. O supervisor sou eu de óculos. 🤓${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros já viraram: um pastel por semana. Você já me deve uma feira inteira. 🥟🥟🥟`,
+          c => `ÚLTIMO AVISO, ${c.nome}. 🚨 (o penúltimo também era o último, mas enfim)\n\n${c.vencido}, ${c.desde}${c.detalhe}\n\nPróximo passo é eu contar pra sua mãe. E eu tenho o número dela. 📞`,
+          c => `${c.nome}, meu velho amigo. 🕴️\n\nD${c.artigo}${c.meu} me disse pra "ser gentil". Eu disse que ia tentar${c.detalhe}\n\n${c.vencido}, ${c.desde}. Tentei. Agora vou começar a mandar áudio de 3 minutos. Todo dia. Às 6h. 🎙️`
+        ],
+        carinhoso: [
+          c => `Oi ${c.nome} 💛 Assistente d${c.artigo}${c.meu} de novo por aqui.\n\nJá faz um tempinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nTá tudo bem por aí? Se estiver difícil, me fala que a gente pensa num jeito juntos 🤗`,
+          c => `Oi ${c.nome}! 🌷 Voltando com jeitinho, porque já passou bastante tempo: ${c.vencido}, ${c.desde}${c.detalhe}\n\nNem que seja um pedacinho por mês — o importante é a gente combinar 💛`,
+          c => `Oi ${c.nome}! Sou o assistente d${c.artigo}${c.meu} ✨\n\n${c.vencido}, ${c.desde}. Já insisti umas vezes e não quero ser chato${c.detalhe}\n\nMe dá um retorno, mesmo que seja pra dizer que não dá agora? 🙏`
+        ],
+        neutro: [
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}.\n\n${c.vencido}, ${c.desde}. Já são algumas tentativas sem retorno${c.detalhe}\n\nPreciso de uma posição sua.`,
+          c => `${c.nome}, retomando: ${c.vencido}, ${c.desde}${c.detalhe}\n\nMe diz como prefere resolver — à vista ou parcelado?`,
+          c => `Olá ${c.nome}. O valor de ${c.vencido} segue em aberto, ${c.desde}${c.detalhe}\n\nPode me dar um retorno hoje?`
         ]
       },
 
@@ -5616,7 +5881,7 @@
         zoeira: [
           c => `Fala ${c.nome}! Nada urgente, só registrando aqui os ${c.total} pra memória não falhar 😅${c.detalhe}`,
           c => `${c.nome}! Passando pra alinhar os ${c.total}${c.detalhe}\n\nTá tranquilo, é só pra deixar combinado 👊`,
-          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe} 😄`
+          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe}\n\nA planilha agradece. 📋`
         ],
         carinhoso: [
           c => `Oi ${c.nome}! 💛 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder, a gente combina 😊`,
@@ -5631,16 +5896,13 @@
       }
     };
 
-    /* O mês é a semente: a variação muda sozinha ao longo do ano sem precisar de
-       sorteio guardado. Quem adiou mais de uma vez pula direto pra variação mais
-       insistente, independente do mês. */
     function frasePronta(situacao, tom, ctx) {
       const banco = (FRASES_COBRANCA[situacao] || FRASES_COBRANCA.tranquilo);
       const lista = banco[tom] || banco.neutro;
       const mes = new Date(obterDataBrasilia() + 'T12:00:00').getMonth();
       const i = ctx.adiada >= 2 ? lista.length - 1 : (mes + ctx.adiada) % lista.length;
       let texto = lista[i](ctx);
-      if (ctx.adiada >= 2 && situacao === 'atrasado') {
+      if (ctx.adiada >= 2 && /atrasado/i.test(situacao)) {
         texto += `\n\n(P.S.: essa é a ${ctx.adiada + 1}ª vez que esse prazo muda. Minha planilha tá anotando. 📋)`;
       }
       return texto;
@@ -6037,11 +6299,12 @@
             btnZapCheio.type = 'button';
             btnZapCheio.className = 'btn-mini';
             btnZapCheio.style.cssText = 'margin-top:8px;margin-left:6px;'
-              + (tom === 'atrasado' ? 'color:#ef5350;border-color:rgba(239,83,80,.35);'
-                : tom === 'chegando' ? 'color:#ffd166;border-color:rgba(255,209,102,.35);' : '');
+              + (/atrasado/i.test(tom) ? 'color:#ef5350;border-color:rgba(239,83,80,.35);'
+                : ['semana','dias','hoje'].includes(tom) ? 'color:#ffd166;border-color:rgba(255,209,102,.35);' : '');
             btnZapCheio.textContent = devo
               ? '💬 Falar com ' + nome
-              : (tom === 'atrasado' ? '💬 Cobrar ' + nome : tom === 'chegando' ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
+              : (/atrasado/i.test(tom) ? '💬 Cobrar ' + nome
+                : ['semana','dias','hoje'].includes(tom) ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
             btnZapCheio.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
             listaEl.appendChild(btnZapCheio);
 
@@ -7812,7 +8075,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.11-3';
+    const APP_VERSION = '2026.08.12-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -7841,7 +8104,10 @@ function confirmarLancamentoVoz() {
     aplicarSecao('lixeira');
     aplicarSecao('contasCategorias');
     aplicarSecao('ordemFaturas');
+    if (uiPrefs['secao_graficoPrincipal'] === undefined) uiPrefs['secao_graficoPrincipal'] = true;
+    aplicarSecao('graficoPrincipal');
     aplicarSecao('ordemGraficos');
+    ativarEmpilhamentoDeModais();
     aplicarSecao('sons');
     aplicarSecao('emprestimos');
     aplicarSecao('pagamentoFatura');
