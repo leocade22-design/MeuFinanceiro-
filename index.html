@@ -399,9 +399,12 @@
             <label for="valor" id="labelValor">Valor</label>
             <div style="position:relative;">
               <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" style="padding-right:44px;">
+              <!-- Desenho em SVG no lugar do emoji 🧮: em muitos celulares aquele caractere
+                   não existe na fonte e aparece como quadradinho vazio. Assim o ícone é o
+                   mesmo em qualquer aparelho — é o que já rodava no Propostas Corpus. -->
               <button type="button" onclick="abrirCalculadora()" title="Calculadora" aria-label="Abrir calculadora"
-                style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;
-                       font-size:19px;line-height:1;padding:6px;cursor:pointer;opacity:.65;">🧮</button>
+                style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;border:none;
+                       color:#8a8a8a;line-height:0;padding:7px;cursor:pointer;opacity:.75;"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7.6" y="5.6" width="8.8" height="3.4" rx="1" fill="currentColor"/><circle cx="8.6" cy="13.2" r="1.1" fill="currentColor"/><circle cx="12" cy="13.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="13.2" r="1.1" fill="currentColor"/><circle cx="8.6" cy="17.2" r="1.1" fill="currentColor"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="17.2" r="1.1" fill="currentColor"/></svg></button>
             </div>
           </div>
           <div class="row-botoes-form">
@@ -798,8 +801,13 @@
           <!-- Quem está atrasado recebe mensagem do "assistente", não sua. O nome
                entra na apresentação dele: "sou o assistente do Léo". -->
           <div class="form-group">
-            <label for="inputMeuNome">Seu nome (o assistente usa nas cobranças)</label>
-            <input type="text" id="inputMeuNome" placeholder="ex: Léo" onchange="salvarMeuNome()">
+            <label for="inputMeuNome">O SEU nome — o de quem emprestou</label>
+            <input type="text" id="inputMeuNome" placeholder="ex: Léo" oninput="salvarMeuNome()" onchange="salvarMeuNome()">
+            <p style="color:#888;font-size:11.5px;margin-top:7px;line-height:1.45;">
+              Nas cobranças o app finge ser um assistente seu, pra não parecer que é você
+              cobrando na cara dura. Ele se apresenta assim:
+            </p>
+            <p id="exemploMeuNome" style="color:#5f9933;font-size:12px;margin-top:5px;font-style:italic;"></p>
           </div>
           <div id="listaContatos"></div>
         </div>
@@ -900,6 +908,38 @@
       </div>
 
       <div id="chipsContasConsulta"></div>
+
+      <!-- RASTREADOR: só aparece quando a lista é grande o bastante pra valer a pena.
+           Serve pra achar um lançamento ou fatiar o total por categoria, conta ou grupo
+           sem ter que sair pra aba Gráficos. -->
+      <div id="filtroDetalhe" class="escondido" style="margin-bottom:14px;">
+        <!-- Fica recolhido: quem só quer conferir o total não leva três campos na cara.
+             Com filtro ativo, a própria linha mostra o recorte, pra não virar estado escondido. -->
+        <button type="button" id="toggleFiltroDetalhe" onclick="alternarFiltroDetalhe()"
+          style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+                 background:transparent;border:none;padding:2px 0 10px;cursor:pointer;">
+          <span id="rotuloFiltroDetalhe" style="font-size:12.5px;color:#888;">Buscar e filtrar</span>
+          <span id="chevronFiltroDetalhe" style="font-size:11px;color:#888;">▸</span>
+        </button>
+        <div id="camposFiltroDetalhe" class="escondido">
+        <div style="position:relative;margin-bottom:8px;">
+          <input type="text" id="buscaDetalhe" placeholder="Buscar na lista..." oninput="renderDetalheFatura()"
+            style="padding:9px 34px 9px 11px;font-size:13px;">
+          <button type="button" id="limparBuscaDetalhe" class="escondido" onclick="limparBuscaDetalhe()"
+            aria-label="Limpar busca"
+            style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;
+                   border:none;color:#888;font-size:17px;line-height:1;padding:6px 8px;cursor:pointer;">&times;</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <select id="filtroCatDetalhe" aria-label="Filtrar por categoria" onchange="renderDetalheFatura()" style="font-size:12.5px;padding:8px 9px;flex:1;min-width:0;"></select>
+          <select id="filtroContaDetalhe" aria-label="Filtrar por conta" onchange="renderDetalheFatura()" style="font-size:12.5px;padding:8px 9px;flex:1;min-width:0;"></select>
+        </div>
+        <select id="filtroGrupoDetalhe" aria-label="Filtrar por grupo" onchange="renderDetalheFatura()" class="escondido"
+          style="font-size:12.5px;padding:8px 9px;margin-top:8px;"></select>
+        <button type="button" id="limparFiltroDetalhe" class="btn-mini escondido" onclick="limparFiltrosDetalhe()"
+          style="margin-top:8px;">limpar filtros</button>
+        </div>
+      </div>
 
       <!-- SUBTOTALIZADORES DINÂMICOS DA CONSULTA -->
       <div class="box-resumo-modal" id="boxSubtotaisModal"></div>
@@ -2974,7 +3014,7 @@
         'Lançamento sem valor é igual pizza sem queijo: não existe.',
         'Tá economizando até no número, é?'
       ] },
-      valorInvalido: { emoji: '🧮', detalhe: 'O valor precisa ser maior que zero.', frases: [
+      valorInvalido: { emoji: '🔢', detalhe: 'O valor precisa ser maior que zero.', frases: [
         'Esse valor aí não existe nem na sua imaginação.',
         'Zero, negativo ou hieróglifo? Nenhum dos três serve.',
         'Matemática básica, meu consagrado: tem que ser maior que zero.',
@@ -3166,11 +3206,24 @@
     function salvarMeuNome() {
       uiPrefs.meuNome = document.getElementById('inputMeuNome').value.trim();
       salvarUiPrefs();
+      atualizarExemploMeuNome();
+    }
+
+    // Mostra a frase pronta enquanto o nome é digitado: sem isso ninguém adivinha
+    // se o campo pede o nome de quem cobra ou o de quem é cobrado.
+    function atualizarExemploMeuNome() {
+      const el = document.getElementById('exemploMeuNome');
+      if (!el) return;
+      const nome = meuNome();
+      const feminino = /a$/i.test(nome) && nome !== 'o chefe';
+      const artigo = feminino ? 'da ' : (nome === 'o chefe' ? 'd' : 'do ');
+      el.textContent = `“Oi Dudu! Aqui é o assistente ${artigo}${nome}, cuido das contas ${feminino ? 'dela' : 'dele'}.”`;
     }
 
     function renderizarContatos() {
       const campoNome = document.getElementById('inputMeuNome');
       if (campoNome) campoNome.value = uiPrefs.meuNome || '';
+      atualizarExemploMeuNome();
       const box = document.getElementById('listaContatos');
       if (!box) return;
       const nomes = Object.keys(contatos).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
@@ -4280,6 +4333,7 @@
       consultaGrupo = '';
       document.getElementById('wrapFiltrosModal').classList.remove('escondido');
       document.getElementById('chipsContasConsulta').classList.remove('escondido');
+      document.getElementById('filtroDetalhe').classList.add('escondido');  // esta tela já tem os filtros dela
       document.getElementById('labelPeriodoModalAtual').textContent = labelPeriodoGraficos;
       document.getElementById('rodapeGrupo').classList.add('escondido');
       renderizarChipsContasConsulta();
@@ -5885,7 +5939,7 @@
          peso de cobrar amigo e a piada faz o trabalho pesado. */
       atrasado: {
         zoeira: [
-          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o capanga d${c.artigo}${c.meu}. Cuido das ${c.contas} contas dele, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido}, ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
+          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o capanga d${c.artigo}${c.meu}. Cuido das ${c.contas} contas ${c.ele === "ela" ? "dela" : "dele"}, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido}, ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
           c => `${c.nome}. 🕴️\n\nO assistente d${c.artigo}${c.meu} falando. Eu tenho uma planilha. Ela é muito organizada. E o seu nome tá em vermelho nela${c.detalhe}\n\n${c.vencido}, ${c.desde}. Vamo resolver como pessoas civilizadas? 🤝`,
           c => `Ei, caloteiro! 😤 (é o capanga falando — ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nFui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático. 🥟`,
           c => `Alô ${c.nome}. Departamento de cobrança d${c.artigo}${c.meu}, setor "amigos que esquecem". 📋${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros aqui são cobrados em cerveja, e a taxa tá subindo. 🍺`,
@@ -5894,7 +5948,7 @@
         carinhoso: [
           c => `Oi ${c.nome}! 🌷 Aqui quem fala é o assistente d${c.artigo}${c.meu} — ${c.ele} é tímido demais pra cobrar${c.detalhe}\n\nSão ${c.vencido}, ${c.desde}. Se estiver apertado, me avisa que a gente combina outro prazo, tá? 💛`,
           c => `Oi ${c.nome}! Assistente d${c.artigo}${c.meu} na área 🙋\n\nPassando com jeitinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nSem estresse — só me diz quando dá 😊`,
-          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.artigo}${c.meu}, cuido das contas dele.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`,
+          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.artigo}${c.meu}, cuido das contas ${c.ele === "ela" ? "dela" : "dele"}.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`,
           c => `Oi ${c.nome}! ✨ Aqui é a secretária particular d${c.artigo}${c.meu} (na verdade é um aplicativo, mas eu me esforço)${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me avisa como fica melhor pra você 🌸`
         ],
         neutro: [
@@ -6898,6 +6952,7 @@
       document.getElementById('subtituloModal').classList.remove('escondido');
       grupoModalAtualId = null;
 
+      let extrasHTML = '';
       let filtrados = [];
       if (tipoFiltro === 'receita') {
         titulo.textContent = 'Recebimentos de ' + NOMES_MESES[mes];
@@ -6918,12 +6973,11 @@
           const pagas = Object.entries(faturasPagas)
             .filter(([, pg]) => pg && pg.data && pg.data.slice(0, 7) === chaveMes);
           if (pagas.length) {
-            boxSubFat.innerHTML = pagas.map(([chave, pg]) => `
+            extrasHTML = pagas.map(([chave, pg]) => `
               <div class="linha-subtotal" style="cursor:default;">
                 <span>🧾 Fatura ${chave.split('|')[0]} paga em ${pg.data.split('-').reverse().join('/')}</span>
                 <strong style="color:#ef5350;">${fmtOculto(parseVal(pg.valorPago))}</strong>
               </div>`).join('');
-            boxSubFat.classList.remove('escondido');
           }
         }
       } else if (tipoFiltro === 'credito') {
@@ -6958,52 +7012,160 @@
           if (t.destino === contaNome) extras.push({ rotulo: `⇄ Recebido de ${t.origem} em ${dataFmt}`, valor: parseVal(t.valor) });
         });
         if (extras.length) {
-          boxSubFat.innerHTML = extras.map(x => `
+          extrasHTML = extras.map(x => `
             <div class="linha-subtotal" style="cursor:default;">
               <span>${x.rotulo}</span>
               <strong style="color:${x.valor >= 0 ? '#4caf50' : '#ef5350'};">${x.valor >= 0 ? '+' : '−'}${fmtOculto(Math.abs(x.valor))}</strong>
             </div>`).join('');
-          boxSubFat.classList.remove('escondido');
         }
       }
 
-      // O total vem antes da lista: sem ele você precisava somar de cabeça pra
-      // saber se aquela lista fecha com o número do card que a abriu.
-      if (filtrados.length) {
-        const somaLista = filtrados.reduce((s, l) => s + parseVal(l.valor) * (l.tipo === 'receita' ? 1 : -1), 0);
-        const extrasBox = boxSubFat.innerHTML;
-        const positivo = somaLista >= 0;
+      detalheAtual = { lista: filtrados, extrasHTML: extrasHTML };
+      montarFiltrosDetalhe(filtrados);
+      renderDetalheFatura();
+
+      modal.classList.remove('escondido');
+    }
+
+    /* ============ RASTREADOR DO DETALHE ============
+       O popup de "Recebido" / "Saiu da conta" mostrava a lista crua. Com 24
+       lançamentos no mês, achar um gasto específico ali era rolar no olho. Agora
+       a mesma lista aceita busca por texto e recorte por categoria, conta e grupo
+       — e o total do topo acompanha o recorte, então dá pra responder "quanto eu
+       gastei de mercado no PicPay este mês" sem sair da aba Faturas. */
+    let detalheAtual = { lista: [], extrasHTML: '' };
+
+    function montarFiltrosDetalhe(lista) {
+      const wrap = document.getElementById('filtroDetalhe');
+      document.getElementById('buscaDetalhe').value = '';
+      document.getElementById('limparBuscaDetalhe').classList.add('escondido');
+
+      // Lista curta não precisa de rastreador: seria só poluição em cima de 3 linhas.
+      if (lista.length < 6) { wrap.classList.add('escondido'); return; }
+      wrap.classList.remove('escondido');
+      document.getElementById('camposFiltroDetalhe').classList.add('escondido');
+      document.getElementById('chevronFiltroDetalhe').textContent = '▸';
+
+      const encher = (id, valores, rotuloTudo) => {
+        const sel = document.getElementById(id);
+        const opcoes = [...new Set(valores.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        sel.innerHTML = `<option value="">${rotuloTudo}</option>` +
+          opcoes.map(v => `<option value="${v}">${v}</option>`).join('');
+        sel.value = '';
+        return opcoes.length;
+      };
+
+      encher('filtroCatDetalhe', lista.map(l => l.categoria || 'Outros'), 'Todas as categorias');
+      encher('filtroContaDetalhe', lista.map(l => l.conta), 'Todas as contas');
+      const selGrupo = document.getElementById('filtroGrupoDetalhe');
+      const temGrupo = encher('filtroGrupoDetalhe', lista.map(l => l.grupoViagemNome), 'Todos os grupos');
+      selGrupo.classList.toggle('escondido', !temGrupo);
+    }
+
+    function alternarFiltroDetalhe() {
+      const campos = document.getElementById('camposFiltroDetalhe');
+      const aberto = campos.classList.toggle('escondido') === false;
+      document.getElementById('chevronFiltroDetalhe').textContent = aberto ? '▾' : '▸';
+      if (aberto) document.getElementById('buscaDetalhe').focus();
+    }
+
+    function filtrosDetalheAtivos() {
+      return {
+        busca: (document.getElementById('buscaDetalhe').value || '').trim().toLowerCase(),
+        cat: document.getElementById('filtroCatDetalhe').value,
+        conta: document.getElementById('filtroContaDetalhe').value,
+        grupo: document.getElementById('filtroGrupoDetalhe').value
+      };
+    }
+
+    function limparFiltrosDetalhe() {
+      ['filtroCatDetalhe', 'filtroContaDetalhe', 'filtroGrupoDetalhe'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('buscaDetalhe').value = '';
+      renderDetalheFatura();
+    }
+
+    function limparBuscaDetalhe() {
+      document.getElementById('buscaDetalhe').value = '';
+      renderDetalheFatura();
+    }
+
+    function renderDetalheFatura() {
+      const corpo = document.getElementById('modalCorpo');
+      const boxSubFat = document.getElementById('boxSubtotaisModal');
+      const f = filtrosDetalheAtivos();
+      const filtrando = !!(f.busca || f.cat || f.conta || f.grupo);
+
+      document.getElementById('limparFiltroDetalhe').classList.toggle('escondido', !filtrando);
+      document.getElementById('limparBuscaDetalhe').classList.toggle('escondido', !f.busca);
+
+      // Com o bloco recolhido, o recorte ativo precisa aparecer na própria linha —
+      // senão o total some pela metade sem o usuário saber por quê.
+      const rotulo = document.getElementById('rotuloFiltroDetalhe');
+      const partes = [f.cat, f.conta, f.grupo, f.busca && `"${f.busca}"`].filter(Boolean);
+      rotulo.textContent = partes.length ? partes.join(' · ') : 'Buscar e filtrar';
+      rotulo.style.color = partes.length ? '#5f9933' : '#888';
+      rotulo.style.fontWeight = partes.length ? '600' : '400';
+
+      const lista = detalheAtual.lista.filter(l => {
+        if (f.cat && (l.categoria || 'Outros') !== f.cat) return false;
+        if (f.conta && l.conta !== f.conta) return false;
+        if (f.grupo && l.grupoViagemNome !== f.grupo) return false;
+        if (f.busca) {
+          const alvo = [l.descricao, l.observacao, l.categoria, l.conta, l.emprestimoPara]
+            .filter(Boolean).join(' ').toLowerCase();
+          if (!alvo.includes(f.busca)) return false;
+        }
+        return true;
+      });
+
+      // Fatura paga e transferências não têm categoria nem grupo — com um recorte
+      // ativo elas deixariam o total sem fechar com a lista. Só voltam quando o
+      // filtro sai.
+      const extras = filtrando ? '' : detalheAtual.extrasHTML;
+      boxSubFat.innerHTML = '';
+      boxSubFat.classList.add('escondido');
+
+      if (lista.length) {
+        const soma = lista.reduce((s, l) => s + parseVal(l.valor) * (l.tipo === 'receita' ? 1 : -1), 0);
+        const positivo = soma >= 0;
         boxSubFat.innerHTML = `
-          <div class="linha-subtotal" style="cursor:default;border-bottom:1px solid #333;padding-bottom:8px;margin-bottom:8px;">
-            <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${filtrados.length} lançamento${filtrados.length > 1 ? 's' : ''}</span>
-            <strong style="font-size:16px;color:${positivo ? '#4caf50' : '#ef5350'};">${positivo ? '+' : '−'}${fmtOculto(Math.abs(somaLista))}</strong>
-          </div>` + extrasBox;
+          <div class="linha-subtotal" style="cursor:default;${extras ? 'border-bottom:1px solid #333;padding-bottom:8px;margin-bottom:8px;' : ''}">
+            <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${lista.length} lançamento${lista.length > 1 ? 's' : ''}${filtrando ? ' de ' + detalheAtual.lista.length : ''}</span>
+            <strong style="font-size:16px;color:${positivo ? '#4caf50' : '#ef5350'};">${positivo ? '+' : '−'}${fmtOculto(Math.abs(soma))}</strong>
+          </div>` + extras;
+        boxSubFat.classList.remove('escondido');
+      } else if (extras) {
+        boxSubFat.innerHTML = extras;
         boxSubFat.classList.remove('escondido');
       }
 
       corpo.innerHTML = '';
-      if (filtrados.length === 0) {
-        corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum lançamento nesta categoria.</p>';
-      } else {
-        filtrados.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(item => {
-          const dataFmt = item.data.split('-').reverse().join('/');
-          const eReceita = item.tipo === 'receita';
-          const div = document.createElement('div');
-          div.className = 'item-lancamento';
-          div.onclick = () => abrirAcoesLancamento(item.id);
-          div.innerHTML = `
-            <div class="item-info">
-              <strong>${item.descricao}</strong>
-              <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}</div>
-              ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
-            </div>
-            <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
-          `;
-          corpo.appendChild(div);
-        });
+      if (lista.length === 0) {
+        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">${filtrando
+          ? 'Nada com esse recorte. Afrouxe o filtro.'
+          : 'Nenhum lançamento nesta categoria.'}</p>`;
+        return;
       }
 
-      modal.classList.remove('escondido');
+      lista.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(item => {
+        const dataFmt = item.data.split('-').reverse().join('/');
+        const eReceita = item.tipo === 'receita';
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.onclick = () => abrirAcoesLancamento(item.id);
+        div.innerHTML = `
+          <div class="item-info">
+            <strong>${item.descricao}</strong>
+            <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
+          </div>
+          <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
+        `;
+        corpo.appendChild(div);
+      });
     }
 
     function abrirFormFixo(id) {
@@ -7487,6 +7649,7 @@
       // Oculta filtro de período e chips de conta, mostra rodapé de ações do grupo
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
       document.getElementById('chipsContasConsulta').classList.add('escondido');
+      document.getElementById('filtroDetalhe').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.remove('escondido');
       const boxSub = document.getElementById('boxSubtotaisModal');
       boxSub.innerHTML = '';
@@ -8125,7 +8288,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.12-2';
+    const APP_VERSION = '2026.08.19-1';
 
     // Inicialização
     carregarLocalStorage();
