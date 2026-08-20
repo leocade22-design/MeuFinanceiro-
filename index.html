@@ -6101,7 +6101,8 @@
           chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado,
           vence: d.vence || l.emprestimoVence, rotulo: d.rotulo,
-          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || ''
+          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || '',
+          alinhadoEm: l.alinhadoEm || ''
         }));
       }
       if (l.emprestimoPara) {
@@ -6109,7 +6110,8 @@
           chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado,
           vence: l.emprestimoVence,
-          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || ''
+          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || '',
+          alinhadoEm: l.alinhadoEm || ''
         }];
       }
       return [];
@@ -6191,6 +6193,22 @@
       salvarLocalStorage();
     }
 
+    // Registra que você e a pessoa já conversaram sobre aquela cobrança. Não mexe
+    // no valor nem no prazo: só cala o "cobrado há X dias", que é um palpite do
+    // app sobre uma conversa que ele não viu.
+    function marcarAlinhado(nome, marcar) {
+      const hoje = obterDataBrasilia();
+      lancamentos.forEach(l => {
+        const ehDaPessoa = l.emprestimoPara === nome
+          || (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => d.nome === nome));
+        if (!ehDaPessoa) return;
+        if (marcar) l.alinhadoEm = hoje;
+        else delete l.alinhadoEm;
+      });
+      salvarLocalStorage();
+      renderizarEmprestimos();
+    }
+
     function renderizarEmprestimos() {
       const container = document.getElementById('listaEmprestimos');
       if (!container) return;
@@ -6232,7 +6250,11 @@
          não deu retorno em uma semana. */
       const DIAS_SEM_RETORNO = 7;
       const enrolando = c => (c.adiamentos || 0) >= 2;
-      const semRetorno = c => c.ultimaCobranca && !emAtraso(c)
+      // "Alinhei" é a resposta que o app não tem como ver: a conversa aconteceu
+      // fora dele. Vale só pra cobrança daquela vez — se você cobrar de novo
+      // depois, a marca fica pra trás e o contador volta a acusar.
+      const alinhado = c => c.alinhadoEm && c.ultimaCobranca && c.alinhadoEm >= c.ultimaCobranca;
+      const semRetorno = c => c.ultimaCobranca && !emAtraso(c) && !alinhado(c)
         && diasAte(c.ultimaCobranca) <= -DIAS_SEM_RETORNO;
       const suspeita = c => enrolando(c) || semRetorno(c);
       const adiadaUmaVez = c => (c.adiamentos || 0) === 1;
@@ -6283,6 +6305,10 @@
           if (maxAdiada > 0) legenda += ' · adiada ' + maxAdiada + 'x';
           const cobradaSemRetorno = lista.filter(semRetorno)[0];
           if (cobradaSemRetorno) legenda += ' · cobrado há ' + Math.abs(diasAte(cobradaSemRetorno.ultimaCobranca)) + ' dias';
+          // Alinhado não é vermelho, mas também não é silêncio: some a acusação e
+          // fica o registro, senão daqui a um mês você não lembra por que parou.
+          const jaAlinhada = lista.filter(alinhado)[0];
+          if (jaAlinhada) legenda += ' · alinhado em ' + jaAlinhada.alinhadoEm.split('-').reverse().join('/');
 
           const bloco = document.createElement('div');
           bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid #2a2a2a;';
@@ -6411,6 +6437,24 @@
                 : ['semana','dias','hoje'].includes(tom) ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
             btnZapCheio.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
             listaEl.appendChild(btnZapCheio);
+
+            /* JÁ ALINHEI
+               O app carimba a data quando você abre o WhatsApp, mas não enxerga a
+               resposta — ela acontece fora dele. Sem isso, quem respondeu "semana
+               que vem te pago" ficava marcado de caloteiro do mesmo jeito. O botão
+               só aparece quando há o que desmarcar (ou desfazer). */
+            const acusando = lista.some(semRetorno);
+            const marcada = lista.some(alinhado);
+            if (acusando || marcada) {
+              const btnAlinhei = document.createElement('button');
+              btnAlinhei.type = 'button';
+              btnAlinhei.className = 'btn-mini';
+              btnAlinhei.style.cssText = 'margin-top:8px;margin-left:6px;'
+                + (marcada ? 'color:#888;' : 'color:#5f9933;border-color:rgba(95,153,51,.35);');
+              btnAlinhei.textContent = marcada ? 'desfazer alinhamento' : '✋ já alinhei';
+              btnAlinhei.onclick = () => marcarAlinhado(nome, !marcada);
+              listaEl.appendChild(btnAlinhei);
+            }
 
             bloco.appendChild(listaEl);
           }
@@ -8288,7 +8332,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.19-1';
+    const APP_VERSION = '2026.08.20-1';
 
     // Inicialização
     carregarLocalStorage();
