@@ -2579,6 +2579,8 @@
           // um backup gerado antes da correção traz de volta as parcelas com o
           // mesmo prazo; por isso a correção roda de novo aqui, forçada
           corrigirVencimentosParcelasAntigas(true);
+          // backup antigo traz os carimbos no lançamento; aqui viram por pessoa
+          migrarCarimbosDeCobranca();
 
           salvarLocalStorage();
           salvarFixos();
@@ -6091,6 +6093,38 @@
     // (emprestimoPara) vira uma cobrança só, com o valor inteiro; rateio vira uma
     // cobrança por pessoa, cada uma com a sua cota. Os dois formatos convivem —
     // dado antigo continua sendo lido sem migração.
+    /* COBRANÇA É POR PESSOA, NÃO POR LANÇAMENTO
+       Uma compra rateada (o Airbnb dividido entre Borges, Maria e Dudu) é UM
+       lançamento com várias pessoas dentro. Guardar "cobrado em" e "alinhado em"
+       no lançamento fazia os três compartilharem o mesmo carimbo: cobrar o Borges
+       acusava a Maria junto, e alinhar com um limpava o aviso de todos.
+       Agora cada nome tem a sua data, nos mapas cobrancaPor / alinhadoPor. */
+    function cobrancaDe(l, nome) {
+      return {
+        ultima: (l.cobrancaPor && l.cobrancaPor[nome]) || '',
+        alinhado: (l.alinhadoPor && l.alinhadoPor[nome]) || ''
+      };
+    }
+
+    function carimbarPessoa(l, nome, campo, valor) {
+      const mapa = campo === 'alinhado' ? 'alinhadoPor' : 'cobrancaPor';
+      if (valor) {
+        l[mapa] = l[mapa] || {};
+        l[mapa][nome] = valor;
+      } else if (l[mapa]) {
+        delete l[mapa][nome];
+        if (!Object.keys(l[mapa]).length) delete l[mapa];
+      }
+    }
+
+    // Todo mundo que deve alguma coisa naquele lançamento.
+    function pessoasDoLancamento(l) {
+      if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.length) {
+        return [...new Set(l.emprestimoRateio.map(d => d.nome).filter(Boolean))];
+      }
+      return l.emprestimoPara ? [l.emprestimoPara] : [];
+    }
+
     function cobrancasDoLancamento(l) {
       // A direção sai do tipo do lançamento, sem campo novo: despesa marcada como
       // empréstimo é dinheiro que vão te devolver; receita marcada é dinheiro que
@@ -6101,8 +6135,9 @@
           chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado,
           vence: d.vence || l.emprestimoVence, rotulo: d.rotulo,
-          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || '',
-          alinhadoEm: l.alinhadoEm || ''
+          adiamentos: l.adiamentos || 0,
+          ultimaCobranca: cobrancaDe(l, d.nome).ultima,
+          alinhadoEm: cobrancaDe(l, d.nome).alinhado
         }));
       }
       if (l.emprestimoPara) {
@@ -6110,8 +6145,9 @@
           chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado,
           vence: l.emprestimoVence,
-          adiamentos: l.adiamentos || 0, ultimaCobranca: l.ultimaCobranca || '',
-          alinhadoEm: l.alinhadoEm || ''
+          adiamentos: l.adiamentos || 0,
+          ultimaCobranca: cobrancaDe(l, l.emprestimoPara).ultima,
+          alinhadoEm: cobrancaDe(l, l.emprestimoPara).alinhado
         }];
       }
       return [];
@@ -6187,8 +6223,11 @@
     function registrarCobranca(nome) {
       const hoje = obterDataBrasilia();
       lancamentos.forEach(l => {
-        if (l.emprestimoPara === nome) l.ultimaCobranca = hoje;
-        if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => d.nome === nome)) l.ultimaCobranca = hoje;
+        if (!pessoasDoLancamento(l).includes(nome)) return;
+        carimbarPessoa(l, nome, 'cobranca', hoje);
+        // Cobrança nova apaga o alinhamento antigo daquela pessoa: você voltou a
+        // cobrar, então a conversa anterior não vale mais como resposta.
+        carimbarPessoa(l, nome, 'alinhado', '');
       });
       salvarLocalStorage();
     }
@@ -6199,11 +6238,8 @@
     function marcarAlinhado(nome, marcar) {
       const hoje = obterDataBrasilia();
       lancamentos.forEach(l => {
-        const ehDaPessoa = l.emprestimoPara === nome
-          || (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => d.nome === nome));
-        if (!ehDaPessoa) return;
-        if (marcar) l.alinhadoEm = hoje;
-        else delete l.alinhadoEm;
+        if (!pessoasDoLancamento(l).includes(nome)) return;
+        carimbarPessoa(l, nome, 'alinhado', marcar ? hoje : '');
       });
       salvarLocalStorage();
       renderizarEmprestimos();
@@ -7430,6 +7466,34 @@
       if (corrigidas > 0) salvarLocalStorage();
     }
 
+    /* MIGRAÇÃO: CARIMBO DO LANÇAMENTO -> CARIMBO POR PESSOA
+       Os campos antigos ultimaCobranca / alinhadoEm ficavam no lançamento inteiro.
+       Numa compra rateada isso valia pra todo mundo de uma vez. Aqui a data velha
+       é copiada pra cada pessoa daquele lançamento — preserva o que está na tela
+       hoje e, a partir de agora, cada nome anda sozinho.
+
+       Copiar pra todos é o único caminho honesto: o dado antigo não guardava QUEM
+       foi cobrado, então inventar um nome seria pior do que manter o que se vê. */
+    function migrarCarimbosDeCobranca() {
+      let mexeu = false;
+      lancamentos.forEach(l => {
+        const temVelho = l.ultimaCobranca || l.alinhadoEm;
+        if (!temVelho) return;
+        pessoasDoLancamento(l).forEach(nome => {
+          if (l.ultimaCobranca && !(l.cobrancaPor && l.cobrancaPor[nome])) {
+            carimbarPessoa(l, nome, 'cobranca', l.ultimaCobranca);
+          }
+          if (l.alinhadoEm && !(l.alinhadoPor && l.alinhadoPor[nome])) {
+            carimbarPessoa(l, nome, 'alinhado', l.alinhadoEm);
+          }
+        });
+        delete l.ultimaCobranca;
+        delete l.alinhadoEm;
+        mexeu = true;
+      });
+      if (mexeu) salvarLocalStorage();
+    }
+
     // Data-limite pra pessoa te reembolsar naquele mês ("eles têm até o dia 10")
     function venceEmprestimoFixo(f, chaveMes) {
       if (!f.emprestimoPara) return '';
@@ -8332,12 +8396,13 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.20-1';
+    const APP_VERSION = '2026.08.20-2';
 
     // Inicialização
     carregarLocalStorage();
     ultimoIdLancamento = lancamentos.reduce((m, l) => (typeof l.id === 'number' && l.id > m ? l.id : m), 0);
     corrigirVencimentosParcelasAntigas();
+    migrarCarimbosDeCobranca();
     carregarFixos();
     carregarInvest();
     carregarGrupos();
