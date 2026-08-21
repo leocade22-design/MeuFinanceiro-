@@ -367,10 +367,11 @@
             </div>
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
-              <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
+              <select id="formaModo" name="formaModo" onchange="formaAutoAplicada = false; verificarParcelamento(this.value)">
                 <option value="Crédito à Vista">Crédito</option>
                 <option value="Crédito Parcelado">Crédito parcelado</option>
                 <option value="À Vista / Débito">Débito</option>
+                <option value="Pix">Pix</option>
                 <option value="Dinheiro">Dinheiro</option>
               </select>
             </div>
@@ -1053,6 +1054,20 @@
           </div>
         </div>
         <p style="font-size:11px;color:#777;margin-bottom:10px;">Compra feita depois do fechamento cai na fatura do mês seguinte. Cada cartão tem os seus dias.</p>
+        <!-- Cada conta costuma ter um jeito só de pagar: no PicPay é Pix, no Itaú é
+             crédito. Guardando isso aqui, o formulário já vem preenchido e some um
+             toque de cada lançamento. -->
+        <div class="form-group">
+          <label for="contaFormaPadrao">Forma que você mais usa nesta conta</label>
+          <select id="contaFormaPadrao">
+            <option value="">Sem padrão — eu escolho na hora</option>
+            <option value="Crédito à Vista">Crédito</option>
+            <option value="Crédito Parcelado">Crédito parcelado</option>
+            <option value="À Vista / Débito">Débito</option>
+            <option value="Pix">Pix</option>
+            <option value="Dinheiro">Dinheiro</option>
+          </select>
+        </div>
         <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
         <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
       </div>
@@ -2114,8 +2129,14 @@
       const dias = diasDoCartao(c.nome);
       document.getElementById('contaDiaFechamento').value = String(dias.fecha);
       document.getElementById('contaDiaVencimento').value = String(dias.vence);
+      document.getElementById('contaFormaPadrao').value = c.formaPadrao || '';
       document.getElementById('tituloFormConta').textContent = 'Editar conta';
       document.getElementById('btnCancelarConta').classList.remove('escondido');
+      /* O formulário fica DEPOIS da lista de contas, dentro de um modal que rola
+         por conta própria. Com várias contas cadastradas ele nasce abaixo da
+         dobra: os campos eram preenchidos, mas fora da vista — e parecia que
+         tocar em "editar" não fazia nada. */
+      document.getElementById('tituloFormConta').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function cancelarEdicaoConta() {
@@ -2125,6 +2146,7 @@
       atualizarCamposCartao();
       document.getElementById('contaDiaFechamento').value = String(DIA_FECHAMENTO_CARTAO);
       document.getElementById('contaDiaVencimento').value = String(DIA_VENCIMENTO_CARTAO);
+      document.getElementById('contaFormaPadrao').value = '';
       document.getElementById('tituloFormConta').textContent = 'Adicionar nova conta';
       document.getElementById('btnCancelarConta').classList.add('escondido');
     }
@@ -2144,12 +2166,27 @@
         }
       }
       box.classList.toggle('escondido', !temCredito);
+
+      // Mesma régua do formulário de lançamento: conta sem cartão não oferece
+      // crédito como padrão. Se já estava escolhido, cai pro vazio em vez de
+      // ficar num valor que o lançamento vai recusar depois.
+      const selPadrao = document.getElementById('contaFormaPadrao');
+      if (selPadrao) {
+        Array.from(selPadrao.options).forEach(o => {
+          o.hidden = !temCredito && eCredito(o.value);
+        });
+        if (!temCredito && eCredito(selPadrao.value)) selPadrao.value = '';
+      }
     }
 
     function salvarConta() {
       const nome = document.getElementById('nomeConta').value.trim();
       if (!nome) { avisar('semNome', 'Digite o nome da conta.'); return; }
       const temCredito = document.getElementById('contaTemCreditoChk').checked;
+      // Conta sem cartão não guarda crédito como padrão, nem que o select tenha
+      // ficado com um valor velho de uma edição anterior.
+      const escolhida = document.getElementById('contaFormaPadrao').value;
+      const formaPadrao = (!temCredito && eCredito(escolhida)) ? '' : escolhida;
       const idEdit = document.getElementById('idContaEditando').value;
       const duplicada = contas.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== idEdit);
       if (duplicada) { avisar('duplicado', 'Já existe uma conta com esse nome.'); return; }
@@ -2173,9 +2210,10 @@
         c.temCredito = temCredito;
         c.diaFechamento = temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null;
         c.diaVencimento = temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null;
+        c.formaPadrao = formaPadrao;
       } else {
         contas.push({
-          id: 'c' + Date.now(), nome, temCredito,
+          id: 'c' + Date.now(), nome, temCredito, formaPadrao,
           diaFechamento: temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null,
           diaVencimento: temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null
         });
@@ -3486,6 +3524,11 @@
       else g.classList.add('escondido');
     }
 
+    let ultimaContaDoForm = null;
+    // Marca se a forma que está no campo foi o app quem pôs (padrão da conta) ou
+    // você. O que você escolhe na mão nunca é trocado sozinho.
+    let formaAutoAplicada = false;
+
     function atualizarVisibilidadeForma() {
       const conta = document.getElementById('conta').value;
       const gF = document.getElementById('grupoFormaModo');
@@ -3507,6 +3550,27 @@
         o.hidden = !temCredito && eCredito(o.value);
       });
       if (!temCredito && eCredito(sel.value)) sel.value = 'À Vista / Débito';
+
+      /* FORMA PADRÃO DA CONTA
+         Só entra quando a conta muda de verdade. Sem essa trava, qualquer
+         chamada da função (salvar uma conta, voltar pra aba) desfaria a forma
+         que você acabou de escolher na mão. */
+      if (conta !== ultimaContaDoForm) {
+        const c = contas.find(x => x.nome === conta);
+        const padrao = c && c.formaPadrao;
+        const opt = padrao && Array.from(sel.options).find(o => o.value === padrao);
+        if (opt && !opt.hidden) {
+          sel.value = padrao;
+          formaAutoAplicada = true;
+        } else if (formaAutoAplicada) {
+          // A conta nova não tem padrão. Deixar o padrão da conta ANTERIOR ali
+          // grudado faria você lançar no Itaú com a forma do PicPay sem notar.
+          sel.value = 'À Vista / Débito';
+          formaAutoAplicada = false;
+        }
+      }
+      ultimaContaDoForm = conta;
+
       verificarParcelamento(sel.value);
     }
 
@@ -3866,14 +3930,36 @@
       executarSalvarLancamento(valorTotal);
     }
 
+    // Um lançamento antigo pode estar numa forma que hoje está escondida — crédito
+    // numa conta que perdeu o cartão, por exemplo. Ao editar, a opção volta a
+    // aparecer, senão o campo mostraria uma coisa e gravaria outra.
+    function garantirOpcaoForma(forma) {
+      const opt = Array.from(document.getElementById('formaModo').options)
+        .find(o => o.value === forma);
+      if (opt) opt.hidden = false;
+    }
+
+    /* QUAL FORMA VAI SER GRAVADA
+       Antes isto era `contaTemCredito(conta) ? select.value : 'À Vista / Débito'`,
+       herdado de quando o seletor sumia inteiro em conta sem cartão. Depois que
+       ele passou a ficar visível (só perdendo as opções de crédito), a trava
+       virou bug: escolher Dinheiro numa conta sem cartão gravava Débito. Com o
+       Pix na lista o estrago seria o mesmo. Agora só o crédito é barrado, que é
+       a única forma que de fato exige cartão. */
+    function formaEscolhida(conta) {
+      if (tipoAtual !== 'despesa') return 'À Vista / Débito';
+      const escolhida = document.getElementById('formaModo').value;
+      if (!contaTemCredito(conta) && eCredito(escolhida)) return 'À Vista / Débito';
+      return escolhida || 'À Vista / Débito';
+    }
+
     // Prévia de confirmação — só pra lançamento NOVO (edição já passou pela revisão do form)
     function abrirConfirmacaoLancamento(valorTotal) {
       const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
       const conta = document.getElementById('conta').value;
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
-      const temCredito = tipoAtual === 'despesa' && contaTemCredito(conta);
-      const formaModo = temCredito ? document.getElementById('formaModo').value : 'À Vista / Débito';
-      const numParcelas = (temCredito && formaModo === 'Crédito Parcelado') ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
+      const formaModo = formaEscolhida(conta);
+      const numParcelas = formaModo === 'Crédito Parcelado' ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
 
       const elTipo = document.getElementById('confirmLancTipo');
       elTipo.textContent = tipoAtual === 'receita' ? 'Receita' : 'Despesa';
@@ -3882,7 +3968,11 @@
       document.getElementById('confirmLancValor').textContent = numParcelas > 1
         ? numParcelas + 'x de R$ ' + (valorTotal / numParcelas).toFixed(2).replace('.', ',') + ' (total R$ ' + valorTotal.toFixed(2).replace('.', ',') + ')'
         : 'R$ ' + valorTotal.toFixed(2).replace('.', ',');
-      document.getElementById('confirmLancDetalhe').textContent = conta + (categoria ? ' • ' + categoria : '') + (temCredito ? ' • ' + formaModo : '');
+      // a forma aparece sempre: com Pix e Dinheiro na lista, escondê-la em conta
+      // sem cartão deixava a prévia sem a informação que mais muda de lançamento
+      document.getElementById('confirmLancDetalhe').textContent = conta
+        + (categoria ? ' • ' + categoria : '')
+        + (tipoAtual === 'despesa' ? ' • ' + formaModo : '');
 
       document.getElementById('modalConfirmarLancamento').classList.remove('escondido');
     }
@@ -3897,8 +3987,8 @@
       const idEditando = document.getElementById('idEditando').value;
       const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
       const conta = document.getElementById('conta').value;
-      const formaModo = (tipoAtual === 'despesa' && contaTemCredito(conta)) ? document.getElementById('formaModo').value : 'À Vista / Débito';
-      const numParcelas = (tipoAtual === 'despesa' && formaModo === 'Crédito Parcelado') ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
+      const formaModo = formaEscolhida(conta);
+      const numParcelas = formaModo === 'Crédito Parcelado' ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
       const observacao = document.getElementById('observacao').value.trim();
       const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
@@ -4081,17 +4171,19 @@
 
       if (item.tipo === 'despesa') {
         atualizarVisibilidadeForma();
-        if (contaTemCredito(item.conta)) {
-          // Compra antiga lançada como "Crédito Parcelado" em 1x era o jeito de
-          // registrar crédito à vista antes dessa opção existir: mostra ela pelo que
-          // realmente é. O comportamento na fatura já era (e continua) o mesmo.
-          const forma = (item.formaModo === 'Crédito Parcelado' && !item.grupoId && String(item.numParcelas || '1') === '1')
-            ? 'Crédito à Vista'
-            : (item.formaModo || 'À Vista / Débito');
-          document.getElementById('formaModo').value = forma;
-          verificarParcelamento(forma);
-          document.getElementById('numParcelas').value = item.numParcelas || '1';
-        }
+        // Compra antiga lançada como "Crédito Parcelado" em 1x era o jeito de
+        // registrar crédito à vista antes dessa opção existir: mostra ela pelo que
+        // realmente é. O comportamento na fatura já era (e continua) o mesmo.
+        const forma = (item.formaModo === 'Crédito Parcelado' && !item.grupoId && String(item.numParcelas || '1') === '1')
+          ? 'Crédito à Vista'
+          : (item.formaModo || 'À Vista / Débito');
+        // Restaura sempre, inclusive em conta sem cartão: senão editar um Pix ou
+        // um Dinheiro trocava a forma sozinho pela padrão da conta.
+        garantirOpcaoForma(forma);
+        document.getElementById('formaModo').value = forma;
+        formaAutoAplicada = false;   // veio do lançamento salvo, não do padrão da conta
+        verificarParcelamento(forma);
+        document.getElementById('numParcelas').value = item.numParcelas || '1';
         const selCat = document.getElementById('categoria');
         garantirOpcaoCategoria(selCat, item.categoria);
         selCat.value = item.categoria || categoriaPadrao();
@@ -4117,6 +4209,9 @@
 
     function cancelarEdicao() {
       document.getElementById('idEditando').value = '';
+      // Form limpo é lançamento novo: a forma padrão da conta pode valer de novo.
+      ultimaContaDoForm = null;
+      formaAutoAplicada = false;
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
@@ -8396,7 +8491,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.20-2';
+    const APP_VERSION = '2026.08.21-1';
 
     // Inicialização
     carregarLocalStorage();
