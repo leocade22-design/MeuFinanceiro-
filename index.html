@@ -367,7 +367,7 @@
             </div>
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
-              <select id="formaModo" name="formaModo" onchange="formaAutoAplicada = false; verificarParcelamento(this.value)">
+              <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
                 <option value="Crédito à Vista">Crédito</option>
                 <option value="Crédito Parcelado">Crédito parcelado</option>
                 <option value="À Vista / Débito">Débito</option>
@@ -1054,19 +1054,16 @@
           </div>
         </div>
         <p style="font-size:11px;color:#777;margin-bottom:10px;">Compra feita depois do fechamento cai na fatura do mês seguinte. Cada cartão tem os seus dias.</p>
-        <!-- Cada conta costuma ter um jeito só de pagar: no PicPay é Pix, no Itaú é
-             crédito. Guardando isso aqui, o formulário já vem preenchido e some um
-             toque de cada lançamento. -->
+        <!-- Cada conta aceita um punhado de formas, não todas: no Ticket não existe
+             Pix nem crédito; no PicPay você não passa débito. Marcando só o que
+             vale, o seletor do lançamento encurta pro que faz sentido — e quando
+             sobra uma só, ela já vem escolhida. -->
         <div class="form-group">
-          <label for="contaFormaPadrao">Forma que você mais usa nesta conta</label>
-          <select id="contaFormaPadrao">
-            <option value="">Sem padrão — eu escolho na hora</option>
-            <option value="Crédito à Vista">Crédito</option>
-            <option value="Crédito Parcelado">Crédito parcelado</option>
-            <option value="À Vista / Débito">Débito</option>
-            <option value="Pix">Pix</option>
-            <option value="Dinheiro">Dinheiro</option>
-          </select>
+          <label style="display:block;margin-bottom:6px;">Formas que esta conta aceita</label>
+          <div id="contaFormasBox"></div>
+          <p style="font-size:11px;color:#777;margin-top:6px;line-height:1.45;">
+            Sem marcar nada, aparecem todas. Marcando uma só, ela já vem preenchida no lançamento.
+          </p>
         </div>
         <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarConta()">Salvar conta</button>
         <button type="button" id="btnCancelarConta" class="btn-cancelar escondido" onclick="cancelarEdicaoConta()">Cancelar edição</button>
@@ -2129,7 +2126,8 @@
       const dias = diasDoCartao(c.nome);
       document.getElementById('contaDiaFechamento').value = String(dias.fecha);
       document.getElementById('contaDiaVencimento').value = String(dias.vence);
-      document.getElementById('contaFormaPadrao').value = c.formaPadrao || '';
+      montarChecksFormasConta(c.formasAceitas || []);
+      atualizarCamposCartao();
       document.getElementById('tituloFormConta').textContent = 'Editar conta';
       document.getElementById('btnCancelarConta').classList.remove('escondido');
       /* O formulário fica DEPOIS da lista de contas, dentro de um modal que rola
@@ -2143,12 +2141,54 @@
       document.getElementById('idContaEditando').value = '';
       document.getElementById('nomeConta').value = '';
       document.getElementById('contaTemCreditoChk').checked = false;
+      // os checks nascem antes: atualizarCamposCartao esconde os de crédito
+      montarChecksFormasConta([]);
       atualizarCamposCartao();
       document.getElementById('contaDiaFechamento').value = String(DIA_FECHAMENTO_CARTAO);
       document.getElementById('contaDiaVencimento').value = String(DIA_VENCIMENTO_CARTAO);
-      document.getElementById('contaFormaPadrao').value = '';
       document.getElementById('tituloFormConta').textContent = 'Adicionar nova conta';
       document.getElementById('btnCancelarConta').classList.add('escondido');
+    }
+
+    /* FORMAS QUE UMA CONTA ACEITA
+       Antes era um padrão único ("a forma que você mais usa"). Virou lista: cada
+       conta marca o que aceita, e o seletor do lançamento mostra só isso. Lista
+       vazia = todas, que é o comportamento de sempre pra quem nunca mexeu. */
+    const FORMAS_PAGAMENTO = [
+      { valor: 'Crédito à Vista',   rotulo: 'Crédito' },
+      { valor: 'Crédito Parcelado', rotulo: 'Crédito parcelado' },
+      { valor: 'À Vista / Débito',  rotulo: 'Débito' },
+      { valor: 'Pix',               rotulo: 'Pix' },
+      { valor: 'Dinheiro',          rotulo: 'Dinheiro' }
+    ];
+
+    function montarChecksFormasConta(marcadas) {
+      const box = document.getElementById('contaFormasBox');
+      if (!box) return;
+      const sel = new Set(marcadas || []);
+      box.innerHTML = FORMAS_PAGAMENTO.map(f => `
+        <label class="check-credito" style="margin-bottom:8px;">
+          <input type="checkbox" class="chk-forma-conta" value="${f.valor}"${sel.has(f.valor) ? ' checked' : ''}
+                 onchange="atualizarCamposCartao()"> ${f.rotulo}
+        </label>`).join('');
+    }
+
+    function formasMarcadasNoForm() {
+      return Array.from(document.querySelectorAll('.chk-forma-conta'))
+        .filter(c => c.checked && !c.closest('label').classList.contains('escondido'))
+        .map(c => c.value);
+    }
+
+    // O que a conta aceita, já resolvido: lista vazia (ou conta antiga sem o campo)
+    // significa "todas". Crédito só entra se a conta tiver cartão.
+    function formasDaConta(nomeConta) {
+      const c = contas.find(x => x.nome === nomeConta);
+      const temCredito = contaTemCredito(nomeConta);
+      let lista = (c && Array.isArray(c.formasAceitas) && c.formasAceitas.length)
+        ? c.formasAceitas.slice()
+        : FORMAS_PAGAMENTO.map(f => f.valor);
+      if (!temCredito) lista = lista.filter(v => !eCredito(v));
+      return lista.length ? lista : ['À Vista / Débito'];
     }
 
     function atualizarCamposCartao() {
@@ -2168,25 +2208,22 @@
       box.classList.toggle('escondido', !temCredito);
 
       // Mesma régua do formulário de lançamento: conta sem cartão não oferece
-      // crédito como padrão. Se já estava escolhido, cai pro vazio em vez de
-      // ficar num valor que o lançamento vai recusar depois.
-      const selPadrao = document.getElementById('contaFormaPadrao');
-      if (selPadrao) {
-        Array.from(selPadrao.options).forEach(o => {
-          o.hidden = !temCredito && eCredito(o.value);
-        });
-        if (!temCredito && eCredito(selPadrao.value)) selPadrao.value = '';
-      }
+      // crédito. O check some da lista em vez de ficar marcável — e desmarca, pra
+      // não gravar uma forma que o lançamento vai recusar depois.
+      document.querySelectorAll('.chk-forma-conta').forEach(chk => {
+        const bloquear = !temCredito && eCredito(chk.value);
+        chk.closest('label').classList.toggle('escondido', bloquear);
+        if (bloquear) chk.checked = false;
+      });
     }
 
     function salvarConta() {
       const nome = document.getElementById('nomeConta').value.trim();
       if (!nome) { avisar('semNome', 'Digite o nome da conta.'); return; }
       const temCredito = document.getElementById('contaTemCreditoChk').checked;
-      // Conta sem cartão não guarda crédito como padrão, nem que o select tenha
-      // ficado com um valor velho de uma edição anterior.
-      const escolhida = document.getElementById('contaFormaPadrao').value;
-      const formaPadrao = (!temCredito && eCredito(escolhida)) ? '' : escolhida;
+      // Conta sem cartão não guarda crédito, nem que os checks tenham ficado
+      // marcados de uma edição anterior.
+      const formasAceitas = formasMarcadasNoForm().filter(v => temCredito || !eCredito(v));
       const idEdit = document.getElementById('idContaEditando').value;
       const duplicada = contas.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== idEdit);
       if (duplicada) { avisar('duplicado', 'Já existe uma conta com esse nome.'); return; }
@@ -2210,10 +2247,10 @@
         c.temCredito = temCredito;
         c.diaFechamento = temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null;
         c.diaVencimento = temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null;
-        c.formaPadrao = formaPadrao;
+        c.formasAceitas = formasAceitas;
       } else {
         contas.push({
-          id: 'c' + Date.now(), nome, temCredito, formaPadrao,
+          id: 'c' + Date.now(), nome, temCredito, formasAceitas,
           diaFechamento: temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null,
           diaVencimento: temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null
         });
@@ -2619,6 +2656,7 @@
           corrigirVencimentosParcelasAntigas(true);
           // backup antigo traz os carimbos no lançamento; aqui viram por pessoa
           migrarCarimbosDeCobranca();
+          migrarFormaPadraoDasContas();
 
           salvarLocalStorage();
           salvarFixos();
@@ -3524,17 +3562,11 @@
       else g.classList.add('escondido');
     }
 
-    let ultimaContaDoForm = null;
-    // Marca se a forma que está no campo foi o app quem pôs (padrão da conta) ou
-    // você. O que você escolhe na mão nunca é trocado sozinho.
-    let formaAutoAplicada = false;
-
     function atualizarVisibilidadeForma() {
       const conta = document.getElementById('conta').value;
       const gF = document.getElementById('grupoFormaModo');
       const gP = document.getElementById('grupoParcelas');
       const sel = document.getElementById('formaModo');
-      const temCredito = contaTemCredito(conta);
 
       if (tipoAtual !== 'despesa') {
         gF.classList.add('escondido');
@@ -3543,33 +3575,22 @@
         return;
       }
 
-      // Conta sem crédito ainda precisa escolher entre débito e dinheiro — por isso
-      // o seletor não some mais, só perde as opções de crédito.
       gF.classList.remove('escondido');
-      Array.from(sel.options).forEach(o => {
-        o.hidden = !temCredito && eCredito(o.value);
-      });
-      if (!temCredito && eCredito(sel.value)) sel.value = 'À Vista / Débito';
 
-      /* FORMA PADRÃO DA CONTA
-         Só entra quando a conta muda de verdade. Sem essa trava, qualquer
-         chamada da função (salvar uma conta, voltar pra aba) desfaria a forma
-         que você acabou de escolher na mão. */
-      if (conta !== ultimaContaDoForm) {
-        const c = contas.find(x => x.nome === conta);
-        const padrao = c && c.formaPadrao;
-        const opt = padrao && Array.from(sel.options).find(o => o.value === padrao);
-        if (opt && !opt.hidden) {
-          sel.value = padrao;
-          formaAutoAplicada = true;
-        } else if (formaAutoAplicada) {
-          // A conta nova não tem padrão. Deixar o padrão da conta ANTERIOR ali
-          // grudado faria você lançar no Itaú com a forma do PicPay sem notar.
-          sel.value = 'À Vista / Débito';
-          formaAutoAplicada = false;
-        }
+      /* SÓ AS FORMAS QUE A CONTA ACEITA
+         A conta diz o que aceita; o resto some da lista. Conta que nunca foi
+         configurada aceita tudo, então nada muda pra quem não mexeu. */
+      const permitidas = formasDaConta(conta);
+      Array.from(sel.options).forEach(o => {
+        o.hidden = !permitidas.includes(o.value);
+      });
+
+      /* O que você escolheu na mão só é trocado se a conta nova não aceitar aquela
+         forma. Com uma forma só na lista, ela vira a resposta automática — não há
+         o que escolher. */
+      if (!permitidas.includes(sel.value)) {
+        sel.value = permitidas.includes('À Vista / Débito') ? 'À Vista / Débito' : permitidas[0];
       }
-      ultimaContaDoForm = conta;
 
       verificarParcelamento(sel.value);
     }
@@ -3949,8 +3970,9 @@
     function formaEscolhida(conta) {
       if (tipoAtual !== 'despesa') return 'À Vista / Débito';
       const escolhida = document.getElementById('formaModo').value;
-      if (!contaTemCredito(conta) && eCredito(escolhida)) return 'À Vista / Débito';
-      return escolhida || 'À Vista / Débito';
+      const permitidas = formasDaConta(conta);
+      if (!escolhida || !permitidas.includes(escolhida)) return permitidas[0];
+      return escolhida;
     }
 
     // Prévia de confirmação — só pra lançamento NOVO (edição já passou pela revisão do form)
@@ -4181,7 +4203,6 @@
         // um Dinheiro trocava a forma sozinho pela padrão da conta.
         garantirOpcaoForma(forma);
         document.getElementById('formaModo').value = forma;
-        formaAutoAplicada = false;   // veio do lançamento salvo, não do padrão da conta
         verificarParcelamento(forma);
         document.getElementById('numParcelas').value = item.numParcelas || '1';
         const selCat = document.getElementById('categoria');
@@ -4209,9 +4230,6 @@
 
     function cancelarEdicao() {
       document.getElementById('idEditando').value = '';
-      // Form limpo é lançamento novo: a forma padrão da conta pode valer de novo.
-      ultimaContaDoForm = null;
-      formaAutoAplicada = false;
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
@@ -7589,6 +7607,21 @@
       if (mexeu) salvarLocalStorage();
     }
 
+    /* MIGRAÇÃO: PADRÃO ÚNICO -> LISTA DE FORMAS ACEITAS
+       A versão anterior guardava uma forma só por conta (formaPadrao). Quem já
+       tinha escolhido "Pix" no PicPay vira uma lista com Pix dentro: continua
+       vindo preenchido, e agora dá pra marcar mais de uma. */
+    function migrarFormaPadraoDasContas() {
+      let mexeu = false;
+      contas.forEach(c => {
+        if (!('formaPadrao' in c)) return;
+        if (c.formaPadrao && !Array.isArray(c.formasAceitas)) c.formasAceitas = [c.formaPadrao];
+        delete c.formaPadrao;
+        mexeu = true;
+      });
+      if (mexeu) salvarContas();
+    }
+
     // Data-limite pra pessoa te reembolsar naquele mês ("eles têm até o dia 10")
     function venceEmprestimoFixo(f, chaveMes) {
       if (!f.emprestimoPara) return '';
@@ -8491,7 +8524,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.21-1';
+    const APP_VERSION = '2026.08.21-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -8507,6 +8540,7 @@ function confirmarLancamentoVoz() {
     carregarOrcamentos();
     carregarFaturasPagas();
     carregarContas();
+    migrarFormaPadraoDasContas();   // depois de carregarContas: antes o array está vazio
     popularSelectsContas();
     carregarCategorias();
     popularSelectsCategorias();
