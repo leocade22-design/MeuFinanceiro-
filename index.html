@@ -411,6 +411,7 @@
           <div class="row-botoes-form">
             <button type="submit" id="btnSubmit" class="btn-salvar">Salvar</button>
             <button type="button" id="btnMic" class="btn-mic" onclick="iniciarReconhecimentoVoz()" title="Lançar por voz" aria-label="Lançar por voz"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+            <button type="button" id="btnNota" class="btn-mic" onclick="abrirLeitorNota()" title="Ler o QR da nota fiscal" aria-label="Ler o QR da nota fiscal" style="background:#5f9933;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17.5" y1="14" x2="17.5" y2="14"/><line x1="21" y1="14" x2="21" y2="18"/><line x1="14" y1="21" x2="18" y2="21"/><line x1="21" y1="21" x2="21" y2="21"/></svg></button>
           </div>
           <button type="button" id="btnCancelarEdit" class="btn-cancelar escondido" onclick="cancelarEdicao()">Cancelar Edição</button>
         </form>
@@ -900,6 +901,26 @@
           <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- LEITOR DO QR DA NOTA FISCAL -->
+  <div id="modalNota" class="modal-overlay escondido" onclick="if(event.target===this) fecharLeitorNota()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>QR da nota fiscal</h3>
+        <button class="btn-fechar" onclick="fecharLeitorNota()">&times;</button>
+      </div>
+      <p style="font-size:12px;color:#aaa;line-height:1.5;margin-bottom:10px;">
+        Aponta pro QR code impresso no cupom. É o quadradinho perto do rodapé, do lado do "Consulte pela chave de acesso".
+      </p>
+      <div id="molduraNota" style="position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1/1;">
+        <video id="videoNota" playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>
+        <div style="position:absolute;inset:14%;border:2px solid rgba(95,153,51,.9);border-radius:10px;pointer-events:none;"></div>
+      </div>
+      <p id="statusNota" style="font-size:12px;color:#888;margin-top:10px;text-align:center;min-height:1.2em;"></p>
+      <input type="file" id="fotoNota" class="escondido" accept="image/*" capture="environment" aria-label="Foto do QR da nota" onchange="lerNotaDaFoto(event)">
+      <button type="button" class="btn-cancelar" style="margin-top:10px;" onclick="document.getElementById('fotoNota').click()">Tirar foto do QR</button>
     </div>
   </div>
 
@@ -3174,6 +3195,13 @@
         'Esse arquivo aí não é backup coisa nenhuma.',
         'Não consegui ler esse arquivo.'
       ] },
+      notaLida: { emoji: '🧾', detalhe: '', frases: [
+        'Nota lida!'
+      ] },
+      notaRepetida: { emoji: '🔁', detalhe: '', frases: [
+        'Essa nota você já lançou.',
+        'Calma, essa aí já está na conta.'
+      ] },
       backupSalvo: { emoji: '💾', detalhe: 'O arquivo foi gravado na pasta que você escolheu.', frases: [
         'Backup salvo onde você mandou.',
         'Guardado. Agora é só não perder a pasta.'
@@ -4151,8 +4179,13 @@
           grupoViagemId, grupoViagemNome,
           emprestimoPara, emprestimoVence, rateioIncluiVoce,
           emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal, parcelasDivida, emprestimoVence),
-          emprestimoQuitado: false
+          emprestimoQuitado: false,
+          // guardados só quando o lançamento nasceu de um QR: a chave impede
+          // lançar a mesma nota duas vezes, e o CNPJ dá nome à loja na próxima
+          chaveNota: notaEmLancamento ? notaEmLancamento.chave : undefined,
+          cnpjNota: notaEmLancamento ? notaEmLancamento.cnpj : undefined
         });
+        notaEmLancamento = null;
       }
 
       salvarLocalStorage();
@@ -4242,6 +4275,7 @@
 
     function cancelarEdicao() {
       document.getElementById('idEditando').value = '';
+      notaEmLancamento = null;
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
       atualizarLinkObs();
@@ -5326,6 +5360,253 @@
         ? resposta
         : 'Não peguei essa. Toca numa das sugestões aí em cima — ou pergunta por uma categoria, loja ou conta ("quanto gastei no mercado em julho").';
       respEl.style.color = resposta ? '#ddd' : '#aaa';
+    }
+
+    /* ============ QR DA NOTA FISCAL (NFC-e) ============
+
+       O que dá e o que não dá:
+
+       O QR do cupom não carrega a lista de compras — isso mora no site da
+       SEFAZ, e um site não consegue ler outro site (o navegador bloqueia). O
+       que vem no próprio QR é a CHAVE DE ACESSO, 44 dígitos que trazem embutidos
+       o mês/ano e o CNPJ da loja. E, quando o QR é da versão 1, vem também o
+       valor total da nota.
+
+       Então:
+       · QR versão 1 -> valor e data preenchidos sozinhos;
+       · QR versão 2 -> só data e loja; o valor você digita.
+       Nos dois casos, se você já lançou algo naquele CNPJ antes, ele repete a
+       descrição, a categoria e a conta daquela vez.
+
+       A chave, dígito a dígito:
+         0-1   cUF        estado
+         2-5   AAMM       ano e mês da emissão
+         6-19  CNPJ       da loja
+         20-21 modelo     55 = NF-e, 65 = NFC-e
+         22-24 série · 25-33 número · 34 tpEmis · 35-42 código · 43 dígito */
+
+    function digitosDaChave(txt) {
+      const m = String(txt || '').match(/\d{44}/);
+      return m ? m[0] : null;
+    }
+
+    // Dígito verificador da chave (módulo 11, pesos 2 a 9). É o que separa uma
+    // chave de verdade de 44 dígitos quaisquer que caíram na leitura.
+    function chaveValida(chave) {
+      if (!chave || chave.length !== 44) return false;
+      let soma = 0, peso = 2;
+      for (let i = 42; i >= 0; i--) {
+        soma += Number(chave[i]) * peso;
+        peso = peso === 9 ? 2 : peso + 1;
+      }
+      const resto = soma % 11;
+      const dv = (resto === 0 || resto === 1) ? 0 : 11 - resto;
+      return dv === Number(chave[43]);
+    }
+
+    function formatarCnpj(c) {
+      return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    }
+
+    function interpretarQrNota(texto) {
+      const chave = digitosDaChave(texto);
+      if (!chave || !chaveValida(chave)) return null;
+
+      const cnpj = chave.slice(6, 20);
+      const ano = 2000 + Number(chave.slice(2, 4));
+      const mes = chave.slice(4, 6);
+
+      const out = { chave, cnpj, valor: null, data: null };
+
+      /* O corpo do QR muda de estado pra estado: uns mandam parâmetros nomeados
+         (&vNF=12.34), outros um "p=" só, com os campos separados por barra. Os
+         dois caminhos são tentados, e cada achado é conferido antes de valer. */
+      const nomeado = texto.match(/[?&]vNF=([\d.]+)/i);
+      if (nomeado) out.valor = Number(nomeado[1]);
+
+      if (out.valor === null) {
+        const mp = texto.match(/[?&]p=([^&\s]+)/i);
+        if (mp) {
+          const partes = decodeURIComponent(mp[1]).split('|');
+          const versao = partes[1];
+          if (versao === '1') {
+            // Na v1 o valor é o campo 5, mas o cDest é opcional e desloca tudo.
+            // Em vez de confiar na posição, pega o primeiro campo entre o 4 e o
+            // 7 que tenha CARA de dinheiro (123.45) — os vizinhos são data em
+            // hexa e hashes, que não passam nesse filtro.
+            for (let i = 4; i <= 7 && i < partes.length; i++) {
+              if (/^\d+\.\d{2}$/.test(partes[i])) { out.valor = Number(partes[i]); break; }
+            }
+          }
+        }
+      }
+
+      // Data completa quando o QR traz dhEmi (em hexa na v1); senão, o mês da chave
+      const dh = texto.match(/[?&]dhEmi=([0-9a-f]+)/i);
+      if (dh) {
+        try {
+          const iso = dh[1].replace(/../g, h => String.fromCharCode(parseInt(h, 16)));
+          if (/^\d{4}-\d{2}-\d{2}/.test(iso)) out.data = iso.slice(0, 10);
+        } catch (e) { /* hexa torto: fica com o mês da chave */ }
+      }
+      if (!out.data) {
+        /* A chave só guarda ano e mês. Se a nota é do mês corrente, hoje é o
+           palpite certo — você acabou de comprar. De mês passado, o dia 1º é
+           chute, e aí vale avisar. */
+        const hoje = obterDataBrasilia();
+        const doMesCorrente = hoje.slice(0, 7) === (ano + '-' + mes);
+        out.data = doMesCorrente ? hoje : (ano + '-' + mes + '-01');
+        out.dataAproximada = !doMesCorrente;
+      }
+      if (out.valor !== null && !(out.valor > 0)) out.valor = null;
+      return out;
+    }
+
+    // O que você já lançou nessa mesma loja. É o que dá nome à nota: o QR traz
+    // CNPJ, não o nome da padaria.
+    function lembrarDaLoja(cnpj) {
+      const antes = lancamentos
+        .filter(l => l.cnpjNota === cnpj && l.tipo === 'despesa')
+        .sort((a, b) => (a.data < b.data ? 1 : -1))[0];
+      return antes || null;
+    }
+
+    // Guarda a chave/CNPJ entre a leitura do QR e o salvar. Fica fora do form
+    // porque não é campo que o usuário edita.
+    let notaEmLancamento = null;
+    let streamNota = null, lendoNota = false;
+
+    function statusNota(txt, cor) {
+      const el = document.getElementById('statusNota');
+      if (el) { el.textContent = txt; el.style.color = cor || '#888'; }
+    }
+
+    async function abrirLeitorNota() {
+      const modal = document.getElementById('modalNota');
+      const moldura = document.getElementById('molduraNota');
+      modal.classList.remove('escondido');
+      statusNota('');
+
+      if (!('BarcodeDetector' in window)) {
+        moldura.classList.add('escondido');
+        statusNota('Este navegador não lê QR sozinho. No Chrome do Android funciona.', '#ffd166');
+        return;
+      }
+      moldura.classList.remove('escondido');
+
+      try {
+        streamNota = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (e) {
+        moldura.classList.add('escondido');
+        statusNota('Não consegui abrir a câmera. Dá pra tirar uma foto do QR no botão abaixo.', '#ffd166');
+        return;
+      }
+
+      const video = document.getElementById('videoNota');
+      video.srcObject = streamNota;
+      await video.play().catch(() => {});
+      statusNota('Procurando o QR...');
+
+      const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+      lendoNota = true;
+      const procurar = async () => {
+        if (!lendoNota) return;
+        try {
+          const achados = await detector.detect(video);
+          for (const a of achados) {
+            if (aplicarNotaLida(a.rawValue)) return;
+          }
+        } catch (e) { /* quadro ruim: tenta o próximo */ }
+        if (lendoNota) requestAnimationFrame(procurar);
+      };
+      requestAnimationFrame(procurar);
+    }
+
+    async function lerNotaDaFoto(ev) {
+      const arq = ev.target.files && ev.target.files[0];
+      ev.target.value = '';
+      if (!arq) return;
+      if (!('BarcodeDetector' in window)) {
+        statusNota('Este navegador não lê QR sozinho. No Chrome do Android funciona.', '#ffd166');
+        return;
+      }
+      statusNota('Lendo a foto...');
+      try {
+        const bitmap = await createImageBitmap(arq);
+        const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+        const achados = await detector.detect(bitmap);
+        for (const a of achados) { if (aplicarNotaLida(a.rawValue)) return; }
+        statusNota('Não achei QR nessa foto. Tenta mais perto e com o cupom esticado.', '#ffd166');
+      } catch (e) {
+        statusNota('Não consegui ler essa imagem.', '#ffd166');
+      }
+    }
+
+    /* Só fecha e preenche quando a leitura é MESMO uma nota: um QR de wi-fi ou
+       de link não pode sequestrar o formulário. */
+    function aplicarNotaLida(bruto) {
+      const nota = interpretarQrNota(bruto);
+      if (!nota) { statusNota('Esse QR não é de nota fiscal. Procura o que fica no rodapé do cupom.', '#ffd166'); return false; }
+
+      // a mesma nota lançada duas vezes é o erro mais fácil de cometer aqui
+      const repetida = lancamentos.find(l => l.chaveNota === nota.chave);
+      if (repetida) {
+        fecharLeitorNota();
+        avisar('notaRepetida', `"${repetida.descricao}" de ${repetida.data.split('-').reverse().join('/')}, ${fmtVal(parseVal(repetida.valor))}.`);
+        return true;
+      }
+
+      fecharLeitorNota();
+      preencherDaNota(nota);
+      return true;
+    }
+
+    function preencherDaNota(nota) {
+      alternarTipo('despesa');
+      document.getElementById('dataCompra').value = nota.data;
+      notaEmLancamento = { chave: nota.chave, cnpj: nota.cnpj };
+
+      const antes = lembrarDaLoja(nota.cnpj);
+      if (antes) {
+        document.getElementById('descricao').value = antes.descricao;
+        const selCat = document.getElementById('categoria');
+        garantirOpcaoCategoria(selCat, antes.categoria);
+        selCat.value = antes.categoria || categoriaPadrao();
+        const selConta = document.getElementById('conta');
+        if ([...selConta.options].some(o => o.value === antes.conta)) selConta.value = antes.conta;
+        atualizarVisibilidadeForma();
+        garantirOpcaoForma(antes.formaModo);
+        document.getElementById('formaModo').value = antes.formaModo || 'À Vista / Débito';
+      }
+
+      if (nota.valor !== null) {
+        document.getElementById('valor').value = 'R$ ' + nota.valor.toFixed(2).replace('.', ',');
+      }
+
+      const oQueFalta = [];
+      if (nota.valor === null) oQueFalta.push('o valor');
+      if (!antes) oQueFalta.push('o nome da loja');
+      // O aviso da data é frase à parte: enfiado na lista sairia "falta o valor
+      // e confira a data", que não é português nenhum.
+      const sobreData = nota.dataAproximada
+        ? ' O QR não trouxe o dia, só o mês — confira a data.' : '';
+
+      avisar('notaLida', (oQueFalta.length
+        ? 'Preenchi o que dava. Falta ' + oQueFalta.join(' e ') + '.'
+        : 'Confere e salva.') + sobreData);
+
+      document.getElementById(nota.valor === null ? 'valor' : (antes ? 'valor' : 'descricao')).focus();
+    }
+
+    function fecharLeitorNota() {
+      lendoNota = false;
+      if (streamNota) {
+        streamNota.getTracks().forEach(t => t.stop());
+        streamNota = null;
+      }
+      const v = document.getElementById('videoNota');
+      if (v) v.srcObject = null;
+      fecharModal('modalNota');
     }
 
     /* ============ O QUE FAZ O ANALISTA PENSAR ============
@@ -8835,7 +9116,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.22-1';
+    const APP_VERSION = '2026.08.22-2';
 
     // Inicialização
     carregarLocalStorage();
