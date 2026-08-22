@@ -416,16 +416,6 @@
         </form>
       </div>
 
-      <div class="card">
-        <h3 style="margin-bottom:8px;font-size:14px;">Pergunte sobre seus gastos</h3>
-        <p style="font-size:11px;color:#666;margin-bottom:10px;">Digite ou toque no microfone. Ex: "onde gastei mais esta semana", "quem me deve", "quanto sobrou em julho", "parcelas em aberto"</p>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="text" id="inputPergunta" placeholder="Digite ou fale sua pergunta..." style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
-          <button type="button" id="btnMicPergunta" class="btn-mic-pergunta" onclick="ditarPergunta()" title="Falar a pergunta" aria-label="Falar a pergunta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-          <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
-        </div>
-        <p id="respostaPergunta" style="font-size:13px;margin-top:10px;color:#aaa;line-height:1.55;"></p>
-      </div>
     </div>
 
     <div id="abaFaturas" class="aba-conteudo">
@@ -541,6 +531,26 @@
     </div>
 
     <div id="abaGraficos" class="aba-conteudo">
+      <!-- ANALISTA
+           Saiu da aba Lançamentos: lá o trabalho é registrar, aqui é entender.
+           Além de responder, ele agora conclui — compara com a sua própria média,
+           projeta o fim do mês e aponta o que mudou. -->
+      <div class="card" data-card="analista">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('analista')">
+          <h3 style="font-size:16px;">Analisar meus gastos</h3>
+          <span class="chevron-sec" id="chevron-analista">▸</span>
+        </button>
+        <div id="corpo-analista" class="escondido" style="margin-top:10px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="inputPergunta" placeholder="Pergunte ou toque em ler o mês..." style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
+            <button type="button" id="btnMicPergunta" class="btn-mic-pergunta" onclick="ditarPergunta()" title="Falar a pergunta" aria-label="Falar a pergunta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+            <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
+          </div>
+          <!-- Sugestões prontas: ninguém adivinha o que a máquina entende. -->
+          <div id="sugestoesPergunta" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+          <div id="respostaPergunta" style="font-size:13px;margin-top:12px;color:#aaa;line-height:1.6;"></div>
+        </div>
+      </div>
       <!-- O período é o único controle global desta aba: fica numa fileira só,
            sempre à vista. Antes era um card com um botão que abria uma grade de
            oito opções — dois toques pra trocar de período. -->
@@ -879,13 +889,15 @@
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
           </div>
           <input type="file" id="importBackupInput" class="escondido" aria-label="Arquivo de backup para importar" accept="application/json" onchange="importarBackup(event)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #2a2a2a;">
-            <div style="min-width:0;">
-              <div id="versaoApp" style="font-size:11px;color:#666;">versão —</div>
-              <div style="font-size:11px;color:#5f9933;font-weight:600;letter-spacing:.2px;">By: Leonardo Cade</div>
-            </div>
-            <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
+        </div>
+        <!-- Versão e assinatura ficam FORA do corpo retrátil: são a identidade do
+             app, não um detalhe de backup. Some o card, some a autoria junto. -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #2a2a2a;">
+          <div style="min-width:0;">
+            <div id="versaoApp" style="font-size:11px;color:#666;">versão —</div>
+            <div style="font-size:11px;color:#5f9933;font-weight:600;letter-spacing:.2px;">By: Leonardo Cade</div>
           </div>
+          <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
         </div>
       </div>
     </div>
@@ -5289,7 +5301,10 @@
       // padrão: um mês (o atual, ou o que a frase indicar)
       const { mes, ano } = extrairMesPergunta(texto);
       const alvo = String(ano) + '-' + String(mes + 1).padStart(2, '0');
-      return { teste: d => d.slice(0, 7) === alvo, rotulo: 'em ' + NOMES_MESES[mes], mes, ano, mesUnico: true };
+      // eMesCorrente liga a comparação com a média: faz sentido pro mês inteiro,
+      // não pra "hoje" nem pra um mês solto do passado.
+      return { teste: d => d.slice(0, 7) === alvo, rotulo: 'em ' + NOMES_MESES[mes], mes, ano, mesUnico: true,
+               eMesCorrente: mes === hoje.getMonth() && ano === hoje.getFullYear() };
     }
 
     function despesasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'despesa' && p.teste(l.data)); }
@@ -5309,12 +5324,254 @@
 
       respEl.innerHTML = resposta
         ? resposta
-        : 'Não entendi. Dá pra perguntar sobre: <b>fatura</b>, <b>gastos fixos</b>, <b>quanto gastei</b> (com qualquer categoria, loja ou conta), <b>quanto recebi</b>, <b>saldo</b>, <b>quem me deve</b>, <b>maior gasto</b>, <b>onde gastei mais</b>, <b>quanto sobrou</b> ou <b>parcelas em aberto</b>. Pode incluir o período: "em julho", "esta semana", "neste ano".';
+        : 'Não peguei essa. Toca numa das sugestões aí em cima — ou pergunta por uma categoria, loja ou conta ("quanto gastei no mercado em julho").';
       respEl.style.color = resposta ? '#ddd' : '#aaa';
+    }
+
+    /* ============ O QUE FAZ O ANALISTA PENSAR ============
+       Responder "gastei R$ 2.458" é dado, não resposta. O que falta é a régua:
+       muito ou pouco PRA VOCÊ? As funções abaixo dão essa régua usando o seu
+       próprio histórico — ninguém precisa dizer quanto é caro um mercado. */
+
+    // Despesas de um mês (competência: pela data do gasto, como nos Gráficos)
+    function despesasDoMes(mes, ano) {
+      return lancamentos.filter(l => {
+        if (l.tipo !== 'despesa') return false;
+        const d = new Date(l.data + 'T12:00:00');
+        return d.getMonth() === mes && d.getFullYear() === ano;
+      });
+    }
+
+    function chaveMesDeslocada(n) {
+      const h = new Date(obterDataBrasilia() + 'T12:00:00');
+      const d = new Date(h.getFullYear(), h.getMonth() - n, 1);
+      return { mes: d.getMonth(), ano: d.getFullYear() };
+    }
+
+    /* Média dos meses ANTERIORES fechados. Só entram meses com movimento — um
+       mês vazio (app recém-instalado) puxaria a média pra baixo e faria tudo
+       parecer um exagero. */
+    function mediaMensal(filtro, quantos) {
+      const vals = [];
+      for (let n = 1; n <= (quantos || 3); n++) {
+        const { mes, ano } = chaveMesDeslocada(n);
+        const doMes = despesasDoMes(mes, ano);
+        if (!doMes.length) continue;
+        vals.push(somar(filtro ? doMes.filter(filtro) : doMes));
+      }
+      if (!vals.length) return null;
+      return { media: vals.reduce((a, b) => a + b, 0) / vals.length, meses: vals.length };
+    }
+
+    // Quanto do mês já passou — a base da projeção
+    function fracaoDoMes() {
+      const h = new Date(obterDataBrasilia() + 'T12:00:00');
+      const diasNoMes = new Date(h.getFullYear(), h.getMonth() + 1, 0).getDate();
+      return { dia: h.getDate(), diasNoMes, fracao: h.getDate() / diasNoMes };
+    }
+
+    /* A frase que fecha a resposta. É ela que transforma número em recado: sem
+       isso o app dizia quanto, nunca se era muito. */
+    function vereditoContraMedia(valor, ref, oQue) {
+      if (!ref || !ref.media) return '';
+      const dif = valor - ref.media;
+      const pct = Math.round(Math.abs(dif) / ref.media * 100);
+      const base = `média dos últimos ${ref.meses} ${ref.meses === 1 ? 'mês' : 'meses'}: ${fmtOculto(ref.media)}`;
+      if (pct < 10) return `<br><span style="color:#888;">Em linha com o de sempre (${base}).</span>`;
+      const cor = dif > 0 ? '#ef5350' : '#4caf50';
+      return `<br><span style="color:${cor};">${pct}% ${dif > 0 ? 'acima' : 'abaixo'} do seu normal</span>` +
+             `<span style="color:#888;"> — ${base}${oQue ? ' em ' + oQue : ''}.</span>`;
+    }
+
+    /* DIAGNÓSTICO DO MÊS — a resposta padrão, a que ele dá quando você só toca
+       em "como estou". Junta ritmo, projeção, categoria fora da curva e o que
+       está preso em empréstimo. */
+    function diagnosticoDoMes() {
+      const { mes, ano } = chaveMesDeslocada(0);
+      const doMes = despesasDoMes(mes, ano);
+      const gasto = somar(doMes);
+      if (!doMes.length) return 'Ainda não tem despesa lançada neste mês. Lança as primeiras que eu começo a comparar com os meses anteriores.';
+
+      const { dia, diasNoMes, fracao } = fracaoDoMes();
+      const linhas = [];
+
+      linhas.push(`<b>${NOMES_MESES[mes]}</b> — dia ${dia} de ${diasNoMes}.`);
+      linhas.push(`Gasto até agora: <b>${fmtOculto(gasto)}</b> em ${doMes.length} lançamentos.`);
+
+      // ritmo: projeta o fim do mês pela média diária corrida
+      const ref = mediaMensal(null, 3);
+      if (fracao > 0.15) {
+        const projecao = gasto / fracao;
+        let recado = '';
+        if (ref && ref.media) {
+          const pct = Math.round(Math.abs(projecao - ref.media) / ref.media * 100);
+          recado = pct < 10 ? ' — bem no seu ritmo de sempre'
+            : (projecao > ref.media
+                ? ` — <span style="color:#ef5350;">${pct}% acima da sua média</span>`
+                : ` — <span style="color:#4caf50;">${pct}% abaixo da sua média</span>`);
+        }
+        linhas.push(`Nesse ritmo, fecha o mês perto de <b>${fmtOculto(projecao)}</b>${recado}.`);
+      } else {
+        linhas.push(`<span style="color:#888;">Ainda é cedo pra projetar o mês — volta depois do dia ${Math.ceil(diasNoMes * 0.15)}.</span>`);
+      }
+
+      // a categoria que mais destoa do próprio normal
+      const porCat = {};
+      doMes.forEach(l => { const c = l.categoria || 'Outros'; porCat[c] = (porCat[c] || 0) + parseVal(l.valor); });
+      let alerta = null;
+      Object.entries(porCat).forEach(([cat, v]) => {
+        const refCat = mediaMensal(l => (l.categoria || 'Outros') === cat, 3);
+        if (!refCat || !refCat.media || refCat.media < 20) return;
+        const esperadoAteAgora = refCat.media * fracao;
+        if (esperadoAteAgora <= 0) return;
+        const excesso = (v - esperadoAteAgora) / esperadoAteAgora;
+        if (excesso > 0.3 && (!alerta || excesso > alerta.excesso)) {
+          alerta = { cat, v, excesso, media: refCat.media };
+        }
+      });
+      if (alerta) {
+        linhas.push(`<span style="color:#ffd166;">Atenção em ${alerta.cat}:</span> ${fmtOculto(alerta.v)} ` +
+          `— ${Math.round(alerta.excesso * 100)}% acima do ponto do mês em que você costuma estar ` +
+          `<span style="color:#888;">(mês inteiro costuma dar ${fmtOculto(alerta.media)}).</span>`);
+      } else {
+        const topo = Object.entries(porCat).sort((a, b) => b[1] - a[1])[0];
+        if (topo) linhas.push(`Maior fatia: <b>${topo[0]}</b> com ${fmtOculto(topo[1])} (${Math.round(topo[1] / gasto * 100)}%).`);
+      }
+
+      // dinheiro que saiu mas volta
+      const aReceber = cobrancasAbertas().filter(c => !c.devo);
+      if (aReceber.length) {
+        const t = aReceber.reduce((sm, c) => sm + c.valor, 0);
+        linhas.push(`<span style="color:#888;">${fmtOculto(t)} desse dinheiro é de outra gente — ${aReceber.length} ${aReceber.length === 1 ? 'cobrança' : 'cobranças'} em aberto.</span>`);
+      }
+
+      return linhas.join('<br>');
+    }
+
+    /* O QUE MUDOU — compara categoria a categoria com o mês passado e mostra
+       quem subiu e quem desceu. Responde "por que gastei mais?" com nome. */
+    function oQueMudou() {
+      const at = chaveMesDeslocada(0), ant = chaveMesDeslocada(1);
+      const a = despesasDoMes(at.mes, at.ano), b = despesasDoMes(ant.mes, ant.ano);
+      if (!b.length) return `Não tenho ${NOMES_MESES[ant.mes]} registrado pra comparar.`;
+
+      const soma = itens => {
+        const o = {};
+        itens.forEach(l => { const c = l.categoria || 'Outros'; o[c] = (o[c] || 0) + parseVal(l.valor); });
+        return o;
+      };
+      const ca = soma(a), cb = soma(b);
+      const cats = [...new Set([...Object.keys(ca), ...Object.keys(cb)])];
+      const difs = cats.map(c => ({ c, d: (ca[c] || 0) - (cb[c] || 0) }))
+        .filter(x => Math.abs(x.d) >= 10)
+        .sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
+
+      // Comparar mês corrido com mês fechado engana: no dia 10 tudo parece menor.
+      const { dia, diasNoMes } = fracaoDoMes();
+      const aviso = dia < diasNoMes
+        ? `<br><span style="color:#888;">Lembrando: ${NOMES_MESES[at.mes]} ainda está no dia ${dia}, então a comparação com um mês fechado pende pra baixo.</span>`
+        : '';
+
+      if (!difs.length) return `${NOMES_MESES[at.mes]} está praticamente igual a ${NOMES_MESES[ant.mes]}.${aviso}`;
+
+      const total = somar(a) - somar(b);
+      const linhas = difs.slice(0, 5).map(x =>
+        `• ${x.c}: <b style="color:${x.d > 0 ? '#ef5350' : '#4caf50'};">${x.d > 0 ? '+' : '−'}${fmtOculto(Math.abs(x.d))}</b>`).join('<br>');
+      return `De ${NOMES_MESES[ant.mes]} pra ${NOMES_MESES[at.mes]}: ` +
+        `<b style="color:${total > 0 ? '#ef5350' : '#4caf50'};">${total > 0 ? '+' : '−'}${fmtOculto(Math.abs(total))}</b> no total.<br>${linhas}${aviso}`;
+    }
+
+    /* QUANTO POSSO GASTAR — o que sobra do teto do mês, dividido pelos dias que
+       faltam. Usa as metas por categoria quando existem; senão, a própria média. */
+    function quantoPossoGastar() {
+      const { mes, ano } = chaveMesDeslocada(0);
+      const gasto = somar(despesasDoMes(mes, ano));
+      const { dia, diasNoMes } = fracaoDoMes();
+      const faltam = Math.max(1, diasNoMes - dia + 1);
+
+      /* Comparação justa: as metas cobrem só algumas categorias, então o teto
+         delas tem que ser confrontado com o gasto NESSAS categorias. Somar o mês
+         inteiro contra metas parciais acusaria estouro que não existe. */
+      const comMeta = Object.keys(orcamentosCategoria).filter(c => parseVal(orcamentosCategoria[c]) > 0);
+      const metas = comMeta.reduce((sm, c) => sm + parseVal(orcamentosCategoria[c]), 0);
+      const ref = mediaMensal(null, 3);
+
+      const usaMetas = metas > 0;
+      const teto = usaMetas ? metas : (ref && ref.media);
+      if (!teto) return 'Ainda não dá pra dizer: sem metas cadastradas e sem meses anteriores, não tenho régua nenhuma. Cadastra as metas por categoria aqui nos Gráficos que eu passo a responder isso.';
+
+      const gastoComparavel = usaMetas
+        ? somar(despesasDoMes(mes, ano).filter(l => comMeta.includes(l.categoria || 'Outros')))
+        : gasto;
+      const fonte = usaMetas
+        ? `suas metas de ${comMeta.length} ${comMeta.length === 1 ? 'categoria' : 'categorias'} somam`
+        : 'sua média mensal é';
+      const foraDaMeta = usaMetas && gasto > gastoComparavel
+        ? `<br><span style="color:#888;">Fora dessas categorias você gastou mais ${fmtOculto(gasto - gastoComparavel)}, que não tem meta pra comparar.</span>`
+        : '';
+
+      const sobra = teto - gastoComparavel;
+      if (sobra <= 0) {
+        return `Gastou ${fmtOculto(gastoComparavel)} e ${fonte} ${fmtOculto(teto)}.<br>` +
+          `<span style="color:#ef5350;">Estourou em ${fmtOculto(-sobra)}</span>, e ainda ${faltam === 1 ? 'falta 1 dia' : 'faltam ' + faltam + ' dias'} de mês.${foraDaMeta}`;
+      }
+      return `Gastou ${fmtOculto(gastoComparavel)} de ${fmtOculto(teto)} (${fonte} isso).<br>` +
+        `Sobram <b>${fmtOculto(sobra)}</b> pra ${faltam === 1 ? 'o último dia' : faltam + ' dias'} — ` +
+        `dá <b>${fmtOculto(sobra / faltam)}</b> por dia.${foraDaMeta}`;
+    }
+
+    /* SUGESTÕES PRONTAS
+       O campo em branco é o pior convite possível: ninguém adivinha o que a
+       máquina entende, e a primeira pergunta que não cola mata a vontade de
+       tentar de novo. As duas primeiras são as que ele responde melhor. */
+    const PERGUNTAS_SUGERIDAS = [
+      ['📊 Ler o mês',      'como estou'],
+      ['🔀 O que mudou',    'o que mudou'],
+      ['💸 Quanto posso gastar', 'quanto posso gastar'],
+      ['📈 Como fecho o mês',    'projecao'],
+      ['🏆 Onde gastei mais',    'onde gastei mais'],
+      ['🧾 Fatura',              'fatura'],
+      ['🤝 Quem me deve',        'quem me deve'],
+      ['📆 Parcelas em aberto',  'parcelas em aberto']
+    ];
+
+    function renderizarSugestoesPergunta() {
+      const box = document.getElementById('sugestoesPergunta');
+      if (!box || box.children.length) return;
+      box.innerHTML = PERGUNTAS_SUGERIDAS.map(([rotulo, q]) =>
+        `<button type="button" class="btn-mini" style="font-size:11.5px;padding:6px 10px;"
+           onclick="perguntarSugestao('${q}')">${rotulo}</button>`).join('');
+    }
+
+    function perguntarSugestao(q) {
+      const input = document.getElementById('inputPergunta');
+      if (input) input.value = q;
+      responderPergunta();
     }
 
     function montarRespostaPergunta(texto, p) {
       const R = p.rotulo;
+
+      // --- diagnóstico: a pergunta mais natural, e a que ele responde melhor ---
+      if (/como (estou|vou|to|ta)|diagnostic|analis|me ajuda|resumo do mes|como esta o mes|le o mes|ler o mes|\be ai\b/.test(texto)) {
+        return diagnosticoDoMes();
+      }
+      if (/o que mudou|mudou.*(mes|mês)|comparar.*(mes|mês)|subiu|caiu|aumentou|diminuiu/.test(texto)) {
+        return oQueMudou();
+      }
+      if (/quanto posso|posso gastar|quanto ainda|quanto falta.*(meta|teto)|sobra por dia|por dia.*(sobra|posso)/.test(texto)) {
+        return quantoPossoGastar();
+      }
+      if (/proje|vou fechar|fech[ao] o mes|no fim do mes|ritmo/.test(texto)) {
+        const { mes, ano } = chaveMesDeslocada(0);
+        const gasto = somar(despesasDoMes(mes, ano));
+        const { dia, diasNoMes, fracao } = fracaoDoMes();
+        if (fracao < 0.15) return `Só no dia ${dia} — cedo demais pra projetar. Uma semana de gastos já me dá base.`;
+        const proj = gasto / fracao;
+        return `Você está em ${fmtOculto(gasto)} no dia ${dia} de ${diasNoMes}.<br>` +
+          `Mantendo o ritmo, ${NOMES_MESES[mes]} fecha perto de <b>${fmtOculto(proj)}</b>.` +
+          vereditoContraMedia(proj, mediaMensal(null, 3), '');
+      }
 
       // --- empréstimos: quem me deve / quanto eu devo ---
       if (/(quem|quanto).*(me deve|devem|dever)|a receber|emprestei/.test(texto)) {
@@ -5422,7 +5679,8 @@
         const total = somar(desp);
         const linhas = Object.entries(porCat).sort((a, b) => b[1] - a[1]).slice(0, 5)
           .map(([c, v]) => `• ${c}: ${fmtOculto(v)} (${Math.round(v / total * 100)}%)`).join('<br>');
-        return `Gastei <b>${fmtOculto(total)}</b> ${R}:<br>${linhas}`;
+        return `Gastei <b>${fmtOculto(total)}</b> ${R}:<br>${linhas}` +
+          (p.eMesCorrente ? vereditoContraMedia(total, mediaMensal(null, 3), '') : '');
       }
 
       // --- média por dia ---
@@ -5496,7 +5754,10 @@
         const total = somar(achados);
         const ultimos = achados.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).slice(0, 3)
           .map(l => `• ${l.descricao}: ${fmtOculto(parseVal(l.valor))} (${l.data.split('-').reverse().join('/')})`).join('<br>');
-        return `"${termo}" ${R}: <b>${fmtOculto(total)}</b> em ${achados.length} ${achados.length === 1 ? 'lançamento' : 'lançamentos'}.<br>${ultimos}`;
+        // a mesma busca aplicada aos meses anteriores vira a régua do "é muito?"
+        const refTermo = p.eMesCorrente ? mediaMensal(casa, 3) : null;
+        return `"${termo}" ${R}: <b>${fmtOculto(total)}</b> em ${achados.length} ${achados.length === 1 ? 'lançamento' : 'lançamentos'}.<br>${ultimos}` +
+          vereditoContraMedia(total, refTermo, termo);
       }
 
       return null;
@@ -8290,14 +8551,64 @@ function interpretarFala(fala) {
     return (cent > 0 && cent < 100) ? { cent, trecho: ' e ' + palavras.join(' ') } : null;
   };
 
+  /* NÚMERO FALADO EM PEDAÇOS: "10 e 50", "200 e 25 e 35", "1200 e 50 e 3 e 75"
+     No dia a dia ninguém fala "dez reais e cinquenta centavos" — fala "dez e
+     cinquenta". Antes o app pegava só o "10" e jogava o "50" na descrição.
+
+     A regra é a mesma do português falado: os pedaços vão SOMANDO enquanto
+     descem de grandeza (mil e duzentos, e cinquenta, e três = 1253). O primeiro
+     pedaço que quebra a descida são os centavos.
+
+       10 e 50           -> 10 não abre continuação (11 a 19 são palavras
+                            próprias, ninguém diz "dez e cinco" pra 15)  -> 10,50
+       200 e 25 e 35     -> 200 abre, 25 desce; 25 não abre               -> 225,35
+       1200 e 50 e 3 e 75-> 1200 > 50 > 3 descendo; 75 sobe               -> 1253,75
+       100 e 50          -> 100 abre e 50 desce: é "cento e cinquenta"    -> 150,00 */
+  const abreContinuacao = n =>
+    (n >= 1000 && n % 1000 === 0) || (n >= 100 && n % 100 === 0) || (n >= 20 && n % 10 === 0);
+
+  const valorPorCadeiaDeDigitos = (texto) => {
+    const m = texto.match(/(?:r\$\s*)?(\d+(?:\s+e\s+\d+)+)/);
+    if (!m) return null;
+    const partes = m[1].split(/\s+e\s+/).map(Number);
+    if (partes.some(n => !isFinite(n))) return null;
+
+    let reais = partes[0];
+    let ultimo = partes[0];
+    let i = 1;
+    while (i < partes.length && partes[i] < ultimo && abreContinuacao(ultimo)) {
+      reais += partes[i];
+      ultimo = partes[i];
+      i++;
+    }
+
+    let centavos = 0;
+    if (i < partes.length && partes[i] <= 99) { centavos = partes[i]; i++; }
+    // sobrou pedaço que não é nem grandeza nem centavo? então a leitura não é
+    // confiável — melhor devolver nada e deixar o caminho antigo tentar
+    if (i < partes.length) return null;
+    if (!reais && !centavos) return null;
+
+    return {
+      valor: reais.toString() + ',' + String(centavos).padStart(2, '0'),
+      trecho: m[0]
+    };
+  };
+
+  const cadeia = valorPorCadeiaDeDigitos(resto);
+
   // Os centavos são lidos ANTES de consumir o valor — depois de consumido, o
   // número já saiu do texto e a busca por "22 e noventa" não acharia mais nada
   const mBrutoValor = resto.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?)\s*(?:reais|real|conto|contos|mangos|pila)?/);
   const centavosDetectados = (mBrutoValor && !mBrutoValor[1].includes(','))
     ? centavosPorExtenso(mBrutoValor[1], resto) : null;
 
-  const mValor = achar(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?)\s*(?:reais|real|conto|contos|mangos|pila)?/);
-  if (mValor) {
+  const mValor = cadeia ? null
+    : achar(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?)\s*(?:reais|real|conto|contos|mangos|pila)?/);
+  if (cadeia) {
+    valorFormatoPadrao = cadeia.valor;
+    consumir(cadeia.trecho);
+  } else if (mValor) {
     let v = mValor[1];
     if (!v.includes(',') && centavosDetectados) {
       v += ',' + String(centavosDetectados.cent).padStart(2, '0');
@@ -8524,7 +8835,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.21-2';
+    const APP_VERSION = '2026.08.22-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -8558,6 +8869,8 @@ function confirmarLancamentoVoz() {
     if (uiPrefs['secao_graficoPrincipal'] === undefined) uiPrefs['secao_graficoPrincipal'] = true;
     aplicarSecao('graficoPrincipal');
     aplicarSecao('ordemGraficos');
+    aplicarSecao('analista');
+    renderizarSugestoesPergunta();
     ativarEmpilhamentoDeModais();
     aplicarSecao('sons');
     aplicarSecao('emprestimos');
