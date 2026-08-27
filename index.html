@@ -13,18 +13,81 @@
   <title>Meu Financeiro</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: #121212; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; display: flex; justify-content: center; }
+    /* ============ TEMAS ============
+       Toda cor do app passou a sair daqui. Antes eram 520 valores espalhados
+       pelo CSS, pelos style= do HTML e pelas strings do JS — trocar de tema
+       exigiria caçar um por um. Agora um tema é um bloco de variáveis.
+
+       Os tons de cinza invertem entre claro e escuro: o que era texto claro
+       sobre fundo escuro vira texto escuro sobre fundo claro, mantendo o mesmo
+       contraste relativo. Verde/vermelho/amarelo escurecem no tema claro,
+       senão somem contra o branco. */
+    :root, [data-tema="escuro"] {
+      --fundo:#121212; --card:#242424; --campo:#1a1a1a;
+      --borda:#333; --borda-fraca:#2a2a2a; --borda-forte:#4a4a4a;
+      --texto:#ffffff; --texto-forte:#dddddd; --texto-medio:#aaaaaa;
+      --texto-fraco:#888888; --texto-tenue:#6e6e6e;
+      --verde:#4caf50; --verde-claro:#66bb6a; --verde-escuro:#2e7d32;
+      --vermelho:#ef5350; --vermelho-medio:#c25651; --vermelho-escuro:#a83e3b;
+      --amarelo:#ffd166; --amarelo-forte:#ffca28; --laranja:#ffa726;
+      --azul:#42a5f5; --azul-forte:#2196f3; --azul-claro:#64b5f6;
+      --roxo:#ab47bc; --marrom:#8d6e63; --turquesa:#26a69a; --bege:#d7ccc8;
+      --acento:#5f9933; --acento-claro:#8fbf62; --acento-palido:#c9e3b4;
+    }
+
+    [data-tema="claro"] {
+      --fundo:#f2f3f5; --card:#ffffff; --campo:#f6f7f9;
+      --borda:#dcdfe4; --borda-fraca:#e8eaee; --borda-forte:#c4c8cf;
+      --texto:#16181d; --texto-forte:#2f333b; --texto-medio:#5c626d;
+      --texto-fraco:#6b717c; --texto-tenue:#828893;
+      --verde:#2e8b3d; --verde-claro:#3da34d; --verde-escuro:#1e6b2b;
+      --vermelho:#c4342f; --vermelho-medio:#a82c28; --vermelho-escuro:#8a231f;
+      --amarelo:#a97b12; --amarelo-forte:#c08f14; --laranja:#c2701a;
+      --azul:#1668c4; --azul-forte:#1257a8; --azul-claro:#2f7fd6;
+      --roxo:#8235a0; --marrom:#6d5148; --turquesa:#0f7d72; --bege:#343a45;
+      --acento:#4a7a28; --acento-claro:#3d6621; --acento-palido:#2f5019;
+    }
+
+    /* Índigo: escuro, mas azulado — menos "buraco preto" à noite */
+    [data-tema="indigo"] {
+      --fundo:#131826; --card:#1c2436; --campo:#161d2c;
+      --borda:#2b3550; --borda-fraca:#232c42; --borda-forte:#3d4a68;
+      --texto:#eef2fb; --texto-forte:#cbd4e6; --texto-medio:#9aa6c0;
+      --texto-fraco:#7b88a3; --texto-tenue:#5f6b85;
+      --verde:#4ec97c; --verde-claro:#68d992; --verde-escuro:#2f8f56;
+      --vermelho:#f2706b; --vermelho-medio:#cf5a55; --vermelho-escuro:#a8433f;
+      --amarelo:#f5c65a; --amarelo-forte:#e8b73f; --laranja:#f0954a;
+      --azul:#5b9cf8; --azul-forte:#3d84ee; --azul-claro:#7fb3fa;
+      --roxo:#b57ce0; --marrom:#9a7d6e; --turquesa:#3fbfae; --bege:#d9cfc4;
+      --acento:#63b05c; --acento-claro:#8fd08a; --acento-palido:#c3e6c0;
+    }
+
+    /* Sépia: fundo quente, pra quem lê muito à noite */
+    [data-tema="sepia"] {
+      --fundo:#f4ece0; --card:#fdf8f0; --campo:#efe6d8;
+      --borda:#dfd2be; --borda-fraca:#eae0d1; --borda-forte:#c9b99f;
+      --texto:#2b2118; --texto-forte:#463829; --texto-medio:#6b5946;
+      --texto-fraco:#7a6752; --texto-tenue:#8d7b66;
+      --verde:#3f7d33; --verde-claro:#4f9440; --verde-escuro:#2c5c24;
+      --vermelho:#b53b2e; --vermelho-medio:#993128; --vermelho-escuro:#7b2620;
+      --amarelo:#9c7011; --amarelo-forte:#b58314; --laranja:#b06318;
+      --azul:#1f6191; --azul-forte:#175077; --azul-claro:#2d78ad;
+      --roxo:#7a4189; --marrom:#6b5344; --turquesa:#12756b; --bege:#453a2c;
+      --acento:#4d7a2c; --acento-claro:#3f6624; --acento-palido:#31501b;
+    }
+
+    body { background-color: var(--fundo); color: var(--texto); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; display: flex; justify-content: center; }
     .app-container { width: 100%; max-width: 480px; }
     
     .resumo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
     /* Rótulo à esquerda, mês no centro e ações à direita, tudo na mesma linha.
        As laterais têm a mesma largura (flex:1) pra o mês cair no centro real. */
     .cabecalho-fatura { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
-    .cabecalho-fatura .rotulo-resumo { flex:1; font-size:10.5px; color:#666; text-transform:uppercase; letter-spacing:.5px; }
+    .cabecalho-fatura .rotulo-resumo { flex:1; font-size:10.5px; color:var(--texto-tenue); text-transform:uppercase; letter-spacing:.5px; }
     .cabecalho-fatura h3 { flex:0 0 auto; text-align:center; font-size:18px; white-space:nowrap; }
     .cabecalho-fatura .acoes-resumo { flex:1; display:flex; align-items:center; justify-content:flex-end; gap:8px; }
-    .resumo-header span { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .5px; }
-    .btn-olho { background: transparent; border: none; color: #aaa; font-size: 17px; cursor: pointer; padding: 4px; }
+    .resumo-header span { font-size: 11px; color: var(--texto-tenue); text-transform: uppercase; letter-spacing: .5px; }
+    .btn-olho { background: transparent; border: none; color: var(--texto-medio); font-size: 17px; cursor: pointer; padding: 4px; }
     /* BOTÃO DE VOZ E MODAL */
 .row-botoes-form { display: flex; gap: 10px; margin-top: 10px; }
 .row-botoes-form .btn-salvar { margin-top: 0; flex: 1; }
@@ -32,8 +95,8 @@
   width: 52px; 
   border: none; 
   border-radius: 8px; 
-  background-color: #2196f3; 
-  color: #fff; 
+  background-color: var(--azul-forte); 
+  color: var(--texto); 
   font-size: 20px; 
   cursor: pointer; 
   display: flex; 
@@ -44,22 +107,22 @@
 /* Mesmo microfone do lançamento, em tamanho de botão de linha */
 .btn-mic-pergunta {
   flex: 0 0 auto; width: 38px; height: 38px; border: none; border-radius: 8px;
-  background-color: #2196f3; cursor: pointer; display: flex; align-items: center;
+  background-color: var(--azul-forte); cursor: pointer; display: flex; align-items: center;
   justify-content: center; line-height: 0; transition: transform .2s, background-color .2s;
 }
 .mic-animando {
   animation: pulseMic 1.5s infinite;
-  background-color: #ef5350 !important;
+  background-color: var(--vermelho) !important;
 }
 @keyframes pulseMic { 
   0% { transform: scale(1); } 
   50% { transform: scale(1.08); } 
   100% { transform: scale(1); } 
 }
-.resumo-voz { background:#1a1a1a; padding:16px; border-radius:10px; margin-bottom:16px; font-size: 14px; border: 1px solid #333; }
-.resumo-voz p { margin-bottom: 8px; color: #ddd; }
+.resumo-voz { background:var(--campo); padding:16px; border-radius:10px; margin-bottom:16px; font-size: 14px; border: 1px solid var(--borda); }
+.resumo-voz p { margin-bottom: 8px; color: var(--texto-forte); }
 .resumo-voz p:last-child { margin-bottom: 0; }
-.resumo-voz strong { color: #888; display: inline-block; width: 85px; }
+.resumo-voz strong { color: var(--texto-fraco); display: inline-block; width: 85px; }
 
     /* PAINEL TOPO */
     .painel-topo { 
@@ -70,8 +133,8 @@
     
     .card-saldo-destaque { 
       flex: 1; 
-      background-color: #1a1a1a; 
-      border: 1px solid #2196f3; 
+      background-color: var(--campo); 
+      border: 1px solid var(--azul-forte); 
       border-radius: 12px; 
       padding: 10px 12px;
       display: flex;
@@ -83,7 +146,7 @@
       transition: transform 0.1s ease, border-color 0.2s;
     }
     .card-saldo-destaque:active { transform: scale(0.98); }
-    .card-saldo-destaque span { display: block; font-size: 11px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-saldo-destaque span { display: block; font-size: 11px; color: var(--texto-medio); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
     .card-saldo-destaque h4 { font-size: 20px; font-weight: bold; }
 
     .painel-direita {
@@ -95,8 +158,8 @@
 
     .card-mini {
       flex: 1;
-      background-color: #1a1a1a;
-      border: 1px solid #333;
+      background-color: var(--campo);
+      border: 1px solid var(--borda);
       border-radius: 12px;
       padding: 6px 10px;
       display: flex;
@@ -108,159 +171,159 @@
       transition: transform 0.1s ease, border-color 0.2s;
     }
     .card-mini:active { transform: scale(0.98); }
-    .card-mini:hover { border-color: #555; }
-    .card-mini span { display: block; font-size: 10px; color: #aaa; margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-mini:hover { border-color: var(--borda-forte); }
+    .card-mini span { display: block; font-size: 10px; color: var(--texto-medio); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
     .card-mini h4 { font-size: 14px; font-weight: bold; }
 
-    .valor-transferencia { color: #42a5f5; font-weight: bold; white-space: nowrap; }
-    .val-saldo { color: #2196f3; }
-    .val-receita { color: #4caf50; }
-    .val-despesa { color: #ef5350; }
+    .valor-transferencia { color: var(--azul); font-weight: bold; white-space: nowrap; }
+    .val-saldo { color: var(--azul-forte); }
+    .val-receita { color: var(--verde); }
+    .val-despesa { color: var(--vermelho); }
     
-    .nav-tabs { display: flex; background-color: #1a1a1a; border-radius: 12px; padding: 4px; margin-bottom: 16px; border: 1px solid #333; overflow-x: auto; }
-    .nav-tab { flex: 1 0 auto; min-width: 72px; padding: 10px 4px; border: none; background: transparent; color: #888; font-size: 12.5px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; line-height: 1.2; }
-    .nav-tab.ativo { background-color: #242424; color: #fff; }
+    .nav-tabs { display: flex; background-color: var(--campo); border-radius: 12px; padding: 4px; margin-bottom: 16px; border: 1px solid var(--borda); overflow-x: auto; }
+    .nav-tab { flex: 1 0 auto; min-width: 72px; padding: 10px 4px; border: none; background: transparent; color: var(--texto-fraco); font-size: 12.5px; font-weight: 600; border-radius: 8px; cursor: pointer; text-align: center; line-height: 1.2; }
+    .nav-tab.ativo { background-color: var(--card); color: var(--texto); }
     .aba-conteudo { display: none; }
     .aba-conteudo.ativo { display: block; }
-    .card { background-color: #242424; border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .card { background-color: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
     .tipo-toggle { display: flex; gap: 10px; margin-bottom: 12px; }
-    .btn-tipo { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #888; font-weight: bold; font-size: 15px; cursor: pointer; }
-    .btn-tipo.ativo-receita { border-color: #2e7d32; color: #4caf50; background-color: rgba(46, 125, 50, 0.15); }
-    .btn-tipo.ativo-despesa { border-color: #c62828; color: #ef5350; background-color: rgba(198, 40, 40, 0.15); }
+    .btn-tipo { flex: 1; padding: 12px; border: 1px solid var(--borda); border-radius: 8px; background: transparent; color: var(--texto-fraco); font-weight: bold; font-size: 15px; cursor: pointer; }
+    .btn-tipo.ativo-receita { border-color: var(--verde-escuro); color: var(--verde); background-color: rgba(46, 125, 50, 0.15); }
+    .btn-tipo.ativo-despesa { border-color: var(--vermelho-escuro); color: var(--vermelho); background-color: rgba(198, 40, 40, 0.15); }
     .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
-    label { font-size: 12px; color: #aaa; }
-    select, input { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; color: #fff; font-size: 14px; outline: none; width: 100%; }
-    select:focus, input:focus { border-color: #555; }
-    .btn-salvar { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: #d7ccc8; color: #121212; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 8px; }
-    .btn-cancelar { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 8px; background-color: transparent; color: #aaa; font-size: 13px; cursor: pointer; margin-top: 6px; }
+    label { font-size: 12px; color: var(--texto-medio); }
+    select, input { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; color: var(--texto); font-size: 14px; outline: none; width: 100%; }
+    select:focus, input:focus { border-color: var(--borda-forte); }
+    .btn-salvar { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: var(--bege); color: var(--fundo); font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    .btn-cancelar { width: 100%; padding: 10px; border: 1px solid var(--borda-forte); border-radius: 8px; background-color: transparent; color: var(--texto-medio); font-size: 13px; cursor: pointer; margin-top: 6px; }
     .escondido { display: none !important; }
-    .item-lancamento { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer; }
+    .item-lancamento { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--borda); cursor: pointer; }
     /* A barra da esquerda responde "esse dinheiro passou pela conta?" — a mesma
        pergunta do saldo. Cinza = saiu; amarelo = está no cartão e ainda não saiu;
        verde = entrou; azul = só mudou de conta. Custa 3px e nenhuma palavra. */
-    .item-lancamento.forma { border-left: 3px solid #3d3d3d; padding-left: 11px; }
-    .item-lancamento.forma-credito { border-left-color: #ffd166; }
-    .item-lancamento.forma-receita { border-left-color: #4caf50; }
-    .item-lancamento.forma-transf { border-left-color: #42a5f5; }
+    .item-lancamento.forma { border-left: 3px solid var(--borda-forte); padding-left: 11px; }
+    .item-lancamento.forma-credito { border-left-color: var(--amarelo); }
+    .item-lancamento.forma-receita { border-left-color: var(--verde); }
+    .item-lancamento.forma-transf { border-left-color: var(--azul); }
     .item-lancamento:last-child { border-bottom: none; }
     .item-info { flex: 1; min-width: 0; padding-right: 8px; }
     .item-acoes { display: flex; align-items: center; gap: 8px; }
-    .btn-acao { background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 14px; padding: 4px; }
-    .valor-receita { color: #4caf50; font-weight: bold; white-space: nowrap; }
-    .valor-despesa { color: #ef5350; font-weight: bold; white-space: nowrap; }
-    .linha-ordem-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid #2a2a2a; font-size: 13.5px; background: #1a1a1a; }
+    .btn-acao { background: transparent; border: none; color: var(--texto-medio); cursor: pointer; font-size: 14px; padding: 4px; }
+    .valor-receita { color: var(--verde); font-weight: bold; white-space: nowrap; }
+    .valor-despesa { color: var(--vermelho); font-weight: bold; white-space: nowrap; }
+    .linha-ordem-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--borda-fraca); font-size: 13.5px; background: var(--campo); }
     .linha-ordem-card:last-child { border-bottom: none; }
     /* Pegador das três listrinhas: área de toque generosa, porque é ele que
        segura o arraste no celular */
     .btn-estrela { padding: 6px 8px; font-size: 17px; line-height: 1; background: transparent; border: none; cursor: pointer; }
     .btn-pegador { flex: 0 0 auto; width: 38px; height: 34px; border: none; background: transparent; cursor: grab; line-height: 0; display: flex; align-items: center; justify-content: center; }
     .btn-pegador:active { cursor: grabbing; }
-    .arrastando { opacity: .65; background: #242424; border-radius: 8px; }
+    .arrastando { opacity: .65; background: var(--card); border-radius: 8px; }
 
     .chips-antecedencia { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #aaa; font-size: 12.5px; cursor: pointer; }
-    .chip-antec.on { border-color: #ffd166; color: #ffd166; background: rgba(255,209,102,.1); }
+    .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto-medio); font-size: 12.5px; cursor: pointer; }
+    .chip-antec.on { border-color: var(--amarelo); color: var(--amarelo); background: rgba(255,209,102,.1); }
 
     .barra-categoria { margin-bottom: 12px; }
     /* Versão miúda das barras, pra caber dentro do modal do grupo sem virar
        um segundo painel de gráficos */
-    .grafico-grupo { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #2a2a2a; }
+    .grafico-grupo { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--borda-fraca); }
     .barra-grupo { margin-bottom: 7px; }
     .barra-grupo:last-child { margin-bottom: 0; }
-    .barra-grupo-info { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #bbb; margin-bottom: 3px; }
+    .barra-grupo-info { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--texto-medio); margin-bottom: 3px; }
     .barra-grupo-info span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .barra-grupo-info span:last-child { flex: 0 0 auto; color: #888; }
+    .barra-grupo-info span:last-child { flex: 0 0 auto; color: var(--texto-fraco); }
     .barra-grupo .barra-bg { height: 6px; }
     .barra-info { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
     /* GRÁFICO DE COLUNAS (vertical) */
     .colunas { display:flex; align-items:flex-end; gap:6px; height:150px; padding:0 2px 4px; overflow-x:auto; }
     .coluna-item { flex:1 0 34px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:34px; }
-    .coluna-valor { font-size:9px; color:#aaa; margin-bottom:3px; white-space:nowrap; }
+    .coluna-valor { font-size:9px; color:var(--texto-medio); margin-bottom:3px; white-space:nowrap; }
     .coluna-barra { width:100%; border-radius:4px 4px 0 0; min-height:2px; }
     .coluna-par { display:flex; gap:2px; width:100%; align-items:flex-end; height:100%; }
-    .marca-meta { position:absolute; left:0; right:0; border-top:2px dashed #ffd166; }
-    .marca-meta-barra { position:absolute; top:-2px; bottom:-2px; width:2px; background:#ffd166; }
-    .coluna-rotulo { font-size:9.5px; color:#888; margin-top:5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-    .barra-bg { background-color: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden; }
+    .marca-meta { position:absolute; left:0; right:0; border-top:2px dashed var(--amarelo); }
+    .marca-meta-barra { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--amarelo); }
+    .coluna-rotulo { font-size:9.5px; color:var(--texto-fraco); margin-top:5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+    .barra-bg { background-color: var(--campo); height: 8px; border-radius: 4px; overflow: hidden; }
     .barra-fill { height: 100%; border-radius: 4px; }
-    .btn-mini { padding: 6px 12px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 11px; cursor: pointer; }
-    .btn-mini.ativo { background: #333; color: #fff; border-color: #666; }
-    .btn-mes { background: #1a1a1a; border: 1px solid #333; color: #fff; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .btn-mini { padding: 6px 12px; border: 1px solid var(--borda); border-radius: 20px; background: transparent; color: var(--texto-fraco); font-size: 11px; cursor: pointer; }
+    .btn-mini.ativo { background: var(--borda); color: var(--texto); border-color: var(--texto-tenue); }
+    .btn-mes { background: var(--campo); border: 1px solid var(--borda); color: var(--texto); width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
     /* pop-up centralizado na tela */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; padding: 14px; z-index: 1000; }
-    .modal-content { background: #242424; width: 100%; max-width: 480px; border-radius: 18px; padding: 16px; max-height: 88vh; overflow-y: auto; border: 1px solid #3a3a3a; }
+    .modal-content { background: var(--card); width: 100%; max-width: 480px; border-radius: 18px; padding: 16px; max-height: 88vh; overflow-y: auto; border: 1px solid var(--borda-forte); }
     /* O formulário é emprestado pro modal de edição: aqui ele perde a moldura de
        card e o próprio cabeçalho, que duplicavam o do modal. */
     #destinoFormEdicao > .card { background: transparent; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
     #destinoFormEdicao .form-header-linha,
     #destinoFormEdicao #btnCancelarEdit { display: none; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 9px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--borda); padding-bottom: 9px; }
     .modal-header h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
-    .btn-fechar { background: transparent; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
+    .btn-fechar { background: transparent; border: none; color: var(--texto-medio); font-size: 20px; cursor: pointer; }
 
     /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
     /* faixa de contas em uma linha só, deslizável: empilhadas ocupavam três
        linhas e empurravam o conteúdo pra baixo */
     #chipsContasConsulta { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
     #chipsContasConsulta::-webkit-scrollbar { height:3px; }
-    #chipsContasConsulta::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+    #chipsContasConsulta::-webkit-scrollbar-thumb { background:var(--borda); border-radius:3px; }
     #chipsContasConsulta button { flex:0 0 auto; white-space:nowrap; }
-    .btn-periodo { padding: 8px; border: 1px solid #333; border-radius: 8px; background: #1a1a1a; color: #aaa; font-size: 12px; cursor: pointer; text-align: center; }
-    .btn-periodo.ativo { background: #333; color: #fff; border-color: #666; font-weight: bold; }
+    .btn-periodo { padding: 8px; border: 1px solid var(--borda); border-radius: 8px; background: var(--campo); color: var(--texto-medio); font-size: 12px; cursor: pointer; text-align: center; }
+    .btn-periodo.ativo { background: var(--borda); color: var(--texto); border-color: var(--texto-tenue); font-weight: bold; }
 
     /* Período dos Gráficos: fileira única que rola na horizontal */
     .barra-periodo { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .chips-periodo { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; padding: 2px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .chips-periodo::-webkit-scrollbar { display: none; }
     .chips-periodo .btn-periodo { flex: 0 0 auto; padding: 6px 13px; border-radius: 20px; white-space: nowrap; }
-    .chips-periodo .btn-periodo.ativo { background: rgba(33,150,243,.14); border-color: #2196f3; color: #64b5f6; }
+    .chips-periodo .btn-periodo.ativo { background: rgba(33,150,243,.14); border-color: var(--azul-forte); color: var(--azul-claro); }
 
     /* Números do período em uma linha só (o card grande vive nas Faturas) */
     .tira-resumo { display: flex; gap: 8px; margin-bottom: 12px; }
-    .tira-resumo button { flex: 1; min-width: 0; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 7px 6px; text-align: center; cursor: pointer; transition: border-color .2s; }
-    .tira-resumo button:active { border-color: #555; }
-    .tira-resumo span { display: block; font-size: 9.5px; color: #8a8a8a; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 1px; }
+    .tira-resumo button { flex: 1; min-width: 0; background: var(--campo); border: 1px solid var(--borda-fraca); border-radius: 10px; padding: 7px 6px; text-align: center; cursor: pointer; transition: border-color .2s; }
+    .tira-resumo button:active { border-color: var(--borda-forte); }
+    .tira-resumo span { display: block; font-size: 9.5px; color: var(--texto-fraco); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 1px; }
     .tira-resumo strong { font-size: 14px; font-weight: 700; }
-    .box-resumo-modal { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid #333; }
-    .linha-subtotal { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 6px; color: #ccc; cursor: pointer; }
+    .box-resumo-modal { background: var(--campo); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid var(--borda); }
+    .linha-subtotal { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 6px; color: var(--texto-forte); cursor: pointer; }
     .linha-subtotal > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .linha-subtotal:last-child { margin-bottom: 0; }
-    .linha-subtotal.focada { background:#2b2b2b; border-radius:6px; margin-left:-6px; margin-right:-6px; padding:3px 6px; }
+    .linha-subtotal.focada { background:var(--borda-fraca); border-radius:6px; margin-left:-6px; margin-right:-6px; padding:3px 6px; }
     .busca-box { position: relative; margin-bottom: 16px; }
     .busca-box input { padding-left: 36px; }
-    .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
+    .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--texto-tenue); font-size: 14px; }
 
     /* BOTÃO SELEÇÃO CLEAN DOS GRÁFICOS */
     
     /* MODAL DE AÇÕES (BALÃO SUSPENSO) */
     .balao-acoes { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 0; }
     #listaGruposVinculo { display:flex; flex-direction:column; gap:8px; }
-    .btn-opcao-balao.selecionado { border-color:#2e7d32; color:#4caf50; background:rgba(46,125,50,.12); }
+    .btn-opcao-balao.selecionado { border-color:var(--verde-escuro); color:var(--verde); background:rgba(46,125,50,.12); }
     /* Sem moldura: com uma categoria por quadro, a maioria virava caixa grande
        pra duas linhas de conteúdo. O título já separa as seções. */
     .bloco-cat { margin-bottom:10px; background:transparent; padding:0; border-radius:0; border:none; }
     details.bloco-cat > summary { display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; }
     details.bloco-cat > summary::-webkit-details-marker { display:none; }
-    details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px; }
+    details.bloco-cat[open] > summary { margin-bottom:8px; border-bottom:1px solid var(--borda-fraca); padding-bottom:4px; }
     details.bloco-cat[open] > summary .chevron-sec { transform:rotate(90deg); display:inline-block; }
-    .btn-opcao-balao { padding: 11px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 14px; }
-    .btn-opcao-balao.danger { color: #ef5350; border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
-    textarea { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
-    textarea:focus { border-color: #555; }
+    .btn-opcao-balao { padding: 11px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto); font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 14px; }
+    .btn-opcao-balao.danger { color: var(--vermelho); border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
+    textarea { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 12px; color: var(--texto); font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
+    textarea:focus { border-color: var(--borda-forte); }
 
     .dashboard-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
-    .dashboard-kpi { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 12px; }
-    .dashboard-kpi span { display:block; font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .dashboard-kpi { background: var(--campo); border: 1px solid var(--borda); border-radius: 12px; padding: 12px; }
+    .dashboard-kpi span { display:block; font-size:10px; color:var(--texto-medio); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
     .dashboard-kpi strong { font-size:15px; }
     .insight-list { display:flex; flex-direction:column; gap:8px; }
-    .insight-item { background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:12px; font-size:13px; color:#ddd; line-height:1.4; }
-    textarea:focus { border-color: #555; }
+    .insight-item { background:var(--campo); border:1px solid var(--borda); border-radius:12px; padding:12px; font-size:13px; color:var(--texto-forte); line-height:1.4; }
+    textarea:focus { border-color: var(--borda-forte); }
 
     .busca-box { position: relative; margin-bottom: 12px; }
     .busca-box input { padding-left: 36px; }
-    .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
+    .busca-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--texto-tenue); font-size: 14px; }
 
     .grupo-meta-topo { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
     .grupo-meta-topo input { flex:1; }
@@ -269,64 +332,77 @@
     /* Linha só de leitura: nome, gasto, teto e a barra. Editar é um toque na
        linha, que abre um balão — o campo e a lixeira soltos deixavam a lista
        parecendo um formulário. */
-    .meta-item { background:transparent; border:none; border-radius:0; padding:9px 2px; cursor:pointer; border-bottom:1px solid #242424; }
+    .meta-item { background:transparent; border:none; border-radius:0; padding:9px 2px; cursor:pointer; border-bottom:1px solid var(--card); }
     .meta-item:last-child { border-bottom:none; }
     .meta-item-topo { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
     .meta-item-topo strong { font-size:13px; }
-    .meta-item-topo span { font-size:11.5px; color:#aaa; white-space:nowrap; }
-    .meta-barra { height:6px; background:#141414; border-radius:999px; overflow:hidden; margin-top:7px; }
+    .meta-item-topo span { font-size:11.5px; color:var(--texto-medio); white-space:nowrap; }
+    .meta-barra { height:6px; background:var(--fundo); border-radius:999px; overflow:hidden; margin-top:7px; }
     .meta-barra-fill { height:100%; border-radius:999px; }
     /* Sem meta definida: fica no fim da lista e mais apagado, pra as que têm
        teto lerem primeiro */
     .meta-item.sem-meta { opacity:.55; }
     .meta-item.sem-meta .meta-barra { display:none; }
-    .titulo-sem-meta { font-size:10.5px; color:#666; text-transform:uppercase; letter-spacing:.5px; margin:12px 0 2px; }
+    .titulo-sem-meta { font-size:10.5px; color:var(--texto-tenue); text-transform:uppercase; letter-spacing:.5px; margin:12px 0 2px; }
 
-    .badge-parcelas { display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:10.5px; color:#ffd166; background:rgba(255,209,102,0.08); border:1px solid rgba(255,209,102,0.18); border-radius:999px; padding:3px 8px; }
+    .badge-parcelas { display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:10.5px; color:var(--amarelo); background:rgba(255,209,102,0.08); border:1px solid rgba(255,209,102,0.18); border-radius:999px; padding:3px 8px; }
     /* indicativo de leitura rápida, não centro de atenção: pequena, apagada e
        sempre em uma linha só, pra não esticar o card */
-    .observacao-mini { margin-top:3px; font-size:10px; color:#6e6e6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .observacao-mini { margin-top:3px; font-size:10px; color:var(--texto-tenue); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
-    .chevron-sec { color:#aaa; font-size:15px; flex-shrink:0; }
+    .chevron-sec { color:var(--texto-medio); font-size:15px; flex-shrink:0; }
     /* TROCA DE ABA POR GESTO (deslizar o dedo) — transição suave */
     @keyframes abaSlideEsq { from { opacity:.6; transform:translateX(8px); } to { opacity:1; transform:none; } }
     @keyframes abaSlideDir { from { opacity:.6; transform:translateX(-8px); } to { opacity:1; transform:none; } }
     .aba-conteudo.anim-esq, .card.anim-esq { animation: abaSlideEsq .35s cubic-bezier(.25,.6,.35,1); }
     .aba-conteudo.anim-dir, .card.anim-dir { animation: abaSlideDir .35s cubic-bezier(.25,.6,.35,1); }
 
-    .data-grupo { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
+    .data-grupo { font-size:10px; color:var(--texto-tenue); text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
     /* rótulo numa borda, atalho na borda oposta */
     .linha-borda-a-borda { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
     .form-header-linha { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
     .form-header-linha h3 { margin:0; }
-    .btn-icone-topo { flex-shrink:0; width:34px; height:30px; border:1px solid #333; border-radius:8px; background:transparent; color:#888; font-size:15px; line-height:1; cursor:pointer; }
-    .btn-icone-topo:active { color:#fff; border-color:#555; }
-    .link-obs { background:transparent; border:none; padding:2px 2px 0; color:#666; font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .link-obs.tem-obs { color:#9a9a9a; }
-    .btn-gerenciar-txt { background:transparent; border:none; cursor:pointer; padding:0 2px; color:#666; font-size:11px; }
-    .btn-gerenciar-txt:active { color:#aaa; }
-    .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:#ccc; margin-bottom:14px; cursor:pointer; }
-    .check-credito input { width:auto; accent-color:#4caf50; }
+    .btn-icone-topo { flex-shrink:0; width:34px; height:30px; border:1px solid var(--borda); border-radius:8px; background:transparent; color:var(--texto-fraco); font-size:15px; line-height:1; cursor:pointer; }
+    .btn-icone-topo:active { color:var(--texto); border-color:var(--borda-forte); }
+    .link-obs { background:transparent; border:none; padding:2px 2px 0; color:var(--texto-tenue); font-size:11px; text-align:left; cursor:pointer; width:fit-content; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .link-obs.tem-obs { color:var(--texto-fraco); }
+    .btn-gerenciar-txt { background:transparent; border:none; cursor:pointer; padding:0 2px; color:var(--texto-tenue); font-size:11px; }
+    .btn-gerenciar-txt:active { color:var(--texto-medio); }
+    .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--texto-forte); margin-bottom:14px; cursor:pointer; }
+    .check-credito input { width:auto; accent-color:var(--verde); }
 
     /* Convite discreto pra cadastrar: verde apagado, sem peso de botão primário.
        O formulário só aparece quando pedido, numa janela centralizada. */
     .btn-adicionar { width:100%; margin-top:14px; padding:12px; border-radius:10px; cursor:pointer;
-      background:rgba(95,153,51,.10); border:1px solid rgba(95,153,51,.30); color:#8fbf62;
+      background:rgba(95,153,51,.10); border:1px solid rgba(95,153,51,.30); color:var(--acento-claro);
       font-size:13.5px; font-weight:600; font-family:inherit; }
     .btn-adicionar:active { background:rgba(95,153,51,.20); }
 
+    .faixa-aviso { display:flex; align-items:center; gap:12px; background:rgba(255,209,102,.07);
+      border:1px solid rgba(255,209,102,.28); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+
     .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .backup-actions .btn-cancelar { flex:1; margin-top:0; }
-    .btn-backup { width:100%; padding:12px; border:1px solid #333; border-radius:10px; background:#1a1a1a; color:#fff; font-weight:700; cursor:pointer; }
-    .btn-backup.primary { background:#d7ccc8; color:#121212; border-color:transparent; }
-    .btn-backup.danger { color:#ef5350; border-color:rgba(239,83,80,0.3); background:rgba(239,83,80,0.05); }
+    .btn-backup { width:100%; padding:12px; border:1px solid var(--borda); border-radius:10px; background:var(--campo); color:var(--texto); font-weight:700; cursor:pointer; }
+    .btn-backup.primary { background:var(--bege); color:var(--fundo); border-color:transparent; }
+    .btn-backup.danger { color:var(--vermelho); border-color:rgba(239,83,80,0.3); background:rgba(239,83,80,0.05); }
 
   </style>
 </head>
 <body>
+  <script>
+    /* Antes de qualquer coisa aparecer: sem isto o app pisca escuro e só depois
+       vira claro, o que é pior do que não ter tema nenhum. */
+    (function () {
+      try {
+        var t = localStorage.getItem('meu_financeiro_tema') || 'escuro';
+        document.documentElement.setAttribute('data-tema', t);
+      } catch (e) { /* modo privado: fica no padrão */ }
+    })();
+  </script>
   <div class="app-container">
     <div class="nav-tabs">
       <button class="nav-tab ativo" onclick="mudarAba('abaLancamentos', this)">Lançamentos</button>
@@ -391,7 +467,7 @@
               <option value="7">7x</option><option value="8">8x</option><option value="9">9x</option>
               <option value="10">10x</option><option value="11">11x</option><option value="12">12x</option>
             </select>
-            <p id="avisoParcelaGrupo" class="escondido" style="font-size:11.5px;color:#ffd166;margin-top:6px;line-height:1.4;">Esta é uma parcela de uma compra parcelada — o número de parcelas não pode ser alterado aqui. Ao salvar, você poderá aplicar descrição/conta/categoria/grupo a todas as parcelas de uma vez.</p>
+            <p id="avisoParcelaGrupo" class="escondido" style="font-size:11.5px;color:var(--amarelo);margin-top:6px;line-height:1.4;">Esta é uma parcela de uma compra parcelada — o número de parcelas não pode ser alterado aqui. Ao salvar, você poderá aplicar descrição/conta/categoria/grupo a todas as parcelas de uma vez.</p>
           </div>
           <div class="form-row">
             <div class="form-group" id="grupoCategoria">
@@ -412,17 +488,29 @@
                    mesmo em qualquer aparelho — é o que já rodava no Propostas Corpus. -->
               <button type="button" onclick="abrirCalculadora()" title="Calculadora" aria-label="Abrir calculadora"
                 style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;border:none;
-                       color:#8a8a8a;line-height:0;padding:7px;cursor:pointer;opacity:.75;"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7.6" y="5.6" width="8.8" height="3.4" rx="1" fill="currentColor"/><circle cx="8.6" cy="13.2" r="1.1" fill="currentColor"/><circle cx="12" cy="13.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="13.2" r="1.1" fill="currentColor"/><circle cx="8.6" cy="17.2" r="1.1" fill="currentColor"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="17.2" r="1.1" fill="currentColor"/></svg></button>
+                       color:var(--texto-fraco);line-height:0;padding:7px;cursor:pointer;opacity:.75;"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7.6" y="5.6" width="8.8" height="3.4" rx="1" fill="currentColor"/><circle cx="8.6" cy="13.2" r="1.1" fill="currentColor"/><circle cx="12" cy="13.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="13.2" r="1.1" fill="currentColor"/><circle cx="8.6" cy="17.2" r="1.1" fill="currentColor"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="17.2" r="1.1" fill="currentColor"/></svg></button>
             </div>
           </div>
           <div class="row-botoes-form">
             <button type="submit" id="btnSubmit" class="btn-salvar">Salvar</button>
             <button type="button" id="btnMic" class="btn-mic" onclick="iniciarReconhecimentoVoz()" title="Lançar por voz" aria-label="Lançar por voz"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-            <button type="button" id="btnNota" class="btn-mic" onclick="abrirLeitorNota()" title="Ler o QR da nota fiscal" aria-label="Ler o QR da nota fiscal" style="background:#5f9933;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17.5" y1="14" x2="17.5" y2="14"/><line x1="21" y1="14" x2="21" y2="18"/><line x1="14" y1="21" x2="18" y2="21"/><line x1="21" y1="21" x2="21" y2="21"/></svg></button>
+            <button type="button" id="btnNota" class="btn-mic" onclick="abrirLeitorNota()" title="Ler o QR da nota fiscal" aria-label="Ler o QR da nota fiscal" style="background:var(--acento);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17.5" y1="14" x2="17.5" y2="14"/><line x1="21" y1="14" x2="21" y2="18"/><line x1="14" y1="21" x2="18" y2="21"/><line x1="21" y1="21" x2="21" y2="21"/></svg></button>
           </div>
           <button type="button" id="btnCancelarEdit" class="btn-cancelar escondido" onclick="cancelarEdicao()">Cancelar Edição</button>
         </form>
       </div>
+      <!-- Só aparece quando o backup está atrasado. Fora isso não existe. -->
+      <div id="avisoBackup" class="escondido faixa-aviso">
+        <div style="flex:1;min-width:0;">
+          <strong style="display:block;font-size:13px;margin-bottom:2px;">💾 Faz um backup</strong>
+          <span id="textoAvisoBackup" style="font-size:11.5px;color:var(--texto-fraco);line-height:1.45;"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-mini" style="color:var(--amarelo);border-color:rgba(255,209,102,.4);" onclick="irParaBackup()">exportar</button>
+          <button type="button" class="btn-mini" onclick="adiarAvisoBackup()">depois</button>
+        </div>
+      </div>
+
       <!-- CONSULTA RÁPIDA
            Fica aqui em Lançamentos, ao alcance de quem acabou de registrar um
            gasto e quer saber no que deu. Nasce recolhido: quem só quer lançar
@@ -431,7 +519,7 @@
         <button type="button" class="card-header-toggle" onclick="alternarSecao('analista')">
           <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
             <h3 style="font-size:16px;">🔎 Consulta rápida</h3>
-            <span id="resumoAnalista" style="font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+            <span id="resumoAnalista" style="font-size:11px;color:var(--texto-fraco);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
           </div>
           <span class="chevron-sec" id="chevron-analista">▸</span>
         </button>
@@ -442,7 +530,7 @@
             <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
           </div>
           <div id="sugestoesPergunta" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
-          <div id="respostaPergunta" style="font-size:13px;margin-top:12px;color:#aaa;line-height:1.6;"></div>
+          <div id="respostaPergunta" style="font-size:13px;margin-top:12px;color:var(--texto-medio);line-height:1.6;"></div>
         </div>
       </div>
 
@@ -460,7 +548,7 @@
           </div>
         </div>
         <div style="text-align:center;margin:0 0 10px;">
-          <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:9.5px;color:#6a6a6a;font-weight:400;letter-spacing:.2px;cursor:pointer;padding:1px 4px;white-space:pre;">—</button>
+          <button type="button" id="capFatura" onclick="abrirModalContas()" title="Ajustar fechamento e vencimento dos cartões" style="background:transparent;border:none;font-size:9.5px;color:var(--texto-tenue);font-weight:400;letter-spacing:.2px;cursor:pointer;padding:1px 4px;white-space:pre;">—</button>
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="abrirModalResumoFatura()">
@@ -482,7 +570,7 @@
              mas sem este aviso um mês só de cartão pareceria folgado. -->
         <button type="button" id="avisoFaturaAberta" class="escondido" onclick="irParaPagamentoFatura()"
           aria-label="Ver fatura em aberto"
-          style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:#888;cursor:pointer;padding:0;margin:-6px 0 10px;"></button>
+          style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:-6px 0 10px;"></button>
         <div id="listaFaturas"></div>
       </div>
 
@@ -494,7 +582,7 @@
         <button type="button" class="card-header-toggle" onclick="alternarSecao('lancamentosMes')">
           <h3 id="tituloListaLanc" style="font-size:16px;">Lançamentos</h3>
           <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;">
-            <div id="resumo24h" style="font-size:10px;line-height:1.35;color:#777;text-align:right;"></div>
+            <div id="resumo24h" style="font-size:10px;line-height:1.35;color:var(--texto-tenue);text-align:right;"></div>
             <span class="chevron-sec" id="chevron-lancamentosMes">▸</span>
           </div>
         </button>
@@ -509,9 +597,9 @@
             </div>
             <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
-          <div id="subtotalFormaLanc" style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.7;"></div>
+          <div id="subtotalFormaLanc" style="font-size:11px;color:var(--texto-fraco);margin-bottom:10px;line-height:1.7;"></div>
           <div class="busca-box">
-            <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
           </div>
           <div id="listaLancamentos"></div>
@@ -525,7 +613,7 @@
           <span class="chevron-sec" id="chevron-pagamentoFatura">▸</span>
         </button>
         <div id="corpo-pagamentoFatura" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Marque o que já pagou. Se o valor do banco não bater com o daqui, a diferença vira um lançamento de ajuste pra você investigar depois.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Marque o que já pagou. Se o valor do banco não bater com o daqui, a diferença vira um lançamento de ajuste pra você investigar depois.</p>
           <div id="listaPagamentoFatura"></div>
         </div>
       </div>
@@ -537,10 +625,10 @@
           <span class="chevron-sec" id="chevron-emprestimos">▸</span>
         </button>
         <div id="corpo-emprestimos" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que te devem e o que você deve. Ao marcar "Recebi" ou "Paguei", o lançamento entra sozinho na conta que você escolher.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">O que te devem e o que você deve. Ao marcar "Recebi" ou "Paguei", o lançamento entra sozinho na conta que você escolher.</p>
           <div id="listaEmprestimos"></div>
           <button type="button" id="btnLembretes" class="btn-cancelar escondido" style="margin-top:10px;" onclick="abrirModalLembretes()">🔔 ativar lembrete de cobrança</button>
-          <p id="avisoLembretes" class="escondido" style="font-size:11px;color:#777;margin-top:8px;line-height:1.4;"></p>
+          <p id="avisoLembretes" class="escondido" style="font-size:11px;color:var(--texto-tenue);margin-top:8px;line-height:1.4;"></p>
         </div>
       </div>
 
@@ -551,7 +639,7 @@
           <span class="chevron-sec" id="chevron-fixos">▸</span>
         </button>
         <div id="corpo-fixos" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes. Entram sozinhas nos lançamentos todo mês.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Assinaturas e mensalidades recorrentes. Entram sozinhas nos lançamentos todo mês.</p>
           <div id="totalFixosCard" class="box-resumo-modal" style="margin-bottom:10px;"></div>
           <div id="listaFixos"></div>
           <button type="button" class="btn-cancelar" style="margin-top:10px;" onclick="abrirFormFixo()">+ novo gasto fixo</button>
@@ -611,7 +699,7 @@
       </div>
       <!-- Aqui a régua é o CONSUMO (débito + crédito, pela data da compra). Na aba
            Faturas a régua é a CONTA. Os dois números são diferentes de propósito. -->
-      <p style="font-size:10px;color:#666;text-align:center;margin-top:8px;line-height:1.5;">
+      <p style="font-size:10px;color:var(--texto-tenue);text-align:center;margin-top:8px;line-height:1.5;">
         gasto do período, incluindo o que foi no crédito · o saldo da conta fica em Faturas
       </p>
       </div>
@@ -622,7 +710,7 @@
            Antes o título aparecia DEPOIS dos filtros, no meio do card. -->
       <div class="card" id="cardGraficoPrincipal">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('graficoPrincipal')">
-          <h3 id="tituloGraficoUnico" style="color:#ef5350;">Gastos por Categoria</h3>
+          <h3 id="tituloGraficoUnico" style="color:var(--vermelho);">Gastos por Categoria</h3>
           <span class="chevron-sec" id="chevron-graficoPrincipal">▾</span>
         </button>
         <div id="corpo-graficoPrincipal" style="margin-top:12px;">
@@ -648,8 +736,8 @@
       <div class="card" data-card="indicadores" data-card-titulo="Indicadores do período">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('indicadores')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Indicadores do período</h3>
-            <span style="font-size:11px;color:#aaa;">período selecionado</span>
+            <h3 style="color:var(--amarelo);">Indicadores do período</h3>
+            <span style="font-size:11px;color:var(--texto-medio);">período selecionado</span>
           </div>
           <span class="chevron-sec" id="chevron-indicadores">▸</span>
         </button>
@@ -680,8 +768,8 @@
       <div class="card" data-card="gastoDiaSemana" data-card-titulo="Gasto por dia da semana">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('gastoDiaSemana')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Gasto por dia da semana</h3>
-            <span style="font-size:11px;color:#aaa;">período selecionado</span>
+            <h3 style="color:var(--amarelo);">Gasto por dia da semana</h3>
+            <span style="font-size:11px;color:var(--texto-medio);">período selecionado</span>
           </div>
           <span class="chevron-sec" id="chevron-gastoDiaSemana">▸</span>
         </button>
@@ -698,8 +786,8 @@
       <div class="card" data-card="evolucaoMensal" data-card-titulo="Evolução mensal">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('evolucaoMensal')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Evolução mensal</h3>
-            <span style="font-size:11px;color:#aaa;">últimos 6 meses</span>
+            <h3 style="color:var(--amarelo);">Evolução mensal</h3>
+            <span style="font-size:11px;color:var(--texto-medio);">últimos 6 meses</span>
           </div>
           <span class="chevron-sec" id="chevron-evolucaoMensal">▸</span>
         </button>
@@ -716,8 +804,8 @@
       <div class="card" data-card="rankingGastos" data-card-titulo="Maiores gastos">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('rankingGastos')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Maiores gastos</h3>
-            <span style="font-size:11px;color:#aaa;">período selecionado</span>
+            <h3 style="color:var(--amarelo);">Maiores gastos</h3>
+            <span style="font-size:11px;color:var(--texto-medio);">período selecionado</span>
           </div>
           <span class="chevron-sec" id="chevron-rankingGastos">▸</span>
         </button>
@@ -730,13 +818,13 @@
       <div class="card" data-card="comprometidoFuturo" data-card-titulo="Próximos meses">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('comprometidoFuturo')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Próximos meses</h3>
-            <span style="font-size:11px;color:#aaa;">parcelas + fixos</span>
+            <h3 style="color:var(--amarelo);">Próximos meses</h3>
+            <span style="font-size:11px;color:var(--texto-medio);">parcelas + fixos</span>
           </div>
           <span class="chevron-sec" id="chevron-comprometidoFuturo">▸</span>
         </button>
         <div id="corpo-comprometidoFuturo" class="escondido" style="margin-top:12px;">
-          <p style="font-size:11px;color:#666;margin-bottom:10px;">Quanto já está previsto de despesa fixa + parcelas em aberto pra cada um dos próximos meses.</p>
+          <p style="font-size:11px;color:var(--texto-tenue);margin-bottom:10px;">Quanto já está previsto de despesa fixa + parcelas em aberto pra cada um dos próximos meses.</p>
           <div id="containerComprometidoFuturo"></div>
         </div>
       </div>
@@ -745,13 +833,13 @@
       <div class="card" data-card="metas" data-card-titulo="Metas por categoria">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:#ffd166;">Metas por categoria</h3>
-            <span id="resumoMetas" style="font-size:11px;color:#aaa;"></span>
+            <h3 style="color:var(--amarelo);">Metas por categoria</h3>
+            <span id="resumoMetas" style="font-size:11px;color:var(--texto-medio);"></span>
           </div>
           <span class="chevron-sec" id="chevron-metas">▸</span>
         </button>
         <div id="corpo-metas" class="escondido" style="margin-top:10px;">
-          <p style="font-size:11px;color:#777;margin-bottom:10px;">Vale pro período escolhido acima. A meta aparece como uma linha no gráfico de categorias.</p>
+          <p style="font-size:11px;color:var(--texto-tenue);margin-bottom:10px;">Vale pro período escolhido acima. A meta aparece como uma linha no gráfico de categorias.</p>
           <div id="listaMetasCategoria" class="meta-lista"></div>
         </div>
       </div>
@@ -762,15 +850,15 @@
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <h3>Investimentos & Poupança</h3>
-          <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:24px;color:#aaa;line-height:1;" aria-label="Novo aporte">+</button>
+          <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo aporte">+</button>
         </div>
         <div style="text-align:center;padding:14px 0;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Total acumulado</span>
-          <h2 style="color:#42a5f5;font-size:28px;margin-top:4px;" id="totalInvestido">R$ 0,00</h2>
+          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Total acumulado</span>
+          <h2 style="color:var(--azul);font-size:28px;margin-top:4px;" id="totalInvestido">R$ 0,00</h2>
         </div>
       </div>
       <div class="card">
-        <h4 style="margin-bottom: 12px; color: #aaa;">Aportes</h4>
+        <h4 style="margin-bottom: 12px; color: var(--texto-medio);">Aportes</h4>
         <div id="listaInvestimentos"></div>
       </div>
 
@@ -780,11 +868,11 @@
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <h3>Grupos de Gastos</h3>
-          <button class="btn-acao" onclick="criarGrupoRapido()" style="font-size:24px;color:#aaa;line-height:1;" aria-label="Novo grupo">+</button>
+          <button class="btn-acao" onclick="criarGrupoRapido()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo grupo">+</button>
         </div>
-        <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
+        <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
         <div class="busca-box">
-          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
         </div>
         <div id="listaGrupos"></div>
@@ -798,7 +886,7 @@
           <span class="chevron-sec" id="chevron-contasCategorias">▸</span>
         </button>
         <div id="corpo-contasCategorias" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:#aaa;margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:12px;">Saiu do formulário de lançamento pra deixar ele mais limpo — o cadastro mora aqui agora.</p>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
             <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
@@ -812,17 +900,17 @@
           <span class="chevron-sec" id="chevron-contatos">▸</span>
         </button>
         <div id="corpo-contatos" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Os números que o app usa pra abrir o WhatsApp. Ficam só neste aparelho.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Os números que o app usa pra abrir o WhatsApp. Ficam só neste aparelho.</p>
           <!-- Quem está atrasado recebe mensagem do "assistente", não sua. O nome
                entra na apresentação dele: "sou o assistente do Léo". -->
           <div class="form-group">
             <label for="inputMeuNome">O SEU nome — o de quem emprestou</label>
             <input type="text" id="inputMeuNome" placeholder="ex: Léo" oninput="salvarMeuNome()" onchange="salvarMeuNome()">
-            <p style="color:#888;font-size:11.5px;margin-top:7px;line-height:1.45;">
+            <p style="color:var(--texto-fraco);font-size:11.5px;margin-top:7px;line-height:1.45;">
               Nas cobranças o app finge ser um assistente seu, pra não parecer que é você
               cobrando na cara dura. Ele se apresenta assim:
             </p>
-            <p id="exemploMeuNome" style="color:#5f9933;font-size:12px;margin-top:5px;font-style:italic;"></p>
+            <p id="exemploMeuNome" style="color:var(--acento);font-size:12px;margin-top:5px;font-style:italic;"></p>
           </div>
           <div id="listaContatos"></div>
         </div>
@@ -832,14 +920,25 @@
         <button type="button" class="card-header-toggle" onclick="alternarSecao('lixeira')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
             <h3 style="font-size:16px;">Lançamentos excluídos</h3>
-            <span id="contadorLixeira" style="font-size:11px;color:#aaa;">vazia</span>
+            <span id="contadorLixeira" style="font-size:11px;color:var(--texto-medio);">vazia</span>
           </div>
           <span class="chevron-sec" id="chevron-lixeira">▸</span>
         </button>
         <div id="corpo-lixeira" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 30.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 30.</p>
           <div id="listaLixeira"></div>
           <button type="button" class="btn-backup danger" style="margin-top:12px;" onclick="esvaziarLixeira()">Esvaziar lixeira</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('tema')">
+          <h3 style="font-size:16px;">Aparência</h3>
+          <span class="chevron-sec" id="chevron-tema">▸</span>
+        </button>
+        <div id="corpo-tema" class="escondido" style="margin-top:10px;">
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Vale só neste aparelho. Seus dados não mudam.</p>
+          <div id="listaTemas" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
         </div>
       </div>
 
@@ -849,7 +948,7 @@
           <span class="chevron-sec" id="chevron-sons">▸</span>
         </button>
         <div id="corpo-sons" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Toque na linha pra ouvir. Toque no ✓ pra tirar ou botar o som no sorteio — a cada receita, um dos marcados toca.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Toque na linha pra ouvir. Toque no ✓ pra tirar ou botar o som no sorteio — a cada receita, um dos marcados toca.</p>
           <div id="listaSons"></div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="chkSomLigado" onchange="alternarSomLigado()" aria-label="Tocar som ao salvar receita" style="width:auto;margin:0;">
@@ -859,7 +958,7 @@
             <input type="checkbox" id="chkVibrar" onchange="alternarVibracao()" aria-label="Vibrar ao salvar" style="width:auto;margin:0;">
             <span>Vibrar ao salvar</span>
           </label>
-          <p style="color:#777;font-size:11px;margin-top:6px;line-height:1.45;">
+          <p style="color:var(--texto-tenue);font-size:11px;margin-top:6px;line-height:1.45;">
             Despesa: um toque seco. Transferência: dois toques. Receita: uma vibração
             mais longa, oscilando — a mão sente o mesmo que o ouvido escuta.
           </p>
@@ -872,7 +971,7 @@
           <span class="chevron-sec" id="chevron-ordemFaturas">▸</span>
         </button>
         <div id="corpo-ordemFaturas" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
           <div id="ordemCardsAbaFaturas"></div>
         </div>
       </div>
@@ -883,7 +982,7 @@
           <span class="chevron-sec" id="chevron-ordemGraficos">▸</span>
         </button>
         <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:#aaa;margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
           <div id="ordemCardsAbaGraficos"></div>
         </div>
       </div>
@@ -895,7 +994,7 @@
           <span class="chevron-sec" id="chevron-backup">▸</span>
         </button>
         <div id="corpo-backup" class="escondido" style="margin-top:10px;">
-          <p style="color:#aaa;font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados. Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — <strong style="color:#ccc;font-weight:600;">Salvar no Drive</strong>, Arquivos, WhatsApp. No computador, abre o "salvar como" pra apontar a pasta.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados. Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — <strong style="color:var(--texto-forte);font-weight:600;">Salvar no Drive</strong>, Arquivos, WhatsApp. No computador, abre o "salvar como" pra apontar a pasta.</p>
           <div class="backup-actions">
             <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
@@ -904,10 +1003,10 @@
         </div>
         <!-- Versão e assinatura ficam FORA do corpo retrátil: são a identidade do
              app, não um detalhe de backup. Some o card, some a autoria junto. -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #2a2a2a;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--borda-fraca);">
           <div style="min-width:0;">
-            <div id="versaoApp" style="font-size:11px;color:#666;">versão —</div>
-            <div style="font-size:11px;color:#5f9933;font-weight:600;letter-spacing:.2px;">By: Leonardo Cade</div>
+            <div id="versaoApp" style="font-size:11px;color:var(--texto-tenue);">versão —</div>
+            <div style="font-size:11px;color:var(--acento);font-weight:600;letter-spacing:.2px;">By: Leonardo Cade</div>
           </div>
           <button type="button" class="btn-mini" onclick="forcarAtualizacao()">buscar atualização</button>
         </div>
@@ -922,9 +1021,9 @@
         <h3 id="tituloTomCobranca">Cobrar</h3>
         <button class="btn-fechar" onclick="fecharModal('modalTomCobranca')">&times;</button>
       </div>
-      <p style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.5;">Como você quer falar dessa vez?</p>
+      <p style="font-size:12px;color:var(--texto-medio);margin-bottom:12px;line-height:1.5;">Como você quer falar dessa vez?</p>
       <div id="opcoesTomCobranca"></div>
-      <p id="previaTomCobranca" style="font-size:11.5px;color:#777;line-height:1.5;white-space:pre-wrap;"></p>
+      <p id="previaTomCobranca" style="font-size:11.5px;color:var(--texto-tenue);line-height:1.5;white-space:pre-wrap;"></p>
     </div>
   </div>
 
@@ -935,14 +1034,14 @@
         <h3>QR da nota fiscal</h3>
         <button class="btn-fechar" onclick="fecharLeitorNota()">&times;</button>
       </div>
-      <p style="font-size:12px;color:#aaa;line-height:1.5;margin-bottom:10px;">
+      <p style="font-size:12px;color:var(--texto-medio);line-height:1.5;margin-bottom:10px;">
         Aponta pro QR code impresso no cupom. É o quadradinho perto do rodapé, do lado do "Consulte pela chave de acesso".
       </p>
       <div id="molduraNota" style="position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:1/1;">
         <video id="videoNota" playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>
         <div style="position:absolute;inset:14%;border:2px solid rgba(95,153,51,.9);border-radius:10px;pointer-events:none;"></div>
       </div>
-      <p id="statusNota" style="font-size:12px;color:#888;margin-top:10px;text-align:center;min-height:1.2em;"></p>
+      <p id="statusNota" style="font-size:12px;color:var(--texto-fraco);margin-top:10px;text-align:center;min-height:1.2em;"></p>
       <input type="file" id="fotoNota" class="escondido" accept="image/*" capture="environment" aria-label="Foto do QR da nota" onchange="lerNotaDaFoto(event)">
       <button type="button" class="btn-cancelar" style="margin-top:10px;" onclick="document.getElementById('fotoNota').click()">Tirar foto do QR</button>
     </div>
@@ -959,8 +1058,8 @@
       <!-- O período é o mesmo já escolhido na aba Gráficos: um filtro só, sem duplicar
            a mesma pergunta em dois lugares -->
       <div id="wrapFiltrosModal" style="margin-bottom:16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#aaa;">
-          <span>Período: <strong id="labelPeriodoModalAtual" style="color:#ddd;">Últimos 30 dias</strong></span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--texto-medio);">
+          <span>Período: <strong id="labelPeriodoModalAtual" style="color:var(--texto-forte);">Últimos 30 dias</strong></span>
           <button type="button" class="btn-mini" onclick="trocarPeriodoDaConsulta()">trocar período</button>
         </div>
       </div>
@@ -976,8 +1075,8 @@
         <button type="button" id="toggleFiltroDetalhe" onclick="alternarFiltroDetalhe()"
           style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
                  background:transparent;border:none;padding:2px 0 10px;cursor:pointer;">
-          <span id="rotuloFiltroDetalhe" style="font-size:12.5px;color:#888;">Buscar e filtrar</span>
-          <span id="chevronFiltroDetalhe" style="font-size:11px;color:#888;">▸</span>
+          <span id="rotuloFiltroDetalhe" style="font-size:12.5px;color:var(--texto-fraco);">Buscar e filtrar</span>
+          <span id="chevronFiltroDetalhe" style="font-size:11px;color:var(--texto-fraco);">▸</span>
         </button>
         <div id="camposFiltroDetalhe" class="escondido">
         <div style="position:relative;margin-bottom:8px;">
@@ -986,7 +1085,7 @@
           <button type="button" id="limparBuscaDetalhe" class="escondido" onclick="limparBuscaDetalhe()"
             aria-label="Limpar busca"
             style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;
-                   border:none;color:#888;font-size:17px;line-height:1;padding:6px 8px;cursor:pointer;">&times;</button>
+                   border:none;color:var(--texto-fraco);font-size:17px;line-height:1;padding:6px 8px;cursor:pointer;">&times;</button>
         </div>
         <div style="display:flex;gap:8px;">
           <select id="filtroCatDetalhe" aria-label="Filtrar por categoria" onchange="renderDetalheFatura()" style="font-size:12.5px;padding:8px 9px;flex:1;min-width:0;"></select>
@@ -1002,13 +1101,13 @@
       <!-- SUBTOTALIZADORES DINÂMICOS DA CONSULTA -->
       <div class="box-resumo-modal" id="boxSubtotaisModal"></div>
 
-      <h4 id="subtituloModal" style="margin-bottom:10px; color:#aaa; font-size:13px;">Lançamentos do período</h4>
+      <h4 id="subtituloModal" style="margin-bottom:10px; color:var(--texto-medio); font-size:13px;">Lançamentos do período</h4>
       <div id="modalCorpo"></div>
 
       <!-- Rodapé de ações (visível só no modal de grupo) -->
-      <div id="rodapeGrupo" class="escondido" style="margin-top:20px;padding-top:16px;border-top:1px solid #333;display:flex;gap:10px;">
+      <div id="rodapeGrupo" class="escondido" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--borda);display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;" onclick="abrirRenomearGrupo()">Renomear</button>
-        <button type="button" class="btn-cancelar" style="flex:1;color:#ef5350;border-color:rgba(239,83,80,0.35);" onclick="excluirGrupoAtual()">Excluir grupo</button>
+        <button type="button" class="btn-cancelar" style="flex:1;color:var(--vermelho);border-color:rgba(239,83,80,0.35);" onclick="excluirGrupoAtual()">Excluir grupo</button>
       </div>
     </div>
   </div>
@@ -1035,7 +1134,7 @@
         <h3 id="modalAcoesTitulo">Opções do Lançamento</h3>
         <button class="btn-fechar" onclick="fecharModal('modalAcoes')">&times;</button>
       </div>
-      <div id="infoAcoesLancamento" style="padding:0 0 10px;border-bottom:1px solid #2a2a2a;margin-bottom:10px;"></div>
+      <div id="infoAcoesLancamento" style="padding:0 0 10px;border-bottom:1px solid var(--borda-fraca);margin-bottom:10px;"></div>
       <div class="balao-acoes">
         <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar</button>
         <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas</button>
@@ -1052,7 +1151,7 @@
         <button class="btn-fechar" onclick="fecharModal('modalParcelas')">&times;</button>
       </div>
       <div id="resumoParcelas" class="box-resumo-modal" style="margin-bottom:12px;"></div>
-      <p style="color:#777;font-size:11.5px;margin-bottom:10px;">A data de cada parcela define em qual fatura ela cai (fechamento dia 3).</p>
+      <p style="color:var(--texto-tenue);font-size:11.5px;margin-bottom:10px;">A data de cada parcela define em qual fatura ela cai (fechamento dia 3).</p>
       <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as que faltam</button>
       <div id="listaGerenciarParcelas" onchange="previewFaturasParcelas(event)"></div>
       <div style="display:flex;gap:10px;margin-top:14px;">
@@ -1090,7 +1189,7 @@
         <h3>Gerenciar contas</h3>
         <button class="btn-fechar" onclick="fecharModal('modalContas')">&times;</button>
       </div>
-      <p style="font-size:11.5px;color:#777;margin-bottom:10px;line-height:1.45;">A ★ deixa a conta no topo do formulário. Toque na linha pra editar ou excluir.</p>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;">A ★ deixa a conta no topo do formulário. Toque na linha pra editar ou excluir.</p>
       <div id="listaContasGerenciar"></div>
       <button type="button" class="btn-adicionar" onclick="abrirFormConta()">+ Adicionar nova conta</button>
     </div>
@@ -1120,7 +1219,7 @@
             <select id="contaDiaVencimento"></select>
           </div>
         </div>
-        <p style="font-size:11px;color:#777;margin-bottom:10px;">Compra feita depois do fechamento cai na fatura do mês seguinte. Cada cartão tem os seus dias.</p>
+        <p style="font-size:11px;color:var(--texto-tenue);margin-bottom:10px;">Compra feita depois do fechamento cai na fatura do mês seguinte. Cada cartão tem os seus dias.</p>
         <!-- Cada conta aceita um punhado de formas, não todas: no Ticket não existe
              Pix nem crédito; no PicPay você não passa débito. Marcando só o que
              vale, o seletor do lançamento encurta pro que faz sentido — e quando
@@ -1128,7 +1227,7 @@
         <div class="form-group">
           <label style="display:block;margin-bottom:6px;">Formas que esta conta aceita</label>
           <div id="contaFormasBox"></div>
-          <p style="font-size:11px;color:#777;margin-top:6px;line-height:1.45;">
+          <p style="font-size:11px;color:var(--texto-tenue);margin-top:6px;line-height:1.45;">
             Sem marcar nada, aparecem todas. Marcando uma só, ela já vem preenchida no lançamento.
           </p>
         </div>
@@ -1145,12 +1244,12 @@
         <h3>Lembrete de cobrança</h3>
         <button class="btn-fechar" onclick="fecharModal('modalLembretes')">&times;</button>
       </div>
-      <p style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.45;">Chega um aviso só, com todo mundo junto — não um por pessoa.</p>
+      <p style="font-size:12px;color:var(--texto-medio);margin-bottom:12px;line-height:1.45;">Chega um aviso só, com todo mundo junto — não um por pessoa.</p>
 
-      <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Avisar quando faltar</label>
+      <label style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Avisar quando faltar</label>
       <div id="chipsAntecedencia" class="chips-antecedencia"></div>
 
-      <p id="previaLembrete" style="font-size:11.5px;color:#777;margin-top:10px;line-height:1.45;"></p>
+      <p id="previaLembrete" style="font-size:11.5px;color:var(--texto-tenue);margin-top:10px;line-height:1.45;"></p>
 
       <button type="button" class="btn-salvar" style="margin-top:14px;" onclick="salvarLembretes()">Ativar lembrete</button>
       <button type="button" id="btnDesligarLembrete" class="btn-cancelar escondido" onclick="desligarLembretes()">Desligar lembrete</button>
@@ -1179,7 +1278,7 @@
         <h3>Vincular a um grupo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalGrupoVinculo')">&times;</button>
       </div>
-      <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Vale pra despesa e pra receita (ex: reembolso de uma viagem).</p>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;">Vale pra despesa e pra receita (ex: reembolso de uma viagem).</p>
       <div class="form-group escondido" id="grupoGrupoViagemWrap">
         <select id="grupoViagem" aria-label="Grupo de gastos" onchange="onMudarGrupoSelect()"></select>
       </div>
@@ -1208,7 +1307,7 @@
         <h3>Empréstimo</h3>
         <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
       </div>
-      <p id="textoModalEmprestimo" style="color:#aaa;font-size:12px;margin-bottom:10px;"></p>
+      <p id="textoModalEmprestimo" style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;"></p>
       <div class="form-row">
         <div class="form-group">
           <label for="emprestimoTemp" id="labelQuemEmprestimo">Quem te deve</label>
@@ -1219,7 +1318,7 @@
           <input type="date" id="emprestimoVenceTemp">
         </div>
       </div>
-      <p style="font-size:11px;color:#777;margin:-6px 0 10px;">Mais de uma pessoa? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
+      <p style="font-size:11px;color:var(--texto-tenue);margin:-6px 0 10px;">Mais de uma pessoa? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
       <div class="form-group escondido" id="wrapParcelasDivida">
         <label for="emprestimoParcelasTemp">Vou devolver em quantas vezes?</label>
         <select id="emprestimoParcelasTemp" onchange="atualizarPreviaRateio()"></select>
@@ -1296,7 +1395,7 @@
           <input type="date" id="dataRecebimento">
         </div>
       </div>
-      <p id="avisoReceberEmprestimo" style="font-size:11.5px;color:#777;margin-bottom:12px;"></p>
+      <p id="avisoReceberEmprestimo" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;"></p>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalReceberEmprestimo')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarRecebimentoEmprestimo()">Confirmar</button>
@@ -1311,7 +1410,7 @@
         <h3>Transferências pessoais</h3>
         <button class="btn-fechar" onclick="fecharModal('modalTransferencia')">&times;</button>
       </div>
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Não entra nas receitas/despesas nem nos gráficos — é só dinheiro mudando de conta.</p>
+      <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Não entra nas receitas/despesas nem nos gráficos — é só dinheiro mudando de conta.</p>
       <div class="form-group">
         <label for="transfOrigem">De</label>
         <select id="transfOrigem"></select>
@@ -1342,7 +1441,7 @@
         <h3 id="tituloContatoCobranca" style="font-size:16px;">WhatsApp</h3>
         <button class="btn-fechar" onclick="fecharModal('modalContatoCobranca')">&times;</button>
       </div>
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px;">Guardado só aqui no aparelho. Na próxima cobrança dessa pessoa já vai direto.</p>
+      <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Guardado só aqui no aparelho. Na próxima cobrança dessa pessoa já vai direto.</p>
       <button type="button" id="btnEscolherDaAgenda" class="btn-backup escondido" style="margin-bottom:10px;" onclick="escolherDaAgenda()">📇 Escolher da agenda</button>
       <div class="form-group">
         <label for="inputTelefoneCobranca">Número com DDD</label>
@@ -1368,9 +1467,9 @@
         <h3 style="font-size:16px;">Calculadora</h3>
         <button class="btn-fechar" onclick="fecharModal('modalCalculadora')">&times;</button>
       </div>
-      <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:12px 14px;margin-bottom:12px;text-align:right;">
-        <div id="calcExpressao" style="font-size:12.5px;color:#888;min-height:17px;word-break:break-all;">&nbsp;</div>
-        <div id="calcResultado" style="font-size:26px;font-weight:700;color:#2196f3;">R$ 0,00</div>
+      <div style="background:var(--campo);border:1px solid var(--borda);border-radius:12px;padding:12px 14px;margin-bottom:12px;text-align:right;">
+        <div id="calcExpressao" style="font-size:12.5px;color:var(--texto-fraco);min-height:17px;word-break:break-all;">&nbsp;</div>
+        <div id="calcResultado" style="font-size:26px;font-weight:700;color:var(--azul-forte);">R$ 0,00</div>
       </div>
       <div id="tecladoCalc" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
     </div>
@@ -1381,8 +1480,8 @@
   <div id="modalAviso" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAviso')">
     <div class="modal-content" style="max-width:320px;text-align:center;">
       <div id="avisoEmoji" style="font-size:38px;line-height:1;margin:4px 0 10px;">🤨</div>
-      <div id="avisoTexto" style="font-size:15px;line-height:1.5;color:#eee;margin-bottom:6px;"></div>
-      <div id="avisoDetalhe" style="font-size:12px;color:#888;line-height:1.45;"></div>
+      <div id="avisoTexto" style="font-size:15px;line-height:1.5;color:var(--texto-forte);margin-bottom:6px;"></div>
+      <div id="avisoDetalhe" style="font-size:12px;color:var(--texto-fraco);line-height:1.45;"></div>
       <button type="button" class="btn-salvar" style="margin-top:18px;width:100%;" onclick="fecharModal('modalAviso')">Beleza</button>
     </div>
   </div>
@@ -1455,7 +1554,7 @@
         <input type="number" id="inputEdicaoMeta" min="0" step="0.01" placeholder="R$ 0,00" inputmode="decimal"
                onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarEdicaoMeta();}">
       </div>
-      <p style="font-size:11.5px;color:#777;margin-bottom:12px;line-height:1.45;">O valor é por mês. Em períodos maiores, o teto do gráfico é ajustado na mesma proporção.</p>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">O valor é por mês. Em períodos maiores, o teto do gráfico é ajustado na mesma proporção.</p>
       <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarEdicaoMeta()">Salvar meta</button>
       <button type="button" id="btnRemoverMeta" class="btn-cancelar escondido" onclick="removerMetaEditando()">Remover meta</button>
     </div>
@@ -1478,7 +1577,7 @@
         <h3>Gerenciar categorias</h3>
         <button class="btn-fechar" onclick="fecharModal('modalCategorias')">&times;</button>
       </div>
-      <p style="font-size:11.5px;color:#777;margin-bottom:10px;line-height:1.45;">A ★ deixa a categoria no topo do formulário. Arraste pelas listrinhas pra mudar a ordem, e toque na linha pra renomear ou excluir.</p>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;">A ★ deixa a categoria no topo do formulário. Arraste pelas listrinhas pra mudar a ordem, e toque na linha pra renomear ou excluir.</p>
       <div id="listaCategoriasGerenciar"></div>
       <button type="button" class="btn-adicionar" onclick="abrirFormCategoria()">+ Adicionar nova categoria</button>
     </div>
@@ -1545,7 +1644,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="emprestimoFixo">Alguém te reembolsa? <span style="color:#666;">(opcional)</span></label>
+            <label for="emprestimoFixo">Alguém te reembolsa? <span style="color:var(--texto-tenue);">(opcional)</span></label>
             <input type="text" id="emprestimoFixo" placeholder="Ex: Bernardo" oninput="atualizarPrazoFixoVisibilidade()">
           </div>
           <div class="form-group escondido" id="grupoPrazoFixo">
@@ -1553,8 +1652,8 @@
             <select id="diaCobrancaFixo"></select>
           </div>
         </div>
-        <p style="font-size:11.5px;color:#777;margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 3): cobrança até o dia 3 entra na fatura do próprio mês; depois do dia 3, na do mês seguinte.</p>
-        <p id="avisoEmprestimoFixo" class="escondido" style="font-size:11.5px;color:#ffd166;margin-bottom:10px;line-height:1.4;">Cada mês vira uma cobrança em aberto no quadro <strong>Empréstimos</strong> (aba Faturas). O gasto continua contando normal no cartão — quando a pessoa te pagar, é só marcar "Recebi" lá e o valor entra como receita.</p>
+        <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 3): cobrança até o dia 3 entra na fatura do próprio mês; depois do dia 3, na do mês seguinte.</p>
+        <p id="avisoEmprestimoFixo" class="escondido" style="font-size:11.5px;color:var(--amarelo);margin-bottom:10px;line-height:1.4;">Cada mês vira uma cobrança em aberto no quadro <strong>Empréstimos</strong> (aba Faturas). O gasto continua contando normal no cartão — quando a pessoa te pagar, é só marcar "Recebi" lá e o valor entra como receita.</p>
         <button type="submit" class="btn-salvar">Salvar gasto fixo</button>
       </form>
     </div>
@@ -1619,8 +1718,8 @@
     const STORAGE_KEY_UI = "meu_financeiro_ui_v1";
 
     const NOMES_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const PALETA = ['#ef5350','#ffa726','#ffca28','#66bb6a','#42a5f5','#ab47bc','#8d6e63','#26a69a'];
-    const PALETA_RECEITAS = ['#66bb6a','#26a69a','#42a5f5','#ffca28','#ab47bc','#ffa726','#8d6e63','#ef5350'];
+    const PALETA = ['var(--vermelho)','var(--laranja)','var(--amarelo-forte)','var(--verde-claro)','var(--azul)','var(--roxo)','var(--marrom)','var(--turquesa)'];
+    const PALETA_RECEITAS = ['var(--verde-claro)','var(--turquesa)','var(--azul)','var(--amarelo-forte)','var(--roxo)','var(--laranja)','var(--marrom)','var(--vermelho)'];
 
     function salvarLocalStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(lancamentos)); }
     function carregarLocalStorage() {
@@ -1927,7 +2026,7 @@
       });
     }
 
-    const SVG_PEGADOR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="16" x2="20" y2="16"/></svg>';
+    const SVG_PEGADOR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="16" x2="20" y2="16"/></svg>';
 
     function renderizarOrdemCards(idAba) {
       const container = document.getElementById('ordemCards' + idAba.replace('aba', 'Aba'));
@@ -2055,7 +2154,7 @@
           <span>${divisor} pessoas${incluiVoce ? ' (você + ' + nomes.length + ')' : ''}</span>
           <strong>${total ? 'R$ ' + cota.toFixed(2).replace('.', ',') + ' cada' : 'digite o valor'}</strong>
         </div>
-        <div style="font-size:11px;color:#888;margin-top:4px;">
+        <div style="font-size:11px;color:var(--texto-fraco);margin-top:4px;">
           ${tipoAtual === 'receita' ? 'Você vai devolver a' : 'Vão te dever'}: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na conta.' : ''}
         </div>
       `;
@@ -2113,9 +2212,9 @@
     function setVisaoGrafico(visao) {
       visaoGraficoAtual = visao;
       const VISOES = {
-        despesas: { container: 'containerGraficoCategorias', titulo: 'Gastos por Categoria', cor: '#ef5350', tipo: tipoGraficoCategoria },
-        receitas: { container: 'containerGraficoReceitas', titulo: 'Receitas por Fonte', cor: '#4caf50', tipo: tipoGraficoReceita },
-        contas: { container: 'containerGraficoContas', titulo: 'Gastos por Conta / Cartão', cor: '#42a5f5', tipo: tipoGraficoConta }
+        despesas: { container: 'containerGraficoCategorias', titulo: 'Gastos por Categoria', cor: 'var(--vermelho)', tipo: tipoGraficoCategoria },
+        receitas: { container: 'containerGraficoReceitas', titulo: 'Receitas por Fonte', cor: 'var(--verde)', tipo: tipoGraficoReceita },
+        contas: { container: 'containerGraficoContas', titulo: 'Gastos por Conta / Cartão', cor: 'var(--azul)', tipo: tipoGraficoConta }
       };
       document.getElementById('btnVerDespesas').classList.toggle('ativo', visao === 'despesas');
       document.getElementById('btnVerReceitas').classList.toggle('ativo', visao === 'receitas');
@@ -2188,9 +2287,9 @@
         // ajuste que se faz de repetido, sem precisar de confirmação
         div.onclick = () => abrirAcoesConta(c.id);
         div.innerHTML = `
-          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:#888;">${c.temCredito ? '💳 fecha dia ' + diasDoCartao(c.nome).fecha + ' · vence dia ' + diasDoCartao(c.nome).vence : 'sem cartão de crédito'}</div></div>
+          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:var(--texto-fraco);">${c.temCredito ? '💳 fecha dia ' + diasDoCartao(c.nome).fecha + ' · vence dia ' + diasDoCartao(c.nome).vence : 'sem cartão de crédito'}</div></div>
           <div class="item-acoes">
-            <button class="btn-acao btn-estrela" title="${c.favorita ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="color:${c.favorita ? '#ffd166' : '#5a5a5a'};">${c.favorita ? '★' : '☆'}</button>
+            <button class="btn-acao btn-estrela" title="${c.favorita ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="color:${c.favorita ? 'var(--amarelo)' : 'var(--texto-tenue)'};">${c.favorita ? '★' : '☆'}</button>
           </div>`;
         div.querySelector('.btn-estrela').onclick = ev => { ev.stopPropagation(); alternarFavoritaConta(c.id); };
         box.appendChild(div);
@@ -2397,7 +2496,7 @@
         div.innerHTML = `
           <div class="item-info"><strong>${nome}</strong></div>
           <div class="item-acoes">
-            <button class="btn-acao btn-estrela" title="${fav ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="color:${fav ? '#ffd166' : '#5a5a5a'};">${fav ? '★' : '☆'}</button>
+            <button class="btn-acao btn-estrela" title="${fav ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="color:${fav ? 'var(--amarelo)' : 'var(--texto-tenue)'};">${fav ? '★' : '☆'}</button>
             <button type="button" class="btn-pegador" data-pegador aria-label="Arrastar para reordenar">${SVG_PEGADOR}</button>
           </div>`;
         div.querySelector('.btn-estrela').onclick = ev => { ev.stopPropagation(); alternarFavoritaCategoria(nome); };
@@ -2659,6 +2758,66 @@
       abaAntesDaEdicao = null;
     }
 
+    /* LEMBRETE DE BACKUP
+       Os dados moram só no navegador deste celular. Limpar os dados do site,
+       trocar de aparelho ou o Android liberar espaço apaga tudo — e o backup só
+       acontece se alguém lembrar de fazer. Este é o único estrago do app que não
+       tem desfazer, então ele cobra.
+
+       A régua é o dia da última exportação. Quem nunca exportou tem um mês de
+       carência: cobrar backup de quem lançou três coisas é ruído. */
+    const CHAVE_ULTIMO_BACKUP = 'meu_financeiro_ultimo_backup';
+    const CHAVE_ADIAR_BACKUP  = 'meu_financeiro_adiar_backup';
+    const DIAS_ENTRE_BACKUPS  = 15;
+    const DIAS_ADIAMENTO      = 3;
+
+    function diasSemBackup() {
+      const ultimo = localStorage.getItem(CHAVE_ULTIMO_BACKUP);
+      if (ultimo) return Math.abs(diasAte(ultimo));
+      // nunca exportou: conta do lançamento mais antigo, que é a idade do histórico
+      const datas = lancamentos.map(l => l.data).filter(Boolean).sort();
+      if (!datas.length) return 0;
+      return Math.abs(diasAte(datas[0]));
+    }
+
+    function backupAtrasado() {
+      if (!lancamentos.length) return false;
+      const adiado = localStorage.getItem(CHAVE_ADIAR_BACKUP);
+      if (adiado && diasAte(adiado) > 0) return false;   // você pediu pra falar depois
+      return diasSemBackup() >= DIAS_ENTRE_BACKUPS;
+    }
+
+    function adiarAvisoBackup() {
+      localStorage.setItem(CHAVE_ADIAR_BACKUP, somarDias(obterDataBrasilia(), DIAS_ADIAMENTO));
+      atualizarAvisoBackup();
+    }
+
+    function irParaBackup() {
+      const btn = [...document.querySelectorAll('.nav-tab')]
+        .find(b => (b.getAttribute('onclick') || '').includes('abaConfig'));
+      if (btn) mudarAba('abaConfig', btn);
+      uiPrefs['secao_backup'] = true;
+      salvarUiPrefs();
+      aplicarSecao('backup');
+      setTimeout(() => {
+        const alvo = document.getElementById('corpo-backup');
+        if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 120);
+    }
+
+    function atualizarAvisoBackup() {
+      const faixa = document.getElementById('avisoBackup');
+      if (!faixa) return;
+      const mostrar = backupAtrasado();
+      faixa.classList.toggle('escondido', !mostrar);
+      if (!mostrar) return;
+      const dias = diasSemBackup();
+      const nunca = !localStorage.getItem(CHAVE_ULTIMO_BACKUP);
+      document.getElementById('textoAvisoBackup').textContent = nunca
+        ? `Você tem ${lancamentos.length} lançamentos e nenhum backup. Se este celular sumir, some tudo junto.`
+        : `Último backup há ${dias} dias. Seus dados moram só neste aparelho.`;
+    }
+
     async function exportarBackup() {
       const payload = {
         versao: 3,
@@ -2675,6 +2834,12 @@
         transferencias,
         contatos,
         lixeira
+      };
+      // Só conta como backup feito quando o arquivo REALMENTE sai — por isso a
+      // marca é gravada em cada caminho que conclui, não aqui no começo.
+      const marcarBackupFeito = () => {
+        localStorage.setItem(CHAVE_ULTIMO_BACKUP, obterDataBrasilia());
+        atualizarAvisoBackup();
       };
       const nome = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
       const texto = JSON.stringify(payload, null, 2);
@@ -2700,6 +2865,7 @@
             title: 'Backup do MeuFinanceiro',
             text: 'Backup de ' + obterDataBrasilia().split('-').reverse().join('/')
           });
+          marcarBackupFeito();
           return;
         }
       } catch (e) {
@@ -2716,6 +2882,7 @@
           const escrever = await handle.createWritable();
           await escrever.write(blob);
           await escrever.close();
+          marcarBackupFeito();
           avisar('backupSalvo');
           return;
         }
@@ -2728,6 +2895,7 @@
       a.href = url;
       a.download = nome;
       a.click();
+      marcarBackupFeito();
       setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
@@ -2876,11 +3044,11 @@
       if (resumo) {
         const comMeta = cats.filter(c => parseVal(orcamentosCategoria[c]) > 0);
         const estouradas = comMeta.filter(c => obterGastoCategoriaPeriodo(c) > metaDoPeriodo(c));
-        if (!comMeta.length) { resumo.textContent = 'nenhuma meta definida'; resumo.style.color = '#aaa'; }
+        if (!comMeta.length) { resumo.textContent = 'nenhuma meta definida'; resumo.style.color = 'var(--texto-medio)'; }
         else if (estouradas.length) {
           resumo.textContent = estouradas.length + (estouradas.length === 1 ? ' estourou' : ' estouraram');
-          resumo.style.color = '#ef5350';
-        } else { resumo.textContent = comMeta.length + ' dentro do teto'; resumo.style.color = '#4caf50'; }
+          resumo.style.color = 'var(--vermelho)';
+        } else { resumo.textContent = comMeta.length + ' dentro do teto'; resumo.style.color = 'var(--verde)'; }
       }
       lista.innerHTML = '';
 
@@ -2903,9 +3071,9 @@
               <strong>${cat}</strong>
               <span> ${fmtOculto(gasto)} de ${fmtOculto(meta)}</span>
             </div>
-            <span style="color:${pct >= 100 ? '#ef5350' : '#888'};">${Math.round(pct)}%${sufixo}</span>
+            <span style="color:${pct >= 100 ? 'var(--vermelho)' : 'var(--texto-fraco)'};">${Math.round(pct)}%${sufixo}</span>
           </div>
-          <div class="meta-barra"><div class="meta-barra-fill" style="width:${pct}%;background:${pct >= 100 ? '#ef5350' : '#4caf50'};"></div></div>
+          <div class="meta-barra"><div class="meta-barra-fill" style="width:${pct}%;background:${pct >= 100 ? 'var(--vermelho)' : 'var(--verde)'};"></div></div>
         `;
         lista.appendChild(div);
       });
@@ -2965,8 +3133,8 @@
     }
 
     // Ícones de olho (SVG discreto) para mostrar/ocultar valores
-    const SVG_OLHO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-    const SVG_OLHO_FECHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    const SVG_OLHO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--texto-fraco)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const SVG_OLHO_FECHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--texto-fraco)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
     function atualizarIconesOlho() {
       ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
@@ -3137,6 +3305,46 @@
       } catch (e) { /* idem */ }
     }
 
+    /* APARÊNCIA
+       O tema é do aparelho, não do dado: quem usa o app em dois celulares pode
+       ter um claro e outro escuro. Por isso fica no localStorage e não no
+       backup — restaurar backup não muda a cara do app de quem restaurou. */
+    const TEMAS = [
+      { id: 'escuro', nome: 'Escuro',  dica: 'o de sempre',      amostra: ['#121212', '#242424', '#4caf50'] },
+      { id: 'claro',  nome: 'Claro',   dica: 'pra luz do dia',   amostra: ['#f2f3f5', '#ffffff', '#2e8b3d'] },
+      { id: 'indigo', nome: 'Índigo',  dica: 'escuro azulado',   amostra: ['#131826', '#1c2436', '#4ec97c'] },
+      { id: 'sepia',  nome: 'Sépia',   dica: 'fundo quente',     amostra: ['#f4ece0', '#fdf8f0', '#3f7d33'] }
+    ];
+    const CHAVE_TEMA = 'meu_financeiro_tema';
+
+    function temaAtual() { return localStorage.getItem(CHAVE_TEMA) || 'escuro'; }
+
+    function aplicarTema(id) {
+      document.documentElement.setAttribute('data-tema', id);
+      localStorage.setItem(CHAVE_TEMA, id);
+      // A barra do sistema (relógio, bateria) acompanha o fundo do app
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement)
+        .getPropertyValue('--fundo').trim() || '#121212');
+      renderizarTemas();
+    }
+
+    function renderizarTemas() {
+      const box = document.getElementById('listaTemas');
+      if (!box) return;
+      const atual = temaAtual();
+      box.innerHTML = TEMAS.map(t => `
+        <button type="button" onclick="aplicarTema('${t.id}')"
+          style="text-align:left;padding:10px;border-radius:12px;cursor:pointer;font-family:inherit;
+                 background:var(--campo);border:1.5px solid ${t.id === atual ? 'var(--acento)' : 'var(--borda)'};">
+          <span style="display:flex;gap:3px;margin-bottom:7px;">
+            ${t.amostra.map(c => `<span style="width:18px;height:18px;border-radius:5px;background:${c};border:1px solid rgba(128,128,128,.35);"></span>`).join('')}
+          </span>
+          <span style="display:block;font-size:13px;font-weight:600;color:var(--texto);">${t.nome}${t.id === atual ? ' ✓' : ''}</span>
+          <span style="display:block;font-size:11px;color:var(--texto-fraco);">${t.dica}</span>
+        </button>`).join('');
+    }
+
     function somLigado() { return localStorage.getItem('meu_financeiro_som') !== '0'; }
 
     /* VIBRAÇÃO
@@ -3193,10 +3401,10 @@
         // é sorteado, toca sempre que há transferência.
         linha.innerHTML = `
           <div class="item-info" style="display:flex;align-items:center;gap:9px;">
-            <span style="font-size:14px;line-height:1;color:${ligado ? '#4caf50' : '#3a3a3a'};">✓</span>
-            <strong style="font-size:13.5px;color:${ligado ? '#fff' : '#777'};">${s.nome}</strong>
+            <span style="font-size:14px;line-height:1;color:${ligado ? 'var(--verde)' : 'var(--borda-forte)'};">✓</span>
+            <strong style="font-size:13.5px;color:${ligado ? 'var(--texto)' : 'var(--texto-tenue)'};">${s.nome}</strong>
           </div>
-          <span style="font-size:11px;color:#888;">▶ ouvir</span>
+          <span style="font-size:11px;color:var(--texto-fraco);">▶ ouvir</span>
         `;
         if (!ehTransf) {
           const tique = linha.querySelector('span');
@@ -3355,9 +3563,9 @@
         const operador = '/*-+'.includes(cod);
         const destaque = cod === 'OK';
         b.textContent = rotulo;
-        b.style.cssText = `padding:14px 0;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;border:1px solid #333;
-          background:${destaque ? '#d7ccc8' : (operador ? '#2a2a2a' : '#1e1e1e')};
-          color:${destaque ? '#121212' : (operador ? '#64b5f6' : (cod === 'C' ? '#ef5350' : '#eee'))};`;
+        b.style.cssText = `padding:14px 0;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;border:1px solid var(--borda);
+          background:${destaque ? 'var(--bege)' : (operador ? 'var(--borda-fraca)' : 'var(--campo)')};
+          color:${destaque ? 'var(--fundo)' : (operador ? 'var(--azul-claro)' : (cod === 'C' ? 'var(--vermelho)' : 'var(--texto-forte)'))};`;
         b.onclick = () => teclaCalc(cod);
         box.appendChild(b);
       });
@@ -3445,7 +3653,7 @@
       if (!box) return;
       const nomes = Object.keys(contatos).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
       if (!nomes.length) {
-        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum número salvo ainda. Eles são pedidos na primeira cobrança de cada pessoa.</p>';
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum número salvo ainda. Eles são pedidos na primeira cobrança de cada pessoa.</p>';
         return;
       }
       box.innerHTML = '';
@@ -3457,9 +3665,9 @@
         linha.innerHTML = `
           <div class="item-info">
             <strong style="font-size:13.5px;">${nome}</strong>
-            <div style="font-size:11px;color:#888;">${telefoneVisivel(telDoContato(nome))} · ${(TONS_COBRANCA.find(t => t.id === tomDoContato(nome)) || {}).rotulo || ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${telefoneVisivel(telDoContato(nome))} · ${(TONS_COBRANCA.find(t => t.id === tomDoContato(nome)) || {}).rotulo || ''}</div>
           </div>
-          <span style="font-size:11px;color:#888;">editar</span>
+          <span style="font-size:11px;color:var(--texto-fraco);">editar</span>
         `;
         box.appendChild(linha);
       });
@@ -3565,7 +3773,7 @@
       if (idAba === 'abaInvestimentos') renderizarInvestimentos();
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
-      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); }
+      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); }
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -3656,7 +3864,7 @@
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'btn-opcao-balao';
-        b.style.color = '#ef5350';
+        b.style.color = 'var(--vermelho)';
         b.textContent = 'desvincular';
         b.onclick = () => escolher('');
         box.appendChild(b);
@@ -3820,7 +4028,7 @@
       if (btnEscopo) btnEscopo.textContent = mostrarTodosLancamentos ? 'ver só o mês' : 'ver todos';
 
       if (lancamentos.length === 0 && transferencias.length === 0) {
-        container.innerHTML = '<p style="color:#aaa; font-size:13px; padding:10px 0;">Nenhum lançamento cadastrado.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio); font-size:13px; padding:10px 0;">Nenhum lançamento cadastrado.</p>';
         return;
       }
 
@@ -3853,14 +4061,14 @@
         const saiu = soma(l => !l.__transf && l.tipo === 'despesa' && !eCredito(l.formaModo));
         const cartao = soma(noCartao);
         const entrou = soma(l => !l.__transf && l.tipo === 'receita');
-        const pedaco = (rotulo, valor, cor) => `<span style="white-space:nowrap;"><span style="color:#777;">${rotulo}</span> <strong style="color:${cor};">${fmtOculto(valor)}</strong></span>`;
+        const pedaco = (rotulo, valor, cor) => `<span style="white-space:nowrap;"><span style="color:var(--texto-tenue);">${rotulo}</span> <strong style="color:${cor};">${fmtOculto(valor)}</strong></span>`;
         const pedacos = [];
         if (filtroFormaLanc !== 'cartao') {
-          if (entrou > 0) pedacos.push(pedaco('entrou', entrou, '#4caf50'));
-          if (saiu > 0) pedacos.push(pedaco('saiu', saiu, '#ef5350'));
+          if (entrou > 0) pedacos.push(pedaco('entrou', entrou, 'var(--verde)'));
+          if (saiu > 0) pedacos.push(pedaco('saiu', saiu, 'var(--vermelho)'));
         }
-        if (filtroFormaLanc !== 'conta' && cartao > 0) pedacos.push(pedaco('cartão', cartao, '#ffd166'));
-        boxSub.innerHTML = pedacos.join('<span style="color:#444;"> &nbsp;·&nbsp; </span>');
+        if (filtroFormaLanc !== 'conta' && cartao > 0) pedacos.push(pedaco('cartão', cartao, 'var(--amarelo)'));
+        boxSub.innerHTML = pedacos.join('<span style="color:var(--borda-forte);"> &nbsp;·&nbsp; </span>');
         boxSub.classList.toggle('escondido', pedacos.length === 0);
       }
 
@@ -3868,7 +4076,7 @@
         const vazio = filtroFormaLanc === 'cartao' ? 'Nenhuma compra no cartão neste período.'
           : filtroFormaLanc === 'conta' ? 'Nada passou pela conta neste período.'
           : 'Nenhum lançamento neste mês.';
-        container.innerHTML = `<p style="color:#aaa; font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : vazio}</p>`;
+        container.innerHTML = `<p style="color:var(--texto-medio); font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : vazio}</p>`;
         return;
       }
 
@@ -3898,8 +4106,8 @@
             linhaT.onclick = () => abrirAcoesTransferencia(item.id);
             linhaT.innerHTML = `
               <div class="item-info">
-                <strong style="color:#cfcfcf;">${item.conta} <span style="color:#42a5f5;">→</span> ${item.contaDestino}</strong>
-                <div style="font-size:11px;color:#888;">transferência entre contas</div>
+                <strong style="color:var(--texto-forte);">${item.conta} <span style="color:var(--azul);">→</span> ${item.contaDestino}</strong>
+                <div style="font-size:11px;color:var(--texto-fraco);">transferência entre contas</div>
               </div>
               <div class="item-acoes">
                 <span class="valor-transferencia">⇄ R$ ${item.valor}</span>
@@ -3932,7 +4140,7 @@
           div.innerHTML = `
             <div class="item-info">
               <strong>${item.descricao}</strong>
-              <div style="font-size: 11px; color: #888;">${partes.join(' · ')}</div>
+              <div style="font-size: 11px; color: var(--texto-fraco);">${partes.join(' · ')}</div>
               ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
               ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
             </div>
@@ -3948,7 +4156,7 @@
       if (futuros.length > 0) {
         ultimaData = null; // força o próximo cabeçalho de data a aparecer, mesmo repetindo um dia já usado acima
         const divisor = document.createElement('div');
-        divisor.style.cssText = 'font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 4px;border-top:1px solid #333;padding-top:12px;';
+        divisor.style.cssText = 'font-size:10px;color:var(--texto-tenue);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 4px;border-top:1px solid var(--borda);padding-top:12px;';
         divisor.textContent = `Próximos dias · ainda não efetivado${futuros.length > 1 ? 's' : ''}`;
         container.appendChild(divisor);
         renderizarBloco(futuros);
@@ -3964,7 +4172,7 @@
       const dataFmt = item.data.split('-').reverse().join('/');
       document.getElementById('infoAcoesLancamento').innerHTML = `
         <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:19px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
-        <div style="font-size:12px;color:#888;margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+        <div style="font-size:12px;color:var(--texto-fraco);margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
         ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
       `;
       const btnParcelas = document.getElementById('btnGerenciarParcelas');
@@ -4006,7 +4214,7 @@
       const container = document.getElementById('listaGerenciarParcelas');
       if (!container || !parcelasGrupoAtual) return;
       const grupo = lancamentos.filter(l => l.grupoId === parcelasGrupoAtual).sort((a, b) => (a.data < b.data ? -1 : 1));
-      if (!grupo.length) { container.innerHTML = '<p style="color:#aaa;font-size:13px;">Parcelas não encontradas.</p>'; return; }
+      if (!grupo.length) { container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Parcelas não encontradas.</p>'; return; }
       const base = (grupo[0].descricao || '').replace(/\s\(\d+\/\d+\)$/, '');
       document.getElementById('tituloGerenciarParcelas').textContent = base;
       const hoje = obterDataBrasilia();
@@ -4020,7 +4228,7 @@
           <span>${grupo.length}x de ${fmtVal(parseVal(grupo[0].valor))} · ${grupo[0].conta}</span>
           <strong>${fmtVal(total)}</strong>
         </div>
-        ${rat.pessoas.length ? `<div style="font-size:11px;color:#ffd166;margin-top:4px;">rachado entre ${rat.pessoas.length + 1} · sua parte ${fmtVal(rat.minhaParte)}</div>` : ''}
+        ${rat.pessoas.length ? `<div style="font-size:11px;color:var(--amarelo);margin-top:4px;">rachado entre ${rat.pessoas.length + 1} · sua parte ${fmtVal(rat.minhaParte)}</div>` : ''}
       `;
 
       container.innerHTML = '';
@@ -4028,11 +4236,11 @@
         const paga = item.data <= hoje;
         const f = getMesFatura(item.data, item.formaModo, item.conta);
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #2a2a2a;';
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--borda-fraca);';
         row.innerHTML = `
           <div style="flex:1;min-width:0;">
             <strong style="font-size:13px;">Parcela ${i + 1} de ${grupo.length}</strong>
-            <div class="legenda-parcela" style="font-size:11px;color:${paga ? '#666' : '#ffd166'};">
+            <div class="legenda-parcela" style="font-size:11px;color:${paga ? 'var(--texto-tenue)' : 'var(--amarelo)'};">
               ${fmtVal(parseVal(item.valor))} · ${paga ? 'já paga' : 'a pagar'} · cai na fatura de ${NOMES_MESES[f.mes].toLowerCase()}
             </div>
           </div>
@@ -4054,7 +4262,7 @@
       const legenda = inp.parentElement.querySelector('.legenda-parcela');
       if (!legenda) return;
       const paga = inp.value <= obterDataBrasilia();
-      legenda.style.color = paga ? '#666' : '#ffd166';
+      legenda.style.color = paga ? 'var(--texto-tenue)' : 'var(--amarelo)';
       legenda.textContent = `${fmtVal(parseVal(item.valor))} · ${paga ? 'já paga' : 'a pagar'} · cai na fatura de ${NOMES_MESES[f.mes].toLowerCase()}`;
     }
 
@@ -4318,6 +4526,7 @@
       atualizarResumoEGraficos();
       renderizarGrupos();
       atualizarResumoAnalista();
+      atualizarAvisoBackup();
     }
 
     function prepararEdicao(id) {
@@ -4535,7 +4744,7 @@
       if (contador) contador.textContent = lixeira.length ? lixeira.length + (lixeira.length === 1 ? ' item' : ' itens') : 'vazia';
 
       if (!lixeira.length) {
-        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nada excluído por aqui. O que você apagar aparece nesta lista e pode voltar.</p>';
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nada excluído por aqui. O que você apagar aparece nesta lista e pode voltar.</p>';
         return;
       }
       box.innerHTML = '';
@@ -4543,7 +4752,7 @@
         const quando = new Date(reg.__excluidoEm);
         const eTransf = reg.__tipoReg === 'transferencia';
         const eReceita = reg.tipo === 'receita';
-        const cor = eTransf ? '#42a5f5' : (eReceita ? '#4caf50' : '#ef5350');
+        const cor = eTransf ? 'var(--azul)' : (eReceita ? 'var(--verde)' : 'var(--vermelho)');
         const desc = eTransf ? `${reg.origem} → ${reg.destino}` : reg.descricao;
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
@@ -4551,10 +4760,10 @@
         linha.innerHTML = `
           <div class="item-info" style="min-width:0;">
             <strong style="font-size:13.5px;">${desc}</strong>
-            <div style="font-size:10.5px;color:#888;">
+            <div style="font-size:10.5px;color:var(--texto-fraco);">
               ${(reg.data || '').split('-').reverse().join('/')}${reg.conta ? ' · ' + reg.conta : ''}${reg.categoria ? ' · ' + reg.categoria : ''}
             </div>
-            <div style="font-size:10px;color:#666;">excluído em ${quando.toLocaleDateString('pt-BR')} às ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div style="font-size:10px;color:var(--texto-tenue);">excluído em ${quando.toLocaleDateString('pt-BR')} às ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <span style="color:${cor};font-weight:700;font-size:13px;">${fmtOculto(parseVal(reg.valor))}</span>
@@ -4694,13 +4903,13 @@
 
       transferenciaPendente = { id: Date.now(), data, origem, destino, valor: valor.toFixed(2).replace('.', ',') };
       document.getElementById('resumoConfirmaTransf').innerHTML = `
-        <strong style="color:#42a5f5;font-size:22px;">${fmtVal(valor)}</strong>
-        <div style="margin-top:10px;font-size:14px;color:#ddd;">
+        <strong style="color:var(--azul);font-size:22px;">${fmtVal(valor)}</strong>
+        <div style="margin-top:10px;font-size:14px;color:var(--texto-forte);">
           <div>${origem}</div>
-          <div style="color:#42a5f5;font-size:18px;line-height:1.2;">↓</div>
+          <div style="color:var(--azul);font-size:18px;line-height:1.2;">↓</div>
           <div>${destino}</div>
         </div>
-        <div style="margin-top:10px;font-size:12px;color:#888;">${data.split('-').reverse().join('/')}</div>
+        <div style="margin-top:10px;font-size:12px;color:var(--texto-fraco);">${data.split('-').reverse().join('/')}</div>
       `;
       document.getElementById('modalConfirmaTransferencia').classList.remove('escondido');
     }
@@ -4740,8 +4949,8 @@
       if (!t) return;
       transferenciaSelecionadaId = id;
       document.getElementById('infoAcoesTransferencia').innerHTML = `
-        <span style="color:#42a5f5;font-size:19px;font-weight:bold;">${fmtOculto(parseVal(t.valor))}</span>
-        <div style="font-size:12px;color:#888;margin-top:2px;">${t.data.split('-').reverse().join('/')} • ${t.origem} → ${t.destino}</div>
+        <span style="color:var(--azul);font-size:19px;font-weight:bold;">${fmtOculto(parseVal(t.valor))}</span>
+        <div style="font-size:12px;color:var(--texto-fraco);margin-top:2px;">${t.data.split('-').reverse().join('/')} • ${t.origem} → ${t.destino}</div>
       `;
       document.getElementById('modalAcoesTransferencia').classList.remove('escondido');
     }
@@ -4907,10 +5116,10 @@
           porDesc[chave] = (porDesc[chave] || 0) + parseVal(l.valor);
         });
 
-        let html = `<div style="margin-bottom:8px;cursor:pointer;" onclick="focarGrupoConsulta('')" title="Ver tudo"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total no Período${consultaGrupo ? ' · tocar pra ver tudo' : ''}</span><h3 style="color:#4caf50;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        let html = `<div style="margin-bottom:8px;cursor:pointer;" onclick="focarGrupoConsulta('')" title="Ver tudo"><span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">Total no Período${consultaGrupo ? ' · tocar pra ver tudo' : ''}</span><h3 style="color:var(--verde);font-size:22px;">${fmtOculto(total)}</h3></div>`;
         Object.entries(porDesc).sort((a,b) => b[1]-a[1]).forEach(([desc, val]) => {
           const ativo = consultaGrupo === desc;
-          html += `<div class="linha-subtotal${ativo ? ' focada' : ''}" onclick="focarGrupoConsulta(${JSON.stringify(desc).replace(/"/g, '&quot;')})"><span>${desc}</span><strong style="color:#4caf50;">${fmtOculto(val)}</strong></div>`;
+          html += `<div class="linha-subtotal${ativo ? ' focada' : ''}" onclick="focarGrupoConsulta(${JSON.stringify(desc).replace(/"/g, '&quot;')})"><span>${desc}</span><strong style="color:var(--verde);">${fmtOculto(val)}</strong></div>`;
         });
         boxSubtotais.innerHTML = html;
         if (consultaGrupo) itensPeriodo = itensPeriodo.filter(l => chaveReceitaAgrupada(l) === consultaGrupo);
@@ -4923,7 +5132,7 @@
           porCat[c] = (porCat[c] || 0) + parseVal(l.valor); 
         });
 
-        let html = `<div style="margin-bottom:8px;cursor:pointer;" onclick="focarGrupoConsulta('')" title="Ver tudo"><span style="font-size:11px;color:#aaa;text-transform:uppercase;">Total Gasto${consultaGrupo ? ' · tocar pra ver tudo' : ''}</span><h3 style="color:#c25651;font-size:22px;">${fmtOculto(total)}</h3></div>`;
+        let html = `<div style="margin-bottom:8px;cursor:pointer;" onclick="focarGrupoConsulta('')" title="Ver tudo"><span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">Total Gasto${consultaGrupo ? ' · tocar pra ver tudo' : ''}</span><h3 style="color:var(--vermelho-medio);font-size:22px;">${fmtOculto(total)}</h3></div>`;
         Object.entries(porCat).sort((a,b) => b[1]-a[1]).forEach(([cat, val]) => {
           const ativo = consultaGrupo === cat;
           html += `<div class="linha-subtotal${ativo ? ' focada' : ''}" onclick="focarGrupoConsulta(${JSON.stringify(cat).replace(/"/g, '&quot;')})"><span>${cat}</span><strong style="color:${COR_DESPESA_GRAFICO};">${fmtOculto(val)}</strong></div>`;
@@ -4949,14 +5158,14 @@
         const saldoFinal = totalRec - totalDesp;
 
         let html = `
-          <div class="linha-subtotal"><span>(+) Receitas no período:</span><strong style="color:#4caf50;">${fmtOculto(totalRec)}</strong></div>
-          <div class="linha-subtotal"><span>(-) Despesas no período:</span><strong style="color:#ef5350;">${fmtOculto(totalDesp)}</strong></div>
-          <div class="linha-subtotal" style="border-top:1px solid #333; padding-top:6px; margin-top:6px;"><span>(=) Resultado do período:</span><strong style="color:#2196f3; font-size:15px;">${fmtOculto(saldoFinal)}</strong></div>
-          <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #333;">
-            <span style="font-size:11px;color:#aaa;text-transform:uppercase;display:block;margin-bottom:4px;">Balanço por Conta (no período):</span>
+          <div class="linha-subtotal"><span>(+) Receitas no período:</span><strong style="color:var(--verde);">${fmtOculto(totalRec)}</strong></div>
+          <div class="linha-subtotal"><span>(-) Despesas no período:</span><strong style="color:var(--vermelho);">${fmtOculto(totalDesp)}</strong></div>
+          <div class="linha-subtotal" style="border-top:1px solid var(--borda); padding-top:6px; margin-top:6px;"><span>(=) Resultado do período:</span><strong style="color:var(--azul-forte); font-size:15px;">${fmtOculto(saldoFinal)}</strong></div>
+          <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--borda);">
+            <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;display:block;margin-bottom:4px;">Balanço por Conta (no período):</span>
         `;
         Object.entries(porConta).forEach(([c, val]) => {
-          html += `<div class="linha-subtotal"><span>${c}</span><strong style="color:${val >= 0 ? '#4caf50' : '#ef5350'};">${fmtOculto(val)}</strong></div>`;
+          html += `<div class="linha-subtotal"><span>${c}</span><strong style="color:${val >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(val)}</strong></div>`;
         });
         html += `</div>`;
         boxSubtotais.innerHTML = html;
@@ -4967,7 +5176,7 @@
 
       corpo.innerHTML = '';
       if (itensPeriodo.length === 0) {
-        corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum lançamento encontrado para este período.</p>';
+        corpo.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum lançamento encontrado para este período.</p>';
         return;
       }
 
@@ -4980,7 +5189,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${item.descricao}</strong>
-            <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
             ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
           </div>
           <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
@@ -5004,7 +5213,7 @@
       container.innerHTML = '';
       const total = Object.values(dados).reduce((a, b) => a + b, 0);
       if (total === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem dados ainda.</p>';
         return;
       }
       const metaDe = nome => (metas && metas[nome] ? parseVal(metas[nome]) : 0);
@@ -5019,7 +5228,7 @@
         div.className = 'barra-categoria';
         div.innerHTML = `
           <div class="barra-info">
-            <span>${nome}${meta > 0 ? ` <span style="color:#ffd166;font-size:10.5px;">meta ${fmtOculto(meta)}</span>` : ''}</span>
+            <span>${nome}${meta > 0 ? ` <span style="color:var(--amarelo);font-size:10.5px;">meta ${fmtOculto(meta)}</span>` : ''}</span>
             <span>${fmtOculto(valor)} · ${pct}%</span>
           </div>
           <div class="barra-bg" style="position:relative;">
@@ -5036,7 +5245,7 @@
       const entradas = Object.entries(dados);
       const max = Math.max(...entradas.map(([, v]) => v), 0);
       if (max === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem dados ainda.</p>';
         return;
       }
       entradas.forEach(([nome, valor]) => {
@@ -5053,15 +5262,15 @@
 
     // Colunas verticais: boas pra comparar poucos itens lado a lado, enquanto as
     // barras horizontais aguentam nome comprido e lista longa.
-    // Vermelho mais fechado que o #ef5350 dos valores: em área grande, o tom vivo
+    // Vermelho mais fechado que o var(--vermelho) dos valores: em área grande, o tom vivo
     // cansa a vista. O texto continua no tom forte, onde é rápido de ler.
-    const COR_DESPESA_GRAFICO = '#a83e3b';
+    const COR_DESPESA_GRAFICO = 'var(--vermelho-escuro)';
 
     function renderizarColunas(container, dados, corBase, metas) {
       container.innerHTML = '';
       const entradas = Object.entries(dados).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
       if (!entradas.length) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem dados ainda.</p>';
         return;
       }
       // a meta entra na escala: se o teto for maior que o gasto, a barra precisa
@@ -5089,8 +5298,8 @@
       container.appendChild(box);
       if (entradas.some(([n]) => metaDe(n) > 0)) {
         const leg = document.createElement('div');
-        leg.style.cssText = 'font-size:10.5px;color:#888;text-align:center;margin-top:6px;';
-        leg.innerHTML = '<span style="color:#ffd166;">┄</span> meta da categoria — passou da linha, estourou';
+        leg.style.cssText = 'font-size:10.5px;color:var(--texto-fraco);text-align:center;margin-top:6px;';
+        leg.innerHTML = '<span style="color:var(--amarelo);">┄</span> meta da categoria — passou da linha, estourou';
         container.appendChild(leg);
       }
     }
@@ -5101,7 +5310,7 @@
       const entradas = Object.entries(dados).sort((a, b) => b[1] - a[1]);
       const total = entradas.reduce((s, [, v]) => s + v, 0);
       if (total === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem dados ainda.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem dados ainda.</p>';
         return;
       }
       let acc = 0;
@@ -5190,10 +5399,10 @@
         else if (tipo === 'colunas') renderizarColunas(el, dados, cor, metas);
         else renderizarBarras(el, dados, cor, metas);
       };
-      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, '#3d8b40', PALETA_RECEITAS);
+      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, 'var(--verde-escuro)', PALETA_RECEITAS);
       // só o gráfico de categorias recebe as metas — é onde o teto faz sentido
       desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, COR_DESPESA_GRAFICO, null, metasDoPeriodo());
-      desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, '#42a5f5');
+      desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, 'var(--azul)');
       renderizarMetasCategorias();
       renderizarMetasCategorias();
       renderizarRankingGastos(itensPeriodo);
@@ -5209,7 +5418,7 @@
       if (!container) return;
       const despesas = itensPeriodo.filter(l => l.tipo === 'despesa').sort((a, b) => parseVal(b.valor) - parseVal(a.valor)).slice(0, 5);
       container.innerHTML = '';
-      if (!despesas.length) { container.innerHTML = '<p style="color:#aaa;font-size:13px;">Sem despesas nesse período.</p>'; return; }
+      if (!despesas.length) { container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem despesas nesse período.</p>'; return; }
       despesas.forEach((item, i) => {
         const dataFmt = item.data.split('-').reverse().join('/');
         const div = document.createElement('div');
@@ -5218,7 +5427,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${i + 1}. ${item.descricao}</strong>
-            <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
           </div>
           <span class="valor-despesa">${fmtOculto(parseVal(item.valor))}</span>
         `;
@@ -5265,9 +5474,9 @@
           item.className = 'coluna-item';
           item.title = `${nome} · ${fmtVal(v)}`;
           item.innerHTML = `
-            <span class="coluna-valor" style="color:#ab47bc;">${valoresOcultos ? '•••' : fmtVal(v).replace('R$ ', '')}</span>
+            <span class="coluna-valor" style="color:var(--roxo);">${valoresOcultos ? '•••' : fmtVal(v).replace('R$ ', '')}</span>
             <div class="coluna-par">
-              <div class="coluna-barra" style="height:${Math.max(2, Math.round((v / max) * 100))}%;background-color:#ab47bc;"></div>
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((v / max) * 100))}%;background-color:var(--roxo);"></div>
             </div>
             <span class="coluna-rotulo">${nome.slice(0, 3)}</span>
           `;
@@ -5277,7 +5486,7 @@
         return;
       }
 
-      renderizarBarrasOrdem(container, porDia, '#ab47bc');
+      renderizarBarrasOrdem(container, porDia, 'var(--roxo)');
     }
 
     // Receita/despesa/saldo dos últimos 6 meses (por data do lançamento, mês calendário)
@@ -5312,9 +5521,9 @@
           item.className = 'coluna-item';
           item.title = `${m.label} · entrou ${fmtVal(m.rec)} · saiu ${fmtVal(m.desp)}`;
           item.innerHTML = `
-            <span class="coluna-valor" style="color:${m.saldo >= 0 ? '#4caf50' : '#ef5350'};">${valoresOcultos ? '•••' : fmtVal(m.saldo).replace('R$ ', '')}</span>
+            <span class="coluna-valor" style="color:${m.saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${valoresOcultos ? '•••' : fmtVal(m.saldo).replace('R$ ', '')}</span>
             <div class="coluna-par">
-              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.rec / max) * 100))}%;background-color:#3d8b40;"></div>
+              <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.rec / max) * 100))}%;background-color:var(--verde-escuro);"></div>
               <div class="coluna-barra" style="height:${Math.max(2, Math.round((m.desp / max) * 100))}%;background-color:${COR_DESPESA_GRAFICO};"></div>
             </div>
             <span class="coluna-rotulo">${m.label}</span>
@@ -5323,8 +5532,8 @@
         });
         container.appendChild(box);
         const legenda = document.createElement('div');
-        legenda.style.cssText = 'display:flex;gap:14px;justify-content:center;font-size:10.5px;color:#888;margin-top:6px;';
-        legenda.innerHTML = '<span><span style="color:#4caf50;">■</span> entrou</span><span><span style="color:#ef5350;">■</span> saiu</span><span>o número é o saldo</span>';
+        legenda.style.cssText = 'display:flex;gap:14px;justify-content:center;font-size:10.5px;color:var(--texto-fraco);margin-top:6px;';
+        legenda.innerHTML = '<span><span style="color:var(--verde);">■</span> entrou</span><span><span style="color:var(--vermelho);">■</span> saiu</span><span>o número é o saldo</span>';
         container.appendChild(legenda);
         return;
       }
@@ -5337,10 +5546,10 @@
         div.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
             <strong>${m.label}</strong>
-            <span style="color:${m.saldo >= 0 ? '#4caf50' : '#ef5350'};">saldo ${fmtOculto(m.saldo)}</span>
+            <span style="color:${m.saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">saldo ${fmtOculto(m.saldo)}</span>
           </div>
-          <div class="barra-bg" style="margin-bottom:3px;"><div class="barra-fill" style="width:${pctRec}%;background-color:#4caf50;"></div></div>
-          <div class="barra-bg"><div class="barra-fill" style="width:${pctDesp}%;background-color:#ef5350;"></div></div>
+          <div class="barra-bg" style="margin-bottom:3px;"><div class="barra-fill" style="width:${pctRec}%;background-color:var(--verde);"></div></div>
+          <div class="barra-bg"><div class="barra-fill" style="width:${pctDesp}%;background-color:var(--vermelho);"></div></div>
         `;
         container.appendChild(div);
       });
@@ -5364,7 +5573,7 @@
           .reduce((s, l) => s + parseVal(l.valor), 0);
         dados[label] = parcelasFuturas + totalFixos;
       }
-      renderizarBarrasOrdem(container, dados, '#ffa726');
+      renderizarBarrasOrdem(container, dados, 'var(--laranja)');
     }
 
     function getMesReferencia(offset) {
@@ -5474,7 +5683,7 @@
       respEl.innerHTML = resposta
         ? resposta
         : 'Não peguei essa. Toca numa das sugestões aí em cima — ou pergunta por uma categoria, loja ou conta ("quanto gastei no mercado em julho").';
-      respEl.style.color = resposta ? '#ddd' : '#aaa';
+      respEl.style.color = resposta ? 'var(--texto-forte)' : 'var(--texto-medio)';
     }
 
     /* ============ QR DA NOTA FISCAL (NFC-e) ============
@@ -5593,7 +5802,7 @@
 
     function statusNota(txt, cor) {
       const el = document.getElementById('statusNota');
-      if (el) { el.textContent = txt; el.style.color = cor || '#888'; }
+      if (el) { el.textContent = txt; el.style.color = cor || 'var(--texto-fraco)'; }
     }
 
     async function abrirLeitorNota() {
@@ -5604,7 +5813,7 @@
 
       if (!('BarcodeDetector' in window)) {
         moldura.classList.add('escondido');
-        statusNota('Este navegador não lê QR sozinho. No Chrome do Android funciona.', '#ffd166');
+        statusNota('Este navegador não lê QR sozinho. No Chrome do Android funciona.', 'var(--amarelo)');
         return;
       }
       moldura.classList.remove('escondido');
@@ -5613,7 +5822,7 @@
         streamNota = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       } catch (e) {
         moldura.classList.add('escondido');
-        statusNota('Não consegui abrir a câmera. Dá pra tirar uma foto do QR no botão abaixo.', '#ffd166');
+        statusNota('Não consegui abrir a câmera. Dá pra tirar uma foto do QR no botão abaixo.', 'var(--amarelo)');
         return;
       }
 
@@ -5642,7 +5851,7 @@
       ev.target.value = '';
       if (!arq) return;
       if (!('BarcodeDetector' in window)) {
-        statusNota('Este navegador não lê QR sozinho. No Chrome do Android funciona.', '#ffd166');
+        statusNota('Este navegador não lê QR sozinho. No Chrome do Android funciona.', 'var(--amarelo)');
         return;
       }
       statusNota('Lendo a foto...');
@@ -5651,9 +5860,9 @@
         const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
         const achados = await detector.detect(bitmap);
         for (const a of achados) { if (aplicarNotaLida(a.rawValue)) return; }
-        statusNota('Não achei QR nessa foto. Tenta mais perto e com o cupom esticado.', '#ffd166');
+        statusNota('Não achei QR nessa foto. Tenta mais perto e com o cupom esticado.', 'var(--amarelo)');
       } catch (e) {
-        statusNota('Não consegui ler essa imagem.', '#ffd166');
+        statusNota('Não consegui ler essa imagem.', 'var(--amarelo)');
       }
     }
 
@@ -5661,7 +5870,7 @@
        de link não pode sequestrar o formulário. */
     function aplicarNotaLida(bruto) {
       const nota = interpretarQrNota(bruto);
-      if (!nota) { statusNota('Esse QR não é de nota fiscal. Procura o que fica no rodapé do cupom.', '#ffd166'); return false; }
+      if (!nota) { statusNota('Esse QR não é de nota fiscal. Procura o que fica no rodapé do cupom.', 'var(--amarelo)'); return false; }
 
       // a mesma nota lançada duas vezes é o erro mais fácil de cometer aqui
       const repetida = lancamentos.find(l => l.chaveNota === nota.chave);
@@ -5773,10 +5982,10 @@
       const dif = valor - ref.media;
       const pct = Math.round(Math.abs(dif) / ref.media * 100);
       const base = `média dos últimos ${ref.meses} ${ref.meses === 1 ? 'mês' : 'meses'}: ${fmtOculto(ref.media)}`;
-      if (pct < 10) return `<br><span style="color:#888;">Em linha com o de sempre (${base}).</span>`;
-      const cor = dif > 0 ? '#ef5350' : '#4caf50';
+      if (pct < 10) return `<br><span style="color:var(--texto-fraco);">Em linha com o de sempre (${base}).</span>`;
+      const cor = dif > 0 ? 'var(--vermelho)' : 'var(--verde)';
       return `<br><span style="color:${cor};">${pct}% ${dif > 0 ? 'acima' : 'abaixo'} do seu normal</span>` +
-             `<span style="color:#888;"> — ${base}${oQue ? ' em ' + oQue : ''}.</span>`;
+             `<span style="color:var(--texto-fraco);"> — ${base}${oQue ? ' em ' + oQue : ''}.</span>`;
     }
 
     /* DIAGNÓSTICO DO MÊS — a resposta padrão, a que ele dá quando você só toca
@@ -5803,12 +6012,12 @@
           const pct = Math.round(Math.abs(projecao - ref.media) / ref.media * 100);
           recado = pct < 10 ? ' — bem no seu ritmo de sempre'
             : (projecao > ref.media
-                ? ` — <span style="color:#ef5350;">${pct}% acima da sua média</span>`
-                : ` — <span style="color:#4caf50;">${pct}% abaixo da sua média</span>`);
+                ? ` — <span style="color:var(--vermelho);">${pct}% acima da sua média</span>`
+                : ` — <span style="color:var(--verde);">${pct}% abaixo da sua média</span>`);
         }
         linhas.push(`Nesse ritmo, fecha o mês perto de <b>${fmtOculto(projecao)}</b>${recado}.`);
       } else {
-        linhas.push(`<span style="color:#888;">Ainda é cedo pra projetar o mês — volta depois do dia ${Math.ceil(diasNoMes * 0.15)}.</span>`);
+        linhas.push(`<span style="color:var(--texto-fraco);">Ainda é cedo pra projetar o mês — volta depois do dia ${Math.ceil(diasNoMes * 0.15)}.</span>`);
       }
 
       // a categoria que mais destoa do próprio normal
@@ -5826,9 +6035,9 @@
         }
       });
       if (alerta) {
-        linhas.push(`<span style="color:#ffd166;">Atenção em ${alerta.cat}:</span> ${fmtOculto(alerta.v)} ` +
+        linhas.push(`<span style="color:var(--amarelo);">Atenção em ${alerta.cat}:</span> ${fmtOculto(alerta.v)} ` +
           `— ${Math.round(alerta.excesso * 100)}% acima do ponto do mês em que você costuma estar ` +
-          `<span style="color:#888;">(mês inteiro costuma dar ${fmtOculto(alerta.media)}).</span>`);
+          `<span style="color:var(--texto-fraco);">(mês inteiro costuma dar ${fmtOculto(alerta.media)}).</span>`);
       } else {
         const topo = Object.entries(porCat).sort((a, b) => b[1] - a[1])[0];
         if (topo) linhas.push(`Maior fatia: <b>${topo[0]}</b> com ${fmtOculto(topo[1])} (${Math.round(topo[1] / gasto * 100)}%).`);
@@ -5838,7 +6047,7 @@
       const aReceber = cobrancasAbertas().filter(c => !c.devo);
       if (aReceber.length) {
         const t = aReceber.reduce((sm, c) => sm + c.valor, 0);
-        linhas.push(`<span style="color:#888;">${fmtOculto(t)} desse dinheiro é de outra gente — ${aReceber.length} ${aReceber.length === 1 ? 'cobrança' : 'cobranças'} em aberto.</span>`);
+        linhas.push(`<span style="color:var(--texto-fraco);">${fmtOculto(t)} desse dinheiro é de outra gente — ${aReceber.length} ${aReceber.length === 1 ? 'cobrança' : 'cobranças'} em aberto.</span>`);
       }
 
       return linhas.join('<br>');
@@ -5865,16 +6074,16 @@
       // Comparar mês corrido com mês fechado engana: no dia 10 tudo parece menor.
       const { dia, diasNoMes } = fracaoDoMes();
       const aviso = dia < diasNoMes
-        ? `<br><span style="color:#888;">Lembrando: ${NOMES_MESES[at.mes]} ainda está no dia ${dia}, então a comparação com um mês fechado pende pra baixo.</span>`
+        ? `<br><span style="color:var(--texto-fraco);">Lembrando: ${NOMES_MESES[at.mes]} ainda está no dia ${dia}, então a comparação com um mês fechado pende pra baixo.</span>`
         : '';
 
       if (!difs.length) return `${NOMES_MESES[at.mes]} está praticamente igual a ${NOMES_MESES[ant.mes]}.${aviso}`;
 
       const total = somar(a) - somar(b);
       const linhas = difs.slice(0, 5).map(x =>
-        `• ${x.c}: <b style="color:${x.d > 0 ? '#ef5350' : '#4caf50'};">${x.d > 0 ? '+' : '−'}${fmtOculto(Math.abs(x.d))}</b>`).join('<br>');
+        `• ${x.c}: <b style="color:${x.d > 0 ? 'var(--vermelho)' : 'var(--verde)'};">${x.d > 0 ? '+' : '−'}${fmtOculto(Math.abs(x.d))}</b>`).join('<br>');
       return `De ${NOMES_MESES[ant.mes]} pra ${NOMES_MESES[at.mes]}: ` +
-        `<b style="color:${total > 0 ? '#ef5350' : '#4caf50'};">${total > 0 ? '+' : '−'}${fmtOculto(Math.abs(total))}</b> no total.<br>${linhas}${aviso}`;
+        `<b style="color:${total > 0 ? 'var(--vermelho)' : 'var(--verde)'};">${total > 0 ? '+' : '−'}${fmtOculto(Math.abs(total))}</b> no total.<br>${linhas}${aviso}`;
     }
 
     /* QUANTO POSSO GASTAR — o que sobra do teto do mês, dividido pelos dias que
@@ -5903,13 +6112,13 @@
         ? `suas metas de ${comMeta.length} ${comMeta.length === 1 ? 'categoria' : 'categorias'} somam`
         : 'sua média mensal é';
       const foraDaMeta = usaMetas && gasto > gastoComparavel
-        ? `<br><span style="color:#888;">Fora dessas categorias você gastou mais ${fmtOculto(gasto - gastoComparavel)}, que não tem meta pra comparar.</span>`
+        ? `<br><span style="color:var(--texto-fraco);">Fora dessas categorias você gastou mais ${fmtOculto(gasto - gastoComparavel)}, que não tem meta pra comparar.</span>`
         : '';
 
       const sobra = teto - gastoComparavel;
       if (sobra <= 0) {
         return `Gastou ${fmtOculto(gastoComparavel)} e ${fonte} ${fmtOculto(teto)}.<br>` +
-          `<span style="color:#ef5350;">Estourou em ${fmtOculto(-sobra)}</span>, e ainda ${faltam === 1 ? 'falta 1 dia' : 'faltam ' + faltam + ' dias'} de mês.${foraDaMeta}`;
+          `<span style="color:var(--vermelho);">Estourou em ${fmtOculto(-sobra)}</span>, e ainda ${faltam === 1 ? 'falta 1 dia' : 'faltam ' + faltam + ' dias'} de mês.${foraDaMeta}`;
       }
       return `Gastou ${fmtOculto(gastoComparavel)} de ${fmtOculto(teto)} (${fonte} isso).<br>` +
         `Sobram <b>${fmtOculto(sobra)}</b> pra ${faltam === 1 ? 'o último dia' : faltam + ' dias'} — ` +
@@ -6081,8 +6290,8 @@
         const saldo = rec - saiu;
         return `${R.charAt(0).toUpperCase() + R.slice(1)}: entrou ${fmtOculto(rec)}, saiu da conta ${fmtOculto(saiu)}` +
           (pagas > 0 ? ` (sendo ${fmtOculto(pagas)} de fatura paga)` : '') + `.<br>` +
-          `Saldo: <b style="color:${saldo >= 0 ? '#4caf50' : '#ef5350'};">${fmtOculto(saldo)}</b>` +
-          (noCredito > 0 ? `<br><span style="color:#ffd166;">${fmtOculto(noCredito)} foi no crédito e ainda não saiu da conta.</span>` : '');
+          `Saldo: <b style="color:${saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(saldo)}</b>` +
+          (noCredito > 0 ? `<br><span style="color:var(--amarelo);">${fmtOculto(noCredito)} foi no crédito e ainda não saiu da conta.</span>` : '');
       }
 
       // --- maior gasto ---
@@ -6125,7 +6334,7 @@
         if (!b) return `Não tenho despesa registrada em ${NOMES_MESES[ant.getMonth()]} pra comparar.`;
         const dif = a - b, pct = Math.round(Math.abs(dif) / b * 100);
         return `${NOMES_MESES[hoje.getMonth()]}: ${fmtOculto(a)} · ${NOMES_MESES[ant.getMonth()]}: ${fmtOculto(b)}<br>` +
-          `Você gastou <b style="color:${dif > 0 ? '#ef5350' : '#4caf50'};">${pct}% ${dif > 0 ? 'a mais' : 'a menos'}</b> (${fmtOculto(Math.abs(dif))}).`;
+          `Você gastou <b style="color:${dif > 0 ? 'var(--vermelho)' : 'var(--verde)'};">${pct}% ${dif > 0 ? 'a mais' : 'a menos'}</b> (${fmtOculto(Math.abs(dif))}).`;
       }
 
       // --- quantos lançamentos ---
@@ -6390,8 +6599,8 @@
       if (elAberto) {
         elAberto.classList.toggle('escondido', faturaEmAberto <= 0);
         if (faturaEmAberto > 0) {
-          elAberto.innerHTML = `💳 <span style="color:#888;">fatura em aberto:</span> <strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong>` +
-            `<span style="color:#666;"> · ainda não saiu da conta</span>`;
+          elAberto.innerHTML = `💳 <span style="color:var(--texto-fraco);">fatura em aberto:</span> <strong style="color:var(--amarelo);">${fmtOculto(faturaEmAberto)}</strong>` +
+            `<span style="color:var(--texto-tenue);"> · ainda não saiu da conta</span>`;
         }
       }
 
@@ -6418,13 +6627,13 @@
         const noCredito = fixosAtivos.filter(f => eCredito(formaModoDoFixo(f))).reduce((sm, f) => sm + parseVal(f.valor), 0);
         boxTotalFixos.classList.toggle('escondido', fixosAtivos.length === 0);
         boxTotalFixos.innerHTML = `
-          <div class="linha-subtotal" style="cursor:default;"><span>Total por mês</span><strong style="color:#ffd166;">${fmtOculto(totalFixos)}</strong></div>
-          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;font-size:11.5px;color:#888;"><span>no cartão de crédito</span><strong style="color:#888;">${fmtOculto(noCredito)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;"><span>Total por mês</span><strong style="color:var(--amarelo);">${fmtOculto(totalFixos)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;font-size:11.5px;color:var(--texto-fraco);"><span>no cartão de crédito</span><strong style="color:var(--texto-fraco);">${fmtOculto(noCredito)}</strong></div>
         `;
       }
 
       if (fixosAtivos.length === 0) {
-        containerFixos.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto fixo cadastrado ainda.</p>';
+        containerFixos.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum gasto fixo cadastrado ainda.</p>';
       } else {
         const chaveMesExibido = chaveMesAno(ano, mes);
         fixosAtivos.slice().sort((a, b) => (a.descricao || '').localeCompare(b.descricao || '', 'pt-BR', { sensitivity: 'base' })).forEach(f => {
@@ -6435,8 +6644,8 @@
           div.innerHTML = `
             <div class="item-info">
               <strong>${f.descricao}</strong>
-              <div style="font-size:11px;color:#888;">${f.conta} • ${eCredito(formaModoDoFixo(f)) ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
-              <div style="font-size:10.5px;color:${lancado ? '#4caf50' : '#777'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
+              <div style="font-size:11px;color:var(--texto-fraco);">${f.conta} • ${eCredito(formaModoDoFixo(f)) ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
+              <div style="font-size:10.5px;color:${lancado ? 'var(--verde)' : 'var(--texto-tenue)'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
             </div>
             <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
           `;
@@ -6462,7 +6671,7 @@
         .map(([conta, net]) => `
           <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('conta', ${mes}, ${ano}, '${conta.replace(/'/g, "\\'")}')">
             <span>${conta}</span>
-            <strong style="color:${net >= 0 ? '#4caf50' : '#ef5350'};">${net >= 0 ? '+' : ''}${fmtOculto(net)}</strong>
+            <strong style="color:${net >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${net >= 0 ? '+' : ''}${fmtOculto(net)}</strong>
           </div>
         `).join('');
 
@@ -6477,29 +6686,29 @@
       const faturaDoMesPaga = faturaEmAberto <= 0 && compradoNoCredito > 0;
 
       const blocoCartao = faturaDoMesPaga
-        ? `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>✓ Fatura de ${NOMES_MESES[mes]} · paga</span><strong style="color:#4caf50;">${fmtOculto(compradoNoCredito)}</strong></div>`
+        ? `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>✓ Fatura de ${NOMES_MESES[mes]} · paga</span><strong style="color:var(--verde);">${fmtOculto(compradoNoCredito)}</strong></div>`
           + (proxima
-              ? `<div class="linha-subtotal" style="margin-bottom:0;" onclick="fecharModal('modalResumoFatura');irParaFatura(${proxima.mes}, ${proxima.ano})"><span>⏳ Próxima · ${NOMES_MESES[proxima.mes]} <span style="color:#666;">›</span></span><strong style="color:#ffd166;">${fmtOculto(proxima.total)}</strong></div>`
-              : `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span style="color:#888;">Nenhuma fatura em aberto à frente</span><strong style="color:#4caf50;">—</strong></div>`)
-        : `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:#ffd166;">${fmtOculto(compradoNoCredito)}</strong></div>`
-          + `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:#ffd166;">${fmtOculto(faturaEmAberto)}</strong></div>`;
+              ? `<div class="linha-subtotal" style="margin-bottom:0;" onclick="fecharModal('modalResumoFatura');irParaFatura(${proxima.mes}, ${proxima.ano})"><span>⏳ Próxima · ${NOMES_MESES[proxima.mes]} <span style="color:var(--texto-tenue);">›</span></span><strong style="color:var(--amarelo);">${fmtOculto(proxima.total)}</strong></div>`
+              : `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span style="color:var(--texto-fraco);">Nenhuma fatura em aberto à frente</span><strong style="color:var(--verde);">—</strong></div>`)
+        : `<div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('credito', ${mes}, ${ano})"><span>💳 Comprado no crédito</span><strong style="color:var(--amarelo);">${fmtOculto(compradoNoCredito)}</strong></div>`
+          + `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:var(--amarelo);">${fmtOculto(faturaEmAberto)}</strong></div>`;
 
       document.getElementById('corpoResumoFatura').innerHTML = `
-        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
+        <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Saldo por conta no mês</span>
         <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
-          ${linhasConta || '<p style="color:#aaa;font-size:13px;">Nenhum lançamento neste mês.</p>'}
+          ${linhasConta || '<p style="color:var(--texto-medio);font-size:13px;">Nenhum lançamento neste mês.</p>'}
         </div>
-        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">O que passou pela conta</span>
+        <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">O que passou pela conta</span>
         <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebido</span><strong style="color:#4caf50;">${fmtOculto(totalRecebimentos)}</strong></div>
-          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Saiu em débito/dinheiro</span><strong style="color:#ef5350;">${fmtOculto(saiuEmDebito)}</strong></div>
-          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>🧾 Faturas pagas no mês</span><strong style="color:#ef5350;">${fmtOculto(faturasPagasNoMes)}</strong></div>
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('receita', ${mes}, ${ano})"><span>💰 Recebido</span><strong style="color:var(--verde);">${fmtOculto(totalRecebimentos)}</strong></div>
+          <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('debito', ${mes}, ${ano})"><span>💵 Saiu em débito/dinheiro</span><strong style="color:var(--vermelho);">${fmtOculto(saiuEmDebito)}</strong></div>
+          <div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>🧾 Faturas pagas no mês</span><strong style="color:var(--vermelho);">${fmtOculto(faturasPagasNoMes)}</strong></div>
         </div>
-        <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">No cartão · ainda não saiu da conta</span>
+        <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">No cartão · ainda não saiu da conta</span>
         <div class="box-resumo-modal" style="margin-top:6px;">
           ${blocoCartao}
         </div>
-        <p style="font-size:10.5px;color:#777;margin-top:10px;line-height:1.5;">
+        <p style="font-size:10.5px;color:var(--texto-tenue);margin-top:10px;line-height:1.5;">
           O saldo conta só o que passou pela conta: compra no crédito entra quando você marca a fatura como paga, pelo valor real que digitar.
         </p>
       `;
@@ -6829,8 +7038,8 @@
       document.getElementById('opcoesTomCobranca').innerHTML = TONS_COBRANCA.map(t => `
         <button type="button" class="btn-mini" onclick="escolherTomECobrar('${t.id}')"
           style="width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;font-size:13.5px;${
-            t.id === sugerido ? 'border-color:rgba(95,153,51,.5);color:#c9e3b4;' : ''}">
-          ${t.rotulo}<span style="color:#888;font-size:11.5px;"> — ${t.dica}${
+            t.id === sugerido ? 'border-color:rgba(95,153,51,.5);color:var(--acento-palido);' : ''}">
+          ${t.rotulo}<span style="color:var(--texto-fraco);font-size:11.5px;"> — ${t.dica}${
             t.id === sugerido ? ' · o de sempre com ' + nome : ''}</span>
         </button>`).join('');
       document.getElementById('previaTomCobranca').textContent = '';
@@ -7090,7 +7299,7 @@
       const abertas = cobrancasAbertas();
 
       if (abertas.length === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum empréstimo em aberto.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum empréstimo em aberto.</p>';
         atualizarBotaoLembretes();
         limparBadgeApp();
         return;
@@ -7117,7 +7326,7 @@
       const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
       // Verde nos dois: é dinheiro que volta pra você. O amarelo ficou reservado
       // pro cartão, que é a outra régua — misturar as duas confundia.
-      const corTotal = devo ? '#ef5350' : '#4caf50';
+      const corTotal = devo ? 'var(--vermelho)' : 'var(--verde)';
 
       /* Adiar joga a data pro futuro e a cobrança sairia do vermelho sem ter sido
          paga. Duas vezes adiada é enrolação, não acordo: continua vermelha mesmo
@@ -7136,8 +7345,8 @@
 
       // Vermelho = venceu ou está enrolando. Amarelo = está chegando ou já foi
       // adiada uma vez. Verde = no prazo, não precisa fazer nada.
-      const corPessoa = lista => (lista.some(emAtraso) || lista.some(suspeita)) ? '#ef5350'
-        : ((lista.some(perto) || lista.some(adiadaUmaVez)) ? '#ffd166' : (devo ? '#ef5350' : '#4caf50'));
+      const corPessoa = lista => (lista.some(emAtraso) || lista.some(suspeita)) ? 'var(--vermelho)'
+        : ((lista.some(perto) || lista.some(adiadaUmaVez)) ? 'var(--amarelo)' : (devo ? 'var(--vermelho)' : 'var(--verde)'));
 
       const porPessoa = {};
       cobrancas.forEach(c => { (porPessoa[c.nome] = porPessoa[c.nome] || []).push(c); });
@@ -7146,11 +7355,11 @@
 
       const topo = document.createElement('div');
       topo.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin:${devo ? '18' : '0'}px 0 6px;border-bottom:1px solid #333;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${devo ? 'Total que eu devo' : 'Total a receber'}</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin:${devo ? '18' : '0'}px 0 6px;border-bottom:1px solid var(--borda);">
+          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">${devo ? 'Total que eu devo' : 'Total a receber'}</span>
           <strong style="color:${corTotal};font-size:19px;">${fmtOculto(total)}</strong>
         </div>
-        ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:#ef5350;"><span>⚠ ${devo ? 'vencido — precisa pagar' : 'vencido — pode cobrar'}</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
+        ${totalAtrasado > 0 ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:var(--vermelho);"><span>⚠ ${devo ? 'vencido — precisa pagar' : 'vencido — pode cobrar'}</span><strong>${fmtOculto(totalAtrasado)}</strong></div>` : ''}
       `;
       container.appendChild(topo);
 
@@ -7186,7 +7395,7 @@
           if (jaAlinhada) legenda += ' · alinhado em ' + jaAlinhada.alinhadoEm.split('-').reverse().join('/');
 
           const bloco = document.createElement('div');
-          bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid #2a2a2a;';
+          bloco.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--borda-fraca);';
 
           const cabecalho = document.createElement('button');
           cabecalho.type = 'button';
@@ -7195,7 +7404,7 @@
           cabecalho.innerHTML = `
             <div class="item-info">
               <strong>${nome}</strong>
-              <div style="font-size:11px;color:${(atrasadas > 0 || lista.some(suspeita)) ? '#ef5350' : ((chegando > 0 || lista.some(adiadaUmaVez)) ? '#ffd166' : '#888')};">${legenda}</div>
+              <div style="font-size:11px;color:${(atrasadas > 0 || lista.some(suspeita)) ? 'var(--vermelho)' : ((chegando > 0 || lista.some(adiadaUmaVez)) ? 'var(--amarelo)' : 'var(--texto-fraco)')};">${legenda}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="color:${corPessoa(lista)};font-weight:700;">${fmtOculto(totalPessoa)}</span>
@@ -7209,7 +7418,7 @@
 
           if (aberto) {
             const listaEl = document.createElement('div');
-            listaEl.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid #333;';
+            listaEl.style.cssText = 'margin:6px 0 4px 2px;padding-left:8px;border-left:2px solid var(--borda);';
 
             // agrupa por compra: a data e a conta ficam no cabeçalho da compra;
             // cada linha abaixo carrega só o prazo daquela parcela
@@ -7230,8 +7439,8 @@
                 cab.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:8px 0 2px;';
                 cab.innerHTML = `
                   <div style="min-width:0;">
-                    <div style="font-size:12.5px;color:#ddd;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${descricaoBaseCompra(primeiro.descricao)}</div>
-                    <div style="font-size:10.5px;color:#777;">${itens.length}x · ${primeiro.fixoId ? 'mensal' : (devo ? 'recebido ' : 'pago ') + primeiro.data.split('-').reverse().join('/')} · ${primeiro.conta}</div>
+                    <div style="font-size:12.5px;color:var(--texto-forte);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${descricaoBaseCompra(primeiro.descricao)}</div>
+                    <div style="font-size:10.5px;color:var(--texto-tenue);">${itens.length}x · ${primeiro.fixoId ? 'mensal' : (devo ? 'recebido ' : 'pago ') + primeiro.data.split('-').reverse().join('/')} · ${primeiro.conta}</div>
                   </div>
                   <div style="display:flex;gap:4px;flex-shrink:0;"></div>
                 `;
@@ -7256,7 +7465,7 @@
                 const atrasado = emAtraso(c);
                 const rotulo = c.rotulo || (ehMultipla ? rotuloParcela(l) : descricaoBaseCompra(l.descricao));
                 const detalhe = c.vence
-                  ? `<span style="color:${atrasado ? '#ef5350' : '#888'};">${atrasado ? 'venceu' : 'vence'} ${c.vence.split('-').reverse().join('/')}</span>`
+                  ? `<span style="color:${atrasado ? 'var(--vermelho)' : 'var(--texto-fraco)'};">${atrasado ? 'venceu' : 'vence'} ${c.vence.split('-').reverse().join('/')}</span>`
                   : (ehMultipla ? l.data.split('-').reverse().join('/') : `${l.data.split('-').reverse().join('/')} · ${l.conta}`);
 
                 const linha = document.createElement('div');
@@ -7304,8 +7513,8 @@
             btnZapCheio.type = 'button';
             btnZapCheio.className = 'btn-mini';
             btnZapCheio.style.cssText = 'margin-top:8px;margin-left:6px;'
-              + (/atrasado/i.test(tom) ? 'color:#ef5350;border-color:rgba(239,83,80,.35);'
-                : ['semana','dias','hoje'].includes(tom) ? 'color:#ffd166;border-color:rgba(255,209,102,.35);' : '');
+              + (/atrasado/i.test(tom) ? 'color:var(--vermelho);border-color:rgba(239,83,80,.35);'
+                : ['semana','dias','hoje'].includes(tom) ? 'color:var(--amarelo);border-color:rgba(255,209,102,.35);' : '');
             btnZapCheio.textContent = devo
               ? '💬 Falar com ' + nome
               : (/atrasado/i.test(tom) ? '💬 Cobrar ' + nome
@@ -7325,7 +7534,7 @@
               btnAlinhei.type = 'button';
               btnAlinhei.className = 'btn-mini';
               btnAlinhei.style.cssText = 'margin-top:8px;margin-left:6px;'
-                + (marcada ? 'color:#888;' : 'color:#5f9933;border-color:rgba(95,153,51,.35);');
+                + (marcada ? 'color:var(--texto-fraco);' : 'color:var(--acento);border-color:rgba(95,153,51,.35);');
               btnAlinhei.textContent = marcada ? 'desfazer alinhamento' : '✋ já alinhei';
               btnAlinhei.onclick = () => marcarAlinhado(nome, !marcada);
               listaEl.appendChild(btnAlinhei);
@@ -7372,8 +7581,8 @@
         // Compacto porque agora divide a linha com o título do card: duas linhas
         // curtas em vez de três, com as setas fazendo o papel dos rótulos.
         box24.innerHTML = (rec > 0 || desp > 0)
-          ? `<div style="color:#5a5a5a;">últimas 24h</div>` +
-            `<div><span style="color:#3d8b40;">↑ ${fmtOculto(rec)}</span> <span style="color:#a83e3b;">↓ ${fmtOculto(desp)}</span></div>`
+          ? `<div style="color:var(--texto-tenue);">últimas 24h</div>` +
+            `<div><span style="color:var(--verde-escuro);">↑ ${fmtOculto(rec)}</span> <span style="color:var(--vermelho-escuro);">↓ ${fmtOculto(desp)}</span></div>`
           : '';
       }
     }
@@ -7402,7 +7611,7 @@
          não sabia se vinha de uma fatura fechada, da que está aberta, ou quanto já
          está indo pra próxima. Estas três linhas respondem isso de bate-pronto. */
       if (!comCredito.length) {
-        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum cartão de crédito cadastrado.</p>';
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum cartão de crédito cadastrado.</p>';
         return;
       }
       const somaMes = (m, a) => comCredito.reduce((s, c) => s + totalFaturaConta(c.nome, m, a), 0);
@@ -7421,14 +7630,14 @@
       boxTempo.dataset.linhaTempo = '1';
       boxTempo.innerHTML = linhaTempo.map(f => {
         const destaque = f.estado === 'atual';
-        const cor = (f.total <= 0 || f.estado === 'proxima') ? '#888' : (f.pago ? '#4caf50' : '#ef5350');
+        const cor = (f.total <= 0 || f.estado === 'proxima') ? 'var(--texto-fraco)' : (f.pago ? 'var(--verde)' : 'var(--vermelho)');
         const nota = f.estado === 'proxima' ? 'em formação' : (f.total <= 0 ? 'sem fatura' : (f.pago ? 'paga' : 'em aberto'));
         return `<button type="button" onclick="irParaFatura(${f.m}, ${f.a})"
-          style="flex:1;min-width:0;background:${destaque ? '#1f1f1f' : 'transparent'};border:1px solid ${destaque ? '#444' : '#2e2e2e'};
+          style="flex:1;min-width:0;background:${destaque ? 'var(--campo)' : 'transparent'};border:1px solid ${destaque ? 'var(--borda-forte)' : 'var(--borda-fraca)'};
                  border-radius:10px;padding:7px 4px;cursor:pointer;text-align:center;">
-          <div style="font-size:9.5px;color:#777;text-transform:uppercase;letter-spacing:.4px;">${f.rot.slice(0, 3)}</div>
+          <div style="font-size:9.5px;color:var(--texto-tenue);text-transform:uppercase;letter-spacing:.4px;">${f.rot.slice(0, 3)}</div>
           <div style="font-size:12.5px;font-weight:700;color:${cor};margin:2px 0;">${fmtOculto(f.total)}</div>
-          <div style="font-size:9px;color:#666;">${nota}</div>
+          <div style="font-size:9px;color:var(--texto-tenue);">${nota}</div>
         </button>`;
       }).join('');
       box.appendChild(boxTempo);
@@ -7450,15 +7659,15 @@
         linha.className = 'item-lancamento';
         linha.innerHTML = `
           <div class="item-info">
-            <strong>${c.nome} ${compras.length ? `<span class="chevron-sec" style="font-size:11px;color:#777;">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
-            <div style="font-size:11px;color:${pago ? '#4caf50' : '#888'};">
+            <strong>${c.nome} ${compras.length ? `<span class="chevron-sec" style="font-size:11px;color:var(--texto-tenue);">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
+            <div style="font-size:11px;color:${pago ? 'var(--verde)' : 'var(--texto-fraco)'};">
               ${pago
                 ? '✓ paga em ' + pago.data.split('-').reverse().join('/') + ' · ' + fmtOculto(parseVal(pago.valorPago))
                 : 'vence dia ' + diasDoCartao(c.nome).vence + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <span class="${pago ? '' : 'valor-despesa'}" style="${pago ? 'color:#666;' : ''}">${fmtOculto(total)}</span>
+            <span class="${pago ? '' : 'valor-despesa'}" style="${pago ? 'color:var(--texto-tenue);' : ''}">${fmtOculto(total)}</span>
             <button type="button" class="btn-mini">${pago ? 'desfazer' : 'pagar'}</button>
           </div>
         `;
@@ -7472,12 +7681,12 @@
         // O extrato: sem isto o card mostrava um total sem dizer do que era feito.
         if (aberto && compras.length) {
           const det = document.createElement('div');
-          det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid #333;';
+          det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid var(--borda);';
           det.innerHTML = compras.map(l => `
-            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid #2a2a2a;cursor:default;">
+            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:default;">
               <div class="item-info">
                 <strong style="font-size:13px;">${l.descricao}</strong>
-                <div style="font-size:10.5px;color:#888;">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}</div>
+                <div style="font-size:10.5px;color:var(--texto-fraco);">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}</div>
               </div>
               <span class="valor-despesa" style="font-size:13px;">${fmtOculto(parseVal(l.valor))}</span>
             </div>`).join('');
@@ -7488,7 +7697,7 @@
       // A linha do tempo sempre entra, então "vazio" é não ter nenhuma linha de
       // cartão — e nesse caso ela também não faz sentido sozinha.
       if (!box.querySelector('.item-lancamento')) {
-        box.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
       }
     }
 
@@ -7515,11 +7724,11 @@
       const el = document.getElementById('previaAjusteFatura');
       const dif = diferencaFatura();
       if (Math.abs(dif) < 0.01) {
-        el.style.color = '#4caf50';
+        el.style.color = 'var(--verde)';
         el.textContent = 'Bateu certinho com o que está lançado aqui.';
         return;
       }
-      el.style.color = '#ffd166';
+      el.style.color = 'var(--amarelo)';
       el.innerHTML = dif > 0
         ? `O banco cobrou <strong>${fmtVal(dif)}</strong> a mais. Vai entrar como "Ajuste de fatura — não identificado", pra você descobrir depois o que foi.`
         : `O banco cobrou <strong>${fmtVal(-dif)}</strong> a menos. Vai entrar como estorno, pra o mês fechar com o valor real.`;
@@ -7807,8 +8016,8 @@
       ).join('');
       document.getElementById('resumoReceberEmprestimo').innerHTML = `
         <div style="margin-bottom:6px;">
-          <span style="font-size:11px;color:#aaa;text-transform:uppercase;">${devo ? 'Pagando ' : 'Recebendo de '}${nomes.join(', ')}</span>
-          <h3 style="color:${devo ? '#ef5350' : '#4caf50'};font-size:22px;">${fmtOculto(total)}</h3>
+          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${devo ? 'Pagando ' : 'Recebendo de '}${nomes.join(', ')}</span>
+          <h3 style="color:${devo ? 'var(--vermelho)' : 'var(--verde)'};font-size:22px;">${fmtOculto(total)}</h3>
         </div>
         ${itens.length > 1 ? detalhes : ''}
       `;
@@ -7899,7 +8108,7 @@
             extrasHTML = pagas.map(([chave, pg]) => `
               <div class="linha-subtotal" style="cursor:default;">
                 <span>🧾 Fatura ${chave.split('|')[0]} paga em ${pg.data.split('-').reverse().join('/')}</span>
-                <strong style="color:#ef5350;">${fmtOculto(parseVal(pg.valorPago))}</strong>
+                <strong style="color:var(--vermelho);">${fmtOculto(parseVal(pg.valorPago))}</strong>
               </div>`).join('');
           }
         }
@@ -7938,7 +8147,7 @@
           extrasHTML = extras.map(x => `
             <div class="linha-subtotal" style="cursor:default;">
               <span>${x.rotulo}</span>
-              <strong style="color:${x.valor >= 0 ? '#4caf50' : '#ef5350'};">${x.valor >= 0 ? '+' : '−'}${fmtOculto(Math.abs(x.valor))}</strong>
+              <strong style="color:${x.valor >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${x.valor >= 0 ? '+' : '−'}${fmtOculto(Math.abs(x.valor))}</strong>
             </div>`).join('');
         }
       }
@@ -8029,7 +8238,7 @@
       const rotulo = document.getElementById('rotuloFiltroDetalhe');
       const partes = [f.cat, f.conta, f.grupo, f.busca && `"${f.busca}"`].filter(Boolean);
       rotulo.textContent = partes.length ? partes.join(' · ') : 'Buscar e filtrar';
-      rotulo.style.color = partes.length ? '#5f9933' : '#888';
+      rotulo.style.color = partes.length ? 'var(--acento)' : 'var(--texto-fraco)';
       rotulo.style.fontWeight = partes.length ? '600' : '400';
 
       const lista = detalheAtual.lista.filter(l => {
@@ -8055,9 +8264,9 @@
         const soma = lista.reduce((s, l) => s + parseVal(l.valor) * (l.tipo === 'receita' ? 1 : -1), 0);
         const positivo = soma >= 0;
         boxSubFat.innerHTML = `
-          <div class="linha-subtotal" style="cursor:default;${extras ? 'border-bottom:1px solid #333;padding-bottom:8px;margin-bottom:8px;' : ''}">
-            <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">${lista.length} lançamento${lista.length > 1 ? 's' : ''}${filtrando ? ' de ' + detalheAtual.lista.length : ''}</span>
-            <strong style="font-size:16px;color:${positivo ? '#4caf50' : '#ef5350'};">${positivo ? '+' : '−'}${fmtOculto(Math.abs(soma))}</strong>
+          <div class="linha-subtotal" style="cursor:default;${extras ? 'border-bottom:1px solid var(--borda);padding-bottom:8px;margin-bottom:8px;' : ''}">
+            <span style="font-size:12px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">${lista.length} lançamento${lista.length > 1 ? 's' : ''}${filtrando ? ' de ' + detalheAtual.lista.length : ''}</span>
+            <strong style="font-size:16px;color:${positivo ? 'var(--verde)' : 'var(--vermelho)'};">${positivo ? '+' : '−'}${fmtOculto(Math.abs(soma))}</strong>
           </div>` + extras;
         boxSubFat.classList.remove('escondido');
       } else if (extras) {
@@ -8067,7 +8276,7 @@
 
       corpo.innerHTML = '';
       if (lista.length === 0) {
-        corpo.innerHTML = `<p style="color:#aaa;font-size:13px;">${filtrando
+        corpo.innerHTML = `<p style="color:var(--texto-medio);font-size:13px;">${filtrando
           ? 'Nada com esse recorte. Afrouxe o filtro.'
           : 'Nenhum lançamento nesta categoria.'}</p>`;
         return;
@@ -8082,7 +8291,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${item.descricao}</strong>
-            <div style="font-size:11px;color:#888;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
             ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
           </div>
           <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
@@ -8487,7 +8696,7 @@
 
       lista.innerHTML = '';
       if (investimentos.length === 0) {
-        lista.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum aporte registrado ainda.</p>';
+        lista.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte registrado ainda.</p>';
         return;
       }
 
@@ -8495,7 +8704,7 @@
         const dataFmt = inv.data.split('-').reverse().join('/');
         const div = document.createElement('div');
         div.className = 'item-lancamento';
-        div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:#888;">${dataFmt} • de ${inv.origem}</div></div><span class="valor-receita">${fmtVal(parseVal(inv.valor))}</span>`;
+        div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div></div><span class="valor-receita">${fmtVal(parseVal(inv.valor))}</span>`;
         lista.appendChild(div);
       });
     }
@@ -8585,7 +8794,7 @@
         : `${r.pessoas[0]} entrou junto`);
       partes.push('sua parte ' + fmtVal(r.minhaParte));
       partes.push(r.aReceber > 0 ? 'faltam ' + fmtVal(r.aReceber) : 'tudo recebido');
-      return `<div style="font-size:10px;color:${r.aReceber > 0 ? '#ffd166' : '#4caf50'};margin-top:2px;">${partes.join(' · ')}</div>`;
+      return `<div style="font-size:10px;color:${r.aReceber > 0 ? 'var(--amarelo)' : 'var(--verde)'};margin-top:2px;">${partes.join(' · ')}</div>`;
     }
 
     function renderizarGrupos() {
@@ -8596,7 +8805,7 @@
       const listaFiltrada = termo ? listaBase.filter(g => textoSeguro(g.nome).includes(termo)) : listaBase;
 
       if (listaFiltrada.length === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum grupo encontrado com esse nome.</p>';
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum grupo encontrado com esse nome.</p>';
         return;
       }
 
@@ -8612,7 +8821,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${g.nome}</strong>
-            <div style="font-size:11px;color:#888;">${g.status === 'aberto' ? '🟢 Em aberto' : '⚪ Encerrado'}${contexto.length ? ' · ' + contexto.join(' · ') : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${g.status === 'aberto' ? '🟢 Em aberto' : '⚪ Encerrado'}${contexto.length ? ' · ' + contexto.join(' · ') : ''}</div>
           </div>
           <div class="item-acoes">
             <span class="${total >= 0 ? 'valor-despesa' : 'valor-receita'}">${fmtVal(total)}</span>
@@ -8660,7 +8869,7 @@
         return `
           <div class="barra-grupo">
             <div class="barra-grupo-info"><span>${cat}</span><span>${fmtOculto(valor)} · ${pct}%</span></div>
-            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:#42a5f5;"></div></div>
+            <div class="barra-bg"><div class="barra-fill" style="width:${pct}%;background-color:var(--azul);"></div></div>
           </div>
         `;
       }).join('');
@@ -8690,7 +8899,7 @@
       const itens = lancamentos.filter(l => l.grupoViagemId === id);
       
       if (itens.length === 0) {
-        corpo.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum gasto vinculado a este grupo ainda.</p>';
+        corpo.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum gasto vinculado a este grupo ainda.</p>';
       } else {
         const { bruto, recebido, liquido, aReceber } = resumoGrupo(id);
 
@@ -8707,9 +8916,9 @@
         // seria linha a mais dizendo o mesmo número.
         const temRateio = recebido > 0 || aReceber > 0;
         let html = `
-          <div style="text-align:center;padding:0 0 8px;border-bottom:1px solid #333;margin-bottom:10px;">
-            <span style="font-size:10.5px;color:#aaa;text-transform:uppercase;letter-spacing:.4px;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
-            <h3 style="color:${liquido >= 0 ? '#ef5350' : '#4caf50'};font-size:22px;margin-top:2px;">${fmtVal(liquido)}</h3>
+          <div style="text-align:center;padding:0 0 8px;border-bottom:1px solid var(--borda);margin-bottom:10px;">
+            <span style="font-size:10.5px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.4px;">${temRateio ? 'Saiu do meu bolso' : 'Total do Grupo'}</span>
+            <h3 style="color:${liquido >= 0 ? 'var(--vermelho)' : 'var(--verde)'};font-size:22px;margin-top:2px;">${fmtVal(liquido)}</h3>
           </div>
         `;
 
@@ -8718,11 +8927,11 @@
           html += `
             <div class="box-resumo-modal" style="margin-bottom:10px;">
               <div class="linha-subtotal" style="cursor:default;"><span>Lancei no grupo</span><strong>${fmtVal(bruto)}</strong></div>
-              <div class="linha-subtotal" style="cursor:default;"><span>(−) já me pagaram</span><strong style="color:#4caf50;">${fmtVal(recebido)}</strong></div>
-              <div class="linha-subtotal" style="cursor:default;border-top:1px solid #333;padding-top:6px;margin-top:6px;"><span>(=) saiu do meu bolso</span><strong style="color:#ef5350;">${fmtVal(liquido)}</strong></div>
+              <div class="linha-subtotal" style="cursor:default;"><span>(−) já me pagaram</span><strong style="color:var(--verde);">${fmtVal(recebido)}</strong></div>
+              <div class="linha-subtotal" style="cursor:default;border-top:1px solid var(--borda);padding-top:6px;margin-top:6px;"><span>(=) saiu do meu bolso</span><strong style="color:var(--vermelho);">${fmtVal(liquido)}</strong></div>
               ${aReceber > 0 ? `
-                <div class="linha-subtotal" style="cursor:default;margin-top:8px;padding-top:8px;border-top:1px dashed #333;"><span>ainda a receber</span><strong style="color:#ffd166;">${fmtVal(aReceber)}</strong></div>
-                <div style="font-size:11px;color:#888;margin-top:4px;">Se todo mundo pagar, a viagem te custa ${fmtVal(seTodosPagarem)}.</div>
+                <div class="linha-subtotal" style="cursor:default;margin-top:8px;padding-top:8px;border-top:1px dashed var(--borda);"><span>ainda a receber</span><strong style="color:var(--amarelo);">${fmtVal(aReceber)}</strong></div>
+                <div style="font-size:11px;color:var(--texto-fraco);margin-top:4px;">Se todo mundo pagar, a viagem te custa ${fmtVal(seTodosPagarem)}.</div>
               ` : ''}
             </div>
           `;
@@ -8748,17 +8957,17 @@
           html += soReembolso ? `
             <details class="bloco-cat">
               <summary>
-                <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
+                <strong style="color:var(--azul-forte); font-size:13px;">${cat}</strong>
                 <span style="display:flex;align-items:center;gap:6px;">
-                  <strong style="font-size:13px;color:#4caf50;">+ ${fmtVal(-totCat)}</strong>
+                  <strong style="font-size:13px;color:var(--verde);">+ ${fmtVal(-totCat)}</strong>
                   <span class="chevron-sec" style="font-size:13px;">▸</span>
                 </span>
               </summary>
               <div class="corpo-cat">
           ` : `
             <div class="bloco-cat">
-              <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #2a2a2a; padding-bottom:4px;">
-                <strong style="color:#2196f3; font-size:13px;">${cat}</strong>
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--borda-fraca); padding-bottom:4px;">
+                <strong style="color:var(--azul-forte); font-size:13px;">${cat}</strong>
                 <strong style="font-size:13px;">${fmtVal(totCat)}</strong>
               </div>
           `;
@@ -8788,9 +8997,9 @@
                 <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
                   <div class="item-info">
                     <span style="font-size:13px;">${quem}</span>
-                    <div style="font-size:10px;color:#888;">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}${aindaDeve ? ' · ainda pagando' : ''}</div>
+                    <div style="font-size:10px;color:var(--texto-fraco);">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}${aindaDeve ? ' · ainda pagando' : ''}</div>
                   </div>
-                  <span style="font-size:13px;font-weight:700;color:${aindaDeve ? '#ffd166' : '#4caf50'};">+ ${fmtVal(somaPessoa)}</span>
+                  <span style="font-size:13px;font-weight:700;color:${aindaDeve ? 'var(--amarelo)' : 'var(--verde)'};">+ ${fmtVal(somaPessoa)}</span>
                 </div>
               `;
               return;
@@ -8808,7 +9017,7 @@
                 <div class="item-lancamento" onclick="abrirGerenciarParcelasPorGrupoId('${item.grupoId}')" style="padding:6px 0;">
                   <div class="item-info">
                     <span style="font-size:13px;">${descBase}</span>
-                    <div style="font-size:10px;color:#888;">${parcelasDaCompra.length}x • ${restantes > 0 ? restantes + ' parcela' + (restantes > 1 ? 's' : '') + ' restante' + (restantes > 1 ? 's' : '') : 'já paga'} • desde ${dataFmt}</div>
+                    <div style="font-size:10px;color:var(--texto-fraco);">${parcelasDaCompra.length}x • ${restantes > 0 ? restantes + ' parcela' + (restantes > 1 ? 's' : '') + ' restante' + (restantes > 1 ? 's' : '') : 'já paga'} • desde ${dataFmt}</div>
                     ${legendaRateio(parcelasDaCompra)}
                   </div>
                   <span class="valor-despesa" style="font-size:13px;">- R$ ${totalCompra.toFixed(2).replace('.', ',')}</span>
@@ -8823,12 +9032,12 @@
               <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
                 <div class="item-info">
                   <span style="font-size:13px;">${item.descricao}</span>
-                  <div style="font-size:10px;color:#888;">${dataFmt} • ${item.conta}</div>
+                  <div style="font-size:10px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}</div>
                   ${eReceita ? '' : legendaRateio([item])}
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                   <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
-                  ${item.observacao ? `<span style="font-size:10px;color:#8c8c8c;max-width:150px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.observacao}</span>` : ''}
+                  ${item.observacao ? `<span style="font-size:10px;color:var(--texto-fraco);max-width:150px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.observacao}</span>` : ''}
                 </div>
               </div>
             `;
@@ -9284,7 +9493,7 @@ function interpretarFala(fala) {
                             numParcelas: numParcelasVoz, data, grupoId, grupoNome, emprestimoPara };
 
   document.getElementById('vozTipo').textContent = tipo === 'receita' ? 'RECEITA 📈' : 'DESPESA 📉';
-  document.getElementById('vozTipo').style.color = tipo === 'receita' ? '#4caf50' : '#ef5350';
+  document.getElementById('vozTipo').style.color = tipo === 'receita' ? 'var(--verde)' : 'var(--vermelho)';
   document.getElementById('vozDescricao').textContent = descricao;
   document.getElementById('vozValor').textContent = 'R$ ' + valorFormatoPadrao;
   document.getElementById('vozCategoria').textContent = tipo === 'receita' ? '-' : categoria;
@@ -9367,7 +9576,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.27-1';
+    const APP_VERSION = '2026.08.27-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -9403,6 +9612,8 @@ function confirmarLancamentoVoz() {
     aplicarSecao('graficoPrincipal');
     aplicarSecao('ordemGraficos');
     aplicarSecao('analista');
+    aplicarSecao('tema');
+    aplicarTema(temaAtual());
     renderizarSugestoesPergunta();
     ativarEmpilhamentoDeModais();
     aplicarSecao('sons');
@@ -9504,16 +9715,16 @@ function confirmarLancamentoVoz() {
       <h3>Confirmar lançamento</h3>
       <button class="btn-fechar" onclick="fecharModal('modalConfirmarLancamento')">&times;</button>
     </div>
-    <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Tem certeza que deseja lançar isto?</p>
+    <p style="color:var(--texto-medio); font-size:13px; margin-bottom:12px;">Tem certeza que deseja lançar isto?</p>
     <div class="resumo-voz">
       <p><strong>Tipo:</strong> <span id="confirmLancTipo" style="font-weight:bold;"></span></p>
       <p><strong>Descrição:</strong> <span id="confirmLancDescricao"></span></p>
-      <p><strong>Valor:</strong> <span id="confirmLancValor" style="color:#2196f3; font-weight:bold;"></span></p>
+      <p><strong>Valor:</strong> <span id="confirmLancValor" style="color:var(--azul-forte); font-weight:bold;"></span></p>
       <p><strong>Detalhes:</strong> <span id="confirmLancDetalhe"></span></p>
     </div>
     <div style="display:flex; gap:10px;">
       <button type="button" class="btn-cancelar" style="flex:1; margin:0;" onclick="fecharModal('modalConfirmarLancamento')">Voltar e ajustar</button>
-      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:#4caf50; color:#fff;" onclick="confirmarSalvarLancamento()">Confirmar</button>
+      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:var(--verde); color:var(--texto);" onclick="confirmarSalvarLancamento()">Confirmar</button>
     </div>
   </div>
 </div>
@@ -9524,17 +9735,17 @@ function confirmarLancamentoVoz() {
       <h3>Confira seu lançamento</h3>
       <button class="btn-fechar" onclick="fecharModal('modalVoz')">&times;</button>
     </div>
-    <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Entendemos o seguinte da sua fala. Se estiver tudo certo, toque em Confirmar; se quiser ajustar algo antes, toque em Editar:</p>
+    <p style="color:var(--texto-medio); font-size:13px; margin-bottom:12px;">Entendemos o seguinte da sua fala. Se estiver tudo certo, toque em Confirmar; se quiser ajustar algo antes, toque em Editar:</p>
     <div class="resumo-voz">
       <p><strong>Tipo:</strong> <span id="vozTipo" style="font-weight:bold;"></span></p>
       <p><strong>Descrição:</strong> <span id="vozDescricao"></span></p>
-      <p><strong>Valor:</strong> <span id="vozValor" style="color:#2196f3; font-weight:bold;"></span></p>
+      <p><strong>Valor:</strong> <span id="vozValor" style="color:var(--azul-forte); font-weight:bold;"></span></p>
       <p><strong>Categoria:</strong> <span id="vozCategoria"></span></p>
       <p><strong>Forma:</strong> <span id="vozForma"></span></p>
     </div>
     <div style="display:flex; gap:10px;">
       <button type="button" class="btn-cancelar" style="flex:1; margin:0;" onclick="editarLancamentoVoz()">Editar</button>
-      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:#4caf50; color:#fff;" onclick="confirmarLancamentoVoz()">Confirmar</button>
+      <button type="button" class="btn-salvar" style="flex:1; margin:0; background-color:var(--verde); color:var(--texto);" onclick="confirmarLancamentoVoz()">Confirmar</button>
     </div>
   </div>
 </div>
