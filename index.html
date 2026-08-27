@@ -311,6 +311,13 @@
     .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:#ccc; margin-bottom:14px; cursor:pointer; }
     .check-credito input { width:auto; accent-color:#4caf50; }
 
+    /* Convite discreto pra cadastrar: verde apagado, sem peso de botão primário.
+       O formulário só aparece quando pedido, numa janela centralizada. */
+    .btn-adicionar { width:100%; margin-top:14px; padding:12px; border-radius:10px; cursor:pointer;
+      background:rgba(95,153,51,.10); border:1px solid rgba(95,153,51,.30); color:#8fbf62;
+      font-size:13.5px; font-weight:600; font-family:inherit; }
+    .btn-adicionar:active { background:rgba(95,153,51,.20); }
+
     .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .backup-actions .btn-cancelar { flex:1; margin-top:0; }
     .btn-backup { width:100%; padding:12px; border:1px solid #333; border-radius:10px; background:#1a1a1a; color:#fff; font-weight:700; cursor:pointer; }
@@ -415,6 +422,28 @@
           </div>
           <button type="button" id="btnCancelarEdit" class="btn-cancelar escondido" onclick="cancelarEdicao()">Cancelar Edição</button>
         </form>
+      </div>
+      <!-- CONSULTA RÁPIDA
+           Fica aqui em Lançamentos, ao alcance de quem acabou de registrar um
+           gasto e quer saber no que deu. Nasce recolhido: quem só quer lançar
+           não leva um card de análise na frente. -->
+      <div class="card" data-card="analista" data-card-titulo="Consulta rápida">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('analista')">
+          <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">🔎 Consulta rápida</h3>
+            <span id="resumoAnalista" style="font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+          </div>
+          <span class="chevron-sec" id="chevron-analista">▸</span>
+        </button>
+        <div id="corpo-analista" class="escondido" style="margin-top:10px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="inputPergunta" placeholder="Pergunte ou toque em ler o mês..." style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
+            <button type="button" id="btnMicPergunta" class="btn-mic-pergunta" onclick="ditarPergunta()" title="Falar a pergunta" aria-label="Falar a pergunta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+            <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
+          </div>
+          <div id="sugestoesPergunta" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+          <div id="respostaPergunta" style="font-size:13px;margin-top:12px;color:#aaa;line-height:1.6;"></div>
+        </div>
       </div>
 
     </div>
@@ -532,32 +561,6 @@
     </div>
 
     <div id="abaGraficos" class="aba-conteudo">
-      <!-- ANALISTA
-           Saiu da aba Lançamentos: lá o trabalho é registrar, aqui é entender.
-           Além de responder, ele agora conclui — compara com a sua própria média,
-           projeta o fim do mês e aponta o que mudou. -->
-      <div class="card" data-card="analista">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('analista')">
-          <h3 style="font-size:16px;">Analisar meus gastos</h3>
-          <span class="chevron-sec" id="chevron-analista">▸</span>
-        </button>
-        <div id="corpo-analista" class="escondido" style="margin-top:10px;">
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="inputPergunta" placeholder="Pergunte ou toque em ler o mês..." style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();responderPergunta();}">
-            <button type="button" id="btnMicPergunta" class="btn-mic-pergunta" onclick="ditarPergunta()" title="Falar a pergunta" aria-label="Falar a pergunta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-            <button type="button" class="btn-mini" style="white-space:nowrap;" onclick="responderPergunta()">Perguntar</button>
-          </div>
-          <!-- Sugestões prontas: ninguém adivinha o que a máquina entende. -->
-          <div id="sugestoesPergunta" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
-          <div id="respostaPergunta" style="font-size:13px;margin-top:12px;color:#aaa;line-height:1.6;"></div>
-        </div>
-      </div>
-      <!-- O período é o único controle global desta aba: fica numa fileira só,
-           sempre à vista. Antes era um card com um botão que abria uma grade de
-           oito opções — dois toques pra trocar de período. -->
-      <!-- Um card só pro controle da aba, no mesmo desenho do cabeçalho das
-           Faturas (rótulo / nome no centro / olho na direita). Antes o olho
-           disputava a linha com os chips que rolam e ficava espremido no canto. -->
       <div class="card" id="cardPeriodoGraficos">
         <div class="cabecalho-fatura">
           <span class="rotulo-resumo">Período</span>
@@ -852,6 +855,14 @@
             <input type="checkbox" id="chkSomLigado" onchange="alternarSomLigado()" aria-label="Tocar som ao salvar receita" style="width:auto;margin:0;">
             <span>Tocar som ao salvar receita</span>
           </label>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="chkVibrar" onchange="alternarVibracao()" aria-label="Vibrar ao salvar" style="width:auto;margin:0;">
+            <span>Vibrar ao salvar</span>
+          </label>
+          <p style="color:#777;font-size:11px;margin-top:6px;line-height:1.45;">
+            Despesa: um toque seco. Transferência: dois toques. Receita: uma vibração
+            mais longa, oscilando — a mão sente o mesmo que o ouvido escuta.
+          </p>
         </div>
       </div>
 
@@ -1081,8 +1092,18 @@
       </div>
       <p style="font-size:11.5px;color:#777;margin-bottom:10px;line-height:1.45;">A ★ deixa a conta no topo do formulário. Toque na linha pra editar ou excluir.</p>
       <div id="listaContasGerenciar"></div>
-      <div style="border-top:1px solid #333;margin-top:14px;padding-top:14px;">
-        <h4 id="tituloFormConta" style="margin-bottom:10px;color:#aaa;font-size:13px;">Adicionar nova conta</h4>
+      <button type="button" class="btn-adicionar" onclick="abrirFormConta()">+ Adicionar nova conta</button>
+    </div>
+  </div>
+
+  <!-- FORMULÁRIO DE CONTA (janela própria) -->
+  <div id="modalFormConta" class="modal-overlay escondido" onclick="if(event.target===this) fecharFormConta()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloFormConta">Adicionar nova conta</h3>
+        <button class="btn-fechar" onclick="fecharFormConta()">&times;</button>
+      </div>
+      <div>
         <input type="hidden" id="idContaEditando" value="">
         <div class="form-group">
           <label for="nomeConta">Nome da conta / cartão</label>
@@ -1459,8 +1480,18 @@
       </div>
       <p style="font-size:11.5px;color:#777;margin-bottom:10px;line-height:1.45;">A ★ deixa a categoria no topo do formulário. Arraste pelas listrinhas pra mudar a ordem, e toque na linha pra renomear ou excluir.</p>
       <div id="listaCategoriasGerenciar"></div>
-      <div style="border-top:1px solid #333;margin-top:14px;padding-top:14px;">
-        <h4 id="tituloFormCategoria" style="margin-bottom:10px;color:#aaa;font-size:13px;">Adicionar nova categoria</h4>
+      <button type="button" class="btn-adicionar" onclick="abrirFormCategoria()">+ Adicionar nova categoria</button>
+    </div>
+  </div>
+
+  <!-- FORMULÁRIO DE CATEGORIA (janela própria) -->
+  <div id="modalFormCategoria" class="modal-overlay escondido" onclick="if(event.target===this) fecharFormCategoria()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloFormCategoria">Adicionar nova categoria</h3>
+        <button class="btn-fechar" onclick="fecharFormCategoria()">&times;</button>
+      </div>
+      <div>
         <input type="hidden" id="idxCategoriaEditando" value="">
         <div class="form-group">
           <label for="nomeCategoria">Nome da categoria</label>
@@ -2104,6 +2135,31 @@
     }
 
     // GERENCIAMENTO DE CONTAS
+    /* O formulário virou janela: abrir cadastra, editar reaproveita a mesma
+       janela já preenchida. Fechar sempre limpa, senão a próxima abertura viria
+       com os campos da edição anterior. */
+    function abrirFormConta() {
+      cancelarEdicaoConta();
+      document.getElementById('modalFormConta').classList.remove('escondido');
+      document.getElementById('nomeConta').focus();
+    }
+
+    function fecharFormConta() {
+      fecharModal('modalFormConta');
+      cancelarEdicaoConta();
+    }
+
+    function abrirFormCategoria() {
+      cancelarEdicaoCategoria();
+      document.getElementById('modalFormCategoria').classList.remove('escondido');
+      document.getElementById('nomeCategoria').focus();
+    }
+
+    function fecharFormCategoria() {
+      fecharModal('modalFormCategoria');
+      cancelarEdicaoCategoria();
+    }
+
     function abrirModalContas() {
       cancelarEdicaoConta();
       renderizarListaContas();
@@ -2176,11 +2232,9 @@
       atualizarCamposCartao();
       document.getElementById('tituloFormConta').textContent = 'Editar conta';
       document.getElementById('btnCancelarConta').classList.remove('escondido');
-      /* O formulário fica DEPOIS da lista de contas, dentro de um modal que rola
-         por conta própria. Com várias contas cadastradas ele nasce abaixo da
-         dobra: os campos eram preenchidos, mas fora da vista — e parecia que
-         tocar em "editar" não fazia nada. */
-      document.getElementById('tituloFormConta').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Janela própria: some o problema de o formulário nascer abaixo da dobra,
+      // que fazia "editar" parecer que não fazia nada.
+      document.getElementById('modalFormConta').classList.remove('escondido');
     }
 
     function cancelarEdicaoConta() {
@@ -2306,7 +2360,7 @@
       popularSelectsContas();
       atualizarVisibilidadeForma();
       renderizarListaContas();
-      cancelarEdicaoConta();
+      fecharFormConta();   // salvou, some a janela e volta pra lista
       renderizarLancamentos();
       atualizarFaturas();
       renderizarInvestimentos();
@@ -2388,6 +2442,7 @@
       document.getElementById('nomeCategoria').value = nome;
       document.getElementById('tituloFormCategoria').textContent = 'Editar categoria';
       document.getElementById('btnCancelarCategoria').classList.remove('escondido');
+      document.getElementById('modalFormCategoria').classList.remove('escondido');
     }
 
     function cancelarEdicaoCategoria() {
@@ -2431,7 +2486,7 @@
       salvarCategorias();
       popularSelectsCategorias();
       renderizarListaCategorias();
-      cancelarEdicaoCategoria();
+      fecharFormCategoria();   // salvou, some a janela e volta pra lista
       renderizarLancamentos();
       atualizarFaturas();
       atualizarResumoEGraficos();
@@ -3084,6 +3139,34 @@
 
     function somLigado() { return localStorage.getItem('meu_financeiro_som') !== '0'; }
 
+    /* VIBRAÇÃO
+       Serve pra quando o som está desligado (reunião, cinema, celular no mudo) e
+       você ainda quer a confirmação de que o lançamento entrou. Cada tipo tem um
+       padrão próprio, e o da receita imita o som: oscila em vez de ser um toque
+       seco, então dá pra saber o que aconteceu sem olhar a tela.
+
+       navigator.vibrate não existe no iPhone e é ignorado quando o usuário nunca
+       tocou na página — os dois casos falham em silêncio, sem quebrar nada. */
+    const VIBRACOES = {
+      despesa:       [35],
+      transferencia: [25, 70, 25],
+      receita:       [18, 30, 18, 30, 45, 25, 70]
+    };
+
+    function vibracaoLigada() { return localStorage.getItem('meu_financeiro_vibrar') === '1'; }
+
+    function alternarVibracao() {
+      const on = document.getElementById('chkVibrar').checked;
+      localStorage.setItem('meu_financeiro_vibrar', on ? '1' : '0');
+      if (on) vibrar('receita');   // amostra na hora, pra sentir o que escolheu
+    }
+
+    function vibrar(tipo) {
+      if (!vibracaoLigada() || !navigator.vibrate) return;
+      try { navigator.vibrate(VIBRACOES[tipo] || VIBRACOES.despesa); } catch (e) { /* sem vibração aqui */ }
+      window.__vibracoes = (window.__vibracoes || []).concat(tipo);   // ajuda os testes
+    }
+
     function alternarSomLigado() {
       const on = document.getElementById('chkSomLigado').checked;
       localStorage.setItem('meu_financeiro_som', on ? '1' : '0');
@@ -3095,6 +3178,8 @@
       if (!box) return;
       const chk = document.getElementById('chkSomLigado');
       if (chk) chk.checked = somLigado();
+      const chkV = document.getElementById('chkVibrar');
+      if (chkV) chkV.checked = vibracaoLigada();
       box.innerHTML = '';
       const ativos = new Set(sonsAtivos());
       SONS_RECEITA.concat([{ nome: 'Vento (transferência)' }]).forEach((s, i) => {
@@ -3447,20 +3532,33 @@
       const btn = document.querySelector(`.nav-tab[onclick*="${idAba}"]`);
       mudarAba(idAba, btn);
       if (btn && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
-      const alvo = document.getElementById(idAba);
-      if (alvo) {
-        alvo.classList.remove('anim-esq', 'anim-dir');
-        void alvo.offsetWidth; // reinicia a animação
-        alvo.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
-      }
     }, { passive: true });
 
     function mudarAba(idAba, elemento) {
-      document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('ativo'));
+      /* A direção do deslize sai da posição das abas: indo pra direita na fileira,
+         o conteúdo entra pela direita. Antes isso só existia no gesto — tocar no
+         botão da aba trocava a tela num corte seco. */
+      // Ordem visual das abas, tirada da própria fileira — inclui Ajustes, que
+      // fica fora do ORDEM_ABAS (usado só pelo gesto de deslizar)
+      const fileira = [...document.querySelectorAll('.nav-tab')]
+        .map(t => (t.getAttribute('onclick') || '').match(/'([^']+)'/))
+        .map(m => m && m[1]);
+      const antes = document.querySelector('.aba-conteudo.ativo');
+      const de = antes ? fileira.indexOf(antes.id) : -1;
+      const para = fileira.indexOf(idAba);
+
+      document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('ativo', 'anim-esq', 'anim-dir'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('ativo'));
       const alvo = document.getElementById(idAba);
       if (alvo) alvo.classList.add('ativo');
       if (elemento) elemento.classList.add('ativo');
+
+      if (alvo && de !== -1 && para !== -1 && de !== para) {
+        void alvo.offsetWidth;   // reinicia a animação
+        alvo.classList.add(para > de ? 'anim-esq' : 'anim-dir');
+      }
+      // Trocar de aba com a página rolada deixava você no meio do conteúdo novo
+      if (de !== para) window.scrollTo({ top: 0, behavior: 'smooth' });
 
       if (idAba === 'abaGraficos') atualizarResumoEGraficos();
       if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); }
@@ -4204,6 +4302,7 @@
 
       salvarLocalStorage();
       if (!idEditando && tipoAtual === 'receita' && somLigado()) tocarSomReceita();
+      if (!idEditando) vibrar(tipoAtual === 'receita' ? 'receita' : 'despesa');
       cancelarEdicao();
       atualizarTudo();
     }
@@ -4218,6 +4317,7 @@
       atualizarFaturas();
       atualizarResumoEGraficos();
       renderizarGrupos();
+      atualizarResumoAnalista();
     }
 
     function prepararEdicao(id) {
@@ -4611,6 +4711,7 @@
       transferenciaPendente = null;
       salvarTransferencias();
       if (somLigado()) tocarSomTransferencia();
+      vibrar('transferencia');
       fecharModal('modalConfirmaTransferencia');
       fecharModal('modalTransferencia');
       renderizarLancamentos();
@@ -5829,6 +5930,33 @@
       ['🤝 Quem me deve',        'quem me deve'],
       ['📆 Parcelas em aberto',  'parcelas em aberto']
     ];
+
+    /* A linha do card recolhido já entrega o essencial. Sem isso o card fechado
+       é uma promessa vazia: você teria que abrir pra descobrir se vale abrir. */
+    function atualizarResumoAnalista() {
+      const el = document.getElementById('resumoAnalista');
+      if (!el) return;
+      const { mes, ano } = chaveMesDeslocada(0);
+      const doMes = despesasDoMes(mes, ano);
+      if (!doMes.length) { el.textContent = '· sem gastos ainda'; return; }
+
+      const partes = ['💸 ' + fmtOculto(somar(doMes))];
+
+      const ref = mediaMensal(null, 3);
+      const { fracao } = fracaoDoMes();
+      if (ref && ref.media && fracao > 0.15) {
+        const proj = somar(doMes) / fracao;
+        const dif = Math.round((proj - ref.media) / ref.media * 100);
+        if (dif >= 10) partes.push('📈 +' + dif + '%');
+        else if (dif <= -10) partes.push('📉 ' + dif + '%');
+        else partes.push('👌 no ritmo');
+      }
+
+      const aReceber = cobrancasAbertas().filter(c => !c.devo);
+      if (aReceber.length) partes.push('🤝 ' + fmtOculto(aReceber.reduce((sm, c) => sm + c.valor, 0)));
+
+      el.textContent = '· ' + partes.join('  ');
+    }
 
     function renderizarSugestoesPergunta() {
       const box = document.getElementById('sugestoesPergunta');
@@ -7727,6 +7855,7 @@
 
       salvarLocalStorage();
       if (!devo && somLigado()) tocarSomReceita();   // o som celebra dinheiro entrando
+      vibrar(devo ? 'despesa' : 'receita');
       fecharModal('modalReceberEmprestimo');
       recebimentoEmprestimoChaves = [];
       atualizarTudo();
@@ -9238,7 +9367,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.26-1';
+    const APP_VERSION = '2026.08.27-1';
 
     // Inicialização
     carregarLocalStorage();
