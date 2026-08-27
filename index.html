@@ -904,6 +904,19 @@
     </div>
   </div>
 
+  <!-- ESCOLHER O TOM DA COBRANÇA -->
+  <div id="modalTomCobranca" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalTomCobranca')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloTomCobranca">Cobrar</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalTomCobranca')">&times;</button>
+      </div>
+      <p style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.5;">Como você quer falar dessa vez?</p>
+      <div id="opcoesTomCobranca"></div>
+      <p id="previaTomCobranca" style="font-size:11.5px;color:#777;line-height:1.5;white-space:pre-wrap;"></p>
+    </div>
+  </div>
+
   <!-- LEITOR DO QR DA NOTA FISCAL -->
   <div id="modalNota" class="modal-overlay escondido" onclick="if(event.target===this) fecharLeitorNota()">
     <div class="modal-content">
@@ -2690,6 +2703,7 @@
           // backup antigo traz os carimbos no lançamento; aqui viram por pessoa
           migrarCarimbosDeCobranca();
           migrarFormaPadraoDasContas();
+          migrarPrazosDeFixos();
 
           salvarLocalStorage();
           salvarFixos();
@@ -6447,7 +6461,7 @@
       return 'tranquilo';
     }
 
-    function textoDaCobranca(nome, lista, devo) {
+    function textoDaCobranca(nome, lista, devo, tomForcado) {
       const hoje = obterDataBrasilia();
       const total = lista.reduce((sm, c) => sm + c.valor, 0);
       // dd/mm basta na mensagem: o ano só polui uma frase curta de WhatsApp
@@ -6482,7 +6496,7 @@
         return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
       }
 
-      const tom = tomDoContato(nome);
+      const tom = tomForcado || tomDoContato(nome);
       const ctx = {
         nome, total: fmtVal(total), detalhe, compras, umaSo,
         meu: meuNome(),
@@ -6669,10 +6683,38 @@
       return texto;
     }
 
+    /* ESCOLHER O TOM NA HORA
+       O tom saía do cadastro do contato e do quanto faltava pro prazo. Só que o
+       tom certo depende do dia: dá pra estar atrasado e você querer ir leve, ou
+       faltar uma semana e você querer zoar. Agora a régua automática vira só
+       SUGESTÃO — ela marca o botão recomendado, e você decide. */
+    let cobrancaEscolhendo = null;
+
     function abrirCobrancaWhatsApp(nome, chaves, devo) {
       const abertas = cobrancasAbertas().filter(c => chaves.includes(c.chave));
       if (!abertas.length) return;
-      cobrancaPendente = { nome, texto: textoDaCobranca(nome, abertas, devo) };
+      cobrancaEscolhendo = { nome, abertas, devo };
+
+      const sugerido = tomDoContato(nome);
+      document.getElementById('tituloTomCobranca').textContent =
+        (devo ? 'Falar com ' : 'Cobrar ') + nome;
+      document.getElementById('opcoesTomCobranca').innerHTML = TONS_COBRANCA.map(t => `
+        <button type="button" class="btn-mini" onclick="escolherTomECobrar('${t.id}')"
+          style="width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;font-size:13.5px;${
+            t.id === sugerido ? 'border-color:rgba(95,153,51,.5);color:#c9e3b4;' : ''}">
+          ${t.rotulo}<span style="color:#888;font-size:11.5px;"> — ${t.dica}${
+            t.id === sugerido ? ' · o de sempre com ' + nome : ''}</span>
+        </button>`).join('');
+      document.getElementById('previaTomCobranca').textContent = '';
+      document.getElementById('modalTomCobranca').classList.remove('escondido');
+    }
+
+    function escolherTomECobrar(tom) {
+      if (!cobrancaEscolhendo) return;
+      const { nome, abertas, devo } = cobrancaEscolhendo;
+      cobrancaPendente = { nome, texto: textoDaCobranca(nome, abertas, devo, tom) };
+      cobrancaEscolhendo = null;
+      fecharModal('modalTomCobranca');
       const tel = normalizarTelefone(telDoContato(nome));
       if (tel) return dispararWhatsApp(tel);
       abrirModalContatoCobranca(nome);
@@ -6808,15 +6850,29 @@
       return [];
     }
 
+    /* Quantos dias antes do prazo a cobrança recorrente já aparece no card. Dez
+       dias é tempo de mandar a mensagem, a pessoa lembrar e o dinheiro cair antes
+       de você ter que pagar a fatura. */
+    const DIAS_ANTECEDENCIA_COBRANCA = 10;
+
     function cobrancasAbertas() {
       const hoje = obterDataBrasilia();
       return lancamentos
-        // Gasto fixo de mês que ainda não chegou não é cobrança: ninguém te deve a
-        // mensalidade de outubro em agosto. A comparação é por MÊS, não por dia —
-        // a mensalidade deste mês conta mesmo que o vencimento seja daqui a dias.
-        // Parcela é outra história: a compra inteira já saiu do seu bolso, então
-        // todas as parcelas já são devidas.
-        .filter(l => !(l.fixoId && l.data.slice(0, 7) > hoje.slice(0, 7)))
+        /* Gasto fixo aparece pela PROXIMIDADE DO PRAZO, não pelo mês do gasto.
+           Antes a regra era o mês: a mensalidade de setembro só virava cobrança
+           quando setembro chegasse — tarde demais, porque o prazo é o dia 10 e
+           você precisa avisar a pessoa antes disso.
+
+           Parcela e gasto avulso são outra história: a compra inteira já saiu do
+           seu bolso, então todas já são devidas. */
+        .filter(l => {
+          if (!l.fixoId) return true;
+          // já aconteceu: o dinheiro saiu (ou está na fatura), então é devido
+          if (l.data.slice(0, 7) <= hoje.slice(0, 7)) return true;
+          // ainda não aconteceu, mas o prazo está chegando: aparece assim mesmo,
+          // senão você só descobriria a cobrança depois de já ter que pagar
+          return !!l.emprestimoVence && hoje >= somarDias(l.emprestimoVence, -DIAS_ANTECEDENCIA_COBRANCA);
+        })
         .reduce((acc, l) => acc.concat(cobrancasDoLancamento(l)), [])
         .filter(c => !c.quitado);
     }
@@ -7423,8 +7479,11 @@
     // Quantos dias antes do vencimento a cobrança já entra em "atenção". É a
     // maior antecedência escolhida — é a partir dela que faz sentido pintar de
     // amarelo, porque é quando você começa a ser avisado.
+    /* Quantos dias antes do prazo a cobrança já fica em destaque. Sai do maior
+       lembrete configurado, mas nunca abaixo dos 10 dias das recorrentes: é o
+       tempo de mandar a mensagem e o dinheiro cair antes da fatura. */
     function janelaAtencao() {
-      return Math.max(...diasAntecedencia(), 0);
+      return Math.max(...diasAntecedencia(), DIAS_ANTECEDENCIA_COBRANCA);
     }
 
     function diasAte(dataStr) {
@@ -8076,6 +8135,12 @@
 
     // Soma meses a uma data ISO preservando o dia (28 é o teto, pra nunca escorregar
     // de mês: 31/01 + 1 mês não pode virar 03/03)
+    function somarDias(dataStr, n) {
+      const d = new Date(dataStr + 'T12:00:00');
+      d.setDate(d.getDate() + n);
+      return d.toISOString().slice(0, 10);
+    }
+
     function somarMeses(dataStr, n) {
       if (!dataStr) return '';
       const [ano, mes, dia] = dataStr.split('-').map(Number);
@@ -8164,11 +8229,62 @@
       if (mexeu) salvarContas();
     }
 
-    // Data-limite pra pessoa te reembolsar naquele mês ("eles têm até o dia 10")
+    /* MIGRAÇÃO: PRAZOS DE COBRANÇA DE GASTO FIXO
+       Os lançamentos já gerados guardam o prazo antigo — dia 10 do mês do gasto,
+       que no crédito era um mês antes do dinheiro sair. Aqui eles são recalculados
+       pela regra nova.
+
+       Só mexe em quem NUNCA foi adiado na mão: se você empurrou o prazo pelos
+       botões, aquilo foi uma decisão sua e não é bug pra corrigir. */
+    function migrarPrazosDeFixos() {
+      let mexeu = false;
+      lancamentos.forEach(l => {
+        if (!l.fixoId || !l.emprestimoPara) return;
+        if (l.adiamentos) return;
+        const f = fixos.find(x => x.id === l.fixoId);
+        if (!f) return;
+        const novo = venceEmprestimoFixo(f, l.data.slice(0, 7));
+        if (!novo || novo === l.emprestimoVence) return;
+        l.emprestimoVence = novo;
+        if (Array.isArray(l.emprestimoRateio)) {
+          l.emprestimoRateio.forEach(d => { if (!d.rotulo) d.vence = novo; });
+        }
+        mexeu = true;
+      });
+      if (mexeu) salvarLocalStorage();
+    }
+
+    /* PRAZO PRA PESSOA TE REEMBOLSAR NUM GASTO FIXO
+
+       Antes era só "dia 10 do mês do gasto", e isso quebrava de duas formas:
+
+       1. Gasto do dia 15 com prazo dia 10 nascia VENCIDO — cobrança que aparece
+          em atraso antes mesmo de existir.
+       2. No cartão de crédito o dinheiro não sai no dia da compra: sai quando a
+          fatura é paga. O Gympass de 15/08 entra na fatura que vence em setembro,
+          então quem tem que pagar até o dia 10 tem que pagar em SETEMBRO, não em
+          agosto. Cobrar antes é cobrar por um dinheiro que ainda nem saiu.
+
+       Agora o prazo acompanha de onde o dinheiro sai:
+       · no crédito  -> dia da cobrança no mês em que a FATURA vence;
+       · nos outros  -> dia da cobrança no mês do gasto, e se esse dia já passou
+                        naquele mês, vai pro mês seguinte. */
     function venceEmprestimoFixo(f, chaveMes) {
       if (!f.emprestimoPara) return '';
       const dia = Math.min(Math.max(parseInt(f.diaCobranca, 10) || 10, 1), 28);
-      return chaveMes + '-' + String(dia).padStart(2, '0');
+      const diaStr = String(dia).padStart(2, '0');
+      const diaGasto = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
+      const conta = f.conta || primeiraConta();
+      const forma = formaModoDoFixo(f);
+
+      if (eCredito(forma)) {
+        const dataGasto = chaveMes + '-' + String(diaGasto).padStart(2, '0');
+        const fat = getMesFatura(dataGasto, forma, conta);
+        return chaveMesAno(fat.ano, fat.mes) + '-' + diaStr;
+      }
+
+      if (dia >= diaGasto) return chaveMes + '-' + diaStr;
+      return somarMeses(chaveMes + '-' + diaStr, 1);
     }
 
     // Quantos meses à frente os gastos fixos são projetados. Sem isso, navegar
@@ -8212,7 +8328,13 @@
               fixoId: f.id,
               emprestimoPara: f.emprestimoPara || '',
               emprestimoQuitado: false,
-              emprestimoVence: venceEmprestimoFixo(f, chave)
+              emprestimoVence: venceEmprestimoFixo(f, chave),
+              // "Bernardo, Emir" num Gympass dividido vira uma cobrança pra cada
+              // um, com a cota certa — igual ao formulário de lançamento
+              emprestimoRateio: montarRateio(
+                nomesEmprestimo(f.emprestimoPara || ''),
+                f.rateioIncluiVoce !== false,
+                parseVal(f.valor), '1', venceEmprestimoFixo(f, chave))
             });
             houveNovo = true;
           }
@@ -9116,7 +9238,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.22-2';
+    const APP_VERSION = '2026.08.26-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -9133,6 +9255,7 @@ function confirmarLancamentoVoz() {
     carregarFaturasPagas();
     carregarContas();
     migrarFormaPadraoDasContas();   // depois de carregarContas: antes o array está vazio
+    migrarPrazosDeFixos();
     popularSelectsContas();
     carregarCategorias();
     popularSelectsCategorias();
