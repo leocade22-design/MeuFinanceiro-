@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.08.10 · Leia em 12 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.08.27 · Leia em 12 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -97,7 +97,7 @@
     <ul>
       <li><strong>Tudo fica no seu aparelho.</strong> Não existe servidor, não existe cadastro, ninguém tem acesso aos seus números — nem quem fez o app.</li>
       <li><strong>Funciona sem internet.</strong> Depois de instalado, abre e lança normalmente no avião, no elevador, no sítio.</li>
-      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Exporte de vez em quando (item 13).</li>
+      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Passados 15 dias sem exportar, o próprio app avisa no topo da aba Lançamentos (item 13).</li>
     </ul>
     <div class="nota atencao">
       <strong>Instale na tela inicial.</strong> Abra o link no Chrome → menu <code>⋮</code> → <em>Adicionar à tela inicial</em>.
@@ -132,24 +132,34 @@
     <ul>
       <li><strong>Despesa ou Receita</strong> — os dois botões no topo.</li>
       <li><strong>Forma</strong> — a escolha mais importante do formulário. Veja o item 5.</li>
-      <li><strong>Valor</strong> — o <strong>🧮</strong> dentro do campo abre uma calculadora com <em>+ − × ÷</em>, pra quando você precisa somar a conta do rachão antes de lançar. O resultado já volta formatado no campo.</li>
+      <li><strong>Valor</strong> — o ícone de calculadora dentro do campo abre uma com <em>+ − × ÷</em>, pra quando você precisa somar a conta do rachão antes de lançar. O resultado já volta formatado no campo.</li>
+      <li><strong>Pix</strong> entrou na lista de formas. Ele se comporta como débito: sai da conta na data da compra e não entra em fatura nenhuma.</li>
       <li><strong>Parcelado</strong> — digite o valor <em>total</em> e o número de parcelas. O app cria todas as parcelas futuras sozinho, cada uma no seu mês.</li>
       <li><strong>Vincular a um grupo</strong> — marque para somar esse gasto numa viagem ou evento.</li>
       <li><strong>Emprestei para alguém</strong> — marque e diga o nome. Vira uma cobrança na aba Faturas.</li>
     </ul>
     <div class="nota">
+      <strong>Pelo QR da nota fiscal.</strong> O botão verde ao lado do microfone lê o QR
+      impresso no rodapé do cupom. Dependendo do modelo do QR, o valor e a data já entram
+      sozinhos; quando não vem o valor, ele preenche o resto e você só digita quanto foi.
+      E se você já lançou algo naquela mesma loja antes, ele repete descrição, categoria e
+      conta. Ler a mesma nota duas vezes é barrado.
+    </div>
+    <div class="nota">
       <strong>Pelo microfone.</strong> Toque no ícone de microfone e fale naturalmente:
       <em>“paguei 35 reais de uber ontem”</em> ou <em>“comprei um notebook de 4500 em 10 vezes no cartão”</em>.
       O app entende valor, data, categoria, conta e parcelas, e ainda aprende com o seu histórico:
       se você já lançou “Mercado” no débito do PicPay, da próxima vez ele já sugere igual.
+      <br><br>Números falados em pedaços funcionam: <em>“dez e cinquenta no uber”</em> vira
+      R$ 10,50, e <em>“mil duzentos e cinquenta e três e setenta e cinco”</em> vira R$ 1.253,75.
     </div>
   </div>
 </section>
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">4</span>Perguntar em português</h2>
-  <p class="resumo">Ainda na aba Lançamentos, lá embaixo.</p>
+  <h2><span class="numero">4</span>Consulta rápida</h2>
+  <p class="resumo">Ainda na aba Lançamentos, logo abaixo do formulário.</p>
   <div class="conteudo">
     <div class="tela"><img src="img/perguntas.png" alt="Campo de perguntas"></div>
     <p>Digite ou fale. Funciona com perguntas do dia a dia:</p>
@@ -161,6 +171,18 @@
       <li><em>gastei mais que mês passado?</em> · <em>média por dia</em></li>
     </ul>
     <p>Dá para incluir o período em qualquer uma: <em>hoje</em>, <em>esta semana</em>, <em>em julho</em>, <em>neste ano</em>, <em>desde o início</em>.</p>
+    <p>Tem também os botões prontos, que respondem o que é mais difícil de perguntar:</p>
+    <ul>
+      <li><strong>Ler o mês</strong> — quanto você gastou até agora, quanto o mês deve fechar nesse ritmo, e qual categoria está fora da sua média.</li>
+      <li><strong>O que mudou</strong> — categoria por categoria contra o mês passado, quem subiu e quem desceu.</li>
+      <li><strong>Quanto posso gastar</strong> — o que sobra das suas metas, dividido pelos dias que faltam.</li>
+    </ul>
+    <div class="nota">
+      <strong>Ele compara com você mesmo.</strong> As respostas do mês corrente vêm com uma linha
+      dizendo se aquilo é muito ou pouco <em>para o seu padrão</em>, usando a média dos últimos
+      três meses. Sem histórico ele não inventa: diz que ainda não tem base.
+    </div>
+    <p style="font-size:.9em;color:#666;">Com o card fechado, a própria linha do título já mostra o gasto do mês, o ritmo e o que tem a receber.</p>
   </div>
 </section>
 
@@ -307,7 +329,22 @@
     </div>
     <p>Quer ser avisado sem precisar abrir? Toque em <strong>“ativar lembrete de cobrança”</strong> e escolha
        a antecedência (1 semana, 3 dias, 1 dia, no dia). O ícone do app passa a mostrar quantas cobranças estão vencidas.</p>
-  </div>
+      <div class="nota">
+      <strong>Você escolhe o tom da mensagem.</strong> Ao tocar no botão de WhatsApp, o app
+      pergunta como você quer falar dessa vez — <em>zoeira</em>, <em>carinhoso</em> ou
+      <em>neutro</em>. O tom cadastrado no contato vem marcado como sugestão, mas quem manda
+      é você: dá pra estar atrasado e querer ir leve, ou faltar uma semana e querer zoar.
+    </div>
+    <div class="nota">
+      <strong>Cobrança que se repete todo mês.</strong> Num gasto fixo com reembolso (a
+      mensalidade da academia dividida, por exemplo), o prazo acompanha de onde o dinheiro
+      sai: no cartão de crédito, o dia da cobrança cai no mês em que a <em>fatura</em> vence
+      — porque é aí que o dinheiro realmente sai da sua conta. A cobrança ganha destaque
+      10 dias antes do prazo, tempo de avisar e o dinheiro cair.
+      <br><br>O campo do nome aceita mais de uma pessoa: <em>“Bernardo, Emir”</em> divide a
+      cota e cria uma cobrança separada pra cada um.
+    </div>
+</div>
 </section>
 
 <!-- ============================================================ -->
@@ -366,7 +403,8 @@
       <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.</li>
       <li><strong>Ordem dos cards</strong> — arraste pelas listrinhas para deixar no topo o que você olha primeiro.</li>
       <li><strong>Contatos de cobrança</strong> — os números do WhatsApp já salvos, para corrigir.</li>
-      <li><strong>Sons</strong> — cinco comemorações diferentes. Toque na linha pra ouvir e no <strong>✓</strong> pra tirar ou botar cada uma no sorteio: dá pra deixar só as que você gosta. Ou desligue tudo.</li>
+      <li><strong>Aparência</strong> — quatro temas: Escuro, Claro, Índigo (escuro azulado) e Sépia (fundo quente). Vale só neste aparelho: não entra no backup, então quem receber seus dados continua com o tema dele.</li>
+      <li><strong>Sons</strong> — cinco comemorações diferentes. Toque na linha pra ouvir e no <strong>✓</strong> pra tirar ou botar cada uma no sorteio: dá pra deixar só as que você gosta. Ou desligue tudo. Ali também fica o <strong>vibrar ao salvar</strong>: um toque seco pra despesa, dois pra transferência, e uma vibração mais longa e oscilante pra receita — dá pra saber o que entrou sem olhar a tela, com o som desligado.</li>
       <li><strong>Lançamentos excluídos</strong> — a lixeira. Tudo que você apaga fica guardado aqui com data e volta inteiro pelo botão <em>restaurar</em>. Guarda os últimos 30.</li>
       <li><strong>Backup e restauração</strong> — o item mais importante desta lista.</li>
     </ul>
@@ -376,7 +414,8 @@
       a cobrança pra lista de empréstimos — porque se o dinheiro sumiu, a dívida não foi paga de verdade.
     </div>
     <div class="nota atencao">
-      <strong>Faça backup.</strong> Ao tocar em <em>Exportar backup</em>, o celular abre a folha de
+      <strong>Faça backup — e o app cobra.</strong> Passados 15 dias sem exportar, aparece uma
+      faixa no topo da aba Lançamentos com o atalho pra cá. Ao tocar em <em>Exportar backup</em>, o celular abre a folha de
       compartilhamento — a mesma de sempre, com <strong>Salvar no Drive</strong>, Salvar em Arquivos,
       WhatsApp. Você escolhe o destino e a pasta ali. É a única forma de levar seu histórico para outro
       celular. Uma vez por mês já resolve.
