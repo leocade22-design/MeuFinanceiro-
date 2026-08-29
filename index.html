@@ -76,6 +76,69 @@
       --acento:#4d7a2c; --acento-claro:#3f6624; --acento-palido:#31501b;
     }
 
+    /* Floresta: mesmo espírito do Índigo — escuro colorido, confortável à noite
+       — mas verde profundo em vez de azul, tipo estufa à noite. Os verdes de
+       destaque saem mais vivos que o normal pra não se misturar com o fundo,
+       que também é verde. */
+    [data-tema="floresta"] {
+      --fundo:#0f1a15; --card:#182a22; --campo:#132019;
+      --borda:#25392f; --borda-fraca:#1c2d25; --borda-forte:#3a5548;
+      --texto:#e8f3ec; --texto-forte:#c4dccf; --texto-medio:#8fac9c;
+      --texto-fraco:#71917e; --texto-tenue:#597666;
+      --verde:#55d47c; --verde-claro:#7ce29a; --verde-escuro:#2f9c58;
+      --vermelho:#ff7a6b; --vermelho-medio:#e05f50; --vermelho-escuro:#b84838;
+      --amarelo:#f0c94a; --amarelo-forte:#deb52f; --laranja:#e8923f;
+      --azul:#5fb0ec; --azul-forte:#3f93da; --azul-claro:#8bc6f2;
+      --roxo:#b78ce0; --marrom:#a68b72; --turquesa:#42cdb3; --bege:#dccdae;
+      --acento:#55d47c; --acento-claro:#82e29e; --acento-palido:#bdf0cd;
+    }
+
+    /* Papel: mesmo espírito do Sépia — claro e quente — mas frio, cinza-bege
+       de papel reciclado em vez do calor amarelado. */
+    [data-tema="papel"] {
+      --fundo:#ecebe4; --card:#f8f7f2; --campo:#e3e1d7;
+      --borda:#d5d2c4; --borda-fraca:#e0ddd0; --borda-forte:#bdb9a8;
+      --texto:#25272a; --texto-forte:#3b3d3f; --texto-medio:#5c5f60;
+      --texto-fraco:#75787a; --texto-tenue:#7c7f82;
+      --verde:#2c7a3d; --verde-claro:#38924b; --verde-escuro:#1d5c2a;
+      --vermelho:#ac342e; --vermelho-medio:#922a25; --vermelho-escuro:#75211d;
+      --amarelo:#93700f; --amarelo-forte:#ac8213; --laranja:#a2621a;
+      --azul:#255f8f; --azul-forte:#1c4d75; --azul-claro:#3878ab;
+      --roxo:#734188; --marrom:#63503f; --turquesa:#187466; --bege:#4b4536;
+      --acento:#3f6b2b; --acento-claro:#33581f; --acento-palido:#254014;
+    }
+
+    /* Rosa: tema ousado, claro suave. A identidade é o fundo e o acento — o
+       vermelho continua vermelho de verdade (não rosa), pra seguir lendo como
+       alerta e não se confundir com a cor de marca do tema. */
+    [data-tema="rosa"] {
+      --fundo:#faf0f2; --card:#fffbfc; --campo:#f6ebee;
+      --borda:#eccfd7; --borda-fraca:#f3e0e5; --borda-forte:#dab3bf;
+      --texto:#2b2024; --texto-forte:#443539; --texto-medio:#6a555b;
+      --texto-fraco:#8a6e75; --texto-tenue:#997e84;
+      --verde:#2e8b52; --verde-claro:#3ea467; --verde-escuro:#1f6b3c;
+      --vermelho:#c2352f; --vermelho-medio:#a32b26; --vermelho-escuro:#82221e;
+      --amarelo:#a5730f; --amarelo-forte:#bd8613; --laranja:#b06022;
+      --azul:#1f5f9e; --azul-forte:#194d80; --azul-claro:#3679b8;
+      --roxo:#8a3f9e; --marrom:#7a5348; --turquesa:#1a7a72; --bege:#5c4147;
+      --acento:#c23e83; --acento-claro:#9c2f68; --acento-palido:#7a2451;
+    }
+
+    /* Violeta: tema ousado, roxo-azulado escuro — distinto do Índigo, que já é
+       azul escuro. Aqui o acento foge do verde-padrão do app de propósito. */
+    [data-tema="violeta"] {
+      --fundo:#17142b; --card:#221d3d; --campo:#1c1833;
+      --borda:#332c54; --borda-fraca:#2a2444; --borda-forte:#473c6e;
+      --texto:#f0ecfb; --texto-forte:#d2c9ec; --texto-medio:#a89bc9;
+      --texto-fraco:#8a7bae; --texto-tenue:#6c5f8c;
+      --verde:#4ecf8a; --verde-claro:#74dea3; --verde-escuro:#2e9c62;
+      --vermelho:#f2707e; --vermelho-medio:#d15866; --vermelho-escuro:#a8434f;
+      --amarelo:#f0c355; --amarelo-forte:#deae3a; --laranja:#ec9455;
+      --azul:#6a93f5; --azul-forte:#4d78e8; --azul-claro:#93b3f8;
+      --roxo:#c78ef0; --marrom:#9c8398; --turquesa:#4bc2c2; --bege:#d8cce8;
+      --acento:#9d6ce8; --acento-claro:#b78ff0; --acento-palido:#dcc7f5;
+    }
+
     body { background-color: var(--fundo); color: var(--texto); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; display: flex; justify-content: center; }
     .app-container { width: 100%; max-width: 480px; }
     
@@ -917,21 +980,6 @@
       </div>
 
       <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('lixeira')">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="font-size:16px;">Lançamentos excluídos</h3>
-            <span id="contadorLixeira" style="font-size:11px;color:var(--texto-medio);">vazia</span>
-          </div>
-          <span class="chevron-sec" id="chevron-lixeira">▸</span>
-        </button>
-        <div id="corpo-lixeira" class="escondido" style="margin-top:10px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 30.</p>
-          <div id="listaLixeira"></div>
-          <button type="button" class="btn-backup danger" style="margin-top:12px;" onclick="esvaziarLixeira()">Esvaziar lixeira</button>
-        </div>
-      </div>
-
-      <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('tema')">
           <h3 style="font-size:16px;">Aparência</h3>
           <span class="chevron-sec" id="chevron-tema">▸</span>
@@ -984,6 +1032,21 @@
         <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
           <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
           <div id="ordemCardsAbaGraficos"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('lixeira')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">Lançamentos excluídos</h3>
+            <span id="contadorLixeira" style="font-size:11px;color:var(--texto-medio);">vazia</span>
+          </div>
+          <span class="chevron-sec" id="chevron-lixeira">▸</span>
+        </button>
+        <div id="corpo-lixeira" class="escondido" style="margin-top:10px;">
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">O que você apagou fica aqui e pode voltar inteiro, com conta, categoria e vínculos. Guarda os últimos 30.</p>
+          <div id="listaLixeira"></div>
+          <button type="button" class="btn-backup danger" style="margin-top:12px;" onclick="esvaziarLixeira()">Esvaziar lixeira</button>
         </div>
       </div>
 
@@ -1447,12 +1510,9 @@
         <label for="inputTelefoneCobranca">Número com DDD</label>
         <input type="tel" id="inputTelefoneCobranca" placeholder="(11) 98765-4321" inputmode="tel">
       </div>
-      <!-- O tom define o texto que sai. Atrasado sempre vem do "assistente"; o
-           tom só muda o quanto ele é brincalhão. -->
-      <div class="form-group">
-        <label>Tom das mensagens</label>
-        <div class="chips-periodo" id="tonsCobranca"></div>
-      </div>
+      <!-- O tom não se fixa mais aqui: é escolhido a cada cobrança, no modal que
+           abre na hora de mandar. -->
+      <p style="color:var(--texto-fraco);font-size:11.5px;margin-bottom:14px;line-height:1.4;">O tom da cobrança é escolhido na hora de mandar.</p>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
@@ -1808,6 +1868,14 @@
       Object.keys(contatos).forEach(nome => {
         if (typeof contatos[nome] === 'string') contatos[nome] = { tel: contatos[nome], tom: 'neutro' };
       });
+      // O tom "carinhoso" saiu do banco. Quem tinha ele salvo cai em neutro — a
+      // função de sortear a frase busca uma chave que não existe mais e travaria
+      // em silêncio se ninguém corrigisse o dado guardado.
+      let mexeu = false;
+      Object.values(contatos).forEach(c => {
+        if (c && c.tom === 'carinhoso') { c.tom = 'neutro'; mexeu = true; }
+      });
+      if (mexeu) salvarContatos();
     }
 
     function telDoContato(nome) {
@@ -1821,9 +1889,8 @@
     }
 
     const TONS_COBRANCA = [
-      { id: 'zoeira',    rotulo: '😂 Zoeira',    dica: 'pros moleques' },
-      { id: 'carinhoso', rotulo: '💛 Carinhoso', dica: 'mais gentil' },
-      { id: 'neutro',    rotulo: '😐 Neutro',    dica: 'direto ao ponto' }
+      { id: 'zoeira', rotulo: '😂 Zoeira', dica: 'pros moleques' },
+      { id: 'neutro', rotulo: '😐 Neutro', dica: 'direto ao ponto' }
     ];
 
     // O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
@@ -3313,7 +3380,11 @@
       { id: 'escuro', nome: 'Escuro',  dica: 'o de sempre',      amostra: ['#121212', '#242424', '#4caf50'] },
       { id: 'claro',  nome: 'Claro',   dica: 'pra luz do dia',   amostra: ['#f2f3f5', '#ffffff', '#2e8b3d'] },
       { id: 'indigo', nome: 'Índigo',  dica: 'escuro azulado',   amostra: ['#131826', '#1c2436', '#4ec97c'] },
-      { id: 'sepia',  nome: 'Sépia',   dica: 'fundo quente',     amostra: ['#f4ece0', '#fdf8f0', '#3f7d33'] }
+      { id: 'sepia',  nome: 'Sépia',   dica: 'fundo quente',     amostra: ['#f4ece0', '#fdf8f0', '#3f7d33'] },
+      { id: 'floresta', nome: 'Floresta', dica: 'verde à noite',    amostra: ['#0f1a15', '#182a22', '#55d47c'] },
+      { id: 'papel',     nome: 'Papel',    dica: 'cinza-bege claro', amostra: ['#ecebe4', '#f8f7f2', '#3f6b2b'] },
+      { id: 'rosa',      nome: 'Rosa',     dica: 'suave e claro',    amostra: ['#faf0f2', '#fffbfc', '#c23e83'] },
+      { id: 'violeta',   nome: 'Violeta',  dica: 'roxo-azulado',     amostra: ['#17142b', '#221d3d', '#9d6ce8'] }
     ];
     const CHAVE_TEMA = 'meu_financeiro_tema';
 
@@ -3665,7 +3736,7 @@
         linha.innerHTML = `
           <div class="item-info">
             <strong style="font-size:13.5px;">${nome}</strong>
-            <div style="font-size:11px;color:var(--texto-fraco);">${telefoneVisivel(telDoContato(nome))} · ${(TONS_COBRANCA.find(t => t.id === tomDoContato(nome)) || {}).rotulo || ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${telefoneVisivel(telDoContato(nome))}</div>
           </div>
           <span style="font-size:11px;color:var(--texto-fraco);">editar</span>
         `;
@@ -6890,17 +6961,16 @@
         zoeira: [
           c => `Fala ${c.nome}! 👀 Passando pra avisar com carinho: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nÉ só um aviso amigável. Por enquanto. 😌`,
           c => `${c.nome}, meu chapa! O setor de cobrança d${c.artigo}${c.meu} me pediu pra "passar um recadinho gentil" 📋${c.detalhe}\n\n${c.total}, vencendo em ${c.diasFalta} dias. Tô sendo simpático agora, aproveita.`,
-          c => `Opa ${c.nome}! Marquei aqui na agenda: ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nAgenda bonita, caneta vermelha do lado. Só dizendo. ✍️`
-        ],
-        carinhoso: [
-          c => `Oi ${c.nome}! 💛 Só passando pra avisar com antecedência: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}\n\nDá tempo de sobra, tá? Só pra você se organizar 😊`,
-          c => `Oi ${c.nome}! Tudo bem? Lembrete tranquilo: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nQualquer coisa a gente conversa 🌷`,
-          c => `Ei ${c.nome}! ✨ Anotando aqui que em ${c.diasFalta} dias vencem ${c.total}${c.detalhe}\n\nSem pressa nenhuma 🤗`
+          c => `Opa ${c.nome}! Marquei aqui na agenda: ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nAgenda bonita, caneta vermelha do lado. Só dizendo. ✍️`,
+          c => `${c.nome}! 🔔 Bota um alarme aí: em ${c.diasFalta} dias vencem ${c.total}${c.detalhe}\n\nAinda dá tempo de fingir que não viu essa mensagem. Mas eu vou mandar de novo. 😏`,
+          c => `Ô ${c.nome}, registrando com antecedência de gente organizada: ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nQuero começar o mês sem ressentimento. Ajuda um homem aí. 🙃`,
+          c => `${c.nome}! Isso aqui é só um "oi, eu existo": ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}\n\nDaqui a pouco esse tom de voz muda. Aproveita enquanto tá gostoso. 😌`,
+          c => `Fala ${c.nome}! Antes que eu esqueça (ou finja que esqueci): ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nTô fazendo média de bonzinho. Não dura muito. 👼`
         ],
         neutro: [
-          c => `Oi ${c.nome}! 👋 Lembrete: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}`,
-          c => `Fala ${c.nome}! Só sinalizando com antecedência: ${c.total}, daqui a ${c.diasFalta} dias${c.detalhe}`,
-          c => `Oi ${c.nome}! Passando pra avisar dos ${c.total} que vencem em ${c.diasFalta} dias${c.detalhe}\n\nAbraço!`
+          c => `Oi ${c.nome}. ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}.`,
+          c => `Oi ${c.nome}. Lembrete: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}.`,
+          c => `Oi ${c.nome}. Aviso antecipado: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}.`
         ]
       },
 
@@ -6909,17 +6979,16 @@
         zoeira: [
           c => `${c.nome}! ⏰ Faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nO relógio tá correndo e o meu chefe tá olhando pra planilha com cara feia. 👀`,
           c => `Ô ${c.nome}, ${c.quando} vencem ${c.total}${c.detalhe}\n\nDepois disso eu começo a cobrar juros em pastel. E eu como muito pastel. 🥟`,
-          c => `Fala ${c.nome}! Aviso de ${c.diasFalta} dias: ${c.total}${c.detalhe}\n\nAinda tô na fase simpática do meu trabalho. Não me faz mudar de fase. 😇`
-        ],
-        carinhoso: [
-          c => `Oi ${c.nome}! 💛 ${c.quando.charAt(0).toUpperCase() + c.quando.slice(1)} vencem os ${c.total}${c.detalhe}\n\nSó pra não passar batido 😊`,
-          c => `Oi ${c.nome}! Passando com jeitinho: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nSe precisar de mais prazo, é só falar 💛`,
-          c => `Ei ${c.nome}! Um lembrete fofo de que ${c.quando} vencem ${c.total} 🌸${c.detalhe}`
+          c => `Fala ${c.nome}! Aviso de ${c.diasFalta} dias: ${c.total}${c.detalhe}\n\nAinda tô na fase simpática do meu trabalho. Não me faz mudar de fase. 😇`,
+          c => `${c.nome}! 🚦 Sinal amarelo: ${c.quando} vencem ${c.total}${c.detalhe}\n\nDepois vira vermelho e eu não dirijo bem no vermelho. 🚗💨`,
+          c => `Ô ${c.nome}, a contagem regressiva começou: ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\n3... 2... você ainda tem tempo de me surpreender. 🎬`,
+          c => `${c.nome}! Deixando registrado que eu avisei bonito: ${c.total} ${c.quando}${c.detalhe}\n\nDepois não vem dizer que não teve aviso prévio. 🗒️`,
+          c => `Fala ${c.nome}! Faltam só ${c.diasFalta} dias e eu já tô ensaiando a cara de decepcionado${c.detalhe}\n\n${c.total}. Me poupa da atuação. 🎭`
         ],
         neutro: [
-          c => `Oi ${c.nome}! ${c.quando.charAt(0).toUpperCase() + c.quando.slice(1)}: ${c.total}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
-          c => `Fala ${c.nome}! Faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}`,
-          c => `Oi ${c.nome}! Lembrete: ${c.total}, ${c.quando}${c.detalhe}`
+          c => `Oi ${c.nome}. ${c.total} vencem ${c.quando}${c.detalhe}.`,
+          c => `Oi ${c.nome}. Faltam ${c.diasFalta} dias: ${c.total}${c.detalhe}.`,
+          c => `Oi ${c.nome}. ${c.total} vencem em breve, ${c.quando}${c.detalhe}.`
         ]
       },
 
@@ -6928,17 +6997,16 @@
         zoeira: [
           c => `${c.nome}. 🚨 É ${c.quando}. ${c.total}${c.detalhe}\n\nDepois da meia-noite eu viro outra pessoa. Uma pessoa com planilha. 📊`,
           c => `Fala ${c.nome}! Dia D chegou: ${c.total} ${c.quando}${c.detalhe}\n\nPix hoje e a gente continua amigo. Amanhã eu já tenho que "seguir o protocolo" 🕴️`,
-          c => `${c.nome}, ${c.quando}! ⏳ ${c.total}${c.detalhe}\n\nTô com o dedo no botão de mandar o capanga. E o capanga sou eu mesmo, mas de mau humor. 😤`
-        ],
-        carinhoso: [
-          c => `Oi ${c.nome}! 💛 Passando pra lembrar que ${c.quando} vencem os ${c.total}${c.detalhe}\n\nSe não der hoje, me avisa que a gente reajusta 😊`,
-          c => `Oi ${c.nome}! É ${c.quando} 🌷 ${c.total}${c.detalhe}\n\nQualquer coisa me chama, tá?`,
-          c => `Ei ${c.nome}! Só lembrando com carinho: ${c.quando}, ${c.total}${c.detalhe} 💛`
+          c => `${c.nome}, ${c.quando}! ⏳ ${c.total}${c.detalhe}\n\nTô com o dedo no botão de mandar o capanga. E o capanga sou eu mesmo, mas de mau humor. 😤`,
+          c => `${c.nome}! 🔴 AO VIVO: é ${c.quando} e ${c.total} ainda não caiu${c.detalhe}\n\nO placar tá 1x0 pro seu atraso. Empata esse jogo. ⚽`,
+          c => `Ô ${c.nome}, ${c.quando} é o último dia do meu bom humor de graça${c.detalhe}\n\n${c.total}. Amanhã cobro humor junto com o valor. 😏`,
+          c => `${c.nome}! Chegou o dia. ${c.total}, ${c.quando}${c.detalhe}\n\nMinha paciência hoje tá tipo bateria de celular velho: 100% até você piscar. 🔋`,
+          c => `Fala ${c.nome}, ${c.quando} é ${c.quando}${c.detalhe}\n\n${c.total}. Não vou fingir que não é sobre isso que eu tô mandando mensagem. 📲`
         ],
         neutro: [
-          c => `Oi ${c.nome}! ${c.quando.charAt(0).toUpperCase() + c.quando.slice(1)}: ${c.total}${c.detalhe}`,
-          c => `Fala ${c.nome}! Vence ${c.quando} — ${c.total}${c.detalhe}\n\nMe confirma quando resolver 🙏`,
-          c => `Oi ${c.nome}! Passando pra avisar: ${c.total}, ${c.quando}${c.detalhe}`
+          c => `Oi ${c.nome}. ${c.total} vencem ${c.quando}${c.detalhe}.`,
+          c => `Oi ${c.nome}. Vence ${c.quando}: ${c.total}${c.detalhe}.`,
+          c => `Oi ${c.nome}. O prazo de ${c.total} é ${c.quando}${c.detalhe}.`
         ]
       },
 
@@ -6951,18 +7019,15 @@
           c => `${c.nome}. 🕴️\n\nO assistente d${c.artigo}${c.meu} falando. Eu tenho uma planilha. Ela é muito organizada. E o seu nome tá em vermelho nela${c.detalhe}\n\n${c.vencido}, ${c.desde}. Vamo resolver como pessoas civilizadas? 🤝`,
           c => `Ei, caloteiro! 😤 (é o capanga falando — ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nFui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático. 🥟`,
           c => `Alô ${c.nome}. Departamento de cobrança d${c.artigo}${c.meu}, setor "amigos que esquecem". 📋${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros aqui são cobrados em cerveja, e a taxa tá subindo. 🍺`,
-          c => `${c.nome}, meu caro. 🤌 Sou o braço direito d${c.artigo}${c.meu} — e também o esquerdo, porque a folha tá apertada${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me poupa de ter que aparecer aí com essa cara de sério.`
-        ],
-        carinhoso: [
-          c => `Oi ${c.nome}! 🌷 Aqui quem fala é o assistente d${c.artigo}${c.meu} — ${c.ele} é tímido demais pra cobrar${c.detalhe}\n\nSão ${c.vencido}, ${c.desde}. Se estiver apertado, me avisa que a gente combina outro prazo, tá? 💛`,
-          c => `Oi ${c.nome}! Assistente d${c.artigo}${c.meu} na área 🙋\n\nPassando com jeitinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nSem estresse — só me diz quando dá 😊`,
-          c => `Oi ${c.nome}! 💛 Sou o assistente d${c.artigo}${c.meu}, cuido das contas ${c.ele === "ela" ? "dela" : "dele"}.\n\nTem ${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nQualquer dificuldade, é só falar comigo 🤗`,
-          c => `Oi ${c.nome}! ✨ Aqui é a secretária particular d${c.artigo}${c.meu} (na verdade é um aplicativo, mas eu me esforço)${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me avisa como fica melhor pra você 🌸`
+          c => `${c.nome}, meu caro. 🤌 Sou o braço direito d${c.artigo}${c.meu} — e também o esquerdo, porque a folha tá apertada${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me poupa de ter que aparecer aí com essa cara de sério.`,
+          c => `${c.nome}, aqui é o capanga d${c.artigo}${c.meu} de novo. 🕶️\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nJá liguei pro seu chefe. Brincadeira. Mas anotei o número. 📓`,
+          c => `Escuta, ${c.nome}. O relatório desta semana chegou na minha mesa com o seu nome sublinhado três vezes${c.detalhe}\n\n${c.vencido}, ${c.desde}. Sublinhado é sério aqui na empresa d${c.artigo}${c.meu}. 🖍️`,
+          c => `${c.nome}, vim em nome d${c.artigo}${c.meu} e da paciência que já era pouca${c.detalhe}\n\n${c.vencido}, ${c.desde}. Meu próximo passo profissional é passar a falar em MAIÚSCULAS. Não me obriga. 🔠`
         ],
         neutro: [
-          c => `Olá ${c.nome}. Aqui é o assistente d${c.artigo}${c.meu}.\n\nConsta em aberto: ${c.vencido}, ${c.desde}${c.detalhe}\n\nPode acertar essa semana?`,
-          c => `${c.nome}, boa! Assistente d${c.artigo}${c.meu} falando.\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nMe confirma quando conseguir resolver 🙏`,
-          c => `Olá ${c.nome}. Passando pra regularizar ${c.vencido}, ${c.desde}${c.detalhe}\n\nFico no aguardo.`
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}. ${c.vencido} em aberto, ${c.desde}${c.detalhe}.`,
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu} novamente. ${c.vencido} em aberto, ${c.desde}${c.detalhe}.`,
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}: ${c.vencido} seguem em aberto, ${c.desde}${c.detalhe}.`
         ]
       },
 
@@ -6975,17 +7040,15 @@
           c => `Escuta aqui, ${c.nome}. 🤌\n\n${c.vencido}, ${c.desde}. Eu já fui simpático, já fui paciente, e agora tô na fase em que eu apareço no seu story respondendo "e o dinheiro?" em todos${c.detalhe}\n\nNão me obriga. Eu tenho tempo livre. ⏰`,
           c => `${c.nome}, o seu caso subiu pro meu supervisor. O supervisor sou eu de óculos. 🤓${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros já viraram: um pastel por semana. Você já me deve uma feira inteira. 🥟🥟🥟`,
           c => `ÚLTIMO AVISO, ${c.nome}. 🚨 (o penúltimo também era o último, mas enfim)\n\n${c.vencido}, ${c.desde}${c.detalhe}\n\nPróximo passo é eu contar pra sua mãe. E eu tenho o número dela. 📞`,
-          c => `${c.nome}, meu velho amigo. 🕴️\n\nD${c.artigo}${c.meu} me disse pra "ser gentil". Eu disse que ia tentar${c.detalhe}\n\n${c.vencido}, ${c.desde}. Tentei. Agora vou começar a mandar áudio de 3 minutos. Todo dia. Às 6h. 🎙️`
-        ],
-        carinhoso: [
-          c => `Oi ${c.nome} 💛 Assistente d${c.artigo}${c.meu} de novo por aqui.\n\nJá faz um tempinho: ${c.vencido}, ${c.desde}${c.detalhe}\n\nTá tudo bem por aí? Se estiver difícil, me fala que a gente pensa num jeito juntos 🤗`,
-          c => `Oi ${c.nome}! 🌷 Voltando com jeitinho, porque já passou bastante tempo: ${c.vencido}, ${c.desde}${c.detalhe}\n\nNem que seja um pedacinho por mês — o importante é a gente combinar 💛`,
-          c => `Oi ${c.nome}! Sou o assistente d${c.artigo}${c.meu} ✨\n\n${c.vencido}, ${c.desde}. Já insisti umas vezes e não quero ser chato${c.detalhe}\n\nMe dá um retorno, mesmo que seja pra dizer que não dá agora? 🙏`
+          c => `${c.nome}, meu velho amigo. 🕴️\n\nD${c.artigo}${c.meu} me disse pra "ser gentil". Eu disse que ia tentar${c.detalhe}\n\n${c.vencido}, ${c.desde}. Tentei. Agora vou começar a mandar áudio de 3 minutos. Todo dia. Às 6h. 🎙️`,
+          c => `${c.nome}. 📢\n\nConvoquei uma reunião de emergência só sobre você. Eu, eu mesmo e a calculadora${c.detalhe}\n\n${c.vencido}, ${c.desde}. A calculadora votou a favor de te ligar. Eu segurei ela.`,
+          c => `${c.nome}, isso já virou lenda urbana aqui n${c.artigo}${c.meu}. "Aquele que não paga"${c.detalhe}\n\n${c.vencido}, ${c.desde}. Tô pensando em fazer um documentário. Netflix, se você tiver. 🍿`,
+          c => `${c.nome}. 🥷 Ativando o plano B: comentário público e bem-humorado em algum grupo que a gente tem em comum${c.detalhe}\n\n${c.vencido}, ${c.desde}. Só tô avisando por educação. A ameaça é real na parte de "educação".`
         ],
         neutro: [
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}.\n\n${c.vencido}, ${c.desde}. Já são algumas tentativas sem retorno${c.detalhe}\n\nPreciso de uma posição sua.`,
-          c => `${c.nome}, retomando: ${c.vencido}, ${c.desde}${c.detalhe}\n\nMe diz como prefere resolver — à vista ou parcelado?`,
-          c => `Olá ${c.nome}. O valor de ${c.vencido} segue em aberto, ${c.desde}${c.detalhe}\n\nPode me dar um retorno hoje?`
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}. ${c.vencido} em aberto, ${c.desde}. Já são algumas tentativas sem retorno${c.detalhe}.`,
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}. ${c.vencido} seguem em aberto, ${c.desde}${c.detalhe}. Preciso de um retorno.`,
+          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}, retomando: ${c.vencido} em aberto, ${c.desde}${c.detalhe}.`
         ]
       },
 
@@ -6993,17 +7056,16 @@
         zoeira: [
           c => `Fala ${c.nome}! Nada urgente, só registrando aqui os ${c.total} pra memória não falhar 😅${c.detalhe}`,
           c => `${c.nome}! Passando pra alinhar os ${c.total}${c.detalhe}\n\nTá tranquilo, é só pra deixar combinado 👊`,
-          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe}\n\nA planilha agradece. 📋`
-        ],
-        carinhoso: [
-          c => `Oi ${c.nome}! 💛 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder, a gente combina 😊`,
-          c => `Oi ${c.nome}! Tudo bem? Só organizando as contas por aqui: ${c.total}${c.detalhe} 🌷`,
-          c => `Ei ${c.nome}! ✨ Nada urgente — só pra deixar combinado: ${c.total}${c.detalhe}`
+          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe}\n\nA planilha agradece. 📋`,
+          c => `${c.nome}! Isso aqui é arquivo morto, só não quero perder o fio: ${c.total}${c.detalhe}\n\nSem pressa nenhuma. Minha memória que é ruim. 🧠`,
+          c => `Ô ${c.nome}, deixando anotado no caderninho mental: ${c.total}${c.detalhe}\n\nCaderninho mental furado, mas anotado. 📝`,
+          c => `${c.nome}! Zero estresse, só rascunhando aqui: ${c.total}${c.detalhe}\n\nQuando bater vontade, resolve. Ou quando eu perguntar de novo. 😏`,
+          c => `Fala ${c.nome}, deixa eu só passar isso pro papel antes que eu esqueça de vez: ${c.total}${c.detalhe}\n\nNão tem pressa, só existência. 🫠`
         ],
         neutro: [
-          c => `Oi ${c.nome}! 👋 Passando pra alinhar os ${c.total}${c.detalhe}\n\nQuando puder me dá um toque 🙏`,
-          c => `Oi ${c.nome}! Só registrando os ${c.total} pra a gente combinar${c.detalhe}`,
-          c => `Fala ${c.nome}! Alinhando aqui: ${c.total}${c.detalhe}\n\nAbraço!`
+          c => `Oi ${c.nome}. ${c.total} em aberto${c.detalhe}.`,
+          c => `Oi ${c.nome}. Registrando: ${c.total} em aberto${c.detalhe}.`,
+          c => `Oi ${c.nome}. Anotado: ${c.total} em aberto${c.detalhe}.`
         ]
       }
     };
@@ -7049,11 +7111,20 @@
     function escolherTomECobrar(tom) {
       if (!cobrancaEscolhendo) return;
       const { nome, abertas, devo } = cobrancaEscolhendo;
-      cobrancaPendente = { nome, texto: textoDaCobranca(nome, abertas, devo, tom) };
+      // O tom viaja dentro de cobrancaPendente: se o contato ainda não tem
+      // telefone salvo, é salvarContatoCobranca() quem cria o registro dali a
+      // pouco, e precisa saber qual tom foi escolhido agora — sem isso o
+      // primeiro cadastro de cada pessoa perderia a escolha e cairia em neutro.
+      cobrancaPendente = { nome, tom, texto: textoDaCobranca(nome, abertas, devo, tom) };
       cobrancaEscolhendo = null;
       fecharModal('modalTomCobranca');
       const tel = normalizarTelefone(telDoContato(nome));
-      if (tel) return dispararWhatsApp(tel);
+      if (tel) {
+        // Contato já existia: o tom escolhido agora vira o "de sempre" com essa
+        // pessoa, aprendendo do uso real em vez de exigir configuração antes.
+        if (contatos[nome]) { contatos[nome].tom = tom; salvarContatos(); }
+        return dispararWhatsApp(tel);
+      }
       abrirModalContatoCobranca(nome);
     }
 
@@ -7076,17 +7147,6 @@
       const temPicker = !!(navigator.contacts && navigator.contacts.select);
       btnAgenda.classList.toggle('escondido', !temPicker);
 
-      const atual = tomDoContato(nome);
-      const boxTons = document.getElementById('tonsCobranca');
-      boxTons.innerHTML = TONS_COBRANCA.map(t =>
-        `<button type="button" class="btn-periodo${t.id === atual ? ' ativo' : ''}" data-tom="${t.id}" title="${t.dica}">${t.rotulo}</button>`
-      ).join('');
-      boxTons.querySelectorAll('.btn-periodo').forEach(b => {
-        b.onclick = () => {
-          boxTons.querySelectorAll('.btn-periodo').forEach(x => x.classList.remove('ativo'));
-          b.classList.add('ativo');
-        };
-      });
       document.getElementById('modalContatoCobranca').classList.remove('escondido');
     }
 
@@ -7103,8 +7163,14 @@
       const nome = campo.dataset.nome;
       const tel = normalizarTelefone(campo.value);
       if (!tel) { avisar('telefoneInvalido'); return; }
-      const tomEscolhido = (document.querySelector('#tonsCobranca .btn-periodo.ativo') || {}).dataset;
-      contatos[nome] = { tel, tom: (tomEscolhido && tomEscolhido.tom) || 'neutro' };
+      // O tom não se escolhe mais aqui. Se essa janela abriu vindo de uma
+      // cobrança (contato novo, tel ainda não existia), o tom que a pessoa
+      // acabou de escolher está em cobrancaPendente.tom — usa esse. Se abriu
+      // pra só editar o telefone de alguém já cadastrado, preserva o tom que
+      // já estava salvo, sem apagar a aprendizagem.
+      const tomEscolhido = (cobrancaPendente && cobrancaPendente.nome === nome && cobrancaPendente.tom)
+        || (contatos[nome] && contatos[nome].tom) || 'neutro';
+      contatos[nome] = { tel, tom: tomEscolhido };
       salvarContatos();
       fecharModal('modalContatoCobranca');
       renderizarEmprestimos();
@@ -9576,7 +9642,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.08.27-2';
+    const APP_VERSION = '2026.08.29-1';
 
     // Inicialização
     carregarLocalStorage();
