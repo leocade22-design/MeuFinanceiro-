@@ -615,7 +615,9 @@
         </div>
         <div class="painel-topo" style="margin-bottom:12px;">
           <div class="card-saldo-destaque" onclick="abrirModalResumoFatura()">
-            <span>Saldo atual</span>
+            <!-- O rótulo muda com o mês visualizado: "atual" só vale no mês
+                 corrente; nos outros o número é o retrato daquele fim de mês. -->
+            <span id="rotuloSaldoFatura">Saldo atual</span>
             <h4 class="val-saldo" id="faturaSaldo">R$ 0,00</h4>
           </div>
           <div class="painel-direita">
@@ -980,6 +982,14 @@
               cobrando na cara dura. Ele se apresenta assim:
             </p>
             <p id="exemploMeuNome" style="color:var(--acento);font-size:12px;margin-top:5px;font-style:italic;"></p>
+          </div>
+          <div class="form-group">
+            <label for="inputChavePix">Sua chave Pix — vai no fim de toda cobrança</label>
+            <input type="text" id="inputChavePix" placeholder="ex: (28) 99952-0665" oninput="salvarChavePix()" onchange="salvarChavePix()">
+            <p style="color:var(--texto-fraco);font-size:11.5px;margin-top:7px;line-height:1.45;">
+              Entra como última linha da mensagem, pra pessoa não precisar pedir. Deixe
+              em branco pra não mandar chave nenhuma.
+            </p>
           </div>
           <div id="listaContatos"></div>
         </div>
@@ -3960,6 +3970,8 @@
     function renderizarContatos() {
       const campoNome = document.getElementById('inputMeuNome');
       if (campoNome) campoNome.value = uiPrefs.meuNome || '';
+      const campoPix = document.getElementById('inputChavePix');
+      if (campoPix) campoPix.value = chavePix();
       atualizarExemploMeuNome();
       const box = document.getElementById('listaContatos');
       if (!box) return;
@@ -6839,6 +6851,12 @@
       if (cap) cap.textContent = textoFechamento(mes, ano);
       const btnAtual = document.getElementById('btnMesAtual');
       if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
+      // Saldo é acumulado até o fim do mês visto: "atual" só é verdade no mês
+      // corrente. Num mês passado (ou à frente) o número é o retrato daquele
+      // fechamento, e o rótulo precisa dizer isso.
+      const ehMesAtual = faturaMesOffset === 0;
+      const rotuloSaldo = document.getElementById('rotuloSaldoFatura');
+      if (rotuloSaldo) rotuloSaldo.textContent = ehMesAtual ? 'Saldo atual' : 'Saldo no fim do mês';
 
       /* SALDO DO MÊS = O QUE REALMENTE SAIU DA CONTA (regime de caixa)
          Compra no crédito não tira dinheiro da conta no dia da compra — ela vira
@@ -6944,7 +6962,7 @@
 
       // guardado pra montar o popup só quando abrir (abrirModalResumoFatura),
       // sem duplicar o trabalho de calcular tudo de novo
-      resumoFaturaAtual = { mes, ano, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
+      resumoFaturaAtual = { mes, ano, ehMesAtual, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
                             compradoNoCredito, faturaEmAberto, saiuDaConta, porContaNet, porContaAcumulado };
 
       container.innerHTML = '';
@@ -7000,7 +7018,7 @@
     // de período/categoria do modal de Gráficos — aqui é só o resumo, rápido.
     function abrirModalResumoFatura() {
       if (!resumoFaturaAtual) return;
-      const { mes, ano, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
+      const { mes, ano, ehMesAtual, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
               compradoNoCredito, faturaEmAberto, porContaNet, porContaAcumulado } = resumoFaturaAtual;
       document.getElementById('tituloResumoFatura').textContent = 'Resumo de ' + NOMES_MESES[mes];
 
@@ -7043,7 +7061,7 @@
           + `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>⏳ Fatura em aberto</span><strong style="color:var(--amarelo);">${fmtOculto(faturaEmAberto)}</strong></div>`;
 
       document.getElementById('corpoResumoFatura').innerHTML = `
-        <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Saldo atual por conta</span>
+        <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">${ehMesAtual ? 'Saldo atual por conta' : 'Saldo por conta no fim do mês'}</span>
         <div class="box-resumo-modal" style="margin-top:6px;margin-bottom:14px;">
           ${linhasContaAcumulado || '<p style="color:var(--texto-medio);font-size:13px;">Nenhum lançamento ainda.</p>'}
         </div>
@@ -7153,54 +7171,76 @@
 
     function textoDaCobranca(nome, lista, devo, tomForcado) {
       const hoje = obterDataBrasilia();
-      const total = lista.reduce((sm, c) => sm + c.valor, 0);
       // dd/mm basta na mensagem: o ano só polui uma frase curta de WhatsApp
       const dia = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
 
       // Uma linha por compra, não por parcela: "Airbnb (venceu 05/08)" é o que a
       // pessoa reconhece, "parcela 2/4" não.
-      const porCompra = {};
-      lista.forEach(c => {
-        const k = chaveCompra(c.lanc);
-        (porCompra[k] = porCompra[k] || { desc: descricaoBaseCompra(c.lanc.descricao), valor: 0, vence: null }).valor += c.valor;
-        const p = porCompra[k];
-        if (c.vence && (!p.vence || c.vence < p.vence)) p.vence = c.vence;
-      });
-      // Com uma compra só, o valor já foi dito na abertura — repetir soa de robô.
-      const compras = Object.values(porCompra);
-      const umaSo = compras.length === 1;
-      const itens = compras.map(p => {
-        const prazo = p.vence ? (p.vence < hoje ? ' (venceu ' + dia(p.vence) + ')' : ' (vence ' + dia(p.vence) + ')') : '';
-        return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
-      });
+      const montarCompras = arr => {
+        const porCompra = {};
+        arr.forEach(c => {
+          const k = chaveCompra(c.lanc);
+          (porCompra[k] = porCompra[k] || { desc: descricaoBaseCompra(c.lanc.descricao), valor: 0, vence: null }).valor += c.valor;
+          const p = porCompra[k];
+          if (c.vence && (!p.vence || c.vence < p.vence)) p.vence = c.vence;
+        });
+        // Com uma compra só, o valor já foi dito na abertura — repetir soa de robô.
+        const compras = Object.values(porCompra);
+        const umaSo = compras.length === 1;
+        const itens = compras.map(p => {
+          const prazo = p.vence ? (p.vence < hoje ? ' (venceu ' + dia(p.vence) + ')' : ' (vence ' + dia(p.vence) + ')') : '';
+          return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
+        });
+        return { compras, umaSo, detalhe: itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0] };
+      };
 
       const emAtraso = c => c.vence && c.vence < hoje;
       const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
-      const situacao = tomDaCobranca(lista, emAtraso, perto);
-      const detalhe = itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0];
 
       if (devo) {
+        // Aqui é você quem deve: a conversa é sobre tudo que está com você, sem
+        // recorte de mês e sem chave Pix (quem manda a chave é o outro lado).
+        const total = lista.reduce((sm, c) => sm + c.valor, 0);
+        const situacao = tomDaCobranca(lista, emAtraso, perto);
         const abertura = /atrasado/i.test(situacao)
           ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
           : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
-        return abertura + detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
+        return abertura + montarCompras(lista).detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
       }
+
+      /* COBRAR UM MÊS DE CADA VEZ
+         Somar parcelas de meses à frente no mesmo pedido assusta à toa: chega um
+         valor alto e parece que tudo vence agora. A mensagem passa a falar só do
+         que vence neste mês — mais o que já venceu, que não pode sumir — e o que
+         sobra vira uma linha informativa no fim. */
+      const mesAtual = hoje.slice(0, 7);
+      let doMes = lista.filter(c => !c.vence || c.vence.slice(0, 7) <= mesAtual);
+      let futuro = lista.filter(c => c.vence && c.vence.slice(0, 7) > mesAtual);
+      // Só sobrou coisa de mês que vem (o deste mês já foi pago): cobra o mês
+      // mais próximo, senão a mensagem sairia sem valor e sem item nenhum.
+      if (!doMes.length && futuro.length) {
+        const primeiro = futuro.map(c => c.vence.slice(0, 7)).sort()[0];
+        doMes = futuro.filter(c => c.vence.slice(0, 7) === primeiro);
+        futuro = futuro.filter(c => c.vence.slice(0, 7) !== primeiro);
+      }
+
+      const total = doMes.reduce((sm, c) => sm + c.valor, 0);
+      const { compras, umaSo, detalhe } = montarCompras(doMes);
+      const situacao = tomDaCobranca(doMes, emAtraso, perto);
+      const proximoPrazo = doMes.map(c => c.vence).filter(Boolean).sort()[0];
 
       const tom = tomForcado || tomDoContato(nome);
       const ctx = {
         nome, total: fmtVal(total), detalhe, compras, umaSo,
         meu: meuNome(),
         contas: contas.length,
-        adiada: Math.max(0, ...lista.map(c => c.adiamentos || 0)),
+        adiada: Math.max(0, ...doMes.map(c => c.adiamentos || 0)),
         quando: (() => {
-          const prox = lista.map(c => c.vence).filter(Boolean).sort()[0];
-          const f = diasAte(prox);
+          if (!proximoPrazo) return 'em breve';
+          const f = diasAte(proximoPrazo);
           return f === 0 ? 'hoje' : f === 1 ? 'amanhã' : 'em ' + f + ' dias';
         })(),
-        diasFalta: (() => {
-          const prox = lista.map(c => c.vence).filter(Boolean).sort()[0];
-          return prox ? Math.max(0, diasAte(prox)) : 0;
-        })(),
+        diasFalta: proximoPrazo ? Math.max(0, diasAte(proximoPrazo)) : 0,
         // "do Léo" x "da Ana": sem isso o assistente falava "d o Léo" ou errava o
         // gênero de quem usa o app
         artigo: /a$/i.test(meuNome()) && meuNome() !== 'o chefe' ? 'a ' : (meuNome() === 'o chefe' ? '' : 'o '),
@@ -7208,13 +7248,25 @@
       };
       // Quem já venceu tem dias de atraso; quem só foi adiado, não — e "venceram há
       // 0 dias" é frase de robô quebrado. Um texto só cobre os dois casos.
-      const vencidas = lista.filter(emAtraso);
+      const vencidas = doMes.filter(emAtraso);
       const valorVencido = vencidas.reduce((sm, c) => sm + c.valor, 0);
       ctx.vencido = fmtVal(valorVencido > 0 ? valorVencido : total);
       ctx.desde = vencidas.length
         ? 'vencidos há ' + Math.abs(diasAte(vencidas.map(c => c.vence).sort()[0])) + ' dias'
         : 'com o prazo já adiado ' + ctx.adiada + ' vezes';
-      return frasePronta(situacao, tom, ctx);
+
+      let texto = frasePronta(situacao, tom, ctx);
+
+      // O que fica pros próximos meses é informação, não cobrança: entra sempre
+      // em tom neutro, mesmo quando o resto da mensagem é zoeira.
+      const restante = futuro.reduce((sm, c) => sm + c.valor, 0);
+      if (restante > 0) {
+        texto += `\n\nDepois desse pagamento ainda ficam ${fmtVal(restante)} pros meses seguintes.`;
+      }
+
+      const pix = chavePix();
+      if (pix) texto += `\n\nPix (telefone): ${pix}`;
+      return texto;
     }
 
     /* MENSAGENS COM PERSONALIDADE
@@ -7226,6 +7278,22 @@
        personagem. Tira o peso de você cobrar amigo e ainda é engraçado. */
     function meuNome() {
       return (uiPrefs.meuNome || '').trim() || 'o chefe';
+    }
+
+    /* CHAVE PIX NO FIM DA COBRANÇA
+       Fica em uiPrefs, e não fixa no código, porque o app já roda no celular de
+       mais de uma pessoa — cada uma manda a própria chave. Quem nunca mexeu no
+       campo herda a chave abaixo; quem apagar o campo simplesmente não manda
+       chave nenhuma (string vazia é escolha, não "não configurado"). */
+    const CHAVE_PIX_PADRAO = '(28) 99952-0665';
+
+    function chavePix() {
+      return uiPrefs.chavePix === undefined ? CHAVE_PIX_PADRAO : String(uiPrefs.chavePix).trim();
+    }
+
+    function salvarChavePix() {
+      uiPrefs.chavePix = document.getElementById('inputChavePix').value.trim();
+      salvarUiPrefs();
     }
 
     /* O banco é dividido pelo QUANTO FALTA, não só por "vai vencer / venceu":
@@ -10015,7 +10083,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.01-1';
+    const APP_VERSION = '2026.09.02-1';
 
     // Inicialização
     carregarLocalStorage();

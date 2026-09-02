@@ -199,7 +199,7 @@
     </table>
     <div class="tela"><img src="img/resumo.png" alt="Resumo do mês na aba Faturas"></div>
     <ul>
-      <li><strong>Saldo atual</strong> — quanto você tem de verdade, somado em todas as contas desde o início do histórico até o fim do mês que você está vendo. Não zera na virada do mês: sem lançamento novo, continua igual ao saldo final do mês anterior.</li>
+      <li><strong>Saldo atual</strong> — quanto você tem de verdade, somado em todas as contas desde o início do histórico até o fim do mês que você está vendo. Não zera na virada do mês: sem lançamento novo, continua igual ao saldo final do mês anterior. Ao navegar pra outro mês o rótulo vira <strong>“Saldo no fim do mês”</strong>, porque ali o número é o retrato daquele fechamento, não o seu saldo de hoje.</li>
       <li><strong>Recebido</strong> — tudo que entrou no mês.</li>
       <li><strong>Saiu da conta</strong> — gastos no débito <em>mais</em> faturas pagas neste mês.</li>
       <li><strong>Fatura em aberto</strong> — o que está no cartão e ainda vai sair. Toque para ir direto ao pagamento.</li>
@@ -314,9 +314,8 @@
     </ul>
 
     <h3>O tom das mensagens</h3>
-    <p>Junto com o telefone você escolhe o tom daquela pessoa: <strong>😂 Zoeira</strong>,
-       <strong>💛 Carinhoso</strong> ou <strong>😐 Neutro</strong>. O texto muda conforme o tom, a situação
-       e o mês — a mesma pessoa não recebe a mesma frase duas vezes seguidas.</p>
+    <p>São dois tons: <strong>😂 Zoeira</strong> e <strong>😐 Neutro</strong>. O texto muda conforme o tom,
+       a situação e o mês — a mesma pessoa não recebe a mesma frase duas vezes seguidas.</p>
     <div class="nota">
       <strong>Quem está atrasado não recebe mensagem sua.</strong> Recebe do <em>assistente</em>: um
       personagem que se apresenta como contratado pra cuidar das suas contas e cobra com sotaque de filme
@@ -331,9 +330,18 @@
        a antecedência (1 semana, 3 dias, 1 dia, no dia). O ícone do app passa a mostrar quantas cobranças estão vencidas.</p>
       <div class="nota">
       <strong>Você escolhe o tom da mensagem.</strong> Ao tocar no botão de WhatsApp, o app
-      pergunta como você quer falar dessa vez — <em>zoeira</em>, <em>carinhoso</em> ou
-      <em>neutro</em>. O tom cadastrado no contato vem marcado como sugestão, mas quem manda
+      pergunta como você quer falar dessa vez — <em>zoeira</em> ou <em>neutro</em>. O tom que
+      você usou da última vez com aquela pessoa vem marcado como sugestão, mas quem manda
       é você: dá pra estar atrasado e querer ir leve, ou faltar uma semana e querer zoar.
+    </div>
+    <div class="nota">
+      <strong>A cobrança é de um mês por vez.</strong> Se a pessoa tem parcelas espalhadas por
+      vários meses, a mensagem pede só o que vence neste mês (mais o que já venceu) — mandar o
+      total de tudo assusta à toa e parece que vence tudo agora. Quando sobra parcela pra frente,
+      entra uma última linha dizendo quanto ainda vai ficar em aberto depois desse pagamento.
+      <br><br>No fim de toda cobrança vai a <strong>sua chave Pix</strong>, pra pessoa não
+      precisar pedir. Ela fica em <em>Ajustes → Contatos de cobrança</em> — troque pela sua, ou
+      deixe o campo em branco pra não mandar chave nenhuma.
     </div>
     <div class="nota">
       <strong>Cobrança que se repete todo mês.</strong> Num gasto fixo com reembolso (a
