@@ -791,6 +791,11 @@
               <button class="btn-mini" id="btnPizza" onclick="setTipoGrafico('pizza')">Pizza</button>
             </div>
           </div>
+          <!-- Recortar por conta responde "no Nubank, pra onde vai meu dinheiro?" —
+               a divisão por categoria dentro de UMA conta, em vez do bolo todo. -->
+          <select id="filtroContaGraficos" aria-label="Filtrar os gráficos por conta"
+                  onchange="atualizarResumoEGraficos()"
+                  style="font-size:12.5px;padding:8px 9px;width:100%;margin-bottom:14px;"></select>
           <div id="containerGraficoCategorias"></div>
           <div id="containerGraficoReceitas" class="escondido"></div>
           <div id="containerGraficoContas" class="escondido"></div>
@@ -1843,6 +1848,8 @@
     let tipoModalAtual = 'saldo';
     let labelPeriodoGraficos = 'Últimos 30 dias';
     let periodoGraficosAtual = '30';
+    // Recorte de conta dos gráficos. '' = todas as contas juntas, como sempre foi.
+    let contaFiltroGraficos = '';
 
     // Padrão de quem ainda não configurou; cada cartão pode ter os seus.
     const DIA_FECHAMENTO_CARTAO = 3;
@@ -2074,6 +2081,29 @@
         });
         if (atual && contas.some(c => c.nome === atual)) sel.value = atual;
       });
+
+      /* O filtro dos gráficos é o único com "todas" na frente. Ele entra aqui pra
+         acompanhar conta criada, renomeada ou excluída: se a conta escolhida
+         sumiu, o filtro volta pra "todas" em vez de virar um recorte fantasma
+         mostrando gráfico vazio sem explicação. */
+      const selGraficos = document.getElementById('filtroContaGraficos');
+      if (selGraficos) {
+        const escolhida = selGraficos.value;
+        selGraficos.innerHTML = '';
+        const todas = document.createElement('option');
+        todas.value = '';
+        todas.textContent = 'Todas as contas';
+        selGraficos.appendChild(todas);
+        ordenadas.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.nome;
+          opt.textContent = c.nome;
+          selGraficos.appendChild(opt);
+        });
+        const aindaExiste = escolhida && contas.some(c => c.nome === escolhida);
+        selGraficos.value = aindaExiste ? escolhida : '';
+        if (!aindaExiste) contaFiltroGraficos = '';
+      }
     }
 
     // CATEGORIAS DINÂMICAS
@@ -2435,6 +2465,18 @@
       const t = document.getElementById('tituloGraficoUnico');
       t.textContent = atual.titulo;
       t.style.color = atual.cor;
+    }
+
+    /* Com uma conta específica escolhida, a visão "Contas" viraria uma barra só —
+       não está errada, só não diz nada. O botão some enquanto o filtro estiver
+       ligado, e quem já estava nessa visão cai em Despesas, que é justamente a
+       pergunta que o recorte por conta responde. */
+    function atualizarVisibilidadeVisaoContas() {
+      const btn = document.getElementById('btnVerContas');
+      if (!btn) return;
+      const esconder = !!contaFiltroGraficos;
+      btn.classList.toggle('escondido', esconder);
+      if (esconder && visaoGraficoAtual === 'contas') setVisaoGrafico('despesas');
     }
 
     // GERENCIAMENTO DE CONTAS
@@ -2964,7 +3006,11 @@
     }
 
     function renderizarDashboard() {
-      const itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
+      // Os indicadores moram embaixo dos gráficos, na mesma tela e no mesmo
+      // período — então seguem o mesmo recorte de conta. Sem isso, a média
+      // diária do bolo todo apareceria colada num gráfico de uma conta só.
+      let itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
+      if (contaFiltroGraficos) itensPeriodo = itensPeriodo.filter(l => l.conta === contaFiltroGraficos);
 
       let rec = 0, desp = 0;
       const porCategoria = {}, porConta = {};
@@ -5685,7 +5731,16 @@
     }
 
     function atualizarResumoEGraficos() {
-      const itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
+      /* O recorte por conta é lido do seletor a cada render, e não guardado só na
+         variável, porque quem dispara isto pode ser qualquer coisa (mudança de
+         período, lançamento novo, importação de backup) — a fonte da verdade é o
+         que está selecionado na tela. */
+      const selConta = document.getElementById('filtroContaGraficos');
+      if (selConta) contaFiltroGraficos = selConta.value;
+      atualizarVisibilidadeVisaoContas();
+
+      let itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
+      if (contaFiltroGraficos) itensPeriodo = itensPeriodo.filter(l => l.conta === contaFiltroGraficos);
 
       let rec = 0, desp = 0;
       const porFonte = {}, porCategoria = {}, porContaGrafico = {};
@@ -5724,8 +5779,14 @@
         else renderizarBarras(el, dados, cor, metas);
       };
       desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, 'var(--verde-escuro)', PALETA_RECEITAS);
-      // só o gráfico de categorias recebe as metas — é onde o teto faz sentido
-      desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, COR_DESPESA_GRAFICO, null, metasDoPeriodo());
+      /* Só o gráfico de categorias recebe as metas — é onde o teto faz sentido.
+         Com uma conta filtrada a linha de meta sai: o teto que você definiu é do
+         gasto TOTAL da categoria, e desenhá-lo em cima das barras de uma conta só
+         daria uma folga que não existe (ou acusaria estouro no lugar errado).
+         Filtrar a própria meta seria pior, mudaria o que você combinou consigo
+         mesmo. O card "Metas por categoria" segue mostrando o total, como sempre. */
+      desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, COR_DESPESA_GRAFICO, null,
+               contaFiltroGraficos ? null : metasDoPeriodo());
       desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, 'var(--azul)');
       renderizarMetasCategorias();
       renderizarMetasCategorias();
@@ -5823,6 +5884,11 @@
         const ref = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
         let rec = 0, desp = 0;
         lancamentos.forEach(l => {
+          // Esta função varre o histórico inteiro por conta própria, então o
+          // recorte por conta precisa ser repetido aqui — senão a evolução
+          // mensal continuaria mostrando o bolo todo ao lado de gráficos já
+          // filtrados, e os dois números na mesma tela se contradiriam.
+          if (contaFiltroGraficos && l.conta !== contaFiltroGraficos) return;
           const d = new Date(l.data + 'T12:00:00');
           if (d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear()) {
             const v = parseVal(l.valor);
@@ -5886,13 +5952,19 @@
       const container = document.getElementById('containerComprometidoFuturo');
       if (!container) return;
       const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
-      const totalFixos = fixos.reduce((s, f) => s + parseVal(f.valor), 0);
+      // Gasto fixo também guarda a conta de onde sai, então o recorte vale pros
+      // dois lados da soma — sem isso o "comprometido" de uma conta só viria
+      // inflado com os fixos de todas as outras.
+      const totalFixos = fixos
+        .filter(f => !contaFiltroGraficos || f.conta === contaFiltroGraficos)
+        .reduce((s, f) => s + parseVal(f.valor), 0);
       const dados = {};
       for (let i = 1; i <= 6; i++) {
         const ref = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
         const label = NOMES_MESES[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2);
         const parcelasFuturas = lancamentos
           .filter(l => l.tipo === 'despesa' && !l.fixoId)
+          .filter(l => !contaFiltroGraficos || l.conta === contaFiltroGraficos)
           .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === ref.getMonth() && f.ano === ref.getFullYear(); })
           .reduce((s, l) => s + parseVal(l.valor), 0);
         dados[label] = parcelasFuturas + totalFixos;
@@ -10083,7 +10155,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.02-1';
+    const APP_VERSION = '2026.09.03-1';
 
     // Inicialização
     carregarLocalStorage();
