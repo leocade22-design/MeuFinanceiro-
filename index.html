@@ -503,6 +503,10 @@
             <textarea id="observacao" name="observacao" class="escondido" aria-label="Observação do lançamento"></textarea>
             <input type="hidden" id="emprestimoPara" value="">
             <input type="hidden" id="emprestimoVence" value="">
+            <!-- direto = o dinheiro entrou de verdade na conta; indireto = a pessoa
+                 pagou por você e nada passou pela sua conta. Vazio/ausente conta
+                 como direto, que é como o app sempre se comportou. -->
+            <input type="hidden" id="emprestimoTipo" value="">
             <input type="hidden" id="emprestimoRateioIncluiVoce" value="1">
             <input type="hidden" id="emprestimoParcelas" value="1">
           </div>
@@ -938,6 +942,17 @@
         <div id="listaInvestimentos"></div>
       </div>
 
+      <!-- CONSÓRCIOS — separado dos aportes de propósito: é compra parcelada de
+           uma carta de crédito, não dinheiro rendendo. Totais próprios. -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h3>Consórcios</h3>
+          <button class="btn-acao" onclick="abrirFormConsorcio()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo consórcio">+</button>
+        </div>
+        <div id="totaisConsorcios" class="escondido" style="display:flex;gap:8px;margin-bottom:14px;"></div>
+        <div id="listaConsorcios"></div>
+      </div>
+
     </div>
 
     <div id="abaGrupos" class="aba-conteudo">
@@ -1273,6 +1288,94 @@
     </div>
   </div>
 
+  <!-- CONSÓRCIO: cadastro e edição -->
+  <div id="modalConsorcio" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalConsorcio')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloModalConsorcio">Novo consórcio</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalConsorcio')">&times;</button>
+      </div>
+      <form onsubmit="salvarConsorcioModal(event)">
+        <input type="hidden" id="idConsorcioEditando" value="">
+        <div class="form-group">
+          <label for="nomeConsorcio">Nome do grupo</label>
+          <input type="text" id="nomeConsorcio" placeholder="Ex: Consórcio Imóvel Rodobens" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="bemConsorcio">Tipo de bem</label>
+            <input type="text" id="bemConsorcio" placeholder="imóvel, veículo..." list="listaBensConsorcio">
+            <datalist id="listaBensConsorcio">
+              <option value="imóvel"></option><option value="veículo"></option><option value="serviço"></option>
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label for="cartaConsorcio">Carta de crédito</label>
+            <input type="text" id="cartaConsorcio" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="parcelaConsorcio">Valor da parcela</label>
+            <input type="text" id="parcelaConsorcio" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" required>
+          </div>
+          <div class="form-group">
+            <label for="totalParcelasConsorcio">Total de parcelas</label>
+            <input type="number" id="totalParcelasConsorcio" min="1" max="360" placeholder="80" inputmode="numeric" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="diaConsorcio">Dia do boleto</label>
+            <select id="diaConsorcio"></select>
+          </div>
+          <div class="form-group">
+            <label for="contaConsorcio">Conta que paga</label>
+            <select id="contaConsorcio"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="inicioConsorcio">Data da primeira parcela</label>
+          <input type="date" id="inicioConsorcio" required>
+        </div>
+        <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;">
+          Vira um gasto fixo mensal na categoria <strong>Consórcio</strong>: o boleto entra sozinho
+          todo mês, na fatura ou no débito conforme a conta. Data retroativa gera de uma vez as
+          parcelas que já passaram.
+        </p>
+        <button type="submit" class="btn-salvar">Salvar consórcio</button>
+        <button type="button" id="btnExcluirConsorcio" class="btn-cancelar escondido" onclick="excluirConsorcioAtual()">Excluir consórcio</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CONSÓRCIO: contemplação -->
+  <div id="modalContemplacao" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalContemplacao')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Fui contemplado 🎉</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalContemplacao')">&times;</button>
+      </div>
+      <input type="hidden" id="idConsorcioContemplando" value="">
+      <p id="infoContemplacao" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dataContemplacao">Data da contemplação</label>
+          <input type="date" id="dataContemplacao">
+        </div>
+        <div class="form-group">
+          <label for="novaParcelaContemplacao">Nova parcela</label>
+          <input type="text" id="novaParcelaContemplacao" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">
+        As parcelas que você já pagou continuam com o valor antigo — é histórico real.
+        Só os boletos que ainda não venceram passam pro valor novo.
+      </p>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarContemplacao()">Confirmar contemplação</button>
+    </div>
+  </div>
+
   <!-- ATUALIZAR VALOR DE UM APORTE (toque num aporte em Investimentos) -->
   <div id="modalAtualizarValor" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAtualizarValor')">
     <div class="modal-content">
@@ -1462,6 +1565,15 @@
         <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
       </div>
       <p id="textoModalEmprestimo" style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;"></p>
+      <!-- Só aparece quando é VOCÊ que deve: quando alguém te deve, o gasto saiu
+           da sua conta de verdade e não existe variante indireta. -->
+      <div class="form-group escondido" id="wrapTipoEmprestimo">
+        <label>O dinheiro passou pela sua conta?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="tiposEmprestimo">
+          <button type="button" class="btn-periodo ativo" data-tipo="direto" onclick="setTipoEmprestimo('direto')">Sim, entrou</button>
+          <button type="button" class="btn-periodo" data-tipo="indireto" onclick="setTipoEmprestimo('indireto')">Não, pagaram por mim</button>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label for="emprestimoTemp" id="labelQuemEmprestimo">Quem te deve</label>
@@ -1913,6 +2025,56 @@
       if (d) { try { investimentos = JSON.parse(d) || []; } catch (e) { investimentos = []; } }
     }
 
+    /* CONSÓRCIO
+       Não tem motor de recorrência próprio: cada consórcio cria um GASTO FIXO por
+       baixo (marcado com consorcioId), e é o fixo que gera o boleto todo mês. Com
+       isso o consórcio já entra em fatura, gráfico, categoria e saldo sem uma
+       linha de código nova — e sem lançamento manual.
+
+       Fica fora do "Total aportado" da aba de propósito: consórcio não é aporte
+       rendendo, é compra parcelada de uma carta de crédito. Somar os dois no mesmo
+       número misturaria coisas diferentes. */
+    let consorcios = [];
+    const STORAGE_KEY_CONSORCIOS = "meu_financeiro_consorcios_v1";
+
+    function salvarConsorcios() { localStorage.setItem(STORAGE_KEY_CONSORCIOS, JSON.stringify(consorcios)); }
+    function carregarConsorcios() {
+      const d = localStorage.getItem(STORAGE_KEY_CONSORCIOS);
+      if (d) { try { consorcios = JSON.parse(d) || []; } catch (e) { consorcios = []; } }
+      if (!Array.isArray(consorcios)) consorcios = [];
+    }
+
+    // Mês da última parcela: começo + (total - 1) meses. É o que faz o boleto
+    // parar de nascer quando o consórcio acaba.
+    function ultimoMesConsorcio(c) {
+      if (!c || !c.dataInicio || !c.totalParcelas) return null;
+      return somarMeses(c.dataInicio, Math.max(0, parseInt(c.totalParcelas, 10) - 1)).slice(0, 7);
+    }
+
+    // Parcelas que já viraram lançamento até hoje (o boleto que realmente saiu)
+    function parcelasPagasConsorcio(c) {
+      const hoje = obterDataBrasilia();
+      return lancamentos.filter(l => l.fixoId === c.fixoId && l.data && l.data <= hoje);
+    }
+
+    /* Quanto já foi pago de verdade: soma os lançamentos, NÃO parcelas × valor.
+       Depois da contemplação a parcela muda, e multiplicar daria um número que
+       nunca existiu. */
+    function totaisConsorcio(c) {
+      const pagas = parcelasPagasConsorcio(c);
+      const jaPago = pagas.reduce((s, l) => s + parseVal(l.valor), 0);
+      const total = parseInt(c.totalParcelas, 10) || 0;
+      const restantes = Math.max(0, total - pagas.length);
+      return {
+        qtdPagas: pagas.length,
+        total,
+        restantes,
+        jaPago,
+        falta: restantes * parseVal(c.valorParcela),
+        carta: parseVal(c.valorCarta)
+      };
+    }
+
     // TIPOS DE ATIVO — categoria de cada aporte (Tesouro, FII, Poupança...), separado
     // das categorias de gasto porque aqui o que importa é o tipo de aplicação.
     const TIPOS_ATIVO_PADRAO = ['Tesouro Direto', 'Fundo Imobiliário', 'Poupança', 'Ações', 'Outros'];
@@ -2354,9 +2516,15 @@
       }
       selP.value = document.getElementById('emprestimoParcelas').value || '1';
       document.getElementById('wrapParcelasDivida').classList.toggle('escondido', !devo);
-      document.getElementById('textoModalEmprestimo').textContent = devo
-        ? 'Dinheiro que entrou mas você vai devolver. Continua contando como receita na conta — aqui fica o lembrete da dívida.'
-        : 'Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.';
+      document.getElementById('wrapTipoEmprestimo').classList.toggle('escondido', !devo);
+      // Lançamento antigo não tem o campo: cai em direto, que era o único
+      // comportamento existente até agora.
+      tipoEmprestimoEscolhido = devo
+        ? (document.getElementById('emprestimoTipo').value || 'direto')
+        : '';
+      if (devo) setTipoEmprestimo(tipoEmprestimoEscolhido);
+      else document.getElementById('textoModalEmprestimo').textContent =
+        'Continua contando normalmente nos gastos do cartão/conta — só fica marcado aqui pra você lembrar de cobrar.';
       document.getElementById('labelQuemEmprestimo').textContent = devo ? 'De quem você pegou' : 'Quem te deve';
       document.getElementById('labelPrazoEmprestimo').textContent = devo ? 'Prazo pra devolver' : 'Prazo pra pagar';
       document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
@@ -2365,6 +2533,23 @@
       atualizarPreviaRateio();
       document.getElementById('modalEmprestimo').classList.remove('escondido');
       document.getElementById('emprestimoTemp').focus();
+    }
+
+    /* DIRETO x INDIRETO
+       Direto é o que o app sempre fez: a grana caiu na conta e você devolve
+       depois. Indireto é a pessoa pagando POR você — a dívida existe igual, mas
+       nenhum centavo passou por conta nenhuma, então isso não pode virar receita
+       em lugar nenhum (era o que obrigava a lançar receita fake antes). */
+    let tipoEmprestimoEscolhido = 'direto';
+
+    function setTipoEmprestimo(tipo) {
+      tipoEmprestimoEscolhido = tipo === 'indireto' ? 'indireto' : 'direto';
+      document.querySelectorAll('#tiposEmprestimo .btn-periodo').forEach(b => {
+        b.classList.toggle('ativo', b.dataset.tipo === tipoEmprestimoEscolhido);
+      });
+      document.getElementById('textoModalEmprestimo').textContent = tipoEmprestimoEscolhido === 'indireto'
+        ? 'A pessoa pagou por você sem o dinheiro passar pela sua conta. Não entra como receita em lugar nenhum — só fica o lembrete de que você deve.'
+        : 'Dinheiro que entrou mas você vai devolver. Continua contando como receita na conta — aqui fica o lembrete da dívida.';
     }
 
     // Prévia ao vivo do rateio, usando o valor que já está digitado no formulário
@@ -2402,6 +2587,9 @@
       document.getElementById('emprestimoParcelas').value = (nomes.length && tipoAtual === 'receita')
         ? document.getElementById('emprestimoParcelasTemp').value : '1';
       document.getElementById('emprestimoRateioIncluiVoce').value = document.getElementById('rateioIncluiVoce').checked ? '1' : '0';
+      // Só existe quando é você que deve; sem nome de ninguém, não é empréstimo.
+      document.getElementById('emprestimoTipo').value =
+        (nomes.length && tipoAtual === 'receita') ? (tipoEmprestimoEscolhido || 'direto') : '';
       atualizarLinkEmprestimo();
       fecharModal('modalEmprestimo');
     }
@@ -2411,6 +2599,8 @@
       document.getElementById('emprestimoVenceTemp').value = '';
       document.getElementById('emprestimoPara').value = '';
       document.getElementById('emprestimoVence').value = '';
+      document.getElementById('emprestimoTipo').value = '';
+      tipoEmprestimoEscolhido = 'direto';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
       document.getElementById('emprestimoParcelas').value = '1';
       atualizarLinkEmprestimo();
@@ -2680,12 +2870,14 @@
         if (nomeAntigo !== nome) {
           const qtd = lancamentos.filter(l => l.conta === nomeAntigo).length
             + fixos.filter(f => f.conta === nomeAntigo).length
-            + investimentos.filter(i => i.origem === nomeAntigo).length;
+            + investimentos.filter(i => i.origem === nomeAntigo).length
+            + consorcios.filter(c2 => c2.conta === nomeAntigo).length;
           if (qtd > 0 && confirm(`Atualizar também os ${qtd} registros já lançados de "${nomeAntigo}" para "${nome}"?`)) {
             lancamentos.forEach(l => { if (l.conta === nomeAntigo) l.conta = nome; });
             fixos.forEach(f => { if (f.conta === nomeAntigo) f.conta = nome; });
             investimentos.forEach(i => { if (i.origem === nomeAntigo) i.origem = nome; });
-            salvarLocalStorage(); salvarFixos(); salvarInvest();
+            consorcios.forEach(c2 => { if (c2.conta === nomeAntigo) c2.conta = nome; });
+            salvarLocalStorage(); salvarFixos(); salvarInvest(); salvarConsorcios();
           }
         }
         c.nome = nome;
@@ -2709,6 +2901,7 @@
       renderizarLancamentos();
       atualizarFaturas();
       renderizarInvestimentos();
+      renderizarConsorcios();
     }
 
     function excluirConta(id) {
@@ -3018,6 +3211,7 @@
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
         if (l.tipo === 'receita') {
+          if (ehEmprestimoIndireto(l)) return;
           rec += v;
         } else {
           desp += v;
@@ -3185,6 +3379,7 @@
         fixos,
         investimentos,
         tiposAtivo,
+        consorcios,
         grupos,
         valoresOcultos,
         orcamentosCategoria,
@@ -3270,6 +3465,8 @@
           lancamentos = Array.isArray(data.lancamentos) ? data.lancamentos : [];
           fixos = Array.isArray(data.fixos) ? data.fixos : [];
           investimentos = Array.isArray(data.investimentos) ? data.investimentos : [];
+          // backup antigo não tem a chave: array vazio, sem quebrar
+          consorcios = Array.isArray(data.consorcios) ? data.consorcios : [];
           if (Array.isArray(data.tiposAtivo) && data.tiposAtivo.length > 0) tiposAtivo = data.tiposAtivo;
           grupos = Array.isArray(data.grupos) ? data.grupos : [];
           valoresOcultos = !!data.valoresOcultos;
@@ -3294,6 +3491,7 @@
           salvarFixos();
           salvarInvest();
           salvarTiposAtivo();
+          salvarConsorcios();
           salvarGrupos();
           salvarOrcamentos();
           salvarFaturasPagas();
@@ -3313,6 +3511,7 @@
           atualizarResumoEGraficos();
           atualizarFaturas();
           renderizarInvestimentos();
+          renderizarConsorcios();
           renderizarGrupos();
           popularSelectGrupos(document.getElementById('grupoViagem') ? document.getElementById('grupoViagem').value : '');
           avisar('backupOk');
@@ -4140,7 +4339,7 @@
 
       if (idAba === 'abaGraficos') atualizarResumoEGraficos();
       if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); }
-      if (idAba === 'abaInvestimentos') renderizarInvestimentos();
+      if (idAba === 'abaInvestimentos') { renderizarInvestimentos(); renderizarConsorcios(); }
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
       if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); }
@@ -4430,7 +4629,7 @@
         const noCartao = l => !l.__transf && l.tipo === 'despesa' && eCredito(l.formaModo);
         const saiu = soma(l => !l.__transf && l.tipo === 'despesa' && !eCredito(l.formaModo));
         const cartao = soma(noCartao);
-        const entrou = soma(l => !l.__transf && l.tipo === 'receita');
+        const entrou = soma(l => !l.__transf && l.tipo === 'receita' && !ehEmprestimoIndireto(l));
         const pedaco = (rotulo, valor, cor) => `<span style="white-space:nowrap;"><span style="color:var(--texto-tenue);">${rotulo}</span> <strong style="color:${cor};">${fmtOculto(valor)}</strong></span>`;
         const pedacos = [];
         if (filtroFormaLanc !== 'cartao') {
@@ -4492,7 +4691,10 @@
           const noCredito = !eReceita && eCredito(item.formaModo);
 
           const div = document.createElement('div');
-          div.className = 'item-lancamento forma' + (eReceita ? ' forma-receita' : (noCredito ? ' forma-credito' : ''));
+          // Indireto não moveu conta nenhuma: fica com a barra neutra, não a verde
+          // de "entrou". Verde ali seria a mesma mentira que o campo veio corrigir.
+          const indireto = ehEmprestimoIndireto(item);
+          div.className = 'item-lancamento forma' + (eReceita && !indireto ? ' forma-receita' : (noCredito ? ' forma-credito' : ''));
           if (item.data > hoje) div.style.opacity = '.6';
           div.onclick = () => abrirAcoesLancamento(item.id);
           const parcelasPendentes = contarParcelasPendentes(item);
@@ -4503,7 +4705,8 @@
           const jaTemParcela = /\(\d+\/\d+\)/.test(item.descricao || '');
           const partes = [];
           if (!eReceita && item.categoria) partes.push(item.categoria);
-          if (item.conta) partes.push(item.conta);
+          if (indireto) partes.push('pagaram por você');
+          else if (item.conta) partes.push(item.conta);
           if (numP > 1 && !jaTemParcela) partes.push(numP + 'x');
           if (item.grupoViagemNome) partes.push(item.grupoViagemNome);
 
@@ -4515,7 +4718,7 @@
               ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
             </div>
             <div class="item-acoes">
-              <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
+              <span class="${indireto ? '' : (eReceita ? 'valor-receita' : 'valor-despesa')}"${indireto ? ' style="color:var(--texto-medio);white-space:nowrap;"' : ''}>${indireto ? '' : (eReceita ? '+' : '-')} R$ ${item.valor}</span>
             </div>
           `;
           container.appendChild(div);
@@ -4746,6 +4949,10 @@
       const dataBase = document.getElementById('dataCompra').value || obterDataBrasilia();
       const emprestimoPara = document.getElementById('emprestimoPara').value.trim();
       const emprestimoVence = emprestimoPara ? document.getElementById('emprestimoVence').value : '';
+      // Indireto só existe quando é você que deve (receita). Quando alguém te
+      // deve, o gasto saiu da sua conta de verdade — não há variante indireta.
+      const emprestimoTipo = (emprestimoPara && tipoAtual === 'receita')
+        ? (document.getElementById('emprestimoTipo').value || 'direto') : '';
       const rateioIncluiVoce = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
       const nomesEmpr = nomesEmprestimo(emprestimoPara);
       const parcelasDivida = document.getElementById('emprestimoParcelas').value || '1';
@@ -4784,7 +4991,7 @@
             categoria, observacao, data: dataBase,
             valor: valorParcelaStr,
             grupoViagemId, grupoViagemNome,
-            emprestimoPara, emprestimoVence, rateioIncluiVoce,
+            emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
             emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
             emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
@@ -4818,7 +5025,7 @@
                 descricao: descricaoBase + (sufixoIrma ? sufixoIrma[0] : ''),
                 conta, formaModo, categoria, observacao,
                 grupoViagemId, grupoViagemNome,
-                emprestimoPara, rateioIncluiVoce,
+                emprestimoPara, rateioIncluiVoce, emprestimoTipo,
                 emprestimoVence: emprestimoPara ? somarMeses(emprestimoVence, passos) : '',
                 emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
                 emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
@@ -4853,7 +5060,7 @@
             grupoViagemId, grupoViagemNome,
             // o prazo acompanha a parcela: 1ª vence no mês escolhido, as seguintes
             // no mesmo dia dos meses seguintes
-            emprestimoPara, emprestimoVence: somarMeses(emprestimoVence, n), rateioIncluiVoce,
+            emprestimoPara, emprestimoVence: somarMeses(emprestimoVence, n), emprestimoTipo, rateioIncluiVoce,
             emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
             emprestimoQuitado: false
           });
@@ -4867,7 +5074,7 @@
           data: dataBase,
           valor: valorTotal.toFixed(2).replace('.', ','),
           grupoViagemId, grupoViagemNome,
-          emprestimoPara, emprestimoVence, rateioIncluiVoce,
+          emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
           emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal, parcelasDivida, emprestimoVence),
           emprestimoQuitado: false,
           // guardados só quando o lançamento nasceu de um QR: a chave impede
@@ -4912,6 +5119,7 @@
       atualizarLinkObs();
       document.getElementById('emprestimoPara').value = item.emprestimoPara || '';
       document.getElementById('emprestimoVence').value = item.emprestimoVence || '';
+      document.getElementById('emprestimoTipo').value = item.emprestimoTipo || '';
       document.getElementById('emprestimoRateioIncluiVoce').value = item.rateioIncluiVoce === false ? '0' : '1';
       atualizarLinkEmprestimo();
       // Compra parcelada é lançada pelo TOTAL — então é o total que volta pra edição.
@@ -4974,6 +5182,7 @@
       atualizarLinkObs();
       document.getElementById('emprestimoPara').value = '';
       document.getElementById('emprestimoVence').value = '';
+      document.getElementById('emprestimoTipo').value = '';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
       document.getElementById('emprestimoParcelas').value = '1';
       atualizarLinkEmprestimo();
@@ -5517,6 +5726,7 @@
         itensPeriodo.forEach(l => {
           const v = parseVal(l.valor);
           if (l.tipo === 'receita') {
+            if (ehEmprestimoIndireto(l)) return;
             totalRec += v;
             porConta[l.conta] = (porConta[l.conta] || 0) + v;
           } else {
@@ -5747,6 +5957,8 @@
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
         if (l.tipo === 'receita') {
+          // pagaram por você: dívida sim, receita não
+          if (ehEmprestimoIndireto(l)) return;
           rec += v;
           const chave = chaveReceitaAgrupada(l);
           porFonte[chave] = (porFonte[chave] || 0) + v;
@@ -5892,7 +6104,7 @@
           const d = new Date(l.data + 'T12:00:00');
           if (d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear()) {
             const v = parseVal(l.valor);
-            if (l.tipo === 'receita') rec += v; else desp += v;
+            if (l.tipo === 'receita') { if (!ehEmprestimoIndireto(l)) rec += v; } else desp += v;
           }
         });
         dadosMeses.push({ label: NOMES_MESES[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2), rec, desp, saldo: rec - desp });
@@ -5975,6 +6187,19 @@
     function getMesReferencia(offset) {
       const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
       return new Date(hoje.getFullYear(), hoje.getMonth() + offset, 1);
+    }
+
+    /* EMPRÉSTIMO INDIRETO: A PESSOA PAGOU POR VOCÊ
+       O dinheiro nunca passou por conta nenhuma sua — ela cobriu sua parte direto
+       com quem ia receber. A dívida existe igual (e gera cobrança igual), mas
+       isso NÃO é receita: somar seria inventar dinheiro que nunca entrou, que é
+       exatamente o problema de lançar "receita fake" que esse campo veio resolver.
+
+       Todo total que vira saldo, resumo, dashboard, gráfico ou resposta de
+       pergunta passa por aqui antes de somar. Lançamento antigo não tem o campo,
+       e undefined !== 'indireto' já o trata como direto, sem precisar migração. */
+    function ehEmprestimoIndireto(l) {
+      return l && l.emprestimoTipo === 'indireto';
     }
 
     // Crédito à vista (1x) e crédito parcelado caem os DOIS na fatura — só o débito
@@ -6062,7 +6287,7 @@
     }
 
     function despesasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'despesa' && p.teste(l.data)); }
-    function receitasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'receita' && p.teste(l.data)); }
+    function receitasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'receita' && !ehEmprestimoIndireto(l) && p.teste(l.data)); }
     const somar = lista => lista.reduce((s, l) => s + parseVal(l.valor), 0);
 
     function responderPergunta(textoDitado) {
@@ -6951,6 +7176,10 @@
         const ateFimDoMes = d.getFullYear() < ano || (d.getFullYear() === ano && d.getMonth() <= mes);
 
         if (l.tipo === 'receita') {
+          // Pagaram por você: a dívida existe (e vira cobrança), mas nenhum
+          // centavo passou por conta nenhuma — não entra em saldo nem em
+          // "Recebido", nem no mês, nem no acumulado.
+          if (ehEmprestimoIndireto(l)) return;
           if (noMesDaData) {
             totalRecebimentos += v;
             porContaNet[l.conta] = (porContaNet[l.conta] || 0) + v;
@@ -7966,21 +8195,32 @@
                   </div>
                   <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                     <span class="${devo ? 'valor-receita' : 'valor-despesa'}">${fmtOculto(c.valor)}</span>
-                    <button type="button" class="btn-mini">${devo ? 'Paguei' : 'Recebi'}</button>
+                    <button type="button" class="btn-mini" data-acao="mov">${devo ? 'Paguei' : 'Recebi'}</button>
+                    <button type="button" class="btn-mini" data-acao="quitar" title="Resolvido de outro jeito, sem dinheiro trocar de mãos">Quitar</button>
                   </div>
                 `;
-                linha.querySelector('button').onclick = (ev) => { ev.stopPropagation(); abrirReceberEmprestimo([c.chave]); };
+                linha.querySelector('[data-acao="mov"]').onclick = (ev) => { ev.stopPropagation(); abrirReceberEmprestimo([c.chave]); };
+                linha.querySelector('[data-acao="quitar"]').onclick = (ev) => { ev.stopPropagation(); quitarSemMovimentacao([c.chave]); };
                 listaEl.appendChild(linha);
               });
 
               if (ehMultipla) {
+                const boxLote = document.createElement('div');
+                boxLote.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px;';
                 const btnCompra = document.createElement('button');
                 btnCompra.type = 'button';
                 btnCompra.className = 'btn-mini';
-                btnCompra.style.cssText = 'margin:4px 0 2px;';
                 btnCompra.textContent = (devo ? 'Paguei as ' : 'Recebi as ') + itens.length + ' (' + fmtOculto(totalCompra) + ')';
                 btnCompra.onclick = () => abrirReceberEmprestimo(itens.map(c => c.chave));
-                listaEl.appendChild(btnCompra);
+                boxLote.appendChild(btnCompra);
+                const btnQuitarLote = document.createElement('button');
+                btnQuitarLote.type = 'button';
+                btnQuitarLote.className = 'btn-mini';
+                btnQuitarLote.textContent = 'Quitar as ' + itens.length;
+                btnQuitarLote.title = 'Resolvido de outro jeito, sem dinheiro trocar de mãos';
+                btnQuitarLote.onclick = () => quitarSemMovimentacao(itens.map(c => c.chave));
+                boxLote.appendChild(btnQuitarLote);
+                listaEl.appendChild(boxLote);
               }
             });
 
@@ -8064,7 +8304,7 @@
         const hoje = obterDataBrasilia();
         const limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         const recentes = lancamentos.filter(l => l.data >= limite && l.data <= hoje);
-        const rec = recentes.filter(l => l.tipo === 'receita').reduce((sm, l) => sm + parseVal(l.valor), 0);
+        const rec = recentes.filter(l => l.tipo === 'receita' && !ehEmprestimoIndireto(l)).reduce((sm, l) => sm + parseVal(l.valor), 0);
         const desp = recentes.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
         // Compacto porque agora divide a linha com o título do card: duas linhas
         // curtas em vez de três, com as setas fazendo o papel dos rótulos.
@@ -8485,6 +8725,26 @@
         .filter(c => chaves.includes(c.chave) && !c.quitado);
     }
 
+    /* QUITAR SEM MOVIMENTAÇÃO
+       Nem toda dívida acaba com dinheiro trocando de mãos: às vezes vira troca,
+       compensação ou favor. "Recebi"/"Paguei" sempre criam um lançamento real —
+       aqui a dívida só é marcada como resolvida, sem inventar movimentação em
+       conta nenhuma.
+
+       Importante: isto NÃO desfaz um empréstimo direto. O dinheiro que já entrou
+       de verdade continua na conta, porque entrou mesmo — o que se encerra aqui é
+       a pendência, não o histórico. */
+    function quitarSemMovimentacao(chaves) {
+      const itens = cobrancasPorChave(chaves);
+      if (!itens.length) return;
+      const total = itens.reduce((sm, c) => sm + c.valor, 0);
+      if (!confirm(`Marcar ${itens.length > 1 ? 'as ' + itens.length + ' cobranças' : 'esta cobrança'} (${fmtVal(total)}) como quitada sem lançar nenhuma movimentação nas contas?\n\nUse quando a dívida foi resolvida de outra forma — compensação, troca, favor.`)) return;
+      itens.forEach(c => marcarCobrancaQuitada(c));
+      salvarLocalStorage();
+      renderizarEmprestimos();
+      atualizarFaturas();
+    }
+
     function abrirReceberEmprestimo(chaves) {
       const itens = cobrancasPorChave(chaves);
       if (!itens.length) return;
@@ -8578,7 +8838,7 @@
         titulo.textContent = 'Recebimentos de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const d = new Date(l.data + 'T12:00:00');
-          return l.tipo === 'receita' && d.getMonth() === mes && d.getFullYear() === ano;
+          return l.tipo === 'receita' && !ehEmprestimoIndireto(l) && d.getMonth() === mes && d.getFullYear() === ano;
         });
       } else if (tipoFiltro === 'debito' || tipoFiltro === 'saiu') {
         titulo.textContent = (tipoFiltro === 'saiu' ? 'Saiu da conta em ' : 'Débito / À Vista de ') + NOMES_MESES[mes];
@@ -9135,8 +9395,14 @@
           if (mes > 11) { mes = 0; ano++; }
         }
 
+        // Consórcio acaba: depois da última parcela o boleto não existe mais.
+        // Sem isto o fixo geraria pra sempre, inventando parcela que ninguém deve.
+        const cons = f.consorcioId ? consorcios.find(c => c.id === f.consorcioId) : null;
+        const fimConsorcio = cons ? ultimoMesConsorcio(cons) : null;
+
         while (ano < anoAtual || (ano === anoAtual && mes <= mesAtual)) {
           const chave = chaveMesAno(ano, mes);
+          if (fimConsorcio && chave > fimConsorcio) break;
           const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
           const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chave);
           if (!jaExiste) {
@@ -9195,6 +9461,290 @@
         diff: g.atual - g.aportado,
         pct: g.aportado > 0 ? (g.atual - g.aportado) / g.aportado * 100 : 0
       })).sort((a, b) => b.atual - a.atual);
+    }
+
+    /* ============ CONSÓRCIOS ============ */
+
+    // A categoria precisa existir pra o boleto não cair em "Outros" e sumir no
+    // meio dos gastos comuns no gráfico.
+    function garantirCategoriaConsorcio() {
+      if (!categorias.includes('Consórcio')) {
+        categorias.push('Consórcio');
+        salvarCategorias();
+        popularSelectsCategorias();
+      }
+    }
+
+    function abrirFormConsorcio(id) {
+      popularSelectsContas();
+      const selDia = document.getElementById('diaConsorcio');
+      if (!selDia.options.length) {
+        for (let d = 1; d <= 28; d++) {
+          const o = document.createElement('option');
+          o.value = String(d); o.textContent = 'dia ' + d;
+          selDia.appendChild(o);
+        }
+      }
+      const c = id ? consorcios.find(x => x.id === id) : null;
+      document.getElementById('idConsorcioEditando').value = c ? c.id : '';
+      document.getElementById('tituloModalConsorcio').textContent = c ? 'Editar consórcio' : 'Novo consórcio';
+      document.getElementById('nomeConsorcio').value = c ? c.nome : '';
+      document.getElementById('bemConsorcio').value = c ? (c.bem || '') : '';
+      document.getElementById('cartaConsorcio').value = c && c.valorCarta ? 'R$ ' + c.valorCarta : '';
+      document.getElementById('parcelaConsorcio').value = c ? 'R$ ' + c.valorParcela : '';
+      document.getElementById('totalParcelasConsorcio').value = c ? c.totalParcelas : '';
+      selDia.value = c ? String(Math.min(parseInt(c.diaVencimento, 10) || 15, 28)) : '15';
+      const selConta = document.getElementById('contaConsorcio');
+      if (c && contas.some(x => x.nome === c.conta)) selConta.value = c.conta;
+      document.getElementById('inicioConsorcio').value = c ? c.dataInicio : obterDataBrasilia();
+      document.getElementById('btnExcluirConsorcio').classList.toggle('escondido', !c);
+      document.getElementById('modalConsorcio').classList.remove('escondido');
+    }
+
+    function salvarConsorcioModal(e) {
+      e.preventDefault();
+      const nome = document.getElementById('nomeConsorcio').value.trim();
+      if (!nome) { avisar('semNome', 'Dê um nome pro grupo de consórcio.'); return; }
+      const valorParcela = parseVal(document.getElementById('parcelaConsorcio').value.replace('R$', '').trim());
+      if (!valorParcela || valorParcela <= 0) { avisar('valorInvalido'); return; }
+      const totalParcelas = parseInt(document.getElementById('totalParcelasConsorcio').value, 10);
+      if (!totalParcelas || totalParcelas < 1) { avisar('valorInvalido', 'Informe quantas parcelas o consórcio tem.'); return; }
+
+      const conta = document.getElementById('contaConsorcio').value || primeiraConta();
+      const dados = {
+        nome,
+        bem: document.getElementById('bemConsorcio').value.trim(),
+        valorCarta: parseVal(document.getElementById('cartaConsorcio').value.replace('R$', '').trim()).toFixed(2).replace('.', ','),
+        valorParcela: valorParcela.toFixed(2).replace('.', ','),
+        totalParcelas,
+        diaVencimento: parseInt(document.getElementById('diaConsorcio').value, 10) || 15,
+        conta,
+        dataInicio: document.getElementById('inicioConsorcio').value || obterDataBrasilia()
+      };
+
+      garantirCategoriaConsorcio();
+      const idEdit = document.getElementById('idConsorcioEditando').value;
+
+      if (idEdit) {
+        const c = consorcios.find(x => x.id === idEdit);
+        if (!c) return;
+        Object.assign(c, dados);
+        // o fixo é o motor do boleto: tem que andar junto com o consórcio
+        const f = fixos.find(x => x.id === c.fixoId);
+        if (f) {
+          Object.assign(f, {
+            descricao: nome, valor: dados.valorParcela, conta,
+            diaVencimento: dados.diaVencimento, dataInicio: dados.dataInicio,
+            formaModo: contaTemCredito(conta) ? 'Crédito Parcelado' : 'À Vista / Débito'
+          });
+          // mesmo critério do editar gasto fixo: o que já venceu é histórico
+          const hoje = obterDataBrasilia();
+          const dia = String(Math.min(dados.diaVencimento, 28)).padStart(2, '0');
+          lancamentos.forEach(l => {
+            if (l.fixoId !== f.id || !l.data || l.data < hoje) return;
+            l.descricao = nome;
+            l.valor = dados.valorParcela;
+            l.conta = conta;
+            l.formaModo = f.formaModo;
+            l.data = l.data.slice(0, 7) + '-' + dia;
+          });
+          /* Encurtar o consórcio (corrigir 80 pra 60, por exemplo) tem que apagar
+             os boletos que passaram a não existir. A trava do gerador só impede
+             criar novos — o que já estava lançado ficaria de fantasma na fatura.
+             Só mexe no futuro: parcela que já venceu é histórico. */
+          const fim = ultimoMesConsorcio(c);
+          if (fim) {
+            lancamentos = lancamentos.filter(l =>
+              !(l.fixoId === f.id && l.data > hoje && l.data.slice(0, 7) > fim));
+            // o gerador retoma de ultimoMesGerado: sem corrigir, ele acharia que
+            // já passou do fim e nunca mais geraria as parcelas que faltam
+            if (f.ultimoMesGerado && f.ultimoMesGerado > fim) f.ultimoMesGerado = fim;
+          }
+        }
+      } else {
+        const idConsorcio = 'c' + Date.now();
+        const fixo = {
+          id: 'f' + Date.now(),
+          descricao: nome,
+          valor: dados.valorParcela,
+          conta,
+          diaVencimento: dados.diaVencimento,
+          categoria: 'Consórcio',
+          formaModo: contaTemCredito(conta) ? 'Crédito Parcelado' : 'À Vista / Débito',
+          emprestimoPara: '',
+          diaCobranca: null,
+          dataInicio: dados.dataInicio,
+          consorcioId: idConsorcio
+        };
+        fixos.push(fixo);
+        consorcios.push({
+          id: idConsorcio, ...dados,
+          contemplado: false, dataContemplacao: '',
+          fixoId: fixo.id,
+          historicoValores: [{ desde: dados.dataInicio.slice(0, 7), valor: dados.valorParcela, motivo: 'início' }]
+        });
+      }
+
+      salvarConsorcios();
+      salvarFixos();
+      salvarLocalStorage();
+      gerarLancamentosFixos();
+      fecharModal('modalConsorcio');
+      atualizarTudo();
+      renderizarConsorcios();
+    }
+
+    function excluirConsorcioAtual() {
+      const id = document.getElementById('idConsorcioEditando').value;
+      const c = consorcios.find(x => x.id === id);
+      if (!c) return;
+      if (!confirm(`Excluir "${c.nome}"? As parcelas que já passaram continuam no histórico; os boletos futuros somem.`)) return;
+      // excluirFixo já limpa os lançamentos futuros e salva — reaproveitado inteiro
+      const f = fixos.find(x => x.id === c.fixoId);
+      if (f) {
+        const hoje = obterDataBrasilia();
+        fixos = fixos.filter(x => x.id !== f.id);
+        lancamentos = lancamentos.filter(l => !(l.fixoId === f.id && l.data > hoje));
+        salvarFixos();
+        salvarLocalStorage();
+      }
+      consorcios = consorcios.filter(x => x.id !== id);
+      salvarConsorcios();
+      fecharModal('modalConsorcio');
+      atualizarTudo();
+      renderizarConsorcios();
+    }
+
+    function abrirContemplacao(id) {
+      const c = consorcios.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById('idConsorcioContemplando').value = id;
+      const t = totaisConsorcio(c);
+      document.getElementById('infoContemplacao').textContent =
+        `${c.nome} · ${t.qtdPagas} de ${t.total} parcelas pagas · parcela hoje ${fmtVal(parseVal(c.valorParcela))}.`;
+      document.getElementById('dataContemplacao').value = c.dataContemplacao || obterDataBrasilia();
+      document.getElementById('novaParcelaContemplacao').value = 'R$ ' + c.valorParcela;
+      document.getElementById('modalContemplacao').classList.remove('escondido');
+    }
+
+    function confirmarContemplacao() {
+      const id = document.getElementById('idConsorcioContemplando').value;
+      const c = consorcios.find(x => x.id === id);
+      if (!c) return;
+      const novoValor = parseVal(document.getElementById('novaParcelaContemplacao').value.replace('R$', '').trim());
+      if (!novoValor || novoValor <= 0) { avisar('valorInvalido'); return; }
+      const data = document.getElementById('dataContemplacao').value || obterDataBrasilia();
+
+      c.contemplado = true;
+      c.dataContemplacao = data;
+      c.valorParcela = novoValor.toFixed(2).replace('.', ',');
+      c.historicoValores = Array.isArray(c.historicoValores) ? c.historicoValores : [];
+      c.historicoValores.push({ desde: data.slice(0, 7), valor: c.valorParcela, motivo: 'contemplação' });
+
+      const f = fixos.find(x => x.id === c.fixoId);
+      if (f) {
+        f.valor = c.valorParcela;
+        // Mesmo corte do editar gasto fixo: parcela que já venceu foi paga no
+        // valor antigo e não se reescreve — só o futuro muda.
+        const hoje = obterDataBrasilia();
+        lancamentos.forEach(l => {
+          if (l.fixoId !== f.id || !l.data || l.data < hoje) return;
+          l.valor = c.valorParcela;
+        });
+      }
+
+      salvarConsorcios();
+      salvarFixos();
+      salvarLocalStorage();
+      fecharModal('modalContemplacao');
+      atualizarTudo();
+      renderizarConsorcios();
+    }
+
+    function renderizarConsorcios() {
+      const lista = document.getElementById('listaConsorcios');
+      const boxTotais = document.getElementById('totaisConsorcios');
+      if (!lista) return;
+
+      lista.innerHTML = '';
+      if (!consorcios.length) {
+        boxTotais.classList.add('escondido');
+        lista.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum consórcio cadastrado ainda.</p>';
+        return;
+      }
+
+      let somaPago = 0, somaCarta = 0;
+      consorcios.forEach(c => {
+        const t = totaisConsorcio(c);
+        somaPago += t.jaPago;
+        somaCarta += t.carta;
+
+        const pct = t.total ? Math.round((t.qtdPagas / t.total) * 100) : 0;
+        const fim = ultimoMesConsorcio(c);
+        const fimTxt = fim ? NOMES_MESES[parseInt(fim.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + fim.slice(2, 4) : '—';
+
+        const bloco = document.createElement('div');
+        bloco.className = 'item-lancamento';
+        bloco.style.cssText = 'display:block;padding:12px 0;';
+        bloco.onclick = () => abrirFormConsorcio(c.id);
+
+        const historico = (c.contemplado && Array.isArray(c.historicoValores) && c.historicoValores.length > 1)
+          ? `<div style="font-size:10.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.5;">${
+              c.historicoValores.map(h => {
+                const m = NOMES_MESES[parseInt(h.desde.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + h.desde.slice(2, 4);
+                return `${fmtVal(parseVal(h.valor))} desde ${m}`;
+              }).join(' · ')}</div>`
+          : '';
+
+        bloco.innerHTML = `
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+            <div style="min-width:0;">
+              <strong>${c.nome}</strong>
+              <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtVal(parseVal(c.valorParcela))} · dia ${c.diaVencimento} · ${c.conta}</div>
+            </div>
+            <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;${
+              c.contemplado
+                ? 'color:var(--verde);border:1px solid var(--verde-escuro);'
+                : 'color:var(--azul);border:1px solid var(--azul-forte);'}">${c.contemplado ? 'contemplado' : 'em andamento'}</span>
+          </div>
+          <div class="barra-bg" style="margin:10px 0 6px;">
+            <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-fraco);">
+            <span>${t.qtdPagas} de ${t.total} parcelas</span>
+            <span>quita em ${fimTxt}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
+            <span style="color:var(--texto-medio);">já paguei <strong style="color:var(--texto-forte);">${fmtOculto(t.jaPago)}</strong></span>
+            <span style="color:var(--texto-medio);">falta <strong style="color:var(--texto-forte);">${fmtOculto(t.falta)}</strong></span>
+          </div>
+          <div style="font-size:11px;color:var(--texto-medio);margin-top:4px;">carta de crédito: <strong style="color:var(--azul);">${fmtOculto(t.carta)}</strong></div>
+          ${historico}
+        `;
+
+        if (!c.contemplado) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn-mini';
+          btn.style.cssText = 'margin-top:10px;';
+          btn.textContent = 'Fui contemplado';
+          btn.onclick = (ev) => { ev.stopPropagation(); abrirContemplacao(c.id); };
+          bloco.appendChild(btn);
+        }
+        lista.appendChild(bloco);
+      });
+
+      boxTotais.classList.remove('escondido');
+      boxTotais.innerHTML = `
+        <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
+          <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">já pago</span>
+          <div style="font-size:16px;font-weight:bold;color:var(--texto-forte);margin-top:2px;">${fmtOculto(somaPago)}</div>
+        </div>
+        <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
+          <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">em cartas</span>
+          <div style="font-size:16px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(somaCarta)}</div>
+        </div>
+      `;
     }
 
     function renderizarInvestimentos() {
@@ -10155,7 +10705,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.03-1';
+    const APP_VERSION = '2026.09.11-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -10167,6 +10717,7 @@ function confirmarLancamentoVoz() {
     carregarTiposAtivo();
     migrarInvestimentos();   // depois de carregarInvest e carregarTiposAtivo
     popularSelectsTiposAtivo();
+    carregarConsorcios();    // antes de gerarLancamentosFixos: é ele que sabe onde o consórcio acaba
     carregarGrupos();
     carregarTransferencias();
     carregarContatos();

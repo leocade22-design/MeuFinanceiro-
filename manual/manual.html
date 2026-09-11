@@ -97,7 +97,7 @@
     <ul>
       <li><strong>Tudo fica no seu aparelho.</strong> Não existe servidor, não existe cadastro, ninguém tem acesso aos seus números — nem quem fez o app.</li>
       <li><strong>Funciona sem internet.</strong> Depois de instalado, abre e lança normalmente no avião, no elevador, no sítio.</li>
-      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Passados 15 dias sem exportar, o próprio app avisa no topo da aba Lançamentos (item 13).</li>
+      <li><strong>Por isso o backup importa.</strong> Se você trocar de celular ou limpar os dados do navegador, o histórico vai junto. Passados 15 dias sem exportar, o próprio app avisa no topo da aba Lançamentos (item 14).</li>
     </ul>
     <div class="nota atencao">
       <strong>Instale na tela inicial.</strong> Abra o link no Chrome → menu <code>⋮</code> → <em>Adicionar à tela inicial</em>.
@@ -117,7 +117,7 @@
       <tr><td><strong>Faturas</strong></td><td>O painel do mês: saldo, cartão, gastos fixos, empréstimos.</td></tr>
       <tr><td><strong>Gráficos</strong></td><td>Para onde o dinheiro foi, por categoria, com metas.</td></tr>
       <tr><td><strong>Grupos</strong></td><td>Juntar gastos de uma viagem ou evento e ver o total fechado.</td></tr>
-      <tr><td><strong>Investim.</strong></td><td>Anotar aplicações e acompanhar o patrimônio.</td></tr>
+      <tr><td><strong>Investim.</strong></td><td>Anotar aplicações, acompanhar o patrimônio e controlar consórcios.</td></tr>
       <tr><td><strong>Ajustes</strong></td><td>Contas, categorias, ordem dos cards, sons e backup.</td></tr>
     </table>
   </div>
@@ -285,6 +285,19 @@
   <div class="conteudo">
     <p>Ao lançar um gasto, marque <strong>“Emprestei para alguém”</strong> e diga o nome.
        Ele aparece aqui agrupado por pessoa, com um sinal de trânsito:</p>
+    <div class="nota">
+      <strong>Quando é VOCÊ que deve, tem duas situações.</strong> Ao marcar o empréstimo numa
+      receita, o app pergunta se o dinheiro passou pela sua conta:
+      <br><br>• <strong>Sim, entrou</strong> — a pessoa te mandou a grana. Conta como receita
+      normalmente e você devolve depois.
+      <br>• <strong>Não, pagaram por mim</strong> — ela cobriu sua parte direto com quem ia
+      receber (a conta do bar, um boleto seu). Aí <em>nada</em> passou pela sua conta: o app
+      não soma isso em saldo, recebido, gráfico nem resposta de pergunta. Fica só a dívida.
+      Antes, pra registrar esse caso, a única saída era lançar uma receita que nunca existiu —
+      e o saldo mentia.
+      <br><br>Na lista, esse lançamento aparece com a barra neutra (não a verde de “entrou”)
+      e a marcação <em>pagaram por você</em>. A cobrança funciona igual nos dois casos.
+    </div>
     <table>
       <tr><th style="width:22%;">Cor</th><th>Significa</th></tr>
       <tr><td><span class="cor" style="background:#4caf50;"></span><strong>Verde</strong></td><td>No prazo. Não precisa fazer nada.</td></tr>
@@ -299,6 +312,14 @@
       <li><strong>Lembrar</strong> (amarelo) — leve, com o prazo em dias.</li>
       <li><strong>Combinar com</strong> (verde) — neutro, para alinhar antes da hora.</li>
     </ul>
+    <div class="nota">
+      <strong>Quitar sem movimentar nada.</strong> Ao lado de <em>Recebi</em> / <em>Paguei</em>
+      tem o botão <strong>Quitar</strong>. Os primeiros criam um lançamento de verdade (o dinheiro
+      entrou ou saiu); o <em>Quitar</em> só encerra a dívida, sem mexer em conta nenhuma. É pra
+      quando a coisa foi resolvida de outro jeito — compensação, troca, favor.
+      <br><br>Quitar não desfaz um empréstimo em que o dinheiro já tinha entrado: ele entrou
+      mesmo e continua na conta. O que acaba é a pendência, não o histórico.
+    </div>
     <p>Na primeira cobrança de cada pessoa o app pede o WhatsApp dela — dá para escolher da agenda
        do celular ou digitar. Depois disso, vai direto.</p>
 
@@ -415,7 +436,42 @@
 
 <!-- ============================================================ -->
 <section>
-  <h2><span class="numero">13</span>Ajustes</h2>
+  <h2><span class="numero">13</span>Consórcios</h2>
+  <p class="resumo">O boleto entra sozinho todo mês e você acompanha o avanço das parcelas.</p>
+  <div class="conteudo">
+    <p>Na aba <strong>Investim.</strong>, abaixo dos aportes, tem o card <strong>Consórcios</strong>.
+       Cadastre o grupo com o nome, o valor da carta de crédito, a parcela, quantas parcelas são,
+       o dia do boleto e a conta que paga.</p>
+    <p>A partir daí o boleto <strong>vira um gasto fixo mensal</strong> na categoria <em>Consórcio</em>:
+       entra sozinho nos lançamentos, na fatura do cartão (ou no débito) e nos gráficos, sem você
+       lançar nada na mão. Se cadastrar com data retroativa, as parcelas que já passaram são criadas
+       de uma vez. E o boleto <strong>para de nascer</strong> quando chega na última parcela.</p>
+    <ul>
+      <li><strong>X de 80 parcelas</strong> e a barra de progresso mostram onde você está.</li>
+      <li><strong>Já paguei</strong> soma os boletos que realmente saíram — não é parcela × valor,
+          justamente porque o valor pode mudar no meio do caminho.</li>
+      <li><strong>Falta</strong> é o que resta, pela parcela de hoje.</li>
+      <li><strong>Carta de crédito</strong> fica por grupo, nunca somada com aporte comum.</li>
+    </ul>
+    <div class="nota">
+      <strong>Fui contemplado.</strong> Toque no botão e informe a data e a nova parcela. As parcelas
+      que você já pagou ficam com o valor antigo — é histórico real —, e só os boletos que ainda não
+      venceram passam pro valor novo. O card guarda a linha do tempo:
+      <em>R$ 394,78 desde mar/26 · R$ 612,00 desde set/26</em>.
+    </div>
+    <div class="nota">
+      <strong>Consórcio não entra no “Total aportado”.</strong> É compra parcelada de uma carta de
+      crédito, não dinheiro rendendo — somar os dois no mesmo número misturaria coisas diferentes.
+      O card tem os totais dele: quanto já foi pago e quanto tem em cartas.
+    </div>
+    <p>Toque num consórcio pra editar ou excluir. Excluindo, as parcelas que já passaram continuam
+       no histórico e os boletos futuros somem — sem deixar cobrança fantasma na fatura.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section>
+  <h2><span class="numero">14</span>Ajustes</h2>
   <p class="resumo">Onde você deixa o app com a sua cara.</p>
   <div class="conteudo">
     <ul>
@@ -446,7 +502,7 @@
 
 <!-- ============================================================ -->
 <section class="quebra">
-  <h2><span class="numero">14</span>Rotina que funciona</h2>
+  <h2><span class="numero">15</span>Rotina que funciona</h2>
   <div class="conteudo">
     <table>
       <tr><th style="width:26%;">Quando</th><th>O que fazer</th></tr>
