@@ -239,6 +239,11 @@
     .card-mini h4 { font-size: 14px; font-weight: bold; }
 
     .valor-transferencia { color: var(--azul); font-weight: bold; white-space: nowrap; }
+    /* Empréstimo indireto: nenhum dinheiro passou por conta nenhuma, então ele
+       empresta o azul da transferência enquanto está em aberto — a mesma cor de
+       "movimento que não é entrada nem saída". Resolvido, vira roxo. */
+    .valor-indireto { color: var(--azul); font-weight: bold; white-space: nowrap; }
+    .valor-indireto-quitado { color: var(--roxo); font-weight: bold; white-space: nowrap; }
     .val-saldo { color: var(--azul-forte); }
     .val-receita { color: var(--verde); }
     .val-despesa { color: var(--vermelho); }
@@ -270,6 +275,8 @@
     .item-lancamento.forma-credito { border-left-color: var(--amarelo); }
     .item-lancamento.forma-receita { border-left-color: var(--verde); }
     .item-lancamento.forma-transf { border-left-color: var(--azul); }
+    .item-lancamento.forma-indireto { border-left-color: var(--azul); }
+    .item-lancamento.forma-indireto-quitado { border-left-color: var(--roxo); }
     .item-lancamento:last-child { border-bottom: none; }
     .item-info { flex: 1; min-width: 0; padding-right: 8px; }
     .item-acoes { display: flex; align-items: center; gap: 8px; }
@@ -511,7 +518,7 @@
             <input type="hidden" id="emprestimoParcelas" value="1">
           </div>
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" id="grupoContaLanc">
               <label for="conta">Conta / Cartão</label>
               <select id="conta" name="conta" onchange="atualizarVisibilidadeForma()"></select>
             </div>
@@ -526,6 +533,11 @@
               </select>
             </div>
           </div>
+          <!-- No indireto ninguém pagou de conta nenhuma: o campo some e no lugar
+               fica o aviso, pra não parecer que o dinheiro tem dono. -->
+          <p id="avisoSemConta" class="escondido" style="font-size:11.5px;color:var(--texto-tenue);margin:-4px 0 12px;line-height:1.45;">
+            Não afeta nenhuma conta — é só o lembrete da dívida.
+          </p>
           <div class="form-group escondido" id="grupoParcelas">
             <label for="numParcelas">Número de Parcelas</label>
             <select id="numParcelas" name="numParcelas">
@@ -953,6 +965,15 @@
         <div id="listaConsorcios"></div>
       </div>
 
+      <!-- Card só aparece quando existe algum grupo encerrado — vazio seria ruído. -->
+      <div class="card escondido" id="cardConsorciosEncerrados">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">
+          <h4 style="color:var(--texto-medio);">Consórcios encerrados</h4>
+          <span id="qtdConsorciosEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+        </div>
+        <div id="listaConsorciosEncerrados"></div>
+      </div>
+
     </div>
 
     <div id="abaGrupos" class="aba-conteudo">
@@ -1346,6 +1367,31 @@
         <button type="submit" class="btn-salvar">Salvar consórcio</button>
         <button type="button" id="btnExcluirConsorcio" class="btn-cancelar escondido" onclick="excluirConsorcioAtual()">Excluir consórcio</button>
       </form>
+    </div>
+  </div>
+
+  <!-- CONSÓRCIO: encerrar grupo antes do fim -->
+  <div id="modalEncerrarConsorcio" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalEncerrarConsorcio')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Encerrar grupo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalEncerrarConsorcio')">&times;</button>
+      </div>
+      <input type="hidden" id="idConsorcioEncerrando" value="">
+      <p id="infoEncerrarConsorcio" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
+      <div class="form-group">
+        <label for="dataEncerramentoConsorcio">Data do encerramento</label>
+        <input type="date" id="dataEncerramentoConsorcio">
+      </div>
+      <div class="form-group">
+        <label for="motivoEncerramentoConsorcio">Motivo <span style="color:var(--texto-tenue);">(opcional)</span></label>
+        <input type="text" id="motivoEncerramentoConsorcio" placeholder="Ex: vendi a cota, desisti...">
+      </div>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">
+        Os boletos que ainda não venceram somem da fatura e param de ser gerados. As parcelas
+        que você já pagou continuam no histórico.
+      </p>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarEncerramentoConsorcio()">Encerrar grupo</button>
     </div>
   </div>
 
@@ -2048,7 +2094,23 @@
     // parar de nascer quando o consórcio acaba.
     function ultimoMesConsorcio(c) {
       if (!c || !c.dataInicio || !c.totalParcelas) return null;
-      return somarMeses(c.dataInicio, Math.max(0, parseInt(c.totalParcelas, 10) - 1)).slice(0, 7);
+      const porParcelas = somarMeses(c.dataInicio, Math.max(0, parseInt(c.totalParcelas, 10) - 1)).slice(0, 7);
+      // Encerrado na mão (vendeu a cota, desistiu): o fim vira a data do
+      // encerramento, mesmo faltando parcela pelo contrato original.
+      if (c.encerradoManual && c.dataEncerramentoManual) {
+        const porEncerramento = c.dataEncerramentoManual.slice(0, 7);
+        return porEncerramento < porParcelas ? porEncerramento : porParcelas;
+      }
+      return porParcelas;
+    }
+
+    /* Um consórcio acaba de dois jeitos: pagando a última parcela ou sendo
+       encerrado antes. Os dois somem do card de ativos e caem no de encerrados. */
+    function consorcioEncerrado(c) {
+      if (!c) return false;
+      if (c.encerradoManual) return true;
+      const total = parseInt(c.totalParcelas, 10) || 0;
+      return total > 0 && parcelasPagasConsorcio(c).length >= total;
     }
 
     // Parcelas que já viraram lançamento até hoje (o boleto que realmente saiu)
@@ -2495,6 +2557,32 @@
         link.textContent = devo ? 'peguei emprestado?' : 'empréstimo?';
         link.classList.remove('tem-obs');
       }
+      atualizarVisibilidadeConta();
+    }
+
+    /* CONTA SÓ FAZ SENTIDO QUANDO O DINHEIRO PASSA POR ELA
+       No empréstimo indireto a pessoa pagou direto a quem ia receber — não há
+       conta de origem nem de destino. Deixar "Itaú" fixo ali dava a impressão
+       errada de que aquele dinheiro tem relação com a conta. O campo some e o
+       lançamento é salvo com conta vazia. */
+    function ehLancamentoIndireto() {
+      // indireto só existe quando é você que deve (receita); trocar pra despesa
+      // devolve o campo Conta mesmo com o hidden ainda preenchido
+      return tipoAtual === 'receita' && document.getElementById('emprestimoTipo').value === 'indireto';
+    }
+
+    function atualizarVisibilidadeConta() {
+      const grupo = document.getElementById('grupoContaLanc');
+      const aviso = document.getElementById('avisoSemConta');
+      if (!grupo) return;
+      const indireto = ehLancamentoIndireto();
+      grupo.classList.toggle('escondido', indireto);
+      if (aviso) aviso.classList.toggle('escondido', !indireto);
+      // Ao voltar pra direto o dinheiro é real de novo e precisa de uma conta:
+      // o seletor volta com a primeira válida em vez de ficar em branco.
+      const sel = document.getElementById('conta');
+      if (!indireto && sel && !sel.value && contas.length) sel.value = primeiraConta();
+      atualizarVisibilidadeForma();
     }
 
     // "Dudu, Marina, Ana" -> ['Dudu','Marina','Ana']. Um nome só = empréstimo simples;
@@ -4691,10 +4779,14 @@
           const noCredito = !eReceita && eCredito(item.formaModo);
 
           const div = document.createElement('div');
-          // Indireto não moveu conta nenhuma: fica com a barra neutra, não a verde
-          // de "entrou". Verde ali seria a mesma mentira que o campo veio corrigir.
+          /* Indireto não moveu conta nenhuma: em vez do verde de "entrou", usa o
+             azul da transferência enquanto a dívida está aberta, e o roxo depois
+             de resolvida. Verde ali seria a mesma mentira que o campo corrigiu. */
           const indireto = ehEmprestimoIndireto(item);
-          div.className = 'item-lancamento forma' + (eReceita && !indireto ? ' forma-receita' : (noCredito ? ' forma-credito' : ''));
+          const indiretoQuitado = indireto && emprestimoIndiretoQuitado(item);
+          div.className = 'item-lancamento forma' + (
+            indireto ? (indiretoQuitado ? ' forma-indireto-quitado' : ' forma-indireto')
+                     : (eReceita ? ' forma-receita' : (noCredito ? ' forma-credito' : '')));
           if (item.data > hoje) div.style.opacity = '.6';
           div.onclick = () => abrirAcoesLancamento(item.id);
           const parcelasPendentes = contarParcelasPendentes(item);
@@ -4705,7 +4797,7 @@
           const jaTemParcela = /\(\d+\/\d+\)/.test(item.descricao || '');
           const partes = [];
           if (!eReceita && item.categoria) partes.push(item.categoria);
-          if (indireto) partes.push('pagaram por você');
+          if (indireto) partes.push(indiretoQuitado ? 'pagaram por você · quitado' : 'pagaram por você');
           else if (item.conta) partes.push(item.conta);
           if (numP > 1 && !jaTemParcela) partes.push(numP + 'x');
           if (item.grupoViagemNome) partes.push(item.grupoViagemNome);
@@ -4718,7 +4810,7 @@
               ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
             </div>
             <div class="item-acoes">
-              <span class="${indireto ? '' : (eReceita ? 'valor-receita' : 'valor-despesa')}"${indireto ? ' style="color:var(--texto-medio);white-space:nowrap;"' : ''}>${indireto ? '' : (eReceita ? '+' : '-')} R$ ${item.valor}</span>
+              <span class="${indireto ? (indiretoQuitado ? 'valor-indireto-quitado' : 'valor-indireto') : (eReceita ? 'valor-receita' : 'valor-despesa')}">${indireto ? '' : (eReceita ? '+' : '-')} R$ ${item.valor}</span>
             </div>
           `;
           container.appendChild(div);
@@ -4745,7 +4837,7 @@
       const dataFmt = item.data.split('-').reverse().join('/');
       document.getElementById('infoAcoesLancamento').innerHTML = `
         <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}" style="font-size:19px;font-weight:bold;">${eReceita ? '+' : '-'} R$ ${item.valor}</span>
-        <div style="font-size:12px;color:var(--texto-fraco);margin-top:2px;">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+        <div style="font-size:12px;color:var(--texto-fraco);margin-top:2px;">${dataFmt}${item.conta ? ' • ' + item.conta : (ehEmprestimoIndireto(item) ? ' • pagaram por você' : '')}${item.categoria ? ' • ' + item.categoria : ''}</div>
         ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
       `;
       const btnParcelas = document.getElementById('btnGerenciarParcelas');
@@ -4911,7 +5003,7 @@
     // Prévia de confirmação — só pra lançamento NOVO (edição já passou pela revisão do form)
     function abrirConfirmacaoLancamento(valorTotal) {
       const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
-      const conta = document.getElementById('conta').value;
+      const conta = ehLancamentoIndireto() ? '' : document.getElementById('conta').value;
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
       const formaModo = formaEscolhida(conta);
       const numParcelas = formaModo === 'Crédito Parcelado' ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
@@ -4941,7 +5033,8 @@
     function executarSalvarLancamento(valorTotal) {
       const idEditando = document.getElementById('idEditando').value;
       const descricao = document.getElementById('descricao').value.trim() || (tipoAtual === 'receita' ? 'Receita' : 'Despesa');
-      const conta = document.getElementById('conta').value;
+      // Indireto não tem conta: nada passou por lugar nenhum.
+      const conta = ehLancamentoIndireto() ? '' : document.getElementById('conta').value;
       const formaModo = formaEscolhida(conta);
       const numParcelas = formaModo === 'Crédito Parcelado' ? parseInt(document.getElementById('numParcelas').value, 10) : 1;
       const categoria = tipoAtual === 'despesa' ? document.getElementById('categoria').value : '';
@@ -5769,7 +5862,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${item.descricao}</strong>
-            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt}${item.conta ? ' • ' + item.conta : (ehEmprestimoIndireto(item) ? ' • pagaram por você' : '')}${item.categoria ? ' • ' + item.categoria : ''}</div>
             ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
           </div>
           <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
@@ -6024,7 +6117,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${i + 1}. ${item.descricao}</strong>
-            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt}${item.conta ? ' • ' + item.conta : (ehEmprestimoIndireto(item) ? ' • pagaram por você' : '')}${item.categoria ? ' • ' + item.categoria : ''}</div>
           </div>
           <span class="valor-despesa">${fmtOculto(parseVal(item.valor))}</span>
         `;
@@ -6200,6 +6293,15 @@
        e undefined !== 'indireto' já o trata como direto, sem precisar migração. */
     function ehEmprestimoIndireto(l) {
       return l && l.emprestimoTipo === 'indireto';
+    }
+
+    /* Indireto resolvido (por "Paguei" ou por "Quitar") troca o azul de dívida
+       aberta pelo roxo de encerrada. Só a cor muda — nenhum cálculo depende
+       disto. Rateio só conta como resolvido quando todas as partes estão. */
+    function emprestimoIndiretoQuitado(l) {
+      if (!ehEmprestimoIndireto(l)) return false;
+      const cobs = cobrancasDoLancamento(l);
+      return cobs.length > 0 && cobs.every(c => c.quitado);
     }
 
     // Crédito à vista (1x) e crédito parcelado caem os DOIS na fatura — só o débito
@@ -8194,7 +8296,7 @@
                     <div style="font-size:11px;">${detalhe}</div>
                   </div>
                   <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                    <span class="${devo ? 'valor-receita' : 'valor-despesa'}">${fmtOculto(c.valor)}</span>
+                    <span class="${ehEmprestimoIndireto(l) ? 'valor-indireto' : (devo ? 'valor-receita' : 'valor-despesa')}">${fmtOculto(c.valor)}</span>
                     <button type="button" class="btn-mini" data-acao="mov">${devo ? 'Paguei' : 'Recebi'}</button>
                     <button type="button" class="btn-mini" data-acao="quitar" title="Resolvido de outro jeito, sem dinheiro trocar de mãos">Quitar</button>
                   </div>
@@ -9039,7 +9141,7 @@
         div.innerHTML = `
           <div class="item-info">
             <strong>${item.descricao}</strong>
-            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}${item.categoria ? ' • ' + item.categoria : ''}</div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt}${item.conta ? ' • ' + item.conta : (ehEmprestimoIndireto(item) ? ' • pagaram por você' : '')}${item.categoria ? ' • ' + item.categoria : ''}</div>
             ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
           </div>
           <span class="${eReceita ? 'valor-receita' : 'valor-despesa'}">${eReceita ? '+' : '-'} ${fmtOculto(parseVal(item.valor))}</span>
@@ -9580,6 +9682,7 @@
         consorcios.push({
           id: idConsorcio, ...dados,
           contemplado: false, dataContemplacao: '',
+          encerradoManual: false, dataEncerramentoManual: '', motivoEncerramento: '',
           fixoId: fixo.id,
           historicoValores: [{ desde: dados.dataInicio.slice(0, 7), valor: dados.valorParcela, motivo: 'início' }]
         });
@@ -9661,20 +9764,70 @@
       renderizarConsorcios();
     }
 
+    function abrirEncerrarConsorcio(id) {
+      const c = consorcios.find(x => x.id === id);
+      if (!c) return;
+      const t = totaisConsorcio(c);
+      document.getElementById('idConsorcioEncerrando').value = id;
+      document.getElementById('infoEncerrarConsorcio').textContent =
+        `${c.nome} · ${t.qtdPagas} de ${t.total} parcelas pagas · já pago ${fmtVal(t.jaPago)}.`;
+      document.getElementById('dataEncerramentoConsorcio').value = obterDataBrasilia();
+      document.getElementById('motivoEncerramentoConsorcio').value = '';
+      document.getElementById('modalEncerrarConsorcio').classList.remove('escondido');
+    }
+
+    function confirmarEncerramentoConsorcio() {
+      const id = document.getElementById('idConsorcioEncerrando').value;
+      const c = consorcios.find(x => x.id === id);
+      if (!c) return;
+      const data = document.getElementById('dataEncerramentoConsorcio').value || obterDataBrasilia();
+
+      c.encerradoManual = true;
+      c.dataEncerramentoManual = data;
+      c.motivoEncerramento = document.getElementById('motivoEncerramentoConsorcio').value.trim();
+
+      /* Mesma regra da trava por total de parcelas: boleto que ainda não venceu
+         deixa de existir e é apagado, senão fica de fantasma na fatura. O que já
+         venceu é histórico e não se toca — mesmo depois da data de encerramento,
+         se ele já tinha vencido antes dela. */
+      const hoje = obterDataBrasilia();
+      const corte = data > hoje ? data : hoje;
+      lancamentos = lancamentos.filter(l => !(l.fixoId === c.fixoId && l.data > corte));
+
+      // O gerador retoma de ultimoMesGerado; sem recuar, ele não geraria as
+      // parcelas que ainda cabem entre hoje e a data de encerramento.
+      const f = fixos.find(x => x.id === c.fixoId);
+      const fim = ultimoMesConsorcio(c);
+      if (f && fim && f.ultimoMesGerado && f.ultimoMesGerado > fim) f.ultimoMesGerado = fim;
+
+      salvarConsorcios();
+      salvarFixos();
+      salvarLocalStorage();
+      fecharModal('modalEncerrarConsorcio');
+      atualizarTudo();
+      renderizarConsorcios();
+    }
+
     function renderizarConsorcios() {
       const lista = document.getElementById('listaConsorcios');
       const boxTotais = document.getElementById('totaisConsorcios');
       if (!lista) return;
 
+      const ativos = consorcios.filter(c => !consorcioEncerrado(c));
+      const encerrados = consorcios.filter(c => consorcioEncerrado(c));
+      renderizarConsorciosEncerrados(encerrados);
+
       lista.innerHTML = '';
-      if (!consorcios.length) {
+      if (!ativos.length) {
         boxTotais.classList.add('escondido');
-        lista.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum consórcio cadastrado ainda.</p>';
+        lista.innerHTML = consorcios.length
+          ? '<p style="color:var(--texto-medio);font-size:13px;">Nenhum consórcio em andamento.</p>'
+          : '<p style="color:var(--texto-medio);font-size:13px;">Nenhum consórcio cadastrado ainda.</p>';
         return;
       }
 
       let somaPago = 0, somaCarta = 0;
-      consorcios.forEach(c => {
+      ativos.forEach(c => {
         const t = totaisConsorcio(c);
         somaPago += t.jaPago;
         somaCarta += t.carta;
@@ -9731,6 +9884,14 @@
           btn.onclick = (ev) => { ev.stopPropagation(); abrirContemplacao(c.id); };
           bloco.appendChild(btn);
         }
+        const btnEncerrar = document.createElement('button');
+        btnEncerrar.type = 'button';
+        btnEncerrar.className = 'btn-mini';
+        btnEncerrar.style.cssText = 'margin-top:10px;' + (c.contemplado ? '' : 'margin-left:6px;');
+        btnEncerrar.textContent = 'Encerrar grupo';
+        btnEncerrar.title = 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)';
+        btnEncerrar.onclick = (ev) => { ev.stopPropagation(); abrirEncerrarConsorcio(c.id); };
+        bloco.appendChild(btnEncerrar);
         lista.appendChild(bloco);
       });
 
@@ -9745,6 +9906,58 @@
           <div style="font-size:16px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(somaCarta)}</div>
         </div>
       `;
+    }
+
+    /* Card dos encerrados: mais enxuto que o dos ativos. Aqui não interessa
+       progresso nem o que falta — interessa quanto custou e como terminou. */
+    function renderizarConsorciosEncerrados(encerrados) {
+      const card = document.getElementById('cardConsorciosEncerrados');
+      const lista = document.getElementById('listaConsorciosEncerrados');
+      const qtd = document.getElementById('qtdConsorciosEncerrados');
+      if (!card || !lista) return;
+
+      card.classList.toggle('escondido', !encerrados.length);
+      if (!encerrados.length) { lista.innerHTML = ''; return; }
+      if (qtd) qtd.textContent = encerrados.length === 1 ? '1 grupo' : encerrados.length + ' grupos';
+
+      lista.innerHTML = '';
+      encerrados.forEach(c => {
+        const t = totaisConsorcio(c);
+        const manual = !!c.encerradoManual;
+        const dataFim = manual && c.dataEncerramentoManual
+          ? c.dataEncerramentoManual.split('-').reverse().join('/')
+          : (() => {
+              // terminou pagando: a data é a da última parcela que saiu
+              const pagas = parcelasPagasConsorcio(c).map(l => l.data).sort();
+              return pagas.length ? pagas[pagas.length - 1].split('-').reverse().join('/') : '—';
+            })();
+
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.style.cssText = 'display:block;padding:10px 0;';
+        div.onclick = () => abrirFormConsorcio(c.id);
+        div.innerHTML = `
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+            <div style="min-width:0;">
+              <strong style="font-size:13.5px;">${c.nome}</strong>
+              <div style="font-size:11px;color:var(--texto-fraco);">
+                ${manual ? 'encerrado' : 'finalizado'} em ${dataFim} · ${t.qtdPagas} de ${t.total} parcelas
+              </div>
+            </div>
+            <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;${
+              manual
+                ? 'color:var(--roxo);border:1px solid var(--roxo);'
+                : 'color:var(--verde);border:1px solid var(--verde-escuro);'}">${manual ? 'encerrado' : 'quitado'}</span>
+          </div>
+          <div style="font-size:12px;color:var(--texto-medio);margin-top:6px;">
+            total pago <strong style="color:var(--texto-forte);">${fmtOculto(t.jaPago)}</strong>
+          </div>
+          ${manual && c.motivoEncerramento
+            ? `<div style="font-size:11px;color:var(--texto-tenue);margin-top:3px;font-style:italic;">“${c.motivoEncerramento}”</div>`
+            : ''}
+        `;
+        lista.appendChild(div);
+      });
     }
 
     function renderizarInvestimentos() {
@@ -10126,7 +10339,7 @@
                 <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
                   <div class="item-info">
                     <span style="font-size:13px;">${quem}</span>
-                    <div style="font-size:10px;color:var(--texto-fraco);">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue ? ' · ' : ''}${item.conta}${aindaDeve ? ' · ainda pagando' : ''}</div>
+                    <div style="font-size:10px;color:var(--texto-fraco);">${mesmos.length > 1 ? mesmos.length + 'x · ' : ''}${doQue}${doQue && item.conta ? ' · ' : ''}${item.conta}${aindaDeve ? ' · ainda pagando' : ''}</div>
                   </div>
                   <span style="font-size:13px;font-weight:700;color:${aindaDeve ? 'var(--amarelo)' : 'var(--verde)'};">+ ${fmtVal(somaPessoa)}</span>
                 </div>
@@ -10161,7 +10374,7 @@
               <div class="item-lancamento" onclick="abrirAcoesLancamento(${item.id})" style="padding:6px 0;">
                 <div class="item-info">
                   <span style="font-size:13px;">${item.descricao}</span>
-                  <div style="font-size:10px;color:var(--texto-fraco);">${dataFmt} • ${item.conta}</div>
+                  <div style="font-size:10px;color:var(--texto-fraco);">${dataFmt}${item.conta ? ' • ' + item.conta : ''}</div>
                   ${eReceita ? '' : legendaRateio([item])}
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
@@ -10705,7 +10918,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.11-1';
+    const APP_VERSION = '2026.09.11-2';
 
     // Inicialização
     carregarLocalStorage();
