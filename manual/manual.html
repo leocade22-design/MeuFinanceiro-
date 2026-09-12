@@ -295,8 +295,13 @@
       não soma isso em saldo, recebido, gráfico nem resposta de pergunta. Fica só a dívida.
       Antes, pra registrar esse caso, a única saída era lançar uma receita que nunca existiu —
       e o saldo mentia.
-      <br><br>Na lista, esse lançamento aparece com a barra neutra (não a verde de “entrou”)
-      e a marcação <em>pagaram por você</em>. A cobrança funciona igual nos dois casos.
+      <br><br>Como nada passou por conta nenhuma, o campo <strong>Conta / Cartão</strong> some do
+      formulário nesse caso — não faz sentido apontar uma conta pra um dinheiro que nunca esteve
+      lá. Se você trocar de volta pra “Sim, entrou”, o campo reaparece e volta a ser obrigatório.
+      <br><br>Na lista, esse lançamento usa o <strong>azul</strong> da transferência enquanto a
+      dívida está aberta — a mesma cor de “movimento que não é entrada nem saída” — com a marcação
+      <em>pagaram por você</em>. Quando você resolve (por <em>Paguei</em> ou por <em>Quitar</em>),
+      ele passa pro <strong>roxo</strong>. A cobrança funciona igual nos dois casos.
     </div>
     <table>
       <tr><th style="width:22%;">Cor</th><th>Significa</th></tr>
@@ -463,6 +468,15 @@
       <strong>Consórcio não entra no “Total aportado”.</strong> É compra parcelada de uma carta de
       crédito, não dinheiro rendendo — somar os dois no mesmo número misturaria coisas diferentes.
       O card tem os totais dele: quanto já foi pago e quanto tem em cartas.
+    </div>
+    <div class="nota">
+      <strong>Encerrar antes do fim.</strong> Vendeu a cota, desistiu, saiu do grupo? O botão
+      <strong>Encerrar grupo</strong> pede a data e um motivo opcional. Os boletos que ainda não
+      venceram somem da fatura e param de ser gerados; as parcelas que você já pagou continuam
+      no histórico.
+      <br><br>Consórcios que acabaram — seja porque você pagou a última parcela, seja porque
+      encerrou antes — saem do card principal e vão pro card <strong>Consórcios encerrados</strong>,
+      logo abaixo, em formato mais enxuto: quanto custou no total, como terminou e quando.
     </div>
     <p>Toque num consórcio pra editar ou excluir. Excluindo, as parcelas que já passaram continuam
        no histórico e os boletos futuros somem — sem deixar cobrança fantasma na fatura.</p>
