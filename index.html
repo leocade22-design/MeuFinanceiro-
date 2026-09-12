@@ -934,44 +934,75 @@
 
     <div id="abaInvestimentos" class="aba-conteudo">
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <h3>Investimentos & Poupança</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('investimentos')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h3>Investimentos &amp; Poupança</h3>
+              <span id="resumoFechado-investimentos" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-investimentos">▾</span>
+          </button>
           <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo aporte">+</button>
         </div>
-        <div style="text-align:center;padding:14px 0;">
-          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Total aportado</span>
-          <h2 style="color:var(--azul);font-size:28px;margin-top:4px;" id="totalInvestido">R$ 0,00</h2>
-          <!-- Só aparece quando há diferença: sem ganho/perda ainda registrado, uma
-               segunda linha vazia seria só ruído embaixo do número principal. -->
-          <div id="ganhoPerdaTotal" style="font-size:12.5px;margin-top:4px;min-height:1em;"></div>
+        <div id="corpo-investimentos">
+          <div style="text-align:center;padding:14px 0;">
+            <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Total aportado</span>
+            <h2 style="color:var(--azul);font-size:28px;margin-top:4px;" id="totalInvestido">R$ 0,00</h2>
+            <!-- Só aparece quando há diferença: sem ganho/perda ainda registrado, uma
+                 segunda linha vazia seria só ruído embaixo do número principal. -->
+            <div id="ganhoPerdaTotal" style="font-size:12.5px;margin-top:4px;min-height:1em;"></div>
+          </div>
         </div>
       </div>
       <div class="card">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">
-          <h4 style="color:var(--texto-medio);">Aportes</h4>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('aportes')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h4 style="color:var(--texto-medio);">Aportes</h4>
+              <span id="resumoFechado-aportes" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-aportes">▾</span>
+          </button>
           <button type="button" class="link-obs" onclick="abrirModalTiposAtivo()">gerenciar tipos</button>
         </div>
-        <div id="listaInvestimentos"></div>
+        <div id="corpo-aportes" style="margin-top:12px;">
+          <div id="listaInvestimentos"></div>
+        </div>
       </div>
 
       <!-- CONSÓRCIOS — separado dos aportes de propósito: é compra parcelada de
            uma carta de crédito, não dinheiro rendendo. Totais próprios. -->
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <h3>Consórcios</h3>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('consorcios')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h3>Consórcios</h3>
+              <span id="resumoFechado-consorcios" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-consorcios">▾</span>
+          </button>
           <button class="btn-acao" onclick="abrirFormConsorcio()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo consórcio">+</button>
         </div>
-        <div id="totaisConsorcios" class="escondido" style="display:flex;gap:8px;margin-bottom:14px;"></div>
-        <div id="listaConsorcios"></div>
+        <div id="corpo-consorcios" style="margin-top:8px;">
+          <div id="totaisConsorcios" class="escondido" style="display:flex;gap:8px;margin-bottom:14px;"></div>
+          <div id="listaConsorcios"></div>
+        </div>
       </div>
 
       <!-- Card só aparece quando existe algum grupo encerrado — vazio seria ruído. -->
       <div class="card escondido" id="cardConsorciosEncerrados">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">
-          <h4 style="color:var(--texto-medio);">Consórcios encerrados</h4>
-          <span id="qtdConsorciosEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('consorciosEncerrados')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h4 style="color:var(--texto-medio);">Consórcios encerrados</h4>
+              <span id="qtdConsorciosEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-consorciosEncerrados">▾</span>
+          </button>
         </div>
-        <div id="listaConsorciosEncerrados"></div>
+        <div id="corpo-consorciosEncerrados" style="margin-top:12px;">
+          <div id="listaConsorciosEncerrados"></div>
+        </div>
       </div>
 
     </div>
@@ -2398,17 +2429,38 @@
       if (d) { try { uiPrefs = JSON.parse(d) || {}; } catch (e) { uiPrefs = {}; } }
     }
 
+    /* SEÇÕES RECOLHÍVEIS
+       A regra histórica é "nasce recolhido": em Gráficos e Ajustes o card fechado
+       é o estado útil, porque são muitos e você abre o que precisa. Na aba
+       Investimentos é o contrário — o conteúdo é o motivo de entrar nela, então
+       esses nascem abertos e só ficam fechados se você fechar. Cada consórcio
+       individual (chave "consorcio-<id>") segue a mesma régua. */
+    const SECOES_ABERTAS_POR_PADRAO = new Set([
+      'investimentos', 'aportes', 'consorcios', 'consorciosEncerrados'
+    ]);
+
+    function secaoEstaAberta(nome) {
+      const escolhido = uiPrefs['secao_' + nome];
+      if (escolhido === undefined) {
+        return SECOES_ABERTAS_POR_PADRAO.has(nome) || nome.indexOf('consorcio-') === 0;
+      }
+      return escolhido === true;
+    }
+
     function aplicarSecao(nome) {
       const corpo = document.getElementById('corpo-' + nome);
       const chev = document.getElementById('chevron-' + nome);
       if (!corpo) return;
-      const aberto = uiPrefs['secao_' + nome] === true; // padrão: recolhido
+      const aberto = secaoEstaAberta(nome);
       corpo.classList.toggle('escondido', !aberto);
       if (chev) chev.textContent = aberto ? '▾' : '▸';
+      // Resumo de uma linha só faz sentido com o corpo escondido
+      const resumo = document.getElementById('resumoFechado-' + nome);
+      if (resumo) resumo.classList.toggle('escondido', aberto);
     }
 
     function alternarSecao(nome) {
-      uiPrefs['secao_' + nome] = !(uiPrefs['secao_' + nome] === true);
+      uiPrefs['secao_' + nome] = !secaoEstaAberta(nome);
       salvarUiPrefs();
       aplicarSecao(nome);
     }
@@ -9817,6 +9869,14 @@
       const encerrados = consorcios.filter(c => consorcioEncerrado(c));
       renderizarConsorciosEncerrados(encerrados);
 
+      // Fechado, o card precisa dizer ao menos quantos grupos estão rodando
+      const resumoCons = document.getElementById('resumoFechado-consorcios');
+      if (resumoCons) {
+        resumoCons.textContent = ativos.length
+          ? (ativos.length === 1 ? '1 ativo' : ativos.length + ' ativos')
+          : 'nenhum ativo';
+      }
+
       lista.innerHTML = '';
       if (!ativos.length) {
         boxTotais.classList.add('escondido');
@@ -9839,7 +9899,6 @@
         const bloco = document.createElement('div');
         bloco.className = 'item-lancamento';
         bloco.style.cssText = 'display:block;padding:12px 0;';
-        bloco.onclick = () => abrirFormConsorcio(c.id);
 
         const historico = (c.contemplado && Array.isArray(c.historicoValores) && c.historicoValores.length > 1)
           ? `<div style="font-size:10.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.5;">${
@@ -9849,50 +9908,58 @@
               }).join(' · ')}</div>`
           : '';
 
+        /* O cabeçalho inteiro é o botão de abrir/fechar — com vários grupos, é
+           daqui que vem o ganho de altura. A edição saiu do "toque no bloco" e
+           virou botão junto das outras ações: com o bloco fechado não sobraria
+           área pra tocar sem cair na edição sem querer. */
+        const chave = 'consorcio-' + c.id;
         bloco.innerHTML = `
-          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-            <div style="min-width:0;">
+          <button type="button" class="card-header-toggle" style="width:100%;padding:0;" onclick="alternarSecao('${chave}')">
+            <div style="min-width:0;flex:1;text-align:left;">
               <strong>${c.nome}</strong>
-              <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtVal(parseVal(c.valorParcela))} · dia ${c.diaVencimento} · ${c.conta}</div>
+              <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtVal(parseVal(c.valorParcela))} · ${t.qtdPagas} de ${t.total}</div>
             </div>
-            <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;${
+            <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:8px;${
               c.contemplado
                 ? 'color:var(--verde);border:1px solid var(--verde-escuro);'
                 : 'color:var(--azul);border:1px solid var(--azul-forte);'}">${c.contemplado ? 'contemplado' : 'em andamento'}</span>
+            <span class="chevron-sec" id="chevron-${chave}">▾</span>
+          </button>
+          <div id="corpo-${chave}">
+            <div style="font-size:11px;color:var(--texto-fraco);margin-top:8px;">dia ${c.diaVencimento} · ${c.conta}</div>
+            <div class="barra-bg" style="margin:10px 0 6px;">
+              <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-fraco);">
+              <span>${t.qtdPagas} de ${t.total} parcelas</span>
+              <span>quita em ${fimTxt}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
+              <span style="color:var(--texto-medio);">já paguei <strong style="color:var(--texto-forte);">${fmtOculto(t.jaPago)}</strong></span>
+              <span style="color:var(--texto-medio);">falta <strong style="color:var(--texto-forte);">${fmtOculto(t.falta)}</strong></span>
+            </div>
+            <div style="font-size:11px;color:var(--texto-medio);margin-top:4px;">carta de crédito: <strong style="color:var(--azul);">${fmtOculto(t.carta)}</strong></div>
+            ${historico}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;" data-acoes></div>
           </div>
-          <div class="barra-bg" style="margin:10px 0 6px;">
-            <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-fraco);">
-            <span>${t.qtdPagas} de ${t.total} parcelas</span>
-            <span>quita em ${fimTxt}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
-            <span style="color:var(--texto-medio);">já paguei <strong style="color:var(--texto-forte);">${fmtOculto(t.jaPago)}</strong></span>
-            <span style="color:var(--texto-medio);">falta <strong style="color:var(--texto-forte);">${fmtOculto(t.falta)}</strong></span>
-          </div>
-          <div style="font-size:11px;color:var(--texto-medio);margin-top:4px;">carta de crédito: <strong style="color:var(--azul);">${fmtOculto(t.carta)}</strong></div>
-          ${historico}
         `;
 
-        if (!c.contemplado) {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'btn-mini';
-          btn.style.cssText = 'margin-top:10px;';
-          btn.textContent = 'Fui contemplado';
-          btn.onclick = (ev) => { ev.stopPropagation(); abrirContemplacao(c.id); };
-          bloco.appendChild(btn);
-        }
-        const btnEncerrar = document.createElement('button');
-        btnEncerrar.type = 'button';
-        btnEncerrar.className = 'btn-mini';
-        btnEncerrar.style.cssText = 'margin-top:10px;' + (c.contemplado ? '' : 'margin-left:6px;');
-        btnEncerrar.textContent = 'Encerrar grupo';
-        btnEncerrar.title = 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)';
-        btnEncerrar.onclick = (ev) => { ev.stopPropagation(); abrirEncerrarConsorcio(c.id); };
-        bloco.appendChild(btnEncerrar);
+        const boxAcoes = bloco.querySelector('[data-acoes]');
+        const acao = (rotulo, titulo, fn) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'btn-mini';
+          b.textContent = rotulo;
+          if (titulo) b.title = titulo;
+          b.onclick = (ev) => { ev.stopPropagation(); fn(); };
+          boxAcoes.appendChild(b);
+        };
+        acao('Editar', 'Mudar valor, parcelas, conta...', () => abrirFormConsorcio(c.id));
+        if (!c.contemplado) acao('Fui contemplado', '', () => abrirContemplacao(c.id));
+        acao('Encerrar grupo', 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)', () => abrirEncerrarConsorcio(c.id));
+
         lista.appendChild(bloco);
+        aplicarSecao(chave);
       });
 
       boxTotais.classList.remove('escondido');
@@ -9968,6 +10035,16 @@
       const totalAportado = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
       const totalAtual = investimentos.reduce((s, i) => s + valorAtualDoAporte(i), 0);
       totalEl.textContent = fmtVal(totalAportado);
+      // Com o card fechado o total vira a única informação visível — sem ele,
+      // fechar significaria perder o número de vista.
+      const resumoInv = document.getElementById('resumoFechado-investimentos');
+      if (resumoInv) resumoInv.textContent = fmtOculto(totalAportado);
+      const resumoAportes = document.getElementById('resumoFechado-aportes');
+      if (resumoAportes) {
+        resumoAportes.textContent = investimentos.length
+          ? (investimentos.length === 1 ? '1 aporte' : investimentos.length + ' aportes')
+          : 'nenhum';
+      }
 
       const diffTotal = totalAtual - totalAportado;
       const ganhoPerdaEl = document.getElementById('ganhoPerdaTotal');
@@ -10918,7 +10995,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.11-2';
+    const APP_VERSION = '2026.09.12-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -10973,6 +11050,11 @@ function confirmarLancamentoVoz() {
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
+    // Cards da aba Investimentos: nascem abertos (ver SECOES_ABERTAS_POR_PADRAO)
+    aplicarSecao('investimentos');
+    aplicarSecao('aportes');
+    aplicarSecao('consorcios');
+    aplicarSecao('consorciosEncerrados');
     gerarLancamentosFixos();
 
     valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
