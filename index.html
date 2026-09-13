@@ -1390,12 +1390,18 @@
             <select id="contaConsorcio" onchange="atualizarFormaConsorcioVisibilidade()"></select>
           </div>
         </div>
-        <div class="form-group" id="grupoFormaConsorcio">
-          <label for="formaConsorcio">Como você paga a parcela</label>
-          <select id="formaConsorcio">
-            <option value="À Vista / Débito">Boleto, Pix ou débito (sai da conta no dia)</option>
-            <option value="Crédito Parcelado">Cartão de crédito (entra na fatura)</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group" id="grupoFormaConsorcio">
+            <label for="formaConsorcio">Como você paga a parcela</label>
+            <select id="formaConsorcio">
+              <option value="À Vista / Débito">Boleto, Pix ou débito (sai da conta no dia)</option>
+              <option value="Crédito Parcelado">Cartão de crédito (entra na fatura)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="categoriaConsorcio">Categoria do gasto</label>
+            <select id="categoriaConsorcio"></select>
+          </div>
         </div>
         <div class="form-group">
           <label for="inicioConsorcio">Data da primeira parcela</label>
@@ -2509,7 +2515,7 @@
 
     function popularSelectsCategorias() {
       const ordenadas = categoriasEmOrdem();
-      ['categoria', 'categoriaFixo'].forEach(idSel => {
+      ['categoria', 'categoriaFixo', 'categoriaConsorcio'].forEach(idSel => {
         const sel = document.getElementById(idSel);
         if (!sel) return;
         const atual = sel.value;
@@ -7659,6 +7665,11 @@
              fixo sem mudar o consórcio, e os dois sairiam do lugar. Então o
              toque leva pro consórcio, e a linha diz de onde ele veio. */
           const cons = f.consorcioId ? consorcios.find(x => x.id === f.consorcioId) : null;
+          /* Gasto fixo criado na mão que repete um consórcio. Acontece com quem
+             cadastrou o boleto à mão antes de usar o card de consórcio: as duas
+             linhas somam no "Total por mês", e o mesmo boleto passa a contar
+             duas vezes sem nada na tela dizendo isso. */
+          const duplicata = cons ? null : consorcioParecidoCom(f);
           const div = document.createElement('div');
           div.className = 'item-lancamento';
           div.onclick = cons
@@ -7674,6 +7685,7 @@
               <strong>${f.descricao}</strong>${cons ? ' <span style="font-size:9.5px;font-weight:700;color:var(--azul);border:1px solid var(--azul-forte);border-radius:20px;padding:1px 6px;white-space:nowrap;">consórcio</span>' : ''}
               <div style="font-size:11px;color:var(--texto-fraco);">${f.conta} • ${eCredito(formaModoDoFixo(f)) ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
               <div style="font-size:10.5px;color:${corEstado};">${textoEstado}</div>
+              ${duplicata ? `<div style="font-size:10.5px;color:var(--amarelo);margin-top:2px;">⚠ mesmo valor, dia e conta do consórcio “${duplicata.nome}” — o total do mês pode estar contando duas vezes</div>` : ''}
             </div>
             <span class="${pendente ? 'valor-a-pagar' : 'valor-despesa'}">${fmtOculto(parseVal((pendente || pago) ? doMes.valor : f.valor))}</span>
           `;
@@ -9811,7 +9823,7 @@
           valor: c.valorParcela,
           conta: c.conta || primeiraConta(),
           diaVencimento: c.diaVencimento,
-          categoria: 'Consórcio',
+          categoria: c.categoria || 'Consórcio',
           formaModo: c.formaPagamento || 'À Vista / Débito',
           emprestimoPara: '',
           diaCobranca: null,
@@ -9989,14 +10001,60 @@
 
     /* ============ CONSÓRCIOS ============ */
 
-    // A categoria precisa existir pra o boleto não cair em "Outros" e sumir no
-    // meio dos gastos comuns no gráfico.
-    function garantirCategoriaConsorcio() {
-      if (!categorias.includes('Consórcio')) {
-        categorias.push('Consórcio');
-        salvarCategorias();
-        popularSelectsCategorias();
-      }
+    /* A categoria precisa existir pra o boleto não cair em "Outros" e sumir no
+       meio dos gastos comuns no gráfico.
+
+       A trava do array vazio não é paranoia: `categorias` nasce [] e só é
+       preenchido por carregarCategorias(). Chamado antes disso, este código
+       gravava ["Consórcio"] por cima da lista inteira do usuário — e como a
+       lista salva deixava de estar vazia, o carregarCategorias() seguinte
+       aceitava ela como verdade em vez de cair no padrão. */
+    function garantirCategoriaConsorcio(nome) {
+      const alvo = nome || 'Consórcio';
+      if (!Array.isArray(categorias) || !categorias.length) return;
+      if (categorias.includes(alvo)) return;
+      categorias.push(alvo);
+      salvarCategorias();
+      popularSelectsCategorias();
+    }
+
+    /* REPARO: CATEGORIA EM USO QUE SUMIU DA LISTA
+
+       Categoria que algum lançamento usa tem que estar no seletor. Fora isso
+       ela vira fantasma: o gasto continua com ela, mas abrir o lançamento pra
+       editar troca a categoria dele sem você pedir, e o gráfico mostra uma
+       fatia que você não consegue mais escolher.
+
+       Serve de conserto pra quem foi atingido pelo bug acima: a lista volta a
+       partir do que os seus próprios lançamentos dizem. Quando sobra uma
+       categoria só, o conjunto padrão volta junto — uma lista desse tamanho
+       não é escolha de ninguém. */
+    function repararCategoriasEmUso() {
+      if (!Array.isArray(categorias)) categorias = [];
+      /* Quatro fontes, e nenhuma delas foi tocada pelo bug — é de onde a lista
+         volta sem depender de backup:
+         · lançamentos e gastos fixos, que carregam a categoria em cada item;
+         · a lixeira, pra não perder o que só existia em lançamento apagado;
+         · as metas por categoria e as favoritas, que guardam o NOME da
+           categoria e por isso resgatam até as que não têm nenhum gasto. */
+      const usadas = new Set();
+      lancamentos.forEach(l => { if (l.categoria) usadas.add(l.categoria); });
+      fixos.forEach(f => { if (f.categoria) usadas.add(f.categoria); });
+      (Array.isArray(lixeira) ? lixeira : []).forEach(item => {
+        const l = item && (item.lancamento || item);
+        if (l && l.categoria) usadas.add(l.categoria);
+      });
+      Object.keys(orcamentosCategoria || {}).forEach(c => { if (c) usadas.add(c); });
+      (Array.isArray(categoriasFavoritas) ? categoriasFavoritas : []).forEach(c => { if (c) usadas.add(c); });
+
+      const faltando = [...usadas].filter(c => !categorias.includes(c));
+      const perdeuTudo = categorias.length <= 1;
+      if (!faltando.length && !perdeuTudo) return;
+
+      faltando.forEach(c => categorias.push(c));
+      if (perdeuTudo) CATEGORIAS_PADRAO.forEach(c => { if (!categorias.includes(c)) categorias.push(c); });
+      salvarCategorias();
+      popularSelectsCategorias();
     }
 
     function abrirFormConsorcio(id) {
@@ -10024,6 +10082,18 @@
          código olhava a conta e, se ela tivesse cartão, jogava a parcela na
          fatura — o que inchava a fatura com um custo que nunca passou por ela. */
       document.getElementById('formaConsorcio').value = c ? formaDoConsorcio(c) : 'À Vista / Débito';
+      /* A categoria "Consórcio" segue de padrão porque separa o boleto dos
+         gastos comuns no gráfico. Mas quem acha que isso é investimento, e não
+         despesa corriqueira, troca aqui. */
+      const selCat = document.getElementById('categoriaConsorcio');
+      const catAtual = c ? (c.categoria || 'Consórcio') : 'Consórcio';
+      garantirOpcaoCategoria(selCat, catAtual);
+      if (!Array.from(selCat.options).some(o => o.value === 'Consórcio')) {
+        const opt = document.createElement('option');
+        opt.value = 'Consórcio'; opt.textContent = 'Consórcio';
+        selCat.appendChild(opt);
+      }
+      selCat.value = catAtual;
       document.getElementById('inicioConsorcio').value = c ? c.dataInicio : obterDataBrasilia();
       document.getElementById('btnExcluirConsorcio').classList.toggle('escondido', !c);
       atualizarFormaConsorcioVisibilidade();
@@ -10066,10 +10136,13 @@
         // tiver cartão, senão a parcela iria pra uma fatura que não existe.
         formaPagamento: (contaTemCredito(conta) && document.getElementById('formaConsorcio').value === 'Crédito Parcelado')
           ? 'Crédito Parcelado' : 'À Vista / Débito',
+        // Consórcio é gasto, mas é gasto pra virar bem: quem decide em que
+        // prateleira ele entra no gráfico é você, não o app.
+        categoria: document.getElementById('categoriaConsorcio').value || 'Consórcio',
         dataInicio: document.getElementById('inicioConsorcio').value || obterDataBrasilia()
       };
 
-      garantirCategoriaConsorcio();
+      garantirCategoriaConsorcio(dados.categoria);
       const idEdit = document.getElementById('idConsorcioEditando').value;
 
       if (idEdit) {
@@ -10082,7 +10155,7 @@
           Object.assign(f, {
             descricao: nome, valor: dados.valorParcela, conta,
             diaVencimento: dados.diaVencimento, dataInicio: dados.dataInicio,
-            formaModo: dados.formaPagamento
+            formaModo: dados.formaPagamento, categoria: dados.categoria
           });
           // mesmo critério do editar gasto fixo: o que já venceu é histórico
           const hoje = obterDataBrasilia();
@@ -10096,6 +10169,7 @@
             l.valor = dados.valorParcela;
             l.conta = conta;
             l.formaModo = f.formaModo;
+            l.categoria = dados.categoria;
             l.data = l.data.slice(0, 7) + '-' + dia;
           });
           /* Encurtar o consórcio (corrigir 80 pra 60, por exemplo) tem que apagar
@@ -10119,7 +10193,7 @@
           valor: dados.valorParcela,
           conta,
           diaVencimento: dados.diaVencimento,
-          categoria: 'Consórcio',
+          categoria: dados.categoria,
           formaModo: dados.formaPagamento,
           emprestimoPara: '',
           diaCobranca: null,
@@ -10272,6 +10346,22 @@
       salvarLocalStorage();
       atualizarTudo();
       renderizarConsorcios();
+    }
+
+    /* O consórcio já resolve as duas pontas com UM lançamento só: ele aparece na
+       listagem da aba Faturas e, ao mesmo tempo, conta no card da aba Investim.
+       Cadastrar o mesmo boleto também como gasto fixo comum não acrescenta
+       nada — só dobra o número. Aqui o palpite é conservador: só acusa quando
+       conta, dia e valor batem exatamente com os de um consórcio. */
+    function consorcioParecidoCom(f) {
+      if (!f || f.consorcioId) return null;
+      return consorcios.find(c => {
+        const fc = fixos.find(x => x.id === c.fixoId);
+        if (!fc) return false;
+        return fc.conta === f.conta
+          && String(fc.diaVencimento) === String(f.diaVencimento)
+          && parseVal(fc.valor) === parseVal(f.valor);
+      }) || null;
     }
 
     function consorcioDoFixo(fixoId) {
@@ -11721,7 +11811,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.13-4';
+    const APP_VERSION = '2026.09.13-5';
 
     // Inicialização
     carregarLocalStorage();
@@ -11743,11 +11833,15 @@ function confirmarLancamentoVoz() {
     carregarContas();
     migrarFormaPadraoDasContas();   // depois de carregarContas: antes o array está vazio
     migrarPrazosDeFixos();
-    repararConsorciosSemFixo();   // antes do "a pagar": pode criar lançamento novo
-    migrarRecorrentesAPagar();
     popularSelectsContas();
     carregarCategorias();
     popularSelectsCategorias();
+    /* ORDEM IMPORTA: os dois reparos abaixo MEXEM em categorias, e rodar antes
+       do carregarCategorias() gravava a lista ainda vazia por cima da sua —
+       foi assim que a lista de categorias encolheu pra "Consórcio" sozinho. */
+    repararCategoriasEmUso();
+    repararConsorciosSemFixo();   // antes do "a pagar": pode criar lançamento novo
+    migrarRecorrentesAPagar();
     carregarUiPrefs();
     aplicarOrdemCards('abaFaturas');
     aplicarOrdemCards('abaGraficos');
