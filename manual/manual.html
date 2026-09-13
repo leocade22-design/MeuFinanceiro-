@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.08.27 · Leia em 12 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.13 · Leia em 13 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -442,15 +442,43 @@
 <!-- ============================================================ -->
 <section>
   <h2><span class="numero">13</span>Consórcios</h2>
-  <p class="resumo">O boleto entra sozinho todo mês e você acompanha o avanço das parcelas.</p>
+  <p class="resumo">A parcela entra sozinha todo mês, do jeito que você paga, e você dá baixa ali mesmo.</p>
   <div class="conteudo">
     <p>Na aba <strong>Investim.</strong>, abaixo dos aportes, tem o card <strong>Consórcios</strong>.
        Cadastre o grupo com o nome, o valor da carta de crédito, a parcela, quantas parcelas são,
-       o dia do boleto e a conta que paga.</p>
-    <p>A partir daí o boleto <strong>vira um gasto fixo mensal</strong> na categoria <em>Consórcio</em>:
-       entra sozinho nos lançamentos, na fatura do cartão (ou no débito) e nos gráficos, sem você
-       lançar nada na mão. Se cadastrar com data retroativa, as parcelas que já passaram são criadas
-       de uma vez. E o boleto <strong>para de nascer</strong> quando chega na última parcela.</p>
+       o dia do boleto, a conta que paga e <strong>como você paga a parcela</strong>.</p>
+    <p>A partir daí a parcela <strong>entra sozinha todo mês</strong> na categoria <em>Consórcio</em>:
+       aparece nos lançamentos e nos gráficos sem você lançar nada na mão. Se cadastrar com data
+       retroativa, as parcelas que já passaram são criadas de uma vez. E a parcela
+       <strong>para de nascer</strong> quando chega na última.</p>
+    <div class="nota">
+      <strong>Boleto/Pix ou cartão — você escolhe.</strong> Consórcio quase sempre é boleto, Pix ou
+      débito: o dinheiro sai da conta no dia do vencimento e <em>não passa pela fatura do cartão</em>.
+      É assim que o grupo nasce. Se no seu caso a parcela cai mesmo no cartão, troque pra
+      <em>Cartão de crédito</em> no campo <strong>Como você paga a parcela</strong> — aí ela entra na
+      fatura, respeitando o dia de fechamento. A opção de crédito só aparece se a conta escolhida
+      tiver cartão.
+      <br><br>Trocando a forma num consórcio que já está rodando, valem as mesmas regras de sempre:
+      <strong>as parcelas que já venceram não mudam</strong> (são histórico) e só as que ainda vão
+      vencer passam pra forma nova.
+    </div>
+    <div class="nota">
+      <strong>Registrar pagamento.</strong> O botão fica no rodapé do consórcio, na própria aba
+      Investim., pra dar baixa na parcela sem ir atrás dela nos lançamentos. Escolha a parcela e
+      ajuste o que saiu de verdade: <strong>valor</strong> (boleto que veio com reajuste, seguro ou
+      taxa), <strong>data</strong>, <strong>como pagou</strong> (boleto, Pix, transferência, débito,
+      dinheiro ou cartão) e de qual conta saiu.
+      <ul>
+        <li>Não cria lançamento novo — corrige a parcela que o app já tinha projetado. O mesmo
+            boleto nunca conta duas vezes.</li>
+        <li>Pagou adiantado? A parcela já passa a contar como paga, mesmo antes do vencimento.</li>
+        <li>O card mostra a parcela do mês: <em>parcela de setembro: R$ 394,78 · vence dia 15</em>
+            ou <em>✓ parcela de setembro paga em 15/09 · pix</em>.</li>
+        <li>Errou? <strong>Desfazer baixa desta parcela</strong> devolve o valor e o dia do contrato.</li>
+        <li>Uma parcela com baixa registrada não é atropelada quando você edita o consórcio — o
+            que saiu de verdade fica.</li>
+      </ul>
+    </div>
     <ul>
       <li><strong>X de 80 parcelas</strong> e a barra de progresso mostram onde você está.</li>
       <li><strong>Já paguei</strong> soma os boletos que realmente saíram — não é parcela × valor,
@@ -488,7 +516,8 @@
       valor da parcela, progresso e o status. Toque de novo pra abrir. O app lembra o que você
       deixou aberto ou fechado, inclusive depois de fechar e reabrir.
     </div>
-    <p>Com o consórcio aberto, os botões <strong>Editar</strong>, <strong>Fui contemplado</strong> e
+    <p>Com o consórcio aberto, os botões <strong>Registrar pagamento</strong>, <strong>Editar</strong>,
+       <strong>Fui contemplado</strong> e
        <strong>Encerrar grupo</strong> ficam no rodapé dele. Excluindo pelo Editar, as parcelas que já
        passaram continuam no histórico e os boletos futuros somem — sem deixar cobrança fantasma
        na fatura.</p>
