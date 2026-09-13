@@ -1665,6 +1665,7 @@
       </div>
       <div class="balao-acoes">
         <button class="btn-opcao-balao" onclick="executarEditarFixo()">Editar gasto fixo</button>
+        <button class="btn-opcao-balao escondido" id="btnRecriarFixo" onclick="executarRecriarFixo()">Recriar cobranças que faltam</button>
         <button class="btn-opcao-balao danger" onclick="executarExcluirFixo()">Remover gasto fixo</button>
       </div>
     </div>
@@ -7636,10 +7637,13 @@
       } else {
         const chaveMesExibido = chaveMesAno(ano, mes);
         fixosAtivos.slice().sort((a, b) => (a.descricao || '').localeCompare(b.descricao || '', 'pt-BR', { sensitivity: 'base' })).forEach(f => {
-          const doMes = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
+          const doMes = lancamentos.find(l => l.fixoId === f.id && mesDaParcelaConsorcio(l) === chaveMesExibido);
           const lancado = !!doMes;
           const pendente = aguardandoPagamento(doMes);
           const pago = !!(doMes && doMes.consorcioPagoEm);
+          // Fora do cartão o pagamento é tarefa sua, e continua sendo mesmo que
+          // a cobrança do mês não exista (apagada, ou ainda não projetada)
+          const naSuaMao = !eCredito(formaModoDoFixo(f));
           /* Três estados possíveis, e cada um quer uma frase diferente:
              no cartão o app só confirma que a cobrança entrou; fora do cartão a
              pergunta é se você já pagou, e quando pagou, de onde saiu. */
@@ -7677,15 +7681,15 @@
           /* No cartão não há o que fazer: chegou o dia, já está na fatura. Fora
              do cartão o pagamento é uma tarefa sua, e o botão é o lugar de
              encerrá-la — inclusive dizendo de que conta o dinheiro saiu. */
-          if (pendente || pago) {
+          if (naSuaMao) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'btn-mini';
             btn.style.cssText = 'margin-left:8px;flex-shrink:0;';
-            btn.textContent = pendente ? 'Paguei' : 'Ajustar';
-            btn.title = pendente
-              ? 'Dar baixa: valor, data, forma e conta de onde saiu'
-              : 'Corrigir ou desfazer a baixa deste mês';
+            btn.textContent = pago ? 'Ajustar' : 'Paguei';
+            btn.title = pago
+              ? 'Corrigir ou desfazer a baixa deste mês'
+              : 'Dar baixa: valor, data, forma e conta de onde saiu';
             btn.onclick = (ev) => { ev.stopPropagation(); abrirPagamentoRecorrente(f.id, chaveMesExibido); };
             div.appendChild(btn);
           }
@@ -9631,7 +9635,22 @@
       if (!f) return;
       fixoSelecionadoId = id;
       document.getElementById('modalAcoesFixoTitulo').textContent = f.descricao;
+      // só aparece quando há buraco de verdade na projeção
+      const faltam = parcelasFaltantesDoFixo(id);
+      const btnRec = document.getElementById('btnRecriarFixo');
+      if (btnRec) {
+        btnRec.classList.toggle('escondido', !faltam);
+        btnRec.textContent = faltam === 1
+          ? 'Recriar a cobrança que falta'
+          : 'Recriar as ' + faltam + ' cobranças que faltam';
+      }
       document.getElementById('modalAcoesFixo').classList.remove('escondido');
+    }
+
+    function executarRecriarFixo() {
+      if (!fixoSelecionadoId) return;
+      fecharModal('modalAcoesFixo');
+      recriarParcelasFaltantes(fixoSelecionadoId);
     }
 
     function executarEditarFixo() {
@@ -10212,6 +10231,49 @@
       return [...porMes.values()].sort((a, b) => a.mes.localeCompare(b.mes));
     }
 
+    /* BURACO NA PROJEÇÃO
+
+       Apagar a cobrança de um mês não faz ela voltar: o gerador retoma de
+       ultimoMesGerado e nunca olha pra trás. Isso é certo pro dia a dia — quem
+       apagou, apagou de propósito —, mas deixava um consórcio inteiro mudo
+       depois de uma limpeza na fatura, sem nada na tela dizendo por quê.
+
+       Aqui o buraco vira número, e o conserto é uma ação explícita. */
+    function parcelasFaltantesDoFixo(fixoId) {
+      return ocorrenciasDoFixo(fixoId).filter(oc => !oc.lanc).length;
+    }
+
+    function recriarParcelasFaltantes(fixoId) {
+      const f = fixos.find(x => x.id === fixoId);
+      if (!f) return;
+      const faltam = parcelasFaltantesDoFixo(fixoId);
+      if (!faltam) return;
+      const naMao = !eCredito(formaModoDoFixo(f));
+      if (!confirm(`Recriar ${faltam === 1 ? 'a cobrança que falta' : 'as ' + faltam + ' cobranças que faltam'}?\n\n`
+        + (naMao
+            ? 'Elas voltam como "a pagar" — inclusive as que já venceram: se a cobrança sumiu, o mais provável é que você ainda não tenha dado baixa nela.'
+            : 'Elas voltam como cobrança do cartão, do jeito que o app projeta.')
+        + '\n\nNada do que você já registrou como pago é tocado.')) return;
+
+      // zerar ultimoMesGerado faz o gerador varrer desde o início; o jaExiste
+      // dele impede duplicar o que já está lá
+      const jaExistiam = new Set(lancamentos.filter(l => l.fixoId === fixoId).map(l => l.id));
+      f.ultimoMesGerado = '';
+      gerarLancamentosFixos();
+      /* O gerador só marca "a pagar" o que ainda vai vencer — regra certa pra
+         projeção normal, errada aqui: recriar é justamente admitir que a
+         cobrança sumiu sem baixa, e mês vencido sem baixa é conta em aberto. */
+      if (naMao) {
+        lancamentos.forEach(l => {
+          if (l.fixoId === fixoId && !jaExistiam.has(l.id)) l.aPagar = true;
+        });
+      }
+      salvarFixos();
+      salvarLocalStorage();
+      atualizarTudo();
+      renderizarConsorcios();
+    }
+
     function consorcioDoFixo(fixoId) {
       return consorcios.find(c => c.fixoId === fixoId) || null;
     }
@@ -10565,6 +10627,7 @@
         const parcelaMes = parcelaDoMesConsorcio(c, mesCorrente);
         const pagoNoMes = !!(parcelaMes && parcelaMes.consorcioPagoEm);
         const nomeMes = NOMES_MESES[parseInt(mesCorrente.slice(5, 7), 10) - 1].toLowerCase();
+        const faltamParcelas = parcelasFaltantesDoFixo(c.fixoId);
         const statusMes = !parcelaMes
           ? `sem parcela em ${nomeMes}`
           : (pagoNoMes
@@ -10587,6 +10650,7 @@
           <div id="corpo-${chave}">
             <div style="font-size:11px;color:var(--texto-fraco);margin-top:8px;">dia ${c.diaVencimento} · ${c.conta} · ${credito ? 'entra na fatura' : 'sai da conta'}</div>
             <div style="font-size:11.5px;margin-top:6px;color:${pagoNoMes ? 'var(--verde)' : 'var(--texto-medio)'};">${statusMes}</div>
+            ${faltamParcelas ? `<div style="font-size:11px;margin-top:4px;color:var(--amarelo);">⚠ ${faltamParcelas === 1 ? 'falta 1 cobrança' : 'faltam ' + faltamParcelas + ' cobranças'} na projeção — use “Recriar cobranças”</div>` : ''}
             <div class="barra-bg" style="margin:10px 0 6px;">
               <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
             </div>
@@ -10615,6 +10679,7 @@
           boxAcoes.appendChild(b);
         };
         acao('Registrar pagamento', 'Dar baixa na parcela com o valor, a data e a conta que saíram de verdade', () => abrirPagamentoRecorrente(c.fixoId));
+        if (faltamParcelas) acao('Recriar cobranças', 'Trazer de volta as parcelas que sumiram da projeção', () => recriarParcelasFaltantes(c.fixoId));
         acao('Editar', 'Mudar valor, parcelas, conta, forma de pagamento...', () => abrirFormConsorcio(c.id));
         if (!c.contemplado) acao('Fui contemplado', '', () => abrirContemplacao(c.id));
         acao('Encerrar grupo', 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)', () => abrirEncerrarConsorcio(c.id));
@@ -11656,7 +11721,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.13-3';
+    const APP_VERSION = '2026.09.13-4';
 
     // Inicialização
     carregarLocalStorage();
