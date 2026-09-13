@@ -244,6 +244,10 @@
        "movimento que não é entrada nem saída". Resolvido, vira roxo. */
     .valor-indireto { color: var(--azul); font-weight: bold; white-space: nowrap; }
     .valor-indireto-quitado { color: var(--roxo); font-weight: bold; white-space: nowrap; }
+    /* Boleto previsto e ainda não pago: amarelo, a mesma cor que o app já usa
+       pra fatura em aberto — compromisso, não dinheiro que já saiu. */
+    .valor-a-pagar { color: var(--amarelo); font-weight: bold; white-space: nowrap; }
+    .item-lancamento.forma-a-pagar { border-left-color: var(--amarelo); }
     .val-saldo { color: var(--azul-forte); }
     .val-receita { color: var(--verde); }
     .val-despesa { color: var(--vermelho); }
@@ -1408,33 +1412,34 @@
     </div>
   </div>
 
-  <!-- CONSÓRCIO: dar baixa na parcela sem sair da aba Investimentos -->
-  <div id="modalPagarConsorcio" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalPagarConsorcio')">
+  <!-- DAR BAIXA NUM RECORRENTE: serve pra consórcio e pra qualquer gasto fixo
+       pago na mão (boleto, Pix, transferência) -->
+  <div id="modalPagarRecorrente" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalPagarRecorrente')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Registrar pagamento</h3>
-        <button class="btn-fechar" onclick="fecharModal('modalPagarConsorcio')">&times;</button>
+        <h3 id="tituloPagarRecorrente">Registrar pagamento</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalPagarRecorrente')">&times;</button>
       </div>
-      <input type="hidden" id="idConsorcioPagando" value="">
-      <p id="infoPagarConsorcio" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
+      <input type="hidden" id="idFixoPagando" value="">
+      <p id="infoPagarRecorrente" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
       <div class="form-group">
-        <label for="parcelaPagarConsorcio">Parcela</label>
-        <select id="parcelaPagarConsorcio" onchange="preencherParcelaConsorcio()"></select>
+        <label for="parcelaPagarRecorrente" id="rotuloParcelaPagar">Mês</label>
+        <select id="parcelaPagarRecorrente" onchange="preencherParcelaRecorrente()"></select>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="valorPagarConsorcio">Valor pago</label>
-          <input type="text" id="valorPagarConsorcio" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+          <label for="valorPagarRecorrente">Valor pago</label>
+          <input type="text" id="valorPagarRecorrente" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
         </div>
         <div class="form-group">
-          <label for="dataPagarConsorcio">Data do pagamento</label>
-          <input type="date" id="dataPagarConsorcio">
+          <label for="dataPagarRecorrente">Data do pagamento</label>
+          <input type="date" id="dataPagarRecorrente">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="comoPagarConsorcio">Como pagou</label>
-          <select id="comoPagarConsorcio">
+          <label for="comoPagarRecorrente">Como pagou</label>
+          <select id="comoPagarRecorrente">
             <option value="boleto">Boleto</option>
             <option value="pix">Pix</option>
             <option value="transferência">Transferência</option>
@@ -1444,17 +1449,17 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="contaPagarConsorcio">Saiu de qual conta</label>
-          <select id="contaPagarConsorcio"></select>
+          <label for="contaPagarRecorrente">Saiu de qual conta</label>
+          <select id="contaPagarRecorrente"></select>
         </div>
       </div>
       <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;">
-        Não cria lançamento novo: dá baixa na parcela que o app já tinha projetado, com o valor e a
-        data que saíram de verdade. Serve pra quando o boleto veio com reajuste, seguro ou você
-        pagou em outro dia.
+        Não cria lançamento novo: dá baixa no que o app já tinha previsto, com o valor, a data e a
+        conta que saíram de verdade. Enquanto não tem baixa, o valor aparece como
+        <strong>a pagar</strong> e não é descontado do saldo.
       </p>
-      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarPagamentoConsorcio()">Confirmar pagamento</button>
-      <button type="button" id="btnDesfazerPagamentoConsorcio" class="btn-cancelar escondido" onclick="desfazerPagamentoConsorcio()">Desfazer baixa desta parcela</button>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarPagamentoRecorrente()">Confirmar pagamento</button>
+      <button type="button" id="btnDesfazerPagamentoRecorrente" class="btn-cancelar escondido" onclick="desfazerPagamentoRecorrente()">Desfazer baixa</button>
     </div>
   </div>
 
@@ -1632,10 +1637,14 @@
   <div id="modalLembretes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalLembretes')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Lembrete de cobrança</h3>
+        <h3>Lembretes</h3>
         <button class="btn-fechar" onclick="fecharModal('modalLembretes')">&times;</button>
       </div>
-      <p style="font-size:12px;color:var(--texto-medio);margin-bottom:12px;line-height:1.45;">Chega um aviso só, com todo mundo junto — não um por pessoa.</p>
+      <p style="font-size:12px;color:var(--texto-medio);margin-bottom:12px;line-height:1.45;">
+        Vale pras duas pontas: <strong>quem te deve</strong> e os <strong>boletos que você tem que
+        pagar</strong> (gasto recorrente fora do cartão). Chega um aviso só de cada, com tudo junto —
+        não um por pessoa nem um por conta.
+      </p>
 
       <label style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Avisar quando faltar</label>
       <div id="chipsAntecedencia" class="chips-antecedencia"></div>
@@ -2424,7 +2433,7 @@
 
     function popularSelectsContas() {
       const ordenadas = contas.slice().sort((a, b) => (b.favorita ? 1 : 0) - (a.favorita ? 1 : 0));
-      ['conta', 'origemAporte', 'contaFixo', 'contaConsorcio', 'contaPagarConsorcio'].forEach(idSel => {
+      ['conta', 'origemAporte', 'contaFixo', 'contaConsorcio', 'contaPagarRecorrente'].forEach(idSel => {
         const sel = document.getElementById(idSel);
         if (!sel) return;
         const atual = sel.value;
@@ -4868,7 +4877,8 @@
       if (boxSub) {
         const soma = f => filtrados.filter(f).reduce((s, l) => s + parseVal(l.valor), 0);
         const noCartao = l => !l.__transf && l.tipo === 'despesa' && eCredito(l.formaModo);
-        const saiu = soma(l => !l.__transf && l.tipo === 'despesa' && !eCredito(l.formaModo));
+        const saiu = soma(saiuDaConta);
+        const aPagar = soma(aguardandoPagamento);
         const cartao = soma(noCartao);
         const entrou = soma(l => !l.__transf && l.tipo === 'receita' && !ehEmprestimoIndireto(l));
         const pedaco = (rotulo, valor, cor) => `<span style="white-space:nowrap;"><span style="color:var(--texto-tenue);">${rotulo}</span> <strong style="color:${cor};">${fmtOculto(valor)}</strong></span>`;
@@ -4876,6 +4886,8 @@
         if (filtroFormaLanc !== 'cartao') {
           if (entrou > 0) pedacos.push(pedaco('entrou', entrou, 'var(--verde)'));
           if (saiu > 0) pedacos.push(pedaco('saiu', saiu, 'var(--vermelho)'));
+          // separado do "saiu" de propósito: esse dinheiro ainda está na conta
+          if (aPagar > 0) pedacos.push(pedaco('a pagar', aPagar, 'var(--amarelo)'));
         }
         if (filtroFormaLanc !== 'conta' && cartao > 0) pedacos.push(pedaco('cartão', cartao, 'var(--amarelo)'));
         boxSub.innerHTML = pedacos.join('<span style="color:var(--borda-forte);"> &nbsp;·&nbsp; </span>');
@@ -4937,8 +4949,11 @@
              de resolvida. Verde ali seria a mesma mentira que o campo corrigiu. */
           const indireto = ehEmprestimoIndireto(item);
           const indiretoQuitado = indireto && emprestimoIndiretoQuitado(item);
+          // Boleto ainda na sua mão: amarelo, igual à fatura em aberto
+          const aPagarItem = aguardandoPagamento(item);
           div.className = 'item-lancamento forma' + (
             indireto ? (indiretoQuitado ? ' forma-indireto-quitado' : ' forma-indireto')
+                     : aPagarItem ? ' forma-a-pagar'
                      : (eReceita ? ' forma-receita' : (noCredito ? ' forma-credito' : '')));
           if (item.data > hoje) div.style.opacity = '.6';
           div.onclick = () => abrirAcoesLancamento(item.id);
@@ -4952,6 +4967,7 @@
           if (!eReceita && item.categoria) partes.push(item.categoria);
           if (indireto) partes.push(indiretoQuitado ? 'pagaram por você · quitado' : 'pagaram por você');
           else if (item.conta) partes.push(item.conta);
+          if (aPagarItem) partes.push('a pagar');
           if (numP > 1 && !jaTemParcela) partes.push(numP + 'x');
           if (item.grupoViagemNome) partes.push(item.grupoViagemNome);
 
@@ -4963,7 +4979,7 @@
               ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
             </div>
             <div class="item-acoes">
-              <span class="${indireto ? (indiretoQuitado ? 'valor-indireto-quitado' : 'valor-indireto') : (eReceita ? 'valor-receita' : 'valor-despesa')}">${indireto ? '' : (eReceita ? '+' : '-')} R$ ${item.valor}</span>
+              <span class="${indireto ? (indiretoQuitado ? 'valor-indireto-quitado' : 'valor-indireto') : aPagarItem ? 'valor-a-pagar' : (eReceita ? 'valor-receita' : 'valor-despesa')}">${(indireto || aPagarItem) ? '' : (eReceita ? '+' : '-')} R$ ${item.valor}</span>
             </div>
           `;
           container.appendChild(div);
@@ -6464,6 +6480,51 @@
       return formaModo === 'Crédito Parcelado' || formaModo === 'Crédito à Vista';
     }
 
+    /* BOLETO A PAGAR: O COMPROMISSO QUE AINDA NÃO VIROU SAÍDA
+
+       Lançar sozinho todo mês só descreve a realidade quando a cobrança também
+       acontece sozinha — que é o caso do cartão. Boleto, Pix e transferência
+       dependem de você abrir o banco e pagar; enquanto isso não acontece, o
+       dinheiro continua na conta.
+
+       Por isso o recorrente fora do cartão nasce "a pagar" e recebe o MESMO
+       tratamento que uma compra no crédito ainda não faturada: aparece como
+       compromisso do mês, não como dinheiro que saiu. Dar baixa é o equivalente
+       a pagar a fatura — aí sim vira saída, na data e na conta que você informar.
+
+       Lançamento avulso feito na mão não entra nisso: você lança depois de pagar. */
+    const CHAVE_MIGRACAO_A_PAGAR = 'meu_financeiro_migracao_a_pagar_v1';
+    const CHAVE_ULTIMO_AVISO_BOLETO = 'meu_financeiro_ultimo_aviso_boleto';
+
+    function aguardandoPagamento(l) {
+      return !!(l && l.aPagar);
+    }
+
+    // "Esse lançamento tirou dinheiro da conta?" — a pergunta que o saldo faz.
+    function saiuDaConta(l) {
+      return !!l && !l.__transf && l.tipo === 'despesa'
+        && !eCredito(l.formaModo) && !aguardandoPagamento(l);
+    }
+
+    // Boletos previstos e ainda não pagos de um mês — o total do compromisso
+    function boletosAPagarDoMes(mes, ano) {
+      return lancamentos.filter(l => {
+        if (!aguardandoPagamento(l)) return false;
+        const d = new Date(l.data + 'T12:00:00');
+        return d.getMonth() === mes && d.getFullYear() === ano;
+      });
+    }
+
+    // Os que precisam de aviso: vencem dentro da antecedência escolhida ou já passaram
+    function boletosParaAvisar() {
+      const dias = diasAntecedencia();
+      return lancamentos.filter(l => {
+        if (!aguardandoPagamento(l) || !l.data) return false;
+        const faltam = diasAte(l.data);
+        return faltam < 0 || dias.includes(faltam);
+      }).sort((a, b) => a.data.localeCompare(b.data));
+    }
+
     // Compras no crédito feitas DEPOIS do fechamento (dia 3) caem na fatura do mês seguinte
     function getMesFatura(dataStr, formaModo, conta) {
       const d = new Date(dataStr + 'T12:00:00');
@@ -7165,8 +7226,9 @@
       if (/saldo|sobrou|sobra|quanto tenho|no azul|no vermelho/.test(texto)) {
         const rec = somar(receitasDaPergunta(p));
         const desps = despesasDaPergunta(p);
-        const emDebito = somar(desps.filter(l => !eCredito(l.formaModo)));
+        const emDebito = somar(desps.filter(saiuDaConta));
         const noCredito = somar(desps.filter(l => eCredito(l.formaModo)));
+        const aPagar = somar(desps.filter(aguardandoPagamento));
         const pagas = Object.values(faturasPagas)
           .filter(pg => pg && pg.data && p.teste(pg.data))
           .reduce((s, pg) => s + parseVal(pg.valorPago), 0);
@@ -7175,7 +7237,8 @@
         return `${R.charAt(0).toUpperCase() + R.slice(1)}: entrou ${fmtOculto(rec)}, saiu da conta ${fmtOculto(saiu)}` +
           (pagas > 0 ? ` (sendo ${fmtOculto(pagas)} de fatura paga)` : '') + `.<br>` +
           `Saldo: <b style="color:${saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(saldo)}</b>` +
-          (noCredito > 0 ? `<br><span style="color:var(--amarelo);">${fmtOculto(noCredito)} foi no crédito e ainda não saiu da conta.</span>` : '');
+          (noCredito > 0 ? `<br><span style="color:var(--amarelo);">${fmtOculto(noCredito)} foi no crédito e ainda não saiu da conta.</span>` : '') +
+          (aPagar > 0 ? `<br><span style="color:var(--amarelo);">${fmtOculto(aPagar)} são boletos que ainda estão na sua mão pra pagar.</span>` : '');
       }
 
       // --- maior gasto ---
@@ -7423,7 +7486,7 @@
       // selecionado (inclusive) — é o que dá o saldo real acumulado, em vez de só
       // o que aconteceu isolado dentro do mês.
       const porContaAcumulado = {};
-      let totalRecebimentos = 0, saiuEmDebito = 0, compradoNoCredito = 0;
+      let totalRecebimentos = 0, saiuEmDebito = 0, compradoNoCredito = 0, aPagarNoMes = 0;
       lancamentos.forEach(l => {
         const v = parseVal(l.valor);
         const d = new Date(l.data + 'T12:00:00');
@@ -7447,6 +7510,12 @@
           // ainda não paga fica de fora do acumulado também, mesma regra de hoje
           const f = getMesFatura(l.data, l.formaModo, l.conta);
           if (f.mes === mes && f.ano === ano) compradoNoCredito += v;
+          return;
+        }
+        // Boleto previsto e ainda não pago: mesma régua do crédito em aberto —
+        // é compromisso do mês, não dinheiro que saiu. Some abaixo, à parte.
+        if (aguardandoPagamento(l)) {
+          if (noMesDaData) aPagarNoMes += v;
           return;
         }
         // débito/dinheiro sai na hora: entra pela data da compra
@@ -7509,17 +7578,30 @@
       // mostraria saldo cheio e passaria a impressão errada de folga
       const elAberto = document.getElementById('avisoFaturaAberta');
       if (elAberto) {
-        elAberto.classList.toggle('escondido', faturaEmAberto <= 0);
+        /* Dois compromissos, mesma natureza: o que está no cartão e ainda não foi
+           faturado, e o boleto que ainda não foi pago. Nenhum dos dois saiu da
+           conta — e é justamente por isso que os dois precisam estar à vista,
+           senão o saldo cheio passa impressão de folga que não existe. */
+        const linhas = [];
         if (faturaEmAberto > 0) {
-          elAberto.innerHTML = `💳 <span style="color:var(--texto-fraco);">fatura em aberto:</span> <strong style="color:var(--amarelo);">${fmtOculto(faturaEmAberto)}</strong>` +
-            `<span style="color:var(--texto-tenue);"> · ainda não saiu da conta</span>`;
+          linhas.push(`💳 <span style="color:var(--texto-fraco);">fatura em aberto:</span> <strong style="color:var(--amarelo);">${fmtOculto(faturaEmAberto)}</strong>`
+            + `<span style="color:var(--texto-tenue);"> · ainda não saiu da conta</span>`);
         }
+        if (aPagarNoMes > 0) {
+          const qtd = boletosAPagarDoMes(mes, ano).length;
+          linhas.push(`<span style="cursor:pointer;" onclick="exibirLancamentosDetalhadosFatura('aPagar', ${mes}, ${ano})">`
+            + `📄 <span style="color:var(--texto-fraco);">boletos a pagar:</span> <strong style="color:var(--amarelo);">${fmtOculto(aPagarNoMes)}</strong>`
+            + `<span style="color:var(--texto-tenue);"> · ${qtd === 1 ? '1 conta' : qtd + ' contas'} na sua mão</span></span>`);
+        }
+        elAberto.classList.toggle('escondido', !linhas.length);
+        elAberto.innerHTML = linhas.join('<br>');
       }
 
       // guardado pra montar o popup só quando abrir (abrirModalResumoFatura),
       // sem duplicar o trabalho de calcular tudo de novo
       resumoFaturaAtual = { mes, ano, ehMesAtual, totalRecebimentos, saiuEmDebito, faturasPagasNoMes,
-                            compradoNoCredito, faturaEmAberto, saiuDaConta, porContaNet, porContaAcumulado };
+                            compradoNoCredito, faturaEmAberto, saiuDaConta, porContaNet, porContaAcumulado,
+                            aPagarNoMes };
 
       container.innerHTML = '';
 
@@ -7538,10 +7620,15 @@
         const totalFixos = fixosAtivos.reduce((sm, f) => sm + parseVal(f.valor), 0);
         const noCredito = fixosAtivos.filter(f => eCredito(formaModoDoFixo(f))).reduce((sm, f) => sm + parseVal(f.valor), 0);
         boxTotalFixos.classList.toggle('escondido', fixosAtivos.length === 0);
+        // O que é cobrado sozinho (cartão) e o que depende de você ir pagar são
+        // dois números diferentes — e é o segundo que vira tarefa no seu dia.
+        const naSuaMao = boletosAPagarDoMes(mes, ano).reduce((sm, l) => sm + parseVal(l.valor), 0);
         boxTotalFixos.innerHTML = `
           <div class="linha-subtotal" style="cursor:default;"><span>Total por mês</span><strong style="color:var(--amarelo);">${fmtOculto(totalFixos)}</strong></div>
           <div class="linha-subtotal" style="cursor:default;margin-bottom:0;font-size:11.5px;color:var(--texto-fraco);"><span>no cartão de crédito</span><strong style="color:var(--texto-fraco);">${fmtOculto(noCredito)}</strong></div>
-        `;
+        ` + (naSuaMao > 0
+          ? `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;font-size:11.5px;"><span style="color:var(--texto-fraco);">você ainda precisa pagar</span><strong style="color:var(--amarelo);">${fmtOculto(naSuaMao)}</strong></div>`
+          : '');
       }
 
       if (fixosAtivos.length === 0) {
@@ -7549,7 +7636,20 @@
       } else {
         const chaveMesExibido = chaveMesAno(ano, mes);
         fixosAtivos.slice().sort((a, b) => (a.descricao || '').localeCompare(b.descricao || '', 'pt-BR', { sensitivity: 'base' })).forEach(f => {
-          const lancado = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
+          const doMes = lancamentos.find(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chaveMesExibido);
+          const lancado = !!doMes;
+          const pendente = aguardandoPagamento(doMes);
+          const pago = !!(doMes && doMes.consorcioPagoEm);
+          /* Três estados possíveis, e cada um quer uma frase diferente:
+             no cartão o app só confirma que a cobrança entrou; fora do cartão a
+             pergunta é se você já pagou, e quando pagou, de onde saiu. */
+          const textoEstado = pendente
+            ? 'a pagar · vence dia ' + doMes.data.slice(8, 10)
+            : pago
+              ? 'pago em ' + doMes.consorcioPagoEm.slice(8, 10) + '/' + doMes.consorcioPagoEm.slice(5, 7)
+                + ' · ' + doMes.conta + (doMes.pagoComo ? ' · ' + doMes.pagoComo : '')
+              : (lancado ? 'lançado neste mês' : 'ainda não lançado neste mês');
+          const corEstado = pendente ? 'var(--amarelo)' : (lancado ? 'var(--verde)' : 'var(--texto-tenue)');
           /* Consórcio também é gasto fixo — tem que entrar no total do mês. Mas
              quem manda nele é o card da aba Investim.: editar por aqui mudaria o
              fixo sem mudar o consórcio, e os dois sairiam do lugar. Então o
@@ -7569,10 +7669,26 @@
             <div class="item-info">
               <strong>${f.descricao}</strong>${cons ? ' <span style="font-size:9.5px;font-weight:700;color:var(--azul);border:1px solid var(--azul-forte);border-radius:20px;padding:1px 6px;white-space:nowrap;">consórcio</span>' : ''}
               <div style="font-size:11px;color:var(--texto-fraco);">${f.conta} • ${eCredito(formaModoDoFixo(f)) ? 'crédito' : 'débito'} • todo dia ${f.diaVencimento}${f.categoria ? ' • ' + f.categoria : ''}</div>
-              <div style="font-size:10.5px;color:${lancado ? 'var(--verde)' : 'var(--texto-tenue)'};">${lancado ? 'lançado neste mês' : 'ainda não lançado neste mês'}</div>
+              <div style="font-size:10.5px;color:${corEstado};">${textoEstado}</div>
             </div>
-            <span class="valor-despesa">${fmtOculto(parseVal(f.valor))}</span>
+            <span class="${pendente ? 'valor-a-pagar' : 'valor-despesa'}">${fmtOculto(parseVal((pendente || pago) ? doMes.valor : f.valor))}</span>
           `;
+
+          /* No cartão não há o que fazer: chegou o dia, já está na fatura. Fora
+             do cartão o pagamento é uma tarefa sua, e o botão é o lugar de
+             encerrá-la — inclusive dizendo de que conta o dinheiro saiu. */
+          if (pendente || pago) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-mini';
+            btn.style.cssText = 'margin-left:8px;flex-shrink:0;';
+            btn.textContent = pendente ? 'Paguei' : 'Ajustar';
+            btn.title = pendente
+              ? 'Dar baixa: valor, data, forma e conta de onde saiu'
+              : 'Corrigir ou desfazer a baixa deste mês';
+            btn.onclick = (ev) => { ev.stopPropagation(); abrirPagamentoRecorrente(f.id, chaveMesExibido); };
+            div.appendChild(btn);
+          }
           containerFixos.appendChild(div);
         });
       }
@@ -8935,7 +9051,11 @@
     // O badge no ícone do app é o único sinal que sobrevive ao app fechado
     function atualizarBadgeApp() {
       if (!navigator.setAppBadge) return;
-      const n = lembretesLigados() ? cobrancasVencidas().length : 0;
+      // Boleto vencido entra no badge junto das cobranças: com o app fechado,
+      // esse número no ícone é o único lembrete que sobra.
+      const hoje = obterDataBrasilia();
+      const boletosVencidos = lancamentos.filter(l => aguardandoPagamento(l) && l.data && l.data < hoje).length;
+      const n = lembretesLigados() ? cobrancasVencidas().length + boletosVencidos : 0;
       try {
         if (n > 0) navigator.setAppBadge(n); else navigator.clearAppBadge();
       } catch (e) { /* sem suporte, segue sem badge */ }
@@ -8945,7 +9065,45 @@
       if (navigator.clearAppBadge) { try { navigator.clearAppBadge(); } catch (e) {} }
     }
 
+    /* LEMBRETE DE BOLETO
+
+       A cobrança do cartão não precisa de lembrete: ela acontece com ou sem
+       você. Boleto e Pix precisam — se você esquecer, simplesmente não é pago.
+       Por isso o boleto previsto entra no mesmo sistema de lembretes das
+       cobranças, respeitando a antecedência que você escolheu em Ajustes (a
+       opção "1 dia" já existe lá). */
+    function avisarBoletosAPagar(forcar) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!lembretesLigados()) return;
+      const alvos = boletosParaAvisar();
+      if (!alvos.length) return;
+
+      const hoje = obterDataBrasilia();
+      if (!forcar && localStorage.getItem(CHAVE_ULTIMO_AVISO_BOLETO) === hoje) return;
+      localStorage.setItem(CHAVE_ULTIMO_AVISO_BOLETO, hoje);
+
+      const total = alvos.reduce((sm, l) => sm + parseVal(l.valor), 0);
+      const vencidos = alvos.filter(l => diasAte(l.data) < 0);
+      const amanha = alvos.filter(l => diasAte(l.data) === 1);
+      const nomes = [...new Set(alvos.map(l => l.descricao))].slice(0, 3).join(', ');
+
+      /* O título diz o que fazer, não o que aconteceu: "Boleto vence amanhã" faz
+         você abrir o banco; "Você tem boletos" não faz nada. */
+      let titulo;
+      if (vencidos.length) titulo = vencidos.length === 1 ? 'Boleto vencido' : vencidos.length + ' boletos vencidos';
+      else if (amanha.length) titulo = amanha.length === 1 ? 'Boleto vence amanhã' : amanha.length + ' boletos vencem amanhã';
+      else titulo = alvos.length === 1 ? 'Boleto pra pagar' : alvos.length + ' boletos pra pagar';
+
+      try {
+        new Notification(titulo, {
+          body: `${nomes}${alvos.length > 3 ? ' e mais ' + (alvos.length - 3) : ''} — R$ ${total.toFixed(2).replace('.', ',')}`,
+          tag: 'boletos-a-pagar'
+        });
+      } catch (e) { /* alguns navegadores só permitem via service worker */ }
+    }
+
     function avisarCobrancasVencidas(forcar) {
+      avisarBoletosAPagar(forcar);
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       if (!lembretesLigados()) return;
       const alvos = cobrancasParaAvisar();
@@ -9107,11 +9265,15 @@
           const d = new Date(l.data + 'T12:00:00');
           return l.tipo === 'receita' && !ehEmprestimoIndireto(l) && d.getMonth() === mes && d.getFullYear() === ano;
         });
+      } else if (tipoFiltro === 'aPagar') {
+        // Boletos previstos e ainda não pagos: o que está na sua mão neste mês
+        titulo.textContent = 'A pagar em ' + NOMES_MESES[mes];
+        filtrados = boletosAPagarDoMes(mes, ano).slice().sort((a, b) => a.data.localeCompare(b.data));
       } else if (tipoFiltro === 'debito' || tipoFiltro === 'saiu') {
         titulo.textContent = (tipoFiltro === 'saiu' ? 'Saiu da conta em ' : 'Débito / À Vista de ') + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
-          return l.tipo === 'despesa' && !eCredito(l.formaModo) && m === mes && a === ano;
+          return saiuDaConta(l) && m === mes && a === ano;
         });
         // As faturas pagas não são lançamentos, então não cabem na lista abaixo —
         // mas fazem parte do total do card. Vão como subtotal, no topo.
@@ -9140,6 +9302,8 @@
         filtrados = lancamentos.filter(l => {
           if (l.conta !== contaNome) return false;
           if (l.tipo === 'despesa' && eCredito(l.formaModo)) return false;
+          // boleto ainda não pago não passou por conta nenhuma
+          if (aguardandoPagamento(l)) return false;
           const d = new Date(l.data + 'T12:00:00');
           return d.getMonth() === mes && d.getFullYear() === ano;
         });
@@ -9331,7 +9495,7 @@
       document.getElementById('idFixoEditando').value = f ? f.id : '';
       document.getElementById('tituloModalFixo').textContent = f ? 'Editar gasto fixo' : 'Novo gasto fixo';
       document.getElementById('descFixo').value = f ? f.descricao : '';
-      document.getElementById('valorFixo').value = f ? 'R$ ' + f.valor : '';
+      document.getElementById('valorFixo').value = f ? fmtVal(parseVal(f.valor)) : '';
       selDia.value = f ? String(Math.min(parseInt(f.diaVencimento, 10) || 1, 28)) : '10';
       const selConta = document.getElementById('contaFixo');
       if (f && contas.some(c => c.nome === f.conta)) selConta.value = f.conta;
@@ -9607,6 +9771,69 @@
       if (mexeu) salvarLocalStorage();
     }
 
+    /* CONSÓRCIO SEM GASTO FIXO: CARD MORTO
+
+       O gasto fixo é o motor do consórcio — é ele que gera o boleto todo mês.
+       Excluir o gasto fixo pelo card de Gastos fixos apagava o motor e deixava o
+       consórcio existindo sem nada por baixo: card na tela, zero parcelas, e
+       nenhum boleto novo pra sempre. Não havia como perceber nem como desfazer.
+
+       Aqui o motor é remontado a partir do próprio consórcio, que guarda tudo
+       que o fixo precisa. Só dispara no estado inconsistente: excluir o
+       consórcio de verdade tira ele da lista e não cai aqui. */
+    function repararConsorciosSemFixo() {
+      let mexeu = false;
+      consorcios.forEach(c => {
+        if (!c || fixos.some(f => f.id === c.fixoId)) return;
+        const novoId = c.fixoId || ('f' + Date.now() + Math.floor(Math.random() * 1000));
+        fixos.push({
+          id: novoId,
+          descricao: c.nome,
+          valor: c.valorParcela,
+          conta: c.conta || primeiraConta(),
+          diaVencimento: c.diaVencimento,
+          categoria: 'Consórcio',
+          formaModo: c.formaPagamento || 'À Vista / Débito',
+          emprestimoPara: '',
+          diaCobranca: null,
+          dataInicio: c.dataInicio,
+          consorcioId: c.id
+        });
+        c.fixoId = novoId;
+        mexeu = true;
+      });
+      if (mexeu) {
+        garantirCategoriaConsorcio();
+        salvarFixos();
+        salvarConsorcios();
+        gerarLancamentosFixos();
+      }
+    }
+
+    /* MIGRAÇÃO: RECORRENTE FORA DO CARTÃO NASCE "A PAGAR"
+
+       Os boletos que o app já tinha projetado foram criados quando gasto fixo no
+       débito era tratado como dinheiro que sai sozinho. Os que ainda não
+       venceram passam pra "a pagar" — são justamente os que você ainda vai ter
+       que pagar na mão.
+
+       O passado fica como está, intencionalmente: marcar tudo que já venceu como
+       "a pagar" encheria a tela de pendência inventada e mexeria no saldo de
+       meses fechados. Data de hoje pra trás é histórico. */
+    function migrarRecorrentesAPagar() {
+      if (localStorage.getItem(CHAVE_MIGRACAO_A_PAGAR) === '1') return;
+      const hoje = obterDataBrasilia();
+      lancamentos.forEach(l => {
+        if (!l.fixoId || l.tipo !== 'despesa') return;
+        if (eCredito(l.formaModo)) return;
+        if (!l.data || l.data < hoje) return;
+        if (l.consorcioPagoEm) return;   // já tem baixa registrada
+        l.aPagar = true;
+      });
+      localStorage.setItem(CHAVE_MIGRACAO_A_PAGAR, '1');
+      salvarLocalStorage();
+    }
+
     /* PRAZO PRA PESSOA TE REEMBOLSAR NUM GASTO FIXO
 
        Antes era só "dia 10 do mês do gasto", e isso quebrava de duas formas:
@@ -9671,8 +9898,12 @@
           const chave = chaveMesAno(ano, mes);
           if (fimConsorcio && chave > fimConsorcio) break;
           const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
-          const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && l.data.slice(0, 7) === chave);
+          /* mesDaParcelaConsorcio e não l.data: quem paga o boleto de setembro
+             em outubro move a DATA, e comparar pela data faria o gerador achar
+             que setembro ficou vazio e criar a parcela de novo. */
+          const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && mesDaParcelaConsorcio(l) === chave);
           if (!jaExiste) {
+            const dataVenc = chave + '-' + String(dia).padStart(2, '0');
             lancamentos.push({
               id: novoIdLancamento(),
               tipo: 'despesa',
@@ -9682,9 +9913,16 @@
               numParcelas: '1',
               categoria: f.categoria || 'Outros',
               observacao: 'Gasto fixo mensal',
-              data: chave + '-' + String(dia).padStart(2, '0'),
+              data: dataVenc,
               valor: f.valor,
               fixoId: f.id,
+              /* No cartão a cobrança acontece sozinha: chegou o dia, o valor está
+                 na fatura, você não fez nada. Fora do cartão é o contrário — o
+                 boleto só é pago se VOCÊ for lá fazer o Pix. Então ele nasce
+                 "a pagar" e só vira dinheiro que saiu quando você dá baixa.
+                 Parcela retroativa entra já paga: se é de antes de hoje, o app
+                 está registrando uma coisa que já aconteceu. */
+              aPagar: (!eCredito(formaModoDoFixo(f)) && dataVenc >= hoje) || undefined,
               emprestimoPara: f.emprestimoPara || '',
               emprestimoQuitado: false,
               emprestimoVence: venceEmprestimoFixo(f, chave),
@@ -9757,8 +9995,8 @@
       document.getElementById('tituloModalConsorcio').textContent = c ? 'Editar consórcio' : 'Novo consórcio';
       document.getElementById('nomeConsorcio').value = c ? c.nome : '';
       document.getElementById('bemConsorcio').value = c ? (c.bem || '') : '';
-      document.getElementById('cartaConsorcio').value = c && c.valorCarta ? 'R$ ' + c.valorCarta : '';
-      document.getElementById('parcelaConsorcio').value = c ? 'R$ ' + c.valorParcela : '';
+      document.getElementById('cartaConsorcio').value = c && c.valorCarta ? fmtVal(parseVal(c.valorCarta)) : '';
+      document.getElementById('parcelaConsorcio').value = c ? fmtVal(parseVal(c.valorParcela)) : '';
       document.getElementById('totalParcelasConsorcio').value = c ? c.totalParcelas : '';
       selDia.value = c ? String(Math.min(parseInt(c.diaVencimento, 10) || 15, 28)) : '15';
       const selConta = document.getElementById('contaConsorcio');
@@ -9909,13 +10147,18 @@
       renderizarConsorcios();
     }
 
-    /* DAR BAIXA NA PARCELA SEM SAIR DA ABA INVESTIMENTOS
+    /* DAR BAIXA NUM GASTO RECORRENTE
 
-       O motor continua o mesmo: o fixo projeta a parcela todo mês. O que muda é
-       que dá pra confirmar, ali no card, o que saiu DE VERDADE — boleto que veio
-       com reajuste ou seguro, pagamento em outro dia, mês em que você pagou no
-       Pix em vez do débito. Nada de lançamento novo: a baixa corrige a parcela
-       que já existia, senão o mesmo boleto contaria duas vezes. */
+       O motor continua o mesmo: o fixo projeta a despesa todo mês. O que muda é
+       que, fora do cartão, essa despesa nasce PREVISTA — e quem confirma que ela
+       virou dinheiro saindo da conta é você, aqui.
+
+       A baixa nunca cria lançamento novo: corrige o que já estava previsto. Se
+       criasse um à parte, o mesmo boleto contaria duas vezes — uma como previsão
+       e outra como pagamento — e o mês fecharia errado.
+
+       Um modal só atende consórcio e gasto fixo comum. A única diferença é o
+       rótulo: no consórcio a ocorrência é "parcela 4/80", no resto é o mês. */
     const FORMA_DO_COMO_PAGOU = {
       'boleto': 'À Vista / Débito',
       'pix': 'Pix',
@@ -9925,124 +10168,246 @@
       'cartão de crédito': 'Crédito Parcelado'
     };
 
-    function abrirPagamentoConsorcio(id) {
-      const c = consorcios.find(x => x.id === id);
-      if (!c) return;
-      const parcelas = parcelasDoConsorcio(c);
-      if (!parcelas.length) {
-        avisar('Esse consórcio ainda não tem nenhuma parcela lançada.',
-          'A primeira parcela aparece aqui a partir da data de início que você cadastrou.');
+    // Ocorrências já projetadas de um gasto fixo, em ordem
+    /* AS OCORRÊNCIAS QUE O MODAL DE BAIXA OFERECE
+
+       Listar só os lançamentos que existem parecia natural e era uma armadilha:
+       quem apagou as parcelas da fatura (ou perdeu o gasto fixo) ficava sem
+       nenhuma opção — o botão "Registrar pagamento" abria um aviso de que não
+       havia nada, e não havia como registrar justamente o pagamento que tinha
+       acabado de fazer.
+
+       Agora a lista vem do CADASTRO: os meses que o consórcio/gasto fixo prevê,
+       tendo lançamento ou não. Mês sem lançamento é criado na hora em que você
+       confirma a baixa. Assim o motor pode ter falhado que o registro continua
+       possível. */
+    function ocorrenciasDoFixo(fixoId) {
+      const f = fixos.find(x => x.id === fixoId);
+      const cons = consorcioDoFixo(fixoId);
+      const porMes = new Map();
+
+      // 1) o que já existe
+      lancamentos.filter(l => l.fixoId === fixoId && l.data).forEach(l => {
+        porMes.set(mesDaParcelaConsorcio(l), { mes: mesDaParcelaConsorcio(l), lanc: l });
+      });
+
+      // 2) o que o cadastro prevê, mesmo sem lançamento
+      if (f && f.dataInicio) {
+        const ref = getMesReferencia(MESES_FIXOS_A_FRENTE);
+        const horizonte = chaveMesAno(ref.getFullYear(), ref.getMonth());
+        const fim = cons ? ultimoMesConsorcio(cons) : null;
+        const primeiro = f.dataInicio.slice(0, 7);
+        // Consórcio que só começa depois do horizonte de projeção ainda precisa
+        // oferecer a primeira parcela: é justamente quem paga adiantado.
+        let ultimo = horizonte < primeiro ? primeiro : horizonte;
+        if (fim && fim < ultimo) ultimo = fim;
+
+        let m = primeiro, guarda = 0;
+        while (m <= ultimo && guarda++ < 240) {
+          if (!porMes.has(m)) porMes.set(m, { mes: m, lanc: null });
+          m = somarMeses(m + '-01', 1).slice(0, 7);
+        }
+      }
+
+      return [...porMes.values()].sort((a, b) => a.mes.localeCompare(b.mes));
+    }
+
+    function consorcioDoFixo(fixoId) {
+      return consorcios.find(c => c.fixoId === fixoId) || null;
+    }
+
+    // Já teve baixa? Vale tanto pra quem nasceu "a pagar" quanto pra parcela de
+    // consórcio confirmada na mão antes deste estado existir.
+    function temBaixaRegistrada(l) {
+      return !!(l && l.consorcioPagoEm);
+    }
+
+    function abrirPagamentoRecorrente(fixoId, chaveMes) {
+      const f = fixos.find(x => x.id === fixoId);
+      if (!f) return;
+      const ocorrencias = ocorrenciasDoFixo(fixoId);
+      if (!ocorrencias.length) {
+        avisar('Esse gasto recorrente está sem data de início.',
+          'Abra o cadastro dele e informe a data da primeira cobrança — é ela que diz quais meses existem.');
         return;
       }
       popularSelectsContas();
-      document.getElementById('idConsorcioPagando').value = id;
+      document.getElementById('idFixoPagando').value = fixoId;
 
-      const sel = document.getElementById('parcelaPagarConsorcio');
+      const cons = consorcioDoFixo(fixoId);
+      document.getElementById('rotuloParcelaPagar').textContent = cons ? 'Parcela' : 'Mês';
+      document.getElementById('tituloPagarRecorrente').textContent = 'Registrar pagamento';
+
+      const sel = document.getElementById('parcelaPagarRecorrente');
       sel.innerHTML = '';
-      parcelas.forEach(l => {
+      ocorrencias.forEach(oc => {
         const o = document.createElement('option');
-        o.value = l.id;
-        const n = numeroDaParcelaConsorcio(c, l);
-        const d = mesDaParcelaConsorcio(l);
-        const mesTxt = NOMES_MESES[parseInt(d.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + d.slice(2, 4);
-        o.textContent = `${n}/${c.totalParcelas} · ${mesTxt} · ${fmtVal(parseVal(l.valor))}${l.consorcioPagoEm ? ' · paga' : ''}`;
+        o.value = oc.mes;
+        const mesTxt = NOMES_MESES[parseInt(oc.mes.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + oc.mes.slice(2, 4);
+        const prefixo = cons ? numeroDaParcelaConsorcio(cons, oc.mes) + '/' + cons.totalParcelas + ' · ' : '';
+        const valor = oc.lanc ? parseVal(oc.lanc.valor) : parseVal(cons ? cons.valorParcela : f.valor);
+        const estado = temBaixaRegistrada(oc.lanc) ? ' · paga'
+          : aguardandoPagamento(oc.lanc) ? ' · a pagar'
+          : !oc.lanc ? ' · sem lançamento' : '';
+        o.textContent = `${prefixo}${mesTxt} · ${fmtVal(valor)}${estado}`;
         sel.appendChild(o);
       });
-      // abre já na parcela mais provável: a primeira sem baixa
-      const alvo = parcelas.find(l => !l.consorcioPagoEm) || parcelas[parcelas.length - 1];
-      sel.value = alvo.id;
 
-      document.getElementById('infoPagarConsorcio').textContent =
-        `${c.nome} · parcela prevista de ${fmtVal(parseVal(c.valorParcela))}, vencendo todo dia ${c.diaVencimento}.`;
-      preencherParcelaConsorcio();
-      document.getElementById('modalPagarConsorcio').classList.remove('escondido');
+      /* Abre já no que você provavelmente veio resolver. Quando o botão veio de
+         uma linha de um mês específico (o card de gastos fixos mostra o mês que
+         está sendo visto), é ESSE mês — senão, tocar em "Ajustar" na linha de
+         setembro abriria outubro. Sem mês, cai no primeiro que ainda não tem
+         baixa, que é o que você tem pra resolver. */
+      const alvo = (chaveMes && ocorrencias.find(oc => oc.mes === chaveMes))
+        || ocorrencias.find(oc => aguardandoPagamento(oc.lanc))
+        || ocorrencias.find(oc => !temBaixaRegistrada(oc.lanc))
+        || ocorrencias[ocorrencias.length - 1];
+      sel.value = alvo.mes;
+
+      document.getElementById('infoPagarRecorrente').textContent = cons
+        ? `${cons.nome} · parcela prevista de ${fmtVal(parseVal(cons.valorParcela))}, vencendo todo dia ${cons.diaVencimento}.`
+        : `${f.descricao} · ${fmtVal(parseVal(f.valor))} previstos todo dia ${f.diaVencimento}.`;
+      preencherParcelaRecorrente();
+      document.getElementById('modalPagarRecorrente').classList.remove('escondido');
     }
 
-    /* O id do lançamento é número e o value do <select> é texto: comparar com
-       === devolveria undefined sempre. */
-    function parcelaSelecionadaConsorcio() {
-      const v = document.getElementById('parcelaPagarConsorcio').value;
-      return lancamentos.find(x => String(x.id) === v) || null;
+    // O <select> guarda o MÊS, não o id do lançamento: o mês existe sempre, o
+    // lançamento pode não existir ainda.
+    function mesSelecionadoRecorrente() {
+      return document.getElementById('parcelaPagarRecorrente').value || '';
     }
 
-    function consorcioSendoPago() {
-      const v = document.getElementById('idConsorcioPagando').value;
-      return consorcios.find(x => x.id === v) || null;
+    function parcelaSelecionadaRecorrente() {
+      const f = fixoSendoPago();
+      if (!f) return null;
+      const mes = mesSelecionadoRecorrente();
+      const oc = ocorrenciasDoFixo(f.id).find(x => x.mes === mes);
+      return oc ? oc.lanc : null;
     }
 
-    function preencherParcelaConsorcio() {
-      const c = consorcioSendoPago();
-      const l = parcelaSelecionadaConsorcio();
-      if (!c || !l) return;
+    function fixoSendoPago() {
+      const v = document.getElementById('idFixoPagando').value;
+      return fixos.find(x => x.id === v) || null;
+    }
+
+    function preencherParcelaRecorrente() {
+      const f = fixoSendoPago();
+      if (!f) return;
+      const l = parcelaSelecionadaRecorrente();
+      const mes = mesSelecionadoRecorrente();
+      const cons = consorcioDoFixo(f.id);
       const hoje = obterDataBrasilia();
-      document.getElementById('valorPagarConsorcio').value = 'R$ ' + l.valor;
-      /* Parcela que ainda vai vencer volta com a data de HOJE: se você está
-         dando baixa agora, é hoje que o dinheiro saiu. Parcela já vencida volta
-         com a data do próprio boleto, que é o palpite certo na maioria das vezes. */
-      document.getElementById('dataPagarConsorcio').value =
-        l.consorcioPagoEm || (l.data > hoje ? hoje : l.data);
 
-      const selComo = document.getElementById('comoPagarConsorcio');
-      const sugerido = l.pagoComo || (eCredito(l.formaModo) ? 'cartão de crédito' : 'boleto');
+      /* Mês sem lançamento: os campos vêm do cadastro, porque é ele que descreve
+         o que era pra ter acontecido naquele mês. */
+      const valorPrevisto = l ? parseVal(l.valor) : parseVal(cons ? cons.valorParcela : f.valor);
+      const dia = String(Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28)).padStart(2, '0');
+      const vencimento = l ? l.data : mes + '-' + dia;
+
+      // fmtVal e não 'R$ ' + valor: o valor guardado é cru ("1800,00") e sairia
+      // sem o ponto de milhar, diferente de tudo mais na tela
+      document.getElementById('valorPagarRecorrente').value = fmtVal(valorPrevisto);
+      /* Cobrança que ainda vai vencer volta com a data de HOJE: se você está
+         dando baixa agora, é hoje que o dinheiro saiu. Vencida volta com a data
+         do próprio boleto, que é o palpite certo na maioria das vezes. */
+      document.getElementById('dataPagarRecorrente').value =
+        (l && l.consorcioPagoEm) || (vencimento > hoje ? hoje : vencimento);
+
+      const selComo = document.getElementById('comoPagarRecorrente');
+      const formaBase = l ? l.formaModo : formaModoDoFixo(f);
+      const sugerido = (l && l.pagoComo) || (eCredito(formaBase) ? 'cartão de crédito' : 'boleto');
       selComo.value = Array.from(selComo.options).some(o => o.value === sugerido) ? sugerido : 'boleto';
 
-      const selConta = document.getElementById('contaPagarConsorcio');
-      const conta = l.conta || c.conta;
+      const selConta = document.getElementById('contaPagarRecorrente');
+      const conta = (l && l.conta) || f.conta;
       if (contas.some(x => x.nome === conta)) selConta.value = conta;
 
-      document.getElementById('btnDesfazerPagamentoConsorcio').classList.toggle('escondido', !l.consorcioPagoEm);
+      document.getElementById('btnDesfazerPagamentoRecorrente').classList.toggle('escondido', !temBaixaRegistrada(l));
     }
 
-    function confirmarPagamentoConsorcio() {
-      const c = consorcioSendoPago();
-      const l = parcelaSelecionadaConsorcio();
-      if (!c || !l) return;
+    function confirmarPagamentoRecorrente() {
+      const f = fixoSendoPago();
+      if (!f) return;
+      let l = parcelaSelecionadaRecorrente();
+      const mes = mesSelecionadoRecorrente();
+      if (!mes) return;
 
-      const valor = parseVal(document.getElementById('valorPagarConsorcio').value.replace('R$', '').trim());
+      const valor = parseVal(document.getElementById('valorPagarRecorrente').value.replace('R$', '').trim());
       if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
-      const data = document.getElementById('dataPagarConsorcio').value || obterDataBrasilia();
-      const como = document.getElementById('comoPagarConsorcio').value;
-      const conta = document.getElementById('contaPagarConsorcio').value || c.conta || primeiraConta();
+      const data = document.getElementById('dataPagarRecorrente').value || obterDataBrasilia();
+      const como = document.getElementById('comoPagarRecorrente').value;
+      const conta = document.getElementById('contaPagarRecorrente').value || f.conta || primeiraConta();
+      const cons = consorcioDoFixo(f.id);
 
       let forma = FORMA_DO_COMO_PAGOU[como] || 'À Vista / Débito';
       // crédito em conta sem cartão cairia numa fatura que não existe
       if (eCredito(forma) && !contaTemCredito(conta)) forma = 'À Vista / Débito';
 
-      // guarda de que mês é a parcela ANTES de mexer na data
-      if (!l.consorcioMesRef) l.consorcioMesRef = l.data.slice(0, 7);
+      /* Mês sem lançamento: o pagamento aconteceu, então o lançamento passa a
+         existir agora. É isto que tira o beco sem saída de quem apagou a parcela
+         ou perdeu o gasto fixo — registrar continua possível. */
+      if (!l) {
+        l = {
+          id: novoIdLancamento(),
+          tipo: 'despesa',
+          descricao: f.descricao,
+          numParcelas: '1',
+          categoria: f.categoria || 'Outros',
+          fixoId: f.id,
+          emprestimoPara: f.emprestimoPara || '',
+          emprestimoQuitado: false,
+          emprestimoVence: venceEmprestimoFixo(f, mes),
+          emprestimoRateio: montarRateio(
+            nomesEmprestimo(f.emprestimoPara || ''),
+            f.rateioIncluiVoce !== false,
+            valor, '1', venceEmprestimoFixo(f, mes))
+        };
+        lancamentos.push(l);
+        // o gerador retoma de ultimoMesGerado: sem avançar, ele tentaria criar
+        // de novo o mês que acabou de nascer aqui
+        if (!f.ultimoMesGerado || f.ultimoMesGerado < mes) { f.ultimoMesGerado = mes; salvarFixos(); }
+      }
+
+      // guarda de que mês é a ocorrência ANTES de mexer na data
+      if (!l.consorcioMesRef) l.consorcioMesRef = (l.data || mes + '-01').slice(0, 7);
       l.valor = valor.toFixed(2).replace('.', ',');
       l.data = data;
       l.conta = conta;
       l.formaModo = forma;
       l.pagoComo = como;
       l.consorcioPagoEm = data;
-      l.observacao = 'Consórcio · pago via ' + como;
+      // é aqui que o compromisso vira saída de verdade
+      delete l.aPagar;
+      l.observacao = (cons ? 'Consórcio' : 'Gasto fixo mensal') + ' · pago via ' + como;
 
       salvarLocalStorage();
-      fecharModal('modalPagarConsorcio');
+      fecharModal('modalPagarRecorrente');
       atualizarTudo();
       renderizarConsorcios();
     }
 
-    function desfazerPagamentoConsorcio() {
-      const c = consorcioSendoPago();
-      const l = parcelaSelecionadaConsorcio();
-      if (!c || !l || !l.consorcioPagoEm) return;
-      if (!confirm('Desfazer a baixa desta parcela? Ela volta a ser a parcela prevista, com o valor e o dia do contrato.')) return;
+    function desfazerPagamentoRecorrente() {
+      const f = fixoSendoPago();
+      const l = parcelaSelecionadaRecorrente();
+      if (!f || !l || !temBaixaRegistrada(l)) return;
+      if (!confirm('Desfazer a baixa? Isso volta a ser uma cobrança prevista, com o valor e o dia do cadastro.')) return;
 
+      const cons = consorcioDoFixo(f.id);
       const mes = mesDaParcelaConsorcio(l);
-      const dia = String(Math.min(Math.max(parseInt(c.diaVencimento, 10) || 15, 1), 28)).padStart(2, '0');
+      const dia = String(Math.min(Math.max(parseInt(f.diaVencimento, 10) || 15, 1), 28)).padStart(2, '0');
       l.data = mes + '-' + dia;
-      l.valor = c.valorParcela;
-      l.conta = c.conta;
-      l.formaModo = formaDoConsorcio(c);
+      l.valor = cons ? cons.valorParcela : f.valor;
+      l.conta = f.conta;
+      l.formaModo = formaModoDoFixo(f);
       l.observacao = 'Gasto fixo mensal';
       delete l.consorcioPagoEm;
       delete l.pagoComo;
       delete l.consorcioMesRef;
+      // volta a ser previsão só se for fora do cartão — no crédito ela nunca foi
+      if (!eCredito(l.formaModo)) l.aPagar = true;
 
       salvarLocalStorage();
-      fecharModal('modalPagarConsorcio');
+      fecharModal('modalPagarRecorrente');
       atualizarTudo();
       renderizarConsorcios();
     }
@@ -10055,7 +10420,7 @@
       document.getElementById('infoContemplacao').textContent =
         `${c.nome} · ${t.qtdPagas} de ${t.total} parcelas pagas · parcela hoje ${fmtVal(parseVal(c.valorParcela))}.`;
       document.getElementById('dataContemplacao').value = c.dataContemplacao || obterDataBrasilia();
-      document.getElementById('novaParcelaContemplacao').value = 'R$ ' + c.valorParcela;
+      document.getElementById('novaParcelaContemplacao').value = fmtVal(parseVal(c.valorParcela));
       document.getElementById('modalContemplacao').classList.remove('escondido');
     }
 
@@ -10249,7 +10614,7 @@
           b.onclick = (ev) => { ev.stopPropagation(); fn(); };
           boxAcoes.appendChild(b);
         };
-        acao('Registrar pagamento', 'Dar baixa na parcela com o valor e a data que saíram de verdade', () => abrirPagamentoConsorcio(c.id));
+        acao('Registrar pagamento', 'Dar baixa na parcela com o valor, a data e a conta que saíram de verdade', () => abrirPagamentoRecorrente(c.fixoId));
         acao('Editar', 'Mudar valor, parcelas, conta, forma de pagamento...', () => abrirFormConsorcio(c.id));
         if (!c.contemplado) acao('Fui contemplado', '', () => abrirContemplacao(c.id));
         acao('Encerrar grupo', 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)', () => abrirEncerrarConsorcio(c.id));
@@ -11291,7 +11656,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.13-1';
+    const APP_VERSION = '2026.09.13-3';
 
     // Inicialização
     carregarLocalStorage();
@@ -11313,6 +11678,8 @@ function confirmarLancamentoVoz() {
     carregarContas();
     migrarFormaPadraoDasContas();   // depois de carregarContas: antes o array está vazio
     migrarPrazosDeFixos();
+    repararConsorciosSemFixo();   // antes do "a pagar": pode criar lançamento novo
+    migrarRecorrentesAPagar();
     popularSelectsContas();
     carregarCategorias();
     popularSelectsCategorias();
