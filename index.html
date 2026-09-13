@@ -946,7 +946,7 @@
             </div>
             <span class="chevron-sec" id="chevron-investimentos">▾</span>
           </button>
-          <button class="btn-acao" onclick="abrirFormAporte()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo aporte">+</button>
+          <button class="btn-olho" id="btnOlhoInvest" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
         </div>
         <div id="corpo-investimentos">
           <div style="text-align:center;padding:14px 0;">
@@ -956,23 +956,17 @@
                  segunda linha vazia seria só ruído embaixo do número principal. -->
             <div id="ganhoPerdaTotal" style="font-size:12.5px;margin-top:4px;min-height:1em;"></div>
           </div>
+          <button type="button" class="btn-adicionar" onclick="abrirFormAporte()">+ Novo aporte</button>
         </div>
       </div>
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('aportes')">
-            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-              <h4 style="color:var(--texto-medio);">Aportes</h4>
-              <span id="resumoFechado-aportes" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
-            </div>
-            <span class="chevron-sec" id="chevron-aportes">▾</span>
-          </button>
-          <button type="button" class="link-obs" onclick="abrirModalTiposAtivo()">gerenciar tipos</button>
-        </div>
-        <div id="corpo-aportes" style="margin-top:12px;">
-          <div id="listaInvestimentos"></div>
-        </div>
-      </div>
+
+      <!-- UM CARD POR GRUPO DE INVESTIMENTO
+           Antes era um card "Aportes" só, com os tipos virando subtítulos dentro
+           dele. Com mais de um tipo, ou com o card fechado, não dava pra olhar
+           só o Tesouro sem carregar o resto junto. Agora cada grupo é um card,
+           com seus totais e seu próprio abre-fecha — do mesmo tamanho que o
+           card de Consórcios, que é o que ele é: um tipo de investimento. -->
+      <div id="cardsGruposInvestimento"></div>
 
       <!-- CONSÓRCIOS — separado dos aportes de propósito: é compra parcelada de
            uma carta de crédito, não dinheiro rendendo. Totais próprios. -->
@@ -985,11 +979,11 @@
             </div>
             <span class="chevron-sec" id="chevron-consorcios">▾</span>
           </button>
-          <button class="btn-acao" onclick="abrirFormConsorcio()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo consórcio">+</button>
         </div>
         <div id="corpo-consorcios" style="margin-top:8px;">
           <div id="totaisConsorcios" class="escondido" style="display:flex;gap:8px;margin-bottom:14px;"></div>
           <div id="listaConsorcios"></div>
+          <button type="button" class="btn-adicionar" onclick="abrirFormConsorcio()">+ Novo consórcio</button>
         </div>
       </div>
 
@@ -1013,16 +1007,42 @@
 
     <div id="abaGrupos" class="aba-conteudo">
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <h3>Grupos de Gastos</h3>
-          <button class="btn-acao" onclick="criarGrupoRapido()" style="font-size:24px;color:var(--texto-medio);line-height:1;" aria-label="Novo grupo">+</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('grupos')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h3>Grupos de Gastos</h3>
+              <span id="resumoFechado-grupos" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-grupos">▾</span>
+          </button>
+          <button class="btn-olho" id="btnOlhoGrupos" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
         </div>
-        <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
-        <div class="busca-box">
-          <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-          <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
+        <div id="corpo-grupos" style="margin-top:8px;">
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
+          <div class="busca-box">
+            <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
+          </div>
+          <div id="listaGrupos"></div>
+          <button type="button" class="btn-adicionar" onclick="criarGrupoRapido()">+ Novo grupo</button>
         </div>
-        <div id="listaGrupos"></div>
+      </div>
+
+      <!-- Grupo encerrado é história: sai do card de cima pra não competir com
+           a viagem que ainda está rolando, mas continua acessível. -->
+      <div class="card escondido" id="cardGruposEncerrados">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('gruposEncerrados')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h4 style="color:var(--texto-medio);">Grupos encerrados</h4>
+              <span id="qtdGruposEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-gruposEncerrados">▾</span>
+          </button>
+        </div>
+        <div id="corpo-gruposEncerrados" style="margin-top:12px;">
+          <div id="listaGruposEncerrados"></div>
+        </div>
       </div>
     </div>
 
@@ -1124,6 +1144,27 @@
         <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
           <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
           <div id="ordemCardsAbaGraficos"></div>
+        </div>
+      </div>
+
+      <!-- Cada grupo destes vira um card na aba Investim. Criar e ordenar é
+           configuração, e configuração mora aqui — não no meio da carteira. -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('gruposInvestimento'); renderizarListaTiposAtivo();">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">Grupos de investimento</h3>
+            <span id="contadorGruposInv" style="font-size:11px;color:var(--texto-medio);"></span>
+          </div>
+          <span class="chevron-sec" id="chevron-gruposInvestimento">▸</span>
+        </button>
+        <div id="corpo-gruposInvestimento" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">
+            Tesouro, fundos, poupança, ações… Cada grupo vira um card na aba <strong>Investim.</strong>,
+            com os aportes e o rendimento dele. Arraste pelas listrinhas pra mudar a ordem dos cards,
+            e toque na linha pra renomear ou excluir.
+          </p>
+          <div id="listaTiposAtivoGerenciar"></div>
+          <button type="button" class="btn-adicionar" onclick="abrirFormTipoAtivo()">+ Novo grupo de investimento</button>
         </div>
       </div>
 
@@ -1335,7 +1376,7 @@
         <div class="form-group">
           <div style="display:flex;align-items:baseline;justify-content:space-between;">
             <label for="tipoAtivoAporte" style="margin-bottom:0;">Tipo de ativo</label>
-            <button type="button" class="link-obs" onclick="abrirModalTiposAtivo()">gerenciar tipos</button>
+            <button type="button" class="link-obs" onclick="irParaGruposInvestimento()">gerenciar grupos</button>
           </div>
           <select id="tipoAtivoAporte"></select>
         </div>
@@ -1537,18 +1578,6 @@
       </div>
       <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">Digite quanto essa aplicação vale hoje. A diferença pro que você aportou aparece como ganho ou perda.</p>
       <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarValorAtualizado()">Salvar valor</button>
-    </div>
-  </div>
-
-  <div id="modalTiposAtivo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalTiposAtivo')">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Gerenciar tipos de ativo</h3>
-        <button class="btn-fechar" onclick="fecharModal('modalTiposAtivo')">&times;</button>
-      </div>
-      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;">É o que agrupa seus aportes na carteira. Toque na linha pra renomear ou excluir.</p>
-      <div id="listaTiposAtivoGerenciar"></div>
-      <button type="button" class="btn-adicionar" onclick="abrirFormTipoAtivo()">+ Adicionar novo tipo</button>
     </div>
   </div>
 
@@ -2553,13 +2582,16 @@
        esses nascem abertos e só ficam fechados se você fechar. Cada consórcio
        individual (chave "consorcio-<id>") segue a mesma régua. */
     const SECOES_ABERTAS_POR_PADRAO = new Set([
-      'investimentos', 'aportes', 'consorcios', 'consorciosEncerrados'
+      'investimentos', 'aportes', 'consorcios', 'consorciosEncerrados',
+      'grupos', 'gruposEncerrados'
     ]);
 
     function secaoEstaAberta(nome) {
       const escolhido = uiPrefs['secao_' + nome];
       if (escolhido === undefined) {
-        return SECOES_ABERTAS_POR_PADRAO.has(nome) || nome.indexOf('consorcio-') === 0;
+        return SECOES_ABERTAS_POR_PADRAO.has(nome)
+        || nome.indexOf('consorcio-') === 0
+        || nome.indexOf('grupoInv-') === 0;
       }
       return escolhido === true;
     }
@@ -3303,23 +3335,51 @@
       atualizarResumoEGraficos();
     }
 
-    // GERENCIAMENTO DE TIPOS DE ATIVO (categorias dos investimentos)
-    function abrirModalTiposAtivo() {
-      cancelarEdicaoTipoAtivo();
+    /* GRUPOS DE INVESTIMENTO (antigos "tipos de ativo")
+       A gestão saiu da aba Investim. e foi pra Ajustes: criar e ordenar grupo é
+       configuração, e a carteira fica só com o que é dinheiro. O atalho do
+       formulário de aporte leva até lá com a seção já aberta. */
+    function irParaGruposInvestimento() {
+      fecharModal('modalAporte');
+      const botao = [...document.querySelectorAll('.nav-tab')]
+        .find(t => (t.getAttribute('onclick') || '').includes('abaConfig'));
+      mudarAba('abaConfig', botao);
+      if (!secaoEstaAberta('gruposInvestimento')) alternarSecao('gruposInvestimento');
       renderizarListaTiposAtivo();
-      document.getElementById('modalTiposAtivo').classList.remove('escondido');
+      const alvo = document.getElementById('corpo-gruposInvestimento');
+      if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function renderizarListaTiposAtivo() {
       const box = document.getElementById('listaTiposAtivoGerenciar');
+      if (!box) return;
       box.innerHTML = '';
       tiposAtivo.forEach(nome => {
+        // quantos aportes o grupo tem, pra você saber o que está excluindo
+        const qtd = investimentos.filter(i => (i.tipoAtivo || 'Outros') === nome).length;
         const div = document.createElement('div');
         div.className = 'item-lancamento';
-        div.onclick = () => abrirAcoesTipoAtivo(nome);
-        div.innerHTML = `<div class="item-info"><strong>${nome}</strong></div>`;
+        div.dataset.item = nome;
+        div.innerHTML = `
+          <div class="item-info" data-abrir style="cursor:pointer;">
+            <strong>${nome}</strong>
+            <div style="font-size:11px;color:var(--texto-fraco);">${qtd ? (qtd === 1 ? '1 aporte' : qtd + ' aportes') : 'sem aportes'}</div>
+          </div>
+          <button type="button" class="btn-pegador" data-pegador aria-label="Arrastar para reordenar">${SVG_PEGADOR}</button>`;
+        div.querySelector('[data-abrir]').onclick = () => abrirAcoesTipoAtivo(nome);
         box.appendChild(div);
       });
+
+      // a ordem daqui é a ordem dos cards na aba Investim.
+      tornarListaArrastavel(box, ordem => {
+        tiposAtivo = ordem.slice();
+        salvarTiposAtivo();
+        popularSelectsTiposAtivo();
+        renderizarInvestimentos();
+      });
+
+      const cont = document.getElementById('contadorGruposInv');
+      if (cont) cont.textContent = tiposAtivo.length === 1 ? '1 grupo' : tiposAtivo.length + ' grupos';
     }
 
     // Balão de opções do tipo de ativo — mesma ideia da lista de categorias
@@ -3957,7 +4017,7 @@
     const SVG_OLHO_FECHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--texto-fraco)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
     function atualizarIconesOlho() {
-      ['btnOlho', 'btnOlhoFaturas'].forEach(id => {
+      ['btnOlho', 'btnOlhoFaturas', 'btnOlhoGrupos', 'btnOlhoInvest'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = valoresOcultos ? SVG_OLHO_FECHADO : SVG_OLHO;
       });
@@ -10845,22 +10905,16 @@
 
     function renderizarInvestimentos() {
       const totalEl = document.getElementById('totalInvestido');
-      const lista = document.getElementById('listaInvestimentos');
+      const container = document.getElementById('cardsGruposInvestimento');
       if (!totalEl) return;
 
       const totalAportado = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
       const totalAtual = investimentos.reduce((s, i) => s + valorAtualDoAporte(i), 0);
-      totalEl.textContent = fmtVal(totalAportado);
+      totalEl.textContent = fmtOculto(totalAportado);
       // Com o card fechado o total vira a única informação visível — sem ele,
       // fechar significaria perder o número de vista.
       const resumoInv = document.getElementById('resumoFechado-investimentos');
       if (resumoInv) resumoInv.textContent = fmtOculto(totalAportado);
-      const resumoAportes = document.getElementById('resumoFechado-aportes');
-      if (resumoAportes) {
-        resumoAportes.textContent = investimentos.length
-          ? (investimentos.length === 1 ? '1 aporte' : investimentos.length + ' aportes')
-          : 'nenhum';
-      }
 
       const diffTotal = totalAtual - totalAportado;
       const ganhoPerdaEl = document.getElementById('ganhoPerdaTotal');
@@ -10869,30 +10923,68 @@
           const pct = totalAportado > 0 ? (diffTotal / totalAportado * 100) : 0;
           const sinal = diffTotal >= 0 ? '+' : '−';
           const cor = diffTotal >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-          ganhoPerdaEl.innerHTML = `vale ${fmtVal(totalAtual)} hoje · <strong style="color:${cor};">${sinal}${fmtVal(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1)}%)</strong>`;
+          ganhoPerdaEl.innerHTML = `vale ${fmtOculto(totalAtual)} hoje · <strong style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1)}%)</strong>`;
         } else {
           ganhoPerdaEl.innerHTML = '';
         }
       }
 
-      lista.innerHTML = '';
-      if (investimentos.length === 0) {
-        lista.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte registrado ainda.</p>';
+      if (!container) return;
+      container.innerHTML = '';
+
+      /* A ordem dos cards é a ordem dos grupos em Ajustes, não a do maior saldo:
+         quem arrastou pra deixar a Poupança em cima espera achar ela em cima no
+         mês seguinte, independente de ter rendido mais ou menos. */
+      const porTipo = {};
+      investimentosPorTipo().forEach(g => { porTipo[g.tipo] = g; });
+      const ordem = tiposAtivo.filter(t => porTipo[t])
+        .concat(Object.keys(porTipo).filter(t => !tiposAtivo.includes(t)));
+
+      if (!ordem.length) {
+        const vazio = document.createElement('div');
+        vazio.className = 'card';
+        vazio.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte registrado ainda. Use <strong>+ Novo aporte</strong> aí em cima — cada tipo de investimento vira um card aqui.</p>';
+        container.appendChild(vazio);
         return;
       }
 
-      investimentosPorTipo().forEach(g => {
-        const cab = document.createElement('div');
-        cab.style.cssText = 'display:flex;align-items:baseline;justify-content:space-between;margin:14px 0 6px;';
+      ordem.forEach(tipo => {
+        const g = porTipo[tipo];
+        const chave = 'grupoInv-' + tipo;
         let diffTxt = '';
         if (g.diff !== 0) {
           const sinal = g.diff >= 0 ? '+' : '−';
           const cor = g.diff >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-          diffTxt = ` · <span style="color:${cor};">${sinal}${fmtVal(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%)</span>`;
+          diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%) desde o aporte</div>`;
         }
-        cab.innerHTML = `<strong style="font-size:12.5px;color:var(--texto-medio);">${g.tipo}</strong><span style="font-size:11px;color:var(--texto-fraco);">${fmtVal(g.atual)}${diffTxt}</span>`;
-        lista.appendChild(cab);
 
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <button type="button" class="card-header-toggle" style="flex:1;" data-toggle-secao>
+              <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+                <h4 style="color:var(--texto-medio);">${tipo}</h4>
+                <span id="resumoFechado-${chave}" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+              </div>
+              <span class="chevron-sec" id="chevron-${chave}">▾</span>
+            </button>
+          </div>
+          <div id="corpo-${chave}" style="margin-top:10px;">
+            <div style="text-align:center;padding:6px 0 10px;">
+              <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">vale hoje</span>
+              <div style="font-size:20px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(g.atual)}</div>
+              ${diffTxt}
+            </div>
+            <div data-itens></div>
+            <button type="button" class="btn-adicionar" data-novo-aporte>+ Novo aporte em ${tipo}</button>
+          </div>
+        `;
+
+        card.querySelector('[data-toggle-secao]').onclick = () => alternarSecao(chave);
+        card.querySelector('[data-novo-aporte]').onclick = () => abrirFormAporte(tipo);
+
+        const box = card.querySelector('[data-itens]');
         g.itens.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(inv => {
           const dataFmt = inv.data.split('-').reverse().join('/');
           const atual = valorAtualDoAporte(inv);
@@ -10904,13 +10996,22 @@
           if (diffInv !== 0) {
             const sinal = diffInv >= 0 ? '+' : '−';
             const cor = diffInv >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-            subLinha += ` · <span style="color:${cor};">${sinal}${fmtVal(Math.abs(diffInv))}</span>`;
+            subLinha += ` · <span style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffInv))}</span>`;
           }
           const classeValor = diffInv < 0 ? 'valor-despesa' : 'valor-receita';
-          div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div><div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">${subLinha}</div></div><span class="${classeValor}">${fmtVal(atual)}</span>`;
-          lista.appendChild(div);
+          div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div><div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">${subLinha}</div></div><span class="${classeValor}">${fmtOculto(atual)}</span>`;
+          box.appendChild(div);
         });
+
+        container.appendChild(card);
+        const resumo = card.querySelector('[id^="resumoFechado-"]');
+        if (resumo) resumo.textContent = fmtOculto(g.atual);
+        aplicarSecao(chave);
       });
+
+      // a lista em Ajustes mostra quantos aportes cada grupo tem: sem isto ela
+      // ficaria com a contagem do momento em que o app abriu
+      renderizarListaTiposAtivo();
     }
 
     function abrirModalAtualizarValor(id) {
@@ -10940,9 +11041,16 @@
     }
 
     /* REQUISIÇÃO 7: TECLADO NUMÉRICO E FORMATAÇÃO DE CENTAVOS NO MODAL DE INVESTIMENTO */
-    function abrirFormAporte() {
+    function abrirFormAporte(tipoPreferido) {
       document.getElementById('valorAporte').value = '';
       popularSelectsTiposAtivo();
+      /* Vindo do botão de dentro de um card de grupo, o tipo já chega escolhido:
+         você tocou em "Novo aporte em Tesouro Direto", não faz sentido ter que
+         dizer de novo que é Tesouro Direto. */
+      const sel = document.getElementById('tipoAtivoAporte');
+      if (sel && tipoPreferido && Array.from(sel.options).some(o => o.value === tipoPreferido)) {
+        sel.value = tipoPreferido;
+      }
       document.getElementById('modalAporte').classList.remove('escondido');
     }
 
@@ -11032,24 +11140,23 @@
       return `<div style="font-size:10px;color:${r.aReceber > 0 ? 'var(--amarelo)' : 'var(--verde)'};margin-top:2px;">${partes.join(' · ')}</div>`;
     }
 
+    /* Duas listas, dois cards: a viagem que ainda está rolando não divide espaço
+       com as que já fecharam. Mesma separação dos consórcios. */
     function renderizarGrupos() {
       const container = document.getElementById('listaGrupos');
+      const containerFechados = document.getElementById('listaGruposEncerrados');
       const termo = textoSeguro(document.getElementById('inputBuscaGrupo')?.value || '');
-      container.innerHTML = '';
-      const listaBase = grupos.slice().sort((a, b) => (a.status === b.status ? 0 : (a.status === 'aberto' ? -1 : 1)));
-      const listaFiltrada = termo ? listaBase.filter(g => textoSeguro(g.nome).includes(termo)) : listaBase;
+      if (!container) return;
 
-      if (listaFiltrada.length === 0) {
-        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum grupo encontrado com esse nome.</p>';
-        return;
-      }
+      const combinaBusca = g => !termo || textoSeguro(g.nome).includes(termo);
+      const abertos = grupos.filter(g => g.status === 'aberto' && combinaBusca(g));
+      const fechados = grupos.filter(g => g.status !== 'aberto' && combinaBusca(g));
 
-      listaFiltrada.forEach(g => {
+      const linha = (g) => {
         const { bruto, recebido, liquido, aReceber } = resumoGrupo(g.id);
-        const total = liquido;
         const contexto = [];
-        if (recebido > 0) contexto.push('de ' + fmtVal(bruto));
-        if (aReceber > 0) contexto.push(fmtVal(aReceber) + ' a receber');
+        if (recebido > 0) contexto.push('de ' + fmtOculto(bruto));
+        if (aReceber > 0) contexto.push(fmtOculto(aReceber) + ' a receber');
         const div = document.createElement('div');
         div.className = 'item-lancamento';
         div.addEventListener('click', (e) => { if (e.target.closest('.btn-acao')) return; abrirModalGrupo(g.id); });
@@ -11059,12 +11166,39 @@
             <div style="font-size:11px;color:var(--texto-fraco);">${g.status === 'aberto' ? '🟢 Em aberto' : '⚪ Encerrado'}${contexto.length ? ' · ' + contexto.join(' · ') : ''}</div>
           </div>
           <div class="item-acoes">
-            <span class="${total >= 0 ? 'valor-despesa' : 'valor-receita'}">${fmtVal(total)}</span>
+            <span class="${liquido >= 0 ? 'valor-despesa' : 'valor-receita'}">${fmtOculto(liquido)}</span>
             <button class="btn-acao" onclick="event.stopPropagation(); alternarStatusGrupo('${g.id}')" title="${g.status === 'aberto' ? 'Encerrar grupo' : 'Reabrir grupo'}">${g.status === 'aberto' ? '🔒 Encerrar' : '🔓 Reabrir'}</button>
           </div>
         `;
-        container.appendChild(div);
-      });
+        return div;
+      };
+
+      container.innerHTML = '';
+      if (!abertos.length) {
+        container.innerHTML = termo
+          ? '<p style="color:var(--texto-medio);font-size:13px;">Nenhum grupo em aberto com esse nome.</p>'
+          : '<p style="color:var(--texto-medio);font-size:13px;">Nenhum grupo em aberto.</p>';
+      } else {
+        abertos.forEach(g => container.appendChild(linha(g)));
+      }
+
+      const resumo = document.getElementById('resumoFechado-grupos');
+      if (resumo) {
+        resumo.textContent = abertos.length
+          ? (abertos.length === 1 ? '1 em aberto' : abertos.length + ' em aberto')
+          : 'nenhum em aberto';
+      }
+
+      const card = document.getElementById('cardGruposEncerrados');
+      const qtd = document.getElementById('qtdGruposEncerrados');
+      if (card && containerFechados) {
+        card.classList.toggle('escondido', !fechados.length);
+        if (qtd) qtd.textContent = fechados.length === 1 ? '1 grupo' : fechados.length + ' grupos';
+        containerFechados.innerHTML = '';
+        fechados.forEach(g => containerFechados.appendChild(linha(g)));
+        aplicarSecao('gruposEncerrados');
+      }
+      aplicarSecao('grupos');
     }
 
     function criarGrupoRapido() {
@@ -11811,7 +11945,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.13-5';
+    const APP_VERSION = '2026.09.14-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -11856,6 +11990,8 @@ function confirmarLancamentoVoz() {
     if (uiPrefs['secao_graficoPrincipal'] === undefined) uiPrefs['secao_graficoPrincipal'] = true;
     aplicarSecao('graficoPrincipal');
     aplicarSecao('ordemGraficos');
+    aplicarSecao('gruposInvestimento');
+    renderizarListaTiposAtivo();
     aplicarSecao('analista');
     aplicarSecao('tema');
     aplicarTema(temaAtual());
@@ -11877,6 +12013,8 @@ function confirmarLancamentoVoz() {
     aplicarSecao('aportes');
     aplicarSecao('consorcios');
     aplicarSecao('consorciosEncerrados');
+    aplicarSecao('grupos');
+    aplicarSecao('gruposEncerrados');
     gerarLancamentosFixos();
 
     valoresOcultos = localStorage.getItem('valoresOcultos') === '1';
