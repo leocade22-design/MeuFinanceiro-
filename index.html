@@ -525,6 +525,9 @@
                  como direto, que é como o app sempre se comportou. -->
             <input type="hidden" id="emprestimoTipo" value="">
             <input type="hidden" id="emprestimoRateioIncluiVoce" value="1">
+            <!-- Quanto cada pessoa deve, quando não é parte igual. JSON {nome: "30,00"},
+                 relativo ao valor total digitado. Vazio = divide igual, como sempre foi. -->
+            <input type="hidden" id="emprestimoCotas" value="">
             <input type="hidden" id="emprestimoParcelas" value="1">
           </div>
           <div class="form-row">
@@ -1774,10 +1777,18 @@
         <label for="emprestimoParcelasTemp">Vou devolver em quantas vezes?</label>
         <select id="emprestimoParcelasTemp" onchange="atualizarPreviaRateio()"></select>
       </div>
+      <div class="form-group escondido" id="wrapModoRateio">
+        <label>Como dividir</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="modosRateio">
+          <button type="button" class="btn-periodo ativo" data-modo="igual" onclick="setModoRateio('igual')">Partes iguais</button>
+          <button type="button" class="btn-periodo" data-modo="livre" onclick="setModoRateio('livre')">Valor por pessoa</button>
+        </div>
+      </div>
       <label class="check-credito escondido" id="wrapRateioIncluiVoce">
         <input type="checkbox" id="rateioIncluiVoce" aria-label="Incluir você no rateio" checked onchange="atualizarPreviaRateio()">
         dividir incluindo a minha parte
       </label>
+      <div id="cotasRateio" class="escondido" style="margin-bottom:10px;"></div>
       <div id="previaRateio" class="box-resumo-modal escondido"></div>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="limparEmprestimoModal()">Não é empréstimo</button>
@@ -2825,7 +2836,18 @@
       document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
       document.getElementById('emprestimoVenceTemp').value = document.getElementById('emprestimoVence').value;
       document.getElementById('rateioIncluiVoce').checked = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
-      atualizarPreviaRateio();
+      // volta no modo em que foi salvo, com os valores que você digitou
+      const salvo = lerCotasSalvas();
+      modoRateioEscolhido = (salvo && Object.keys(salvo.cotas).length) ? 'livre' : 'igual';
+      document.getElementById('cotasRateio').innerHTML = '';
+      setModoRateio(modoRateioEscolhido);
+      if (salvo) {
+        Object.entries(salvo.cotas).forEach(([nome, v]) => {
+          const inp = document.querySelector(`#cotasRateio [data-cota="${nome}"]`);
+          if (inp) inp.value = fmtVal(v);
+        });
+        atualizarPreviaRateio();
+      }
       document.getElementById('modalEmprestimo').classList.remove('escondido');
       document.getElementById('emprestimoTemp').focus();
     }
@@ -2847,22 +2869,111 @@
         : 'Dinheiro que entrou mas você vai devolver. Continua contando como receita na conta — aqui fica o lembrete da dívida.';
     }
 
+    /* DIVIDIR IGUAL x VALOR POR PESSOA
+
+       Parte igual resolve a maioria dos casos, mas não todos: no bar, um comeu
+       R$ 30 e o outro R$ 20. Forçar a média faria você cobrar errado das duas
+       pessoas — uma a mais, a outra a menos.
+
+       No modo livre você digita quanto cada um deve, e o que sobrar do total é
+       a sua parte. Funciona também com UMA pessoa só, que é o caso de "paguei
+       R$ 100, ele me deve R$ 30". */
+    let modoRateioEscolhido = 'igual';
+
+    function lerCotasSalvas() {
+      const bruto = document.getElementById('emprestimoCotas').value;
+      if (!bruto) return null;
+      try {
+        const o = JSON.parse(bruto);
+        return (o && o.cotas && typeof o.cotas === 'object') ? { base: o.base || 0, cotas: o.cotas } : null;
+      } catch (e) { return null; }
+    }
+
+    function setModoRateio(modo) {
+      modoRateioEscolhido = modo === 'livre' ? 'livre' : 'igual';
+      document.querySelectorAll('#modosRateio .btn-periodo').forEach(b => {
+        b.classList.toggle('ativo', b.dataset.modo === modoRateioEscolhido);
+      });
+      atualizarPreviaRateio();
+    }
+
+    // O que está digitado nos campos por pessoa, agora
+    function cotasDigitadas() {
+      const out = {};
+      document.querySelectorAll('#cotasRateio [data-cota]').forEach(inp => {
+        const v = parseVal(inp.value.replace('R$', '').trim());
+        if (v > 0) out[inp.dataset.cota] = v;
+      });
+      return out;
+    }
+
+    function totalDoFormulario() {
+      return parseVal(document.getElementById('valor').value.replace('R$', '').trim());
+    }
+
     // Prévia ao vivo do rateio, usando o valor que já está digitado no formulário
     function atualizarPreviaRateio() {
       const nomes = nomesEmprestimo(document.getElementById('emprestimoTemp').value);
       const wrapIncluiVoce = document.getElementById('wrapRateioIncluiVoce');
+      const wrapModo = document.getElementById('wrapModoRateio');
+      const boxCotas = document.getElementById('cotasRateio');
       const previa = document.getElementById('previaRateio');
-      const ehRateio = nomes.length > 1;
+      const total = totalDoFormulario();
 
-      wrapIncluiVoce.classList.toggle('escondido', !ehRateio);
-      previa.classList.toggle('escondido', !ehRateio);
-      if (!ehRateio) return;
+      // Com ninguém na lista não há o que dividir
+      wrapModo.classList.toggle('escondido', nomes.length < 1);
+      if (nomes.length < 1) {
+        wrapIncluiVoce.classList.add('escondido');
+        boxCotas.classList.add('escondido');
+        previa.classList.add('escondido');
+        return;
+      }
 
+      const livre = modoRateioEscolhido === 'livre';
+      // "incluir a minha parte" é pergunta do modo igual: no livre, a sua parte
+      // é o que sobra depois das outras, e ela aparece sozinha no resumo.
+      wrapIncluiVoce.classList.toggle('escondido', livre || nomes.length <= 1);
+      boxCotas.classList.toggle('escondido', !livre);
+      previa.classList.remove('escondido');
+
+      if (livre) {
+        montarCamposDeCota(nomes, total);
+        const cotas = cotasDigitadas();
+        const somaOutros = nomes.reduce((s, n) => s + (cotas[n] || 0), 0);
+        const suaParte = total - somaOutros;
+        const estourou = suaParte < -0.005;
+        previa.innerHTML = `
+          <div class="linha-subtotal" style="cursor:default;">
+            <span>${nomes.length === 1 ? '1 pessoa' : nomes.length + ' pessoas'} · ${fmtVal(somaOutros)}</span>
+            <strong style="color:${estourou ? 'var(--vermelho)' : 'var(--texto-forte)'};">de ${total ? fmtVal(total) : '—'}</strong>
+          </div>
+          <div style="font-size:11px;color:${estourou ? 'var(--vermelho)' : 'var(--texto-fraco)'};margin-top:4px;">
+            ${!total ? 'Digite o valor do lançamento pra distribuir.'
+              : estourou ? `As partes somam ${fmtVal(-suaParte)} a mais que o total.`
+              : suaParte > 0.005 ? `Sobra ${fmtVal(suaParte)} — essa é a sua parte.`
+              : 'O total está todo distribuído: nada fica por sua conta.'}
+          </div>
+        `;
+        return;
+      }
+
+      // ---- modo igual: o comportamento de sempre ----
+      boxCotas.innerHTML = '';
+      if (nomes.length <= 1) {
+        previa.innerHTML = `
+          <div class="linha-subtotal" style="cursor:default;">
+            <span>${nomes[0]}</span>
+            <strong>${total ? fmtVal(total) : 'digite o valor'}</strong>
+          </div>
+          <div style="font-size:11px;color:var(--texto-fraco);margin-top:4px;">
+            ${tipoAtual === 'receita' ? 'Você devolve o valor inteiro.' : 'A pessoa te deve o valor inteiro. Se foi só uma parte, use “Valor por pessoa”.'}
+          </div>
+        `;
+        return;
+      }
       const incluiVoce = document.getElementById('rateioIncluiVoce').checked;
       const divisor = nomes.length + (incluiVoce ? 1 : 0);
-      const total = parseVal(document.getElementById('valor').value.replace('R$', '').trim());
       const cota = total / divisor;
-
       previa.innerHTML = `
         <div class="linha-subtotal" style="cursor:default;">
           <span>${divisor} pessoas${incluiVoce ? ' (você + ' + nomes.length + ')' : ''}</span>
@@ -2874,6 +2985,29 @@
       `;
     }
 
+    /* Um campo por pessoa. Só remonta quando a lista de nomes muda — remontar a
+       cada tecla faria o campo perder o foco no meio da digitação. */
+    function montarCamposDeCota(nomes, total) {
+      const box = document.getElementById('cotasRateio');
+      const atuais = [...box.querySelectorAll('[data-cota]')].map(i => i.dataset.cota);
+      if (atuais.length === nomes.length && atuais.every((n, i) => n === nomes[i])) return;
+
+      const anteriores = cotasDigitadas();
+      // Começa pela divisão igual entre os nomes: é o palpite mais próximo, e
+      // dali você só mexe em quem ficou diferente.
+      const sugestao = nomes.length ? total / nomes.length : 0;
+      box.innerHTML = nomes.map(nome => {
+        const v = anteriores[nome] != null ? anteriores[nome] : sugestao;
+        return `
+          <div class="form-group" style="margin-bottom:8px;">
+            <label for="cota-${nome.replace(/[^a-zA-Z0-9]/g, '')}">Quanto ${nome} deve</label>
+            <input type="text" id="cota-${nome.replace(/[^a-zA-Z0-9]/g, '')}" data-cota="${nome}"
+                   value="${v > 0 ? fmtVal(v) : ''}" placeholder="R$ 0,00"
+                   oninput="mascaraMoeda(this); atualizarPreviaRateio();" inputmode="numeric">
+          </div>`;
+      }).join('');
+    }
+
     function salvarEmprestimoModal() {
       const bruto = document.getElementById('emprestimoTemp').value.trim();
       const nomes = nomesEmprestimo(bruto);
@@ -2882,6 +3016,13 @@
       document.getElementById('emprestimoParcelas').value = (nomes.length && tipoAtual === 'receita')
         ? document.getElementById('emprestimoParcelasTemp').value : '1';
       document.getElementById('emprestimoRateioIncluiVoce').value = document.getElementById('rateioIncluiVoce').checked ? '1' : '0';
+      /* As cotas são guardadas em REAIS, do jeito que você digitou, junto com o
+         total que estava na tela. É a dupla que permite converter em fração
+         depois — e é a fração que sobrevive a parcelar a compra. */
+      const cotas = modoRateioEscolhido === 'livre' ? cotasDigitadas() : {};
+      document.getElementById('emprestimoCotas').value = Object.keys(cotas).length
+        ? JSON.stringify({ base: totalDoFormulario(), cotas })
+        : '';
       // Só existe quando é você que deve; sem nome de ninguém, não é empréstimo.
       document.getElementById('emprestimoTipo').value =
         (nomes.length && tipoAtual === 'receita') ? (tipoEmprestimoEscolhido || 'direto') : '';
@@ -2897,7 +3038,9 @@
       document.getElementById('emprestimoTipo').value = '';
       tipoEmprestimoEscolhido = 'direto';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+      document.getElementById('emprestimoCotas').value = '';
       document.getElementById('emprestimoParcelas').value = '1';
+      modoRateioEscolhido = 'igual';
       atualizarLinkEmprestimo();
       atualizarPreviaRateio();
       fecharModal('modalEmprestimo');
@@ -2906,17 +3049,27 @@
     // Monta a lista de devedores de UM lançamento (uma parcela, por exemplo).
     // Rateio divide o valor daquela parcela; sem rateio, o devedor único responde
     // pelo valor inteiro.
-    function montarRateio(nomes, incluiVoce, valorDoLancamento, parcelas, venceBase) {
+    /* `fracoes` é opcional: {nome: 0..1} com a fatia do lançamento de cada um,
+       do modo "valor por pessoa". Fração e não valor porque a compra pode ser
+       parcelada DEPOIS — R$ 30 de uma conta de R$ 60 vira R$ 10 em cada uma de
+       três parcelas, e guardar 0,5 acerta isso sozinho. */
+    function montarRateio(nomes, incluiVoce, valorDoLancamento, parcelas, venceBase, fracoes) {
       const n = Math.max(1, parseInt(parcelas, 10) || 1);
-      if (nomes.length <= 1 && n <= 1) return null;
+      const temFracoes = !!(fracoes && nomes.some(nome => fracoes[nome] > 0));
+      // Uma pessoa só com valor cheio não precisa de rateio: o lançamento
+      // inteiro já é a dívida. Com fração, precisa — o valor dela é menor.
+      if (!temFracoes && nomes.length <= 1 && n <= 1) return null;
       const divisor = nomes.length + (incluiVoce && nomes.length > 1 ? 1 : 0);
       const cota = valorDoLancamento / divisor / n;
       const lista = [];
       nomes.forEach(nome => {
+        const valorDaPessoa = temFracoes
+          ? valorDoLancamento * (fracoes[nome] || 0) / n
+          : cota;
         for (let i = 0; i < n; i++) {
           lista.push({
             nome,
-            valor: cota.toFixed(2).replace('.', ','),
+            valor: valorDaPessoa.toFixed(2).replace('.', ','),
             quitado: false,
             // cada parcela da dívida vence no seu próprio mês
             vence: n > 1 ? somarMeses(venceBase, i) : undefined,
@@ -5291,6 +5444,16 @@
       const rateioIncluiVoce = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
       const nomesEmpr = nomesEmprestimo(emprestimoPara);
       const parcelasDivida = document.getElementById('emprestimoParcelas').value || '1';
+      /* Vira fração aqui, uma vez: os quatro caminhos abaixo (novo, edição,
+         parcelado, avulso) passam valores diferentes pro montarRateio, e a
+         fração é a única forma que funciona igual em todos. */
+      const cotasSalvas = lerCotasSalvas();
+      const fracoesRateio = {};
+      if (cotasSalvas && cotasSalvas.base > 0) {
+        Object.entries(cotasSalvas.cotas).forEach(([nome, v]) => {
+          fracoesRateio[nome] = v / cotasSalvas.base;
+        });
+      }
 
       let grupoViagemId = '';
       const selGrupo = document.getElementById('grupoViagem').value;
@@ -5327,7 +5490,8 @@
             valor: valorParcelaStr,
             grupoViagemId, grupoViagemNome,
             emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
-            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
+            rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
             emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
 
@@ -5362,7 +5526,8 @@
                 grupoViagemId, grupoViagemNome,
                 emprestimoPara, rateioIncluiVoce, emprestimoTipo,
                 emprestimoVence: emprestimoPara ? somarMeses(emprestimoVence, passos) : '',
-                emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
+                rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+                emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
                 emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
                 valor: valorParcelaStr
                 // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
@@ -5396,7 +5561,8 @@
             // o prazo acompanha a parcela: 1ª vence no mês escolhido, as seguintes
             // no mesmo dia dos meses seguintes
             emprestimoPara, emprestimoVence: somarMeses(emprestimoVence, n), emprestimoTipo, rateioIncluiVoce,
-            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence),
+            rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
             emprestimoQuitado: false
           });
         }
@@ -5410,7 +5576,8 @@
           valor: valorTotal.toFixed(2).replace('.', ','),
           grupoViagemId, grupoViagemNome,
           emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
-          emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal, parcelasDivida, emprestimoVence),
+          rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+          emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal, parcelasDivida, emprestimoVence, fracoesRateio),
           emprestimoQuitado: false,
           // guardados só quando o lançamento nasceu de um QR: a chave impede
           // lançar a mesma nota duas vezes, e o CNPJ dá nome à loja na próxima
@@ -5456,6 +5623,18 @@
       document.getElementById('emprestimoVence').value = item.emprestimoVence || '';
       document.getElementById('emprestimoTipo').value = item.emprestimoTipo || '';
       document.getElementById('emprestimoRateioIncluiVoce').value = item.rateioIncluiVoce === false ? '0' : '1';
+      /* A fração é o que fica guardado; em reais ela só existe em relação a um
+         total. Na reabertura ela é reconvertida pelo total do próprio
+         lançamento, então mudar o valor da compra reajusta as partes na mesma
+         proporção em vez de deixar números soltos que não somam mais. */
+      if (item.rateioFracoes && Object.keys(item.rateioFracoes).length) {
+        const base = parseVal(item.valor) * (parseInt(item.numParcelas, 10) || 1);
+        const cotas = {};
+        Object.entries(item.rateioFracoes).forEach(([nome, f]) => { cotas[nome] = base * f; });
+        document.getElementById('emprestimoCotas').value = JSON.stringify({ base, cotas });
+      } else {
+        document.getElementById('emprestimoCotas').value = '';
+      }
       atualizarLinkEmprestimo();
       // Compra parcelada é lançada pelo TOTAL — então é o total que volta pra edição.
       // Mostrar o valor da parcela aqui fazia a compra encolher a cada vez que você
@@ -5519,7 +5698,9 @@
       document.getElementById('emprestimoVence').value = '';
       document.getElementById('emprestimoTipo').value = '';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+      document.getElementById('emprestimoCotas').value = '';
       document.getElementById('emprestimoParcelas').value = '1';
+      modoRateioEscolhido = 'igual';
       atualizarLinkEmprestimo();
       const selNumParcelas = document.getElementById('numParcelas');
       const avisoParcela = document.getElementById('avisoParcelaGrupo');
@@ -12013,7 +12194,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.15-1';
+    const APP_VERSION = '2026.09.15-2';
 
     // Inicialização
     carregarLocalStorage();
