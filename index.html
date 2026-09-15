@@ -266,7 +266,12 @@
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
     label { font-size: 12px; color: var(--texto-medio); }
-    select, input { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; color: var(--texto); font-size: 14px; outline: none; width: 100%; }
+    /* 16px NÃO É ESCOLHA ESTÉTICA: é o piso do Safari no iPhone.
+       Campo com fonte menor que 16px faz o Safari dar zoom sozinho ao receber o
+       foco — e instalado como app, sem barra de endereço pra desfazer, o zoom
+       fica preso e desconfigura a tela inteira. No Android não acontece, e foi
+       por isso que passou tanto tempo despercebido. */
+    select, input { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; color: var(--texto); font-size: 16px; outline: none; width: 100%; }
     select:focus, input:focus { border-color: var(--borda-forte); }
     .btn-salvar { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: var(--bege); color: var(--fundo); font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 8px; }
     .btn-cancelar { width: 100%; padding: 10px; border: 1px solid var(--borda-forte); border-radius: 8px; background-color: transparent; color: var(--texto-medio); font-size: 13px; cursor: pointer; margin-top: 6px; }
@@ -384,7 +389,8 @@
     details.bloco-cat[open] > summary .chevron-sec { transform:rotate(90deg); display:inline-block; }
     .btn-opcao-balao { padding: 11px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto); font-weight: bold; border-radius: 10px; cursor: pointer; text-align: center; font-size: 14px; }
     .btn-opcao-balao.danger { color: var(--vermelho); border-color: rgba(239, 83, 80, 0.3); background: rgba(239, 83, 80, 0.05); }
-    textarea { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 12px; color: var(--texto); font-size: 14px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
+    /* mesmo motivo do select/input acima: abaixo de 16px o iPhone dá zoom sozinho */
+    textarea { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 12px; color: var(--texto); font-size: 16px; outline: none; width: 100%; min-height: 92px; resize: vertical; font-family: inherit; }
     textarea:focus { border-color: var(--borda-forte); }
 
     .dashboard-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
@@ -6563,6 +6569,20 @@
     const CHAVE_MIGRACAO_A_PAGAR = 'meu_financeiro_migracao_a_pagar_v1';
     const CHAVE_ULTIMO_AVISO_BOLETO = 'meu_financeiro_ultimo_aviso_boleto';
 
+    /* Quantos dias antes do vencimento a parcela do consórcio entra em alerta.
+       Três dias é o tempo de abrir o banco sem correria — mais que isso viraria
+       um aviso permanente, que a gente para de enxergar. */
+    const DIAS_ALERTA_PARCELA = 3;
+
+    /* Quem paga essa cobrança: o cartão sozinho ou você? Só faz sentido chamar
+       pra lançamento que ainda não aconteceu — parcela com baixa registrada é
+       fato consumado e não volta a ser previsão. */
+    function ajustarPendenciaDoLancamento(l) {
+      if (!l || l.consorcioPagoEm) return;
+      if (eCredito(l.formaModo)) delete l.aPagar;
+      else l.aPagar = true;
+    }
+
     function aguardandoPagamento(l) {
       return !!(l && l.aPagar);
     }
@@ -9669,6 +9689,11 @@
             l.conta = dados.conta;
             l.categoria = dados.categoria;
             l.formaModo = dados.formaModo;
+            /* Mudar a forma muda de quem é a tarefa: no cartão a cobrança
+               acontece sozinha (nada a pagar), fora dele volta a depender de
+               você. Sem isto a marca antiga ficava presa e o app cobrava um
+               boleto que virou fatura — ou parava de cobrar um que virou boleto. */
+            ajustarPendenciaDoLancamento(l);
             l.data = l.data.slice(0, 7) + '-' + dia;
             mudouLanc = true;
           });
@@ -10230,6 +10255,7 @@
             l.conta = conta;
             l.formaModo = f.formaModo;
             l.categoria = dados.categoria;
+            ajustarPendenciaDoLancamento(l);
             l.data = l.data.slice(0, 7) + '-' + dia;
           });
           /* Encurtar o consórcio (corrigir 80 pra 60, por exemplo) tem que apagar
@@ -10778,12 +10804,50 @@
         const pagoNoMes = !!(parcelaMes && parcelaMes.consorcioPagoEm);
         const nomeMes = NOMES_MESES[parseInt(mesCorrente.slice(5, 7), 10) - 1].toLowerCase();
         const faltamParcelas = parcelasFaltantesDoFixo(c.fixoId);
+        /* ALERTA DE VENCIMENTO
+
+           A condição é "a parcela está PENDENTE", não "não tem baixa". São
+           coisas diferentes desde que os recorrentes fora do cartão passaram a
+           nascer "a pagar": parcela antiga sem baixa é histórico, já está
+           contada no "já paguei" logo abaixo — pintar ela de vermelho seria o
+           card se contradizendo em duas linhas. E consórcio no cartão nunca
+           fica pendente, porque a cobrança acontece sozinha: não há o que
+           alertar. */
+        const pendenteMes = aguardandoPagamento(parcelaMes);
+        const diasParaVencer = pendenteMes ? diasAte(parcelaMes.data) : null;
+        const alertaMes = !pendenteMes ? null
+          : diasParaVencer < 0 ? 'vencida'
+          : diasParaVencer <= DIAS_ALERTA_PARCELA ? 'perto'
+          : null;
+
+        const diaVenc = parcelaMes ? parcelaMes.data.slice(8, 10) : '';
+        const quando = !pendenteMes ? ''
+          : diasParaVencer < -1 ? `venceu há ${-diasParaVencer} dias`
+          : diasParaVencer === -1 ? 'venceu ontem'
+          : diasParaVencer === 0 ? 'vence hoje'
+          : diasParaVencer === 1 ? 'vence amanhã'
+          : `vence em ${diasParaVencer} dias`;
+        /* O selo do cabeçalho divide a linha com o nome do consórcio e com o
+           "em andamento": frase inteira ali empurra o nome pra duas linhas. A
+           versão curta basta pra bater o olho — o texto completo fica no corpo. */
+        const seloQuando = diasParaVencer === 0 ? 'hoje'
+          : diasParaVencer === 1 ? 'amanhã'
+          : `${diasParaVencer} dias`;
+
         const statusMes = !parcelaMes
           ? `sem parcela em ${nomeMes}`
-          : (pagoNoMes
-              ? `✓ parcela de ${nomeMes} paga em ${parcelaMes.consorcioPagoEm.slice(8, 10)}/${parcelaMes.consorcioPagoEm.slice(5, 7)}`
+          : pagoNoMes
+            ? `✓ parcela de ${nomeMes} paga em ${parcelaMes.consorcioPagoEm.slice(8, 10)}/${parcelaMes.consorcioPagoEm.slice(5, 7)}`
               + (parcelaMes.pagoComo ? ' · ' + parcelaMes.pagoComo : '')
-              : `parcela de ${nomeMes}: ${fmtVal(parseVal(parcelaMes.valor))} · vence dia ${parcelaMes.data.slice(8, 10)}`);
+            : pendenteMes
+              ? `${alertaMes === 'vencida' ? '⚠ ' : alertaMes === 'perto' ? '⏰ ' : ''}`
+                + `parcela de ${nomeMes}: ${fmtOculto(parseVal(parcelaMes.valor))} · ${quando} (dia ${diaVenc})`
+              : `parcela de ${nomeMes}: ${fmtOculto(parseVal(parcelaMes.valor))} · vence dia ${diaVenc}`;
+
+        const corStatus = pagoNoMes ? 'var(--verde)'
+          : alertaMes === 'vencida' ? 'var(--vermelho)'
+          : alertaMes === 'perto' ? 'var(--amarelo)'
+          : 'var(--texto-medio)';
 
         bloco.innerHTML = `
           <button type="button" class="card-header-toggle" style="width:100%;padding:0;" onclick="alternarSecao('${chave}')">
@@ -10791,6 +10855,10 @@
               <strong>${c.nome}</strong>
               <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtVal(parseVal(c.valorParcela))} · ${t.qtdPagas} de ${t.total}</div>
             </div>
+            ${alertaMes ? `<span title="${quando}" style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:6px;${
+              alertaMes === 'vencida'
+                ? 'color:var(--vermelho);border:1px solid var(--vermelho);'
+                : 'color:var(--amarelo);border:1px solid var(--amarelo);'}">${alertaMes === 'vencida' ? '⚠ vencida' : '⏰ ' + seloQuando}</span>` : ''}
             <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:8px;${
               c.contemplado
                 ? 'color:var(--verde);border:1px solid var(--verde-escuro);'
@@ -10799,7 +10867,7 @@
           </button>
           <div id="corpo-${chave}">
             <div style="font-size:11px;color:var(--texto-fraco);margin-top:8px;">dia ${c.diaVencimento} · ${c.conta} · ${credito ? 'entra na fatura' : 'sai da conta'}</div>
-            <div style="font-size:11.5px;margin-top:6px;color:${pagoNoMes ? 'var(--verde)' : 'var(--texto-medio)'};">${statusMes}</div>
+            <div style="font-size:11.5px;margin-top:6px;color:${corStatus};font-weight:${alertaMes ? '600' : 'normal'};">${statusMes}</div>
             ${faltamParcelas ? `<div style="font-size:11px;margin-top:4px;color:var(--amarelo);">⚠ ${faltamParcelas === 1 ? 'falta 1 cobrança' : 'faltam ' + faltamParcelas + ' cobranças'} na projeção — use “Recriar cobranças”</div>` : ''}
             <div class="barra-bg" style="margin:10px 0 6px;">
               <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
@@ -11945,7 +12013,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.14-1';
+    const APP_VERSION = '2026.09.15-1';
 
     // Inicialização
     carregarLocalStorage();
