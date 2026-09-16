@@ -305,6 +305,14 @@
     .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto-medio); font-size: 12.5px; cursor: pointer; }
     .chip-antec.on { border-color: var(--amarelo); color: var(--amarelo); background: rgba(255,209,102,.1); }
 
+    /* Contatos do empréstimo: marcar quem entra no rateio é um toque, não uma
+       digitação — é o que impede "dudu" e "Dudu" de virarem dois devedores. */
+    .chips-pessoas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip-pessoa { padding: 8px 13px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo);
+                   color: var(--texto-medio); font-size: 13px; cursor: pointer; line-height: 1.2; }
+    .chip-pessoa.on { border-color: var(--acento); color: var(--acento-palido); background: rgba(95,153,51,.14); }
+    .chip-pessoa.novo { border-style: dashed; color: var(--texto-fraco); }
+
     .barra-categoria { margin-bottom: 12px; }
     /* Versão miúda das barras, pra caber dentro do modal do grupo sem virar
        um segundo painel de gráficos */
@@ -1097,6 +1105,7 @@
             </p>
           </div>
           <div id="listaContatos"></div>
+          <button type="button" class="btn-adicionar" onclick="abrirModalContatoCobranca('')">+ Novo contato</button>
         </div>
       </div>
 
@@ -1762,17 +1771,23 @@
           <button type="button" class="btn-periodo" data-tipo="indireto" onclick="setTipoEmprestimo('indireto')">Não, pagaram por mim</button>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="emprestimoTemp" id="labelQuemEmprestimo">Quem te deve</label>
-          <input type="text" id="emprestimoTemp" placeholder="Ex: Dudu" oninput="atualizarPreviaRateio()">
-        </div>
-        <div class="form-group">
-          <label for="emprestimoVenceTemp" id="labelPrazoEmprestimo">Prazo pra pagar</label>
-          <input type="date" id="emprestimoVenceTemp">
+      <!-- O nome não se digita mais: escolhe-se. O campo de texto virou bastidor
+           (`emprestimoTemp`) e os botões escrevem nele — assim o rateio, a
+           prévia e tudo que já lia esse campo seguem funcionando iguais. -->
+      <input type="hidden" id="emprestimoTemp" value="">
+      <div class="form-group">
+        <label id="labelQuemEmprestimo">Quem te deve</label>
+        <div id="chipsPessoas" class="chips-pessoas"></div>
+        <div id="novoContatoInline" class="escondido" style="display:flex;gap:8px;margin-top:8px;">
+          <input type="text" id="nomeNovaPessoa" placeholder="Nome da pessoa" style="flex:1;"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarNovaPessoa();}">
+          <button type="button" class="btn-mini" style="flex-shrink:0;padding:0 14px;" onclick="confirmarNovaPessoa()">incluir</button>
         </div>
       </div>
-      <p style="font-size:11px;color:var(--texto-tenue);margin:-6px 0 10px;">Mais de uma pessoa? Separe por vírgula: <em>Dudu, Marina, Ana</em></p>
+      <div class="form-group">
+        <label for="emprestimoVenceTemp" id="labelPrazoEmprestimo">Prazo pra pagar</label>
+        <input type="date" id="emprestimoVenceTemp">
+      </div>
       <div class="form-group escondido" id="wrapParcelasDivida">
         <label for="emprestimoParcelasTemp">Vou devolver em quantas vezes?</label>
         <select id="emprestimoParcelasTemp" onchange="atualizarPreviaRateio()"></select>
@@ -1905,8 +1920,15 @@
       </div>
       <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Guardado só aqui no aparelho. Na próxima cobrança dessa pessoa já vai direto.</p>
       <button type="button" id="btnEscolherDaAgenda" class="btn-backup escondido" style="margin-bottom:10px;" onclick="escolherDaAgenda()">📇 Escolher da agenda</button>
+      <!-- O nome é a chave da cobrança. Editá-lo aqui é o que junta o "dudu" e o
+           "Dudu" que o campo livre deixou criar antes do cadastro existir. -->
       <div class="form-group">
-        <label for="inputTelefoneCobranca">Número com DDD</label>
+        <label for="inputNomeContato">Nome</label>
+        <input type="text" id="inputNomeContato" placeholder="Ex: Dudu">
+        <p id="dicaNomeContato" style="color:var(--texto-fraco);font-size:11.5px;margin-top:7px;line-height:1.45;"></p>
+      </div>
+      <div class="form-group">
+        <label for="inputTelefoneCobranca">Número com DDD <span style="color:var(--texto-tenue);" id="rotuloTelOpcional">(opcional)</span></label>
         <input type="tel" id="inputTelefoneCobranca" placeholder="(11) 98765-4321" inputmode="tel">
       </div>
       <!-- O tom não se fixa mais aqui: é escolhido a cada cobrança, no modal que
@@ -1914,8 +1936,9 @@
       <p style="color:var(--texto-fraco);font-size:11.5px;margin-bottom:14px;line-height:1.4;">O tom da cobrança é escolhido na hora de mandar.</p>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
-        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="salvarContatoCobranca()">Salvar e abrir</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" id="btnSalvarContato" onclick="salvarContatoCobranca()">Salvar</button>
       </div>
+      <button type="button" id="btnRemoverContato" class="btn-cancelar escondido" style="color:var(--vermelho);border-color:rgba(239,83,80,0.35);" onclick="removerContato()">Remover contato</button>
     </div>
   </div>
 
@@ -2101,15 +2124,22 @@
             <option value="À Vista / Débito">Débito / À vista</option>
           </select>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="emprestimoFixo">Alguém te reembolsa? <span style="color:var(--texto-tenue);">(opcional)</span></label>
-            <input type="text" id="emprestimoFixo" placeholder="Ex: Bernardo" oninput="atualizarPrazoFixoVisibilidade()">
+        <!-- Mesmo motivo do modal de empréstimo: aqui o nome também é a chave da
+             cobrança, então ele se escolhe. O campo virou bastidor e os botões
+             escrevem nele, do mesmo jeito. -->
+        <input type="hidden" id="emprestimoFixo" value="">
+        <div class="form-group">
+          <label>Alguém te reembolsa? <span style="color:var(--texto-tenue);">(opcional)</span></label>
+          <div id="chipsPessoasFixo" class="chips-pessoas"></div>
+          <div id="novoContatoInlineFixo" class="escondido" style="display:flex;gap:8px;margin-top:8px;">
+            <input type="text" id="nomeNovaPessoaFixo" placeholder="Nome da pessoa" style="flex:1;"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarNovaPessoa('fixo');}">
+            <button type="button" class="btn-mini" style="flex-shrink:0;padding:0 14px;" onclick="confirmarNovaPessoa('fixo')">incluir</button>
           </div>
-          <div class="form-group escondido" id="grupoPrazoFixo">
-            <label for="diaCobrancaFixo">Prazo pra te pagar</label>
-            <select id="diaCobrancaFixo"></select>
-          </div>
+        </div>
+        <div class="form-group escondido" id="grupoPrazoFixo">
+          <label for="diaCobrancaFixo">Prazo pra te pagar</label>
+          <select id="diaCobrancaFixo"></select>
         </div>
         <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;">Todo mês, no dia do vencimento, esse gasto entra sozinho nos seus lançamentos. No cartão de crédito, ele cai na fatura conforme o fechamento (dia 3): cobrança até o dia 3 entra na fatura do próprio mês; depois do dia 3, na do mês seguinte.</p>
         <p id="avisoEmprestimoFixo" class="escondido" style="font-size:11.5px;color:var(--amarelo);margin-bottom:10px;line-height:1.4;">Cada mês vira uma cobrança em aberto no quadro <strong>Empréstimos</strong> (aba Faturas). O gasto continua contando normal no cartão — quando a pessoa te pagar, é só marcar "Recebi" lá e o valor entra como receita.</p>
@@ -2448,6 +2478,44 @@
     function tomDoContato(nome) {
       const c = contatos[nome];
       return (c && c.tom) || 'neutro';
+    }
+
+    /* O NOME É A CHAVE DA COBRANÇA — por isso ele não pode ser digitado à toa.
+       "Dudu", "dudu" e "Dudu " eram três devedores diferentes: o app somava
+       três totais, pedia três telefones e cobrava três vezes a mesma pessoa.
+       Toda entrada de nome passa por aqui e volta com a grafia já cadastrada,
+       se existir alguma parecida. */
+    function nomeCanonico(bruto) {
+      const nome = String(bruto || '').trim().replace(/\s+/g, ' ');
+      if (!nome) return '';
+      const alvo = textoSeguro(nome);
+      return nomesConhecidos().find(n => textoSeguro(n) === alvo) || nome;
+    }
+
+    /* Quem o app conhece: os contatos salvos MAIS quem já aparece em algum
+       empréstimo. A união existe porque o cadastro é novo e o histórico não —
+       sem ela, quem você emprestou antes e nunca cobrou pelo WhatsApp sumiria
+       da lista e voltaria a ser digitado na mão. */
+    function nomesConhecidos() {
+      const vistos = new Map();                       // textoSeguro -> grafia
+      const guardar = nome => {
+        const n = String(nome || '').trim();
+        if (n && !vistos.has(textoSeguro(n))) vistos.set(textoSeguro(n), n);
+      };
+      // o cadastro vem primeiro: a grafia dele é a que manda
+      Object.keys(contatos).forEach(guardar);
+      const doItem = l => {
+        (l.emprestimoPara || '').split(',').forEach(guardar);
+        if (Array.isArray(l.emprestimoRateio)) l.emprestimoRateio.forEach(d => guardar(d.nome));
+      };
+      lancamentos.forEach(doItem);
+      fixos.forEach(doItem);
+      lixeira.forEach(doItem);                        // o excluído é uma cópia do próprio registro
+      return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+    }
+
+    function contatoTemNumero(nome) {
+      return !!normalizarTelefone(telDoContato(nome));
     }
 
     const TONS_COBRANCA = [
@@ -2805,8 +2873,20 @@
 
     // "Dudu, Marina, Ana" -> ['Dudu','Marina','Ana']. Um nome só = empréstimo simples;
     // mais de um = rateio, com uma cobrança por pessoa.
+    // Cada nome sai daqui na grafia do contato cadastrado (ver nomeCanonico): é o
+    // funil por onde passam o modal, o gasto fixo e o lançamento por voz, então
+    // "dudu" digitado com pressa nunca vira um segundo devedor.
     function nomesEmprestimo(texto) {
-      return (texto || '').split(',').map(n => n.trim()).filter(Boolean);
+      const fora = new Set();
+      return (texto || '').split(',').map(n => nomeCanonico(n)).filter(n => {
+        // O mesmo nome duas vezes é um só, e "Borges, borges" é o mesmo nome —
+        // mesmo quando nenhum dos dois está cadastrado ainda. Vale a primeira
+        // grafia da lista.
+        const chave = textoSeguro(n);
+        if (!n || fora.has(chave)) return false;
+        fora.add(chave);
+        return true;
+      });
     }
 
     function abrirModalEmprestimo() {
@@ -2848,8 +2928,9 @@
         });
         atualizarPreviaRateio();
       }
+      document.getElementById('novoContatoInline').classList.add('escondido');
+      renderizarChipsPessoas();
       document.getElementById('modalEmprestimo').classList.remove('escondido');
-      document.getElementById('emprestimoTemp').focus();
     }
 
     /* DIRETO x INDIRETO
@@ -2897,6 +2978,90 @@
       atualizarPreviaRateio();
     }
 
+    /* OS CONTATOS VIRAM BOTÕES
+       A lista é sempre lida do campo escondido, nunca de um estado paralelo:
+       quem abre o modal, quem edita um lançamento antigo e quem dita por voz
+       escrevem todos no mesmo lugar, e os botões só refletem o que está lá.
+
+       Dois formulários usam isso — o empréstimo do lançamento e o reembolso do
+       gasto fixo. Em vez de duplicar, cada um diz quais são os seus campos e o
+       que fazer depois que a escolha muda. */
+    const CTX_PESSOAS = {
+      emprestimo: {
+        chips: 'chipsPessoas', campo: 'emprestimoTemp',
+        inline: 'novoContatoInline', input: 'nomeNovaPessoa',
+        depois: () => atualizarPreviaRateio()
+      },
+      fixo: {
+        chips: 'chipsPessoasFixo', campo: 'emprestimoFixo',
+        inline: 'novoContatoInlineFixo', input: 'nomeNovaPessoaFixo',
+        depois: () => atualizarPrazoFixoVisibilidade()
+      }
+    };
+
+    function pessoasSelecionadas(ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      return nomesEmprestimo(document.getElementById(ctx.campo).value);
+    }
+
+    function renderizarChipsPessoas(ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      const box = document.getElementById(ctx.chips);
+      if (!box) return;
+      const marcados = pessoasSelecionadas(ctxId);
+      // Remonta só quando muda de verdade: a prévia chama isso a cada tecla
+      // digitada nos valores por pessoa, e refazer os botões à toa é desperdício.
+      const assinatura = nomesConhecidos().join('|') + '#' + marcados.join('|');
+      if (box.dataset.assinatura === assinatura) return;
+      box.dataset.assinatura = assinatura;
+      const marcado = n => marcados.some(m => textoSeguro(m) === textoSeguro(n));
+      // os escolhidos primeiro, pra a lista não obrigar a caçar quem já entrou
+      const lista = nomesConhecidos().sort((a, b) => (marcado(b) ? 1 : 0) - (marcado(a) ? 1 : 0));
+      const alvo = ctx === CTX_PESSOAS.fixo ? "'fixo'" : "'emprestimo'";
+      box.innerHTML = lista.map(n => `
+        <button type="button" class="chip-pessoa${marcado(n) ? ' on' : ''}"
+                data-pessoa="${n.replace(/"/g, '&quot;')}"
+                onclick="alternarPessoaRateio(this.dataset.pessoa, ${alvo})">${n}</button>`).join('')
+        + `<button type="button" class="chip-pessoa novo" onclick="abrirNovaPessoa(${alvo})">+ Novo</button>`;
+      if (!lista.length) {
+        box.insertAdjacentHTML('afterbegin',
+          '<span style="font-size:12px;color:var(--texto-tenue);align-self:center;">Ninguém cadastrado ainda —</span>');
+      }
+    }
+
+    function alternarPessoaRateio(nome, ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      const atuais = pessoasSelecionadas(ctxId);
+      const fora = atuais.filter(n => textoSeguro(n) !== textoSeguro(nome));
+      const novos = fora.length < atuais.length ? fora : atuais.concat(nome);
+      document.getElementById(ctx.campo).value = novos.join(', ');
+      renderizarChipsPessoas(ctxId);
+      ctx.depois();
+    }
+
+    function abrirNovaPessoa(ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      document.getElementById(ctx.inline).classList.remove('escondido');
+      const campo = document.getElementById(ctx.input);
+      campo.value = '';
+      campo.focus();
+    }
+
+    /* Cadastrar sem sair do formulário. O contato nasce sem telefone — ele é
+       pedido na primeira cobrança, como sempre foi. */
+    function confirmarNovaPessoa(ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      const campo = document.getElementById(ctx.input);
+      const nome = nomeCanonico(campo.value);
+      if (!nome) { avisar('semNome', 'O nome é o que liga a cobrança à pessoa.'); return; }
+      if (!contatos[nome]) { contatos[nome] = { tel: '', tom: 'neutro' }; salvarContatos(); }
+      if (!pessoasSelecionadas(ctxId).some(n => textoSeguro(n) === textoSeguro(nome))) alternarPessoaRateio(nome, ctxId);
+      else { renderizarChipsPessoas(ctxId); ctx.depois(); }
+      campo.value = '';
+      document.getElementById(ctx.inline).classList.add('escondido');
+      renderizarContatos();
+    }
+
     // O que está digitado nos campos por pessoa, agora
     function cotasDigitadas() {
       const out = {};
@@ -2914,6 +3079,7 @@
     // Prévia ao vivo do rateio, usando o valor que já está digitado no formulário
     function atualizarPreviaRateio() {
       const nomes = nomesEmprestimo(document.getElementById('emprestimoTemp').value);
+      renderizarChipsPessoas();     // os botões seguem o campo, venha a mudança de onde vier
       const wrapIncluiVoce = document.getElementById('wrapRateioIncluiVoce');
       const wrapModo = document.getElementById('wrapModoRateio');
       const boxCotas = document.getElementById('cotasRateio');
@@ -3730,6 +3896,47 @@
 
     function textoSeguro(v) {
       return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    /* BUSCAR POR DATA
+       A data nunca esteve entre os campos vasculhados: procurar "13/09" dava
+       "nenhum lan\u00e7amento encontrado" mesmo com o dia cheio de gastos. Agora o
+       mesmo campo de busca tamb\u00e9m \u00e9 lido como data, nos formatos que se digita
+       de verdade:
+
+         13/09 \u00b7 13/9 \u00b7 13-09        dia e m\u00eas, de qualquer ano
+         13/09/2026 \u00b7 13/09/26       dia, m\u00eas e ano
+         09/2026 \u00b7 2026-09           o m\u00eas inteiro
+         2026-09-13                  como fica guardado
+         setembro \u00b7 set \u00b7 set/2026   pelo nome do m\u00eas
+         2026                        o ano inteiro
+
+       N\u00daMERO SOLTO N\u00c3O \u00c9 DATA de prop\u00f3sito: um "13" sozinho casaria com todo
+       dia 13 de toda a vida e afogaria a busca por texto, que \u00e9 pra que o
+       campo serve na maior parte das vezes. */
+    function dataBateComTermo(dataISO, termo) {
+      if (!dataISO || !termo) return false;
+      const [ano, mes, dia] = String(dataISO).split('-');
+      if (!dia) return false;
+      const t = textoSeguro(termo).replace(/\s+/g, '');
+      const doisDigitos = n => String(parseInt(n, 10)).padStart(2, '0');
+      // ano de dois d\u00edgitos: "26" \u00e9 2026 (o app n\u00e3o lida com datas do s\u00e9culo passado)
+      const anoBate = a => !a || (a.length === 4 ? a === ano : a === ano.slice(2));
+
+      let m;
+      if ((m = t.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/)))            // 2026-09-13 / 2026-09
+        return m[1] === ano && m[2] === mes && (!m[3] || m[3] === dia);
+      if ((m = t.match(/^(\d{1,2})[\/.-](\d{4})$/)))                  // 09/2026
+        return doisDigitos(m[1]) === mes && m[2] === ano;
+      if ((m = t.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?$/)))   // 13/09[/2026]
+        return doisDigitos(m[1]) === dia && doisDigitos(m[2]) === mes && anoBate(m[3]);
+      if ((m = t.match(/^(\d{4})$/))) return m[1] === ano;            // 2026
+
+      // "setembro", "set", "setembro/2026", "set2026"
+      m = t.match(/^([a-z]{3,})(?:[\/.-]?(\d{2,4}))?$/);
+      if (!m) return false;
+      const nome = textoSeguro(NOMES_MESES[parseInt(mes, 10) - 1]);
+      return nome.startsWith(m[1]) && anoBate(m[2]);
     }
 
     function contarParcelasPendentes(item) {
@@ -4696,13 +4903,17 @@
       atualizarExemploMeuNome();
       const box = document.getElementById('listaContatos');
       if (!box) return;
-      const nomes = Object.keys(contatos).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+      // A lista é a união do cadastro com quem já aparece no histórico: quem você
+      // emprestou antes do cadastro existir precisa estar aqui pra ser escolhido
+      // no lançamento — e pra dar pra juntar os nomes repetidos.
+      const nomes = nomesConhecidos();
       if (!nomes.length) {
-        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum número salvo ainda. Eles são pedidos na primeira cobrança de cada pessoa.</p>';
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum contato ainda. Cadastre aqui embaixo e depois é só escolher o nome na hora do lançamento.</p>';
         return;
       }
       box.innerHTML = '';
       nomes.forEach(nome => {
+        const tem = contatoTemNumero(nome);
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
         linha.style.cursor = 'pointer';
@@ -4710,7 +4921,8 @@
         linha.innerHTML = `
           <div class="item-info">
             <strong style="font-size:13.5px;">${nome}</strong>
-            <div style="font-size:11px;color:var(--texto-fraco);">${telefoneVisivel(telDoContato(nome))}</div>
+            <div style="font-size:11px;color:${tem ? 'var(--texto-fraco)' : 'var(--texto-tenue)'};">${
+              tem ? telefoneVisivel(telDoContato(nome)) : 'sem número — pedido na primeira cobrança'}</div>
           </div>
           <span style="font-size:11px;color:var(--texto-fraco);">editar</span>
         `;
@@ -5090,7 +5302,9 @@
           const obs = textoSeguro(item.observacao || '');
           const grupo = textoSeguro(item.grupoViagemNome || '');
           const destino = textoSeguro(item.contaDestino || '');
-          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo) || obs.includes(termo) || grupo.includes(termo) || destino.includes(termo);
+          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo)
+            || obs.includes(termo) || grupo.includes(termo) || destino.includes(termo)
+            || dataBateComTermo(item.data, termo);
         }
         if (escopoMes) return (item.data || '').slice(0, 7) === chaveMesSel;
         // "ver todos": parcelas futuras não aparecem — efetivam conforme o vencimento
@@ -8448,10 +8662,33 @@
       renderizarEmprestimos();
     }
 
+    /* Três entradas na mesma janela:
+       - vindo de uma cobrança: o nome já existe e falta o número, que aí é
+         obrigatório porque o WhatsApp abre logo em seguida;
+       - vindo de Ajustes com um nome: edita (inclusive renomeia);
+       - vindo do "+ Novo contato": nome vazio, número opcional — dá pra cadastrar
+         a pessoa antes de ter o telefone dela. */
     function abrirModalContatoCobranca(nome) {
-      document.getElementById('tituloContatoCobranca').textContent = 'WhatsApp de ' + nome;
+      const existente = !!nome;
+      const paraCobrar = !!(cobrancaPendente && cobrancaPendente.nome === nome);
+      document.getElementById('tituloContatoCobranca').textContent =
+        paraCobrar ? 'WhatsApp de ' + nome : existente ? 'Editar ' + nome : 'Novo contato';
+      const campoNome = document.getElementById('inputNomeContato');
+      campoNome.value = nome || '';
+      campoNome.dataset.original = nome || '';
       document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(telDoContato(nome));
-      document.getElementById('inputTelefoneCobranca').dataset.nome = nome;
+      document.getElementById('inputTelefoneCobranca').dataset.nome = nome || '';
+      document.getElementById('rotuloTelOpcional').classList.toggle('escondido', paraCobrar);
+      document.getElementById('btnSalvarContato').textContent = paraCobrar ? 'Salvar e abrir' : 'Salvar';
+      // Remover só faz sentido em quem já está cadastrado, e nunca no meio de
+      // uma cobrança (a janela abriu justamente pra completar o cadastro).
+      document.getElementById('btnRemoverContato').classList.toggle('escondido', !existente || paraCobrar || !contatos[nome]);
+      const emUso = existente ? cobrancasAbertas().filter(c => c.nome === nome).length : 0;
+      document.getElementById('dicaNomeContato').textContent = !existente
+        ? 'Depois é só escolher esse nome na hora do lançamento.'
+        : emUso
+          ? `Trocar o nome renomeia ${emUso === 1 ? 'a cobrança aberta' : 'as ' + emUso + ' cobranças abertas'} dessa pessoa junto.`
+          : 'Se essa pessoa está cadastrada duas vezes, renomeie uma com o nome da outra pra juntar as duas.';
       // A agenda do celular só está disponível no Chrome do Android; no iPhone o
       // botão some e sobra o campo manual, que funciona em qualquer aparelho.
       const btnAgenda = document.getElementById('btnEscolherDaAgenda');
@@ -8471,21 +8708,115 @@
 
     function salvarContatoCobranca() {
       const campo = document.getElementById('inputTelefoneCobranca');
-      const nome = campo.dataset.nome;
+      const campoNome = document.getElementById('inputNomeContato');
+      const antigo = campoNome.dataset.original;
+      const novo = campoNome.value.trim().replace(/\s+/g, ' ');
       const tel = normalizarTelefone(campo.value);
-      if (!tel) { avisar('telefoneInvalido'); return; }
+      const paraCobrar = !!(cobrancaPendente && cobrancaPendente.nome === antigo);
+      if (!novo) { avisar('semNome', 'O nome é o que liga a cobrança à pessoa.'); return; }
+      // Sem número o contato existe do mesmo jeito — só não dá pra abrir o
+      // WhatsApp. Mas se a janela abriu PARA cobrar, o número é o motivo dela.
+      if (paraCobrar && !tel) { avisar('telefoneInvalido'); return; }
+      if (campo.value.trim() && !tel) { avisar('telefoneInvalido'); return; }
+
+      // Renomear é a ferramenta de juntar o que o campo livre separou. Se o nome
+      // novo já é de outra pessoa cadastrada, as duas viram uma só.
+      let nome = novo;
+      if (antigo && textoSeguro(antigo) !== textoSeguro(novo)) {
+        const destino = nomesConhecidos().find(n => textoSeguro(n) === textoSeguro(novo));
+        const juntando = destino && textoSeguro(destino) !== textoSeguro(antigo);
+        const quantos = contarRegistrosDoContato(antigo);
+        if (quantos && !confirm(juntando
+              ? `Juntar "${antigo}" com "${destino}"? ${quantos === 1 ? 'O registro' : 'Os ' + quantos + ' registros'} de "${antigo}" ${quantos === 1 ? 'passa' : 'passam'} a ser ${quantos === 1 ? 'dessa pessoa' : 'dessa pessoa'}, e as cobranças somam num total só.`
+              : `Renomear "${antigo}" para "${novo}" também ${quantos === 1 ? 'no registro' : 'nos ' + quantos + ' registros'} já lançado${quantos === 1 ? '' : 's'}?`)) return;
+        nome = destino || novo;
+        renomearContato(antigo, nome);
+      }
+
       // O tom não se escolhe mais aqui. Se essa janela abriu vindo de uma
       // cobrança (contato novo, tel ainda não existia), o tom que a pessoa
       // acabou de escolher está em cobrancaPendente.tom — usa esse. Se abriu
       // pra só editar o telefone de alguém já cadastrado, preserva o tom que
       // já estava salvo, sem apagar a aprendizagem.
-      const tomEscolhido = (cobrancaPendente && cobrancaPendente.nome === nome && cobrancaPendente.tom)
+      const tomEscolhido = (paraCobrar && cobrancaPendente.tom)
         || (contatos[nome] && contatos[nome].tom) || 'neutro';
-      contatos[nome] = { tel, tom: tomEscolhido };
+      // Juntar dois contatos não pode apagar o número que um deles já tinha.
+      contatos[nome] = { tel: tel || telDoContato(nome), tom: tomEscolhido };
+      salvarContatos();
+      if (paraCobrar) cobrancaPendente.nome = nome;
+      fecharModal('modalContatoCobranca');
+      renderizarContatos();
+      renderizarEmprestimos();
+      if (cobrancaPendente) dispararWhatsApp(normalizarTelefone(telDoContato(nome)));
+    }
+
+    // Quantos lançamentos/fixos carregam esse nome — é o que a confirmação de
+    // renomear precisa dizer antes de mexer no histórico.
+    function contarRegistrosDoContato(nome) {
+      const alvo = textoSeguro(nome);
+      const bate = l => (l.emprestimoPara || '').split(',').some(n => textoSeguro(n.trim()) === alvo)
+        || (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => textoSeguro(d.nome) === alvo));
+      return lancamentos.filter(bate).length + fixos.filter(bate).length;
+    }
+
+    /* RENOMEAR TROCA O NOME EM TODO LUGAR QUE ELE É CHAVE
+       São seis: o texto de emprestimoPara, o nome dentro do rateio, as frações
+       do rateio por pessoa, e os dois carimbos (cobrado em / alinhado em).
+       Esquecer um deixa metade da dívida com a pessoa velha. */
+    function renomearContato(de, para) {
+      if (!de || !para || de === para) return;
+      const alvo = textoSeguro(de);
+      const trocarChaves = mapa => {
+        if (!mapa) return;
+        Object.keys(mapa).forEach(k => {
+          if (textoSeguro(k) !== alvo) return;
+          // se a pessoa de destino já tem valor ali, o que existia manda
+          if (mapa[para] == null) mapa[para] = mapa[k];
+          if (k !== para) delete mapa[k];
+        });
+      };
+      const aplicar = l => {
+        if (l.emprestimoPara) {
+          l.emprestimoPara = l.emprestimoPara.split(',')
+            .map(n => (textoSeguro(n.trim()) === alvo ? para : n.trim()))
+            .filter((n, i, arr) => n && arr.indexOf(n) === i)   // juntar não pode duplicar o nome
+            .join(', ');
+        }
+        if (Array.isArray(l.emprestimoRateio)) {
+          l.emprestimoRateio.forEach(d => { if (textoSeguro(d.nome) === alvo) d.nome = para; });
+        }
+        trocarChaves(l.rateioFracoes);
+        trocarChaves(l.cobrancaPor);
+        trocarChaves(l.alinhadoPor);
+      };
+      lancamentos.forEach(aplicar);
+      fixos.forEach(aplicar);
+      lixeira.forEach(aplicar);
+      // O contato antigo cede o número só se o novo não tiver um.
+      const velho = contatos[de];
+      if (velho) {
+        const destino = contatos[para];
+        contatos[para] = {
+          tel: (destino && destino.tel) || velho.tel || '',
+          tom: (destino && destino.tom) || velho.tom || 'neutro'
+        };
+        delete contatos[de];
+      }
+      salvarLocalStorage(); salvarFixos(); salvarLixeira(); salvarContatos();
+    }
+
+    function removerContato() {
+      const nome = document.getElementById('inputNomeContato').dataset.original;
+      if (!nome || !contatos[nome]) return;
+      const quantos = contarRegistrosDoContato(nome);
+      if (!confirm(quantos
+            ? `Remover o número de "${nome}"? ${quantos === 1 ? 'O lançamento' : 'Os ' + quantos + ' lançamentos'} continua${quantos === 1 ? '' : 'm'} no histórico, então o nome segue aparecendo na lista — só sem número salvo.`
+            : `Remover "${nome}" dos contatos?`)) return;
+      delete contatos[nome];
       salvarContatos();
       fecharModal('modalContatoCobranca');
+      renderizarContatos();
       renderizarEmprestimos();
-      if (cobrancaPendente) dispararWhatsApp(tel);
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -9704,7 +10035,7 @@
         if (f.busca) {
           const alvo = [l.descricao, l.observacao, l.categoria, l.conta, l.emprestimoPara]
             .filter(Boolean).join(' ').toLowerCase();
-          if (!alvo.includes(f.busca)) return false;
+          if (!alvo.includes(f.busca) && !dataBateComTermo(l.data, f.busca)) return false;
         }
         return true;
       });
@@ -9792,6 +10123,8 @@
       }
       document.getElementById('emprestimoFixo').value = f ? (f.emprestimoPara || '') : '';
       selPrazo.value = f && f.diaCobranca ? String(Math.min(parseInt(f.diaCobranca, 10) || 10, 28)) : '10';
+      document.getElementById('novoContatoInlineFixo').classList.add('escondido');
+      renderizarChipsPessoas('fixo');
 
       atualizarFormaFixoVisibilidade();
       atualizarPrazoFixoVisibilidade();
@@ -9800,6 +10133,7 @@
 
     // O prazo de cobrança só faz sentido quando o gasto é reembolsado por alguém
     function atualizarPrazoFixoVisibilidade() {
+      renderizarChipsPessoas('fixo');   // os botões seguem o campo, venha a mudança de onde vier
       const temEmprestimo = !!document.getElementById('emprestimoFixo').value.trim();
       document.getElementById('grupoPrazoFixo').classList.toggle('escondido', !temEmprestimo);
       document.getElementById('avisoEmprestimoFixo').classList.toggle('escondido', !temEmprestimo);
@@ -9831,7 +10165,9 @@
 
       const idEdit = document.getElementById('idFixoEditando').value;
       const contaEscolhida = document.getElementById('contaFixo').value || primeiraConta();
-      const emprestimoPara = document.getElementById('emprestimoFixo').value.trim();
+      // passa pelo funil de nomes pra o reembolso do fixo não abrir um devedor
+      // paralelo de quem já existe ("bernardo" ao lado de "Bernardo")
+      const emprestimoPara = nomesEmprestimo(document.getElementById('emprestimoFixo').value).join(', ');
       const dados = {
         descricao,
         valor: valor.toFixed(2).replace('.', ','),
@@ -11397,7 +11733,11 @@
       const termo = textoSeguro(document.getElementById('inputBuscaGrupo')?.value || '');
       if (!container) return;
 
-      const combinaBusca = g => !termo || textoSeguro(g.nome).includes(termo);
+      // O grupo também é achado pela data: um grupo não tem data própria, então
+      // ele responde pela dos gastos que estão dentro dele — procurar "13/09" ou
+      // "setembro" traz o rolê daquele dia sem você lembrar o nome que deu a ele.
+      const combinaBusca = g => !termo || textoSeguro(g.nome).includes(termo)
+        || lancamentos.some(l => l.grupoViagemId === g.id && dataBateComTermo(l.data, termo));
       const abertos = grupos.filter(g => g.status === 'aberto' && combinaBusca(g));
       const fechados = grupos.filter(g => g.status !== 'aberto' && combinaBusca(g));
 
@@ -12194,7 +12534,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.15-2';
+    const APP_VERSION = '2026.09.16-1';
 
     // Inicialização
     carregarLocalStorage();
