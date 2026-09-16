@@ -319,14 +319,29 @@
     .campo-seletor.aberto { border-color: var(--borda-forte); }
     .campo-seletor .vazio { color: var(--texto-tenue); }
     .campo-seletor .escolhidos { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* Sobrepõe em vez de empurrar: abrir a lista não pode reorganizar o
-       formulário embaixo dela. */
+    /* A lista entra NO FLUXO do modal, empurrando o que vem depois, em vez de
+       flutuar por cima. Flutuando ela era recortada pela borda do modal (que
+       rola por dentro): a lista aparecia pela metade e o "+ Novo contato" no pé
+       dela simplesmente não existia na tela. No fluxo, o modal cresce até o
+       limite dele e rola — nada fica escondido. */
     .painel-seletor {
-      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30;
-      background: var(--card); border: 1px solid var(--borda-forte); border-radius: 10px;
-      padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      margin-top: 6px;
+      background: var(--campo); border: 1px solid var(--borda-forte); border-radius: 10px;
+      padding: 8px;
     }
-    .lista-seletor { max-height: 190px; overflow-y: auto; margin-top: 6px; }
+    /* Alto o bastante pra caber uma agenda de verdade sem virar um tubo de
+       rolagem. O teto em vh evita que, num celular baixo, a lista empurre os
+       botões do modal pra fora da tela. */
+    .lista-seletor { max-height: 300px; overflow-y: auto; margin-top: 6px; }
+    /* O rodapé fixo do painel: cadastrar contato não depende de você digitar
+       um nome que não existe — o botão está sempre ali. */
+    .rodape-seletor {
+      display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 6px;
+      padding: 11px 10px; border: none; border-top: 1px solid var(--borda);
+      background: transparent; color: var(--acento-palido); font-size: 14px;
+      cursor: pointer; text-align: left;
+    }
+    .rodape-seletor:active { background: var(--campo); }
     .opcao-pessoa {
       display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
       padding: 10px 10px; border: none; background: transparent; border-radius: 7px;
@@ -365,7 +380,10 @@
     .btn-mes { background: var(--campo); border: 1px solid var(--borda); color: var(--texto); width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
     /* pop-up centralizado na tela */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; padding: 14px; z-index: 1000; }
-    .modal-content { background: var(--card); width: 100%; max-width: 480px; border-radius: 18px; padding: 16px; max-height: 88vh; overflow-y: auto; border: 1px solid var(--borda-forte); }
+    /* 92vh e não 88: com a lista de contatos aberta o modal ficava alto demais
+       pro espaço e cortava o próprio cabeçalho. Os 4% extras são o suficiente
+       pra o título continuar à vista enquanto a lista está aberta. */
+    .modal-content { background: var(--card); width: 100%; max-width: 480px; border-radius: 18px; padding: 16px; max-height: 92vh; overflow-y: auto; border: 1px solid var(--borda-forte); }
     /* O formulário é emprestado pro modal de edição: aqui ele perde a moldura de
        card e o próprio cabeçalho, que duplicavam o do modal. */
     #destinoFormEdicao > .card { background: transparent; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
@@ -1791,6 +1809,7 @@
                    oninput="renderizarOpcoesPessoas('emprestimo')"
                    onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarNovaPessoa('emprestimo');}">
             <div class="lista-seletor" id="listaPessoas"></div>
+            <button type="button" class="rodape-seletor" id="rodapeSeletorPessoas">+ Novo contato</button>
           </div>
         </div>
       </div>
@@ -2150,6 +2169,7 @@
                      oninput="renderizarOpcoesPessoas('fixo')"
                      onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarNovaPessoa('fixo');}">
               <div class="lista-seletor" id="listaPessoasFixo"></div>
+              <button type="button" class="rodape-seletor" id="rodapeSeletorPessoasFixo">+ Novo contato</button>
             </div>
           </div>
         </div>
@@ -2998,14 +3018,14 @@
         id: 'emprestimo', campo: 'emprestimoTemp', seletor: 'seletorPessoas',
         botao: 'botaoPessoas', rotulo: 'rotuloPessoas', chevron: 'chevronPessoas',
         painel: 'painelPessoas', busca: 'buscaPessoas', lista: 'listaPessoas',
-        vazio: 'Toque para escolher',
+        rodape: 'rodapeSeletorPessoas', vazio: 'Toque para escolher',
         depois: () => atualizarPreviaRateio()
       },
       fixo: {
         id: 'fixo', campo: 'emprestimoFixo', seletor: 'seletorPessoasFixo',
         botao: 'botaoPessoasFixo', rotulo: 'rotuloPessoasFixo', chevron: 'chevronPessoasFixo',
         painel: 'painelPessoasFixo', busca: 'buscaPessoasFixo', lista: 'listaPessoasFixo',
-        vazio: 'Ninguém — é só meu',
+        rodape: 'rodapeSeletorPessoasFixo', vazio: 'Ninguém — é só meu',
         depois: () => atualizarPrazoFixoVisibilidade()
       }
     };
@@ -3064,9 +3084,32 @@
       } else if (!lista.length) {
         html = `<p class="aviso-seletor">${todos.length
           ? 'Ninguém com esse nome.'
-          : 'Nenhum contato ainda — digite um nome aí em cima pra cadastrar.'}</p>`;
+          : 'Nenhum contato ainda — use o botão aqui embaixo.'}</p>`;
       }
       box.innerHTML = html;
+
+      /* O botão de cadastrar fica FORA da lista rolável, no rodapé do painel:
+         dentro dela ele desceria junto com a rolagem e, com a agenda cheia,
+         ficaria escondido justamente pra quem mais precisa dele. Abre o mesmo
+         cadastro de Ajustes — com nome e telefone —, e não só o nome. */
+      const rodape = document.getElementById(ctx.rodape);
+      if (rodape) rodape.onclick = () => abrirCadastroDeContato(ctx.id);
+    }
+
+    /* Cadastro completo a partir do lançamento: abre a ficha do contato por cima
+       e, ao salvar, volta pro formulário com a pessoa já escolhida. Sem isso,
+       cadastrar alguém com telefone exigia sair do lançamento, ir em Ajustes e
+       voltar — perdendo o que já estava digitado. */
+    let contatoVoltaPara = null;
+
+    function abrirCadastroDeContato(ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      cobrancaPendente = null;
+      // o que já foi digitado na busca vira o nome sugerido
+      const digitado = document.getElementById(ctx.busca).value.trim();
+      abrirModalContatoCobranca('');     // limpa contatoVoltaPara lá dentro...
+      contatoVoltaPara = ctx.id;         // ...por isso a volta é marcada depois
+      if (digitado) document.getElementById('inputNomeContato').value = digitado;
     }
 
     function alternarSeletorPessoas(ctxId) {
@@ -3079,6 +3122,29 @@
     // A ordem que a lista tinha quando o painel abriu, por formulário
     const ordemDoSeletor = {};
 
+    /* A LISTA CABE NO QUE SOBRA, e não o contrário.
+       Com altura fixa, num aparelho mais baixo o painel passava do fim da tela;
+       o modal rolava pra mostrar a lista e levava embora o próprio cabeçalho —
+       era o "Empréstimo" cortado no topo. Aqui a lista mede quanto espaço existe
+       abaixo do campo e se ajusta: nunca rouba a tela, e num celular grande usa
+       o espaço todo, que é o comprimento maior pedido. */
+    const ALTURA_MIN_LISTA = 150;
+    const ALTURA_MAX_LISTA = 330;
+
+    function ajustarAlturaDaLista(ctxId) {
+      const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
+      const lista = document.getElementById(ctx.lista);
+      if (!lista) return;
+      /* Metade da tela é o teto: a lista tem que ser generosa (é pra isso que
+         ela existe) sem engolir o modal inteiro — o campo escolhido e os botões
+         de OK precisam continuar alcançáveis com uma rolagem curta. */
+      const altura = Math.max(ALTURA_MIN_LISTA, Math.min(ALTURA_MAX_LISTA, Math.round(window.innerHeight * 0.5)));
+      lista.style.maxHeight = altura + 'px';
+      // com a lista aberta, garante que ela apareça mesmo se o modal já estava rolado
+      const painel = document.getElementById(ctx.painel);
+      if (painel && painel.scrollIntoView) painel.scrollIntoView({ block: 'nearest' });
+    }
+
     function abrirSeletorPessoas(ctxId) {
       const ctx = CTX_PESSOAS[ctxId || 'emprestimo'];
       const busca = document.getElementById(ctx.busca);
@@ -3090,6 +3156,7 @@
       document.getElementById(ctx.botao).classList.add('aberto');
       document.getElementById(ctx.chevron).textContent = '▴';
       renderizarOpcoesPessoas(ctxId);
+      ajustarAlturaDaLista(ctxId);
       // No celular o teclado subindo tapa a lista inteira: quem abre o painel
       // quase sempre quer só tocar num nome, não digitar. O foco fica pra quem
       // pedir, tocando no campo de busca.
@@ -8525,6 +8592,10 @@
        - vindo do "+ Novo contato": nome vazio, número opcional — dá pra cadastrar
          a pessoa antes de ter o telefone dela. */
     function abrirModalContatoCobranca(nome) {
+      // Abrir do zero apaga uma volta pendente: se você cancelou o cadastro da
+      // vez passada, o próximo salvamento (vindo de Ajustes, por exemplo) não
+      // pode pular pra um formulário de lançamento que você já fechou.
+      contatoVoltaPara = null;
       const existente = !!nome;
       const paraCobrar = !!(cobrancaPendente && cobrancaPendente.nome === nome);
       document.getElementById('tituloContatoCobranca').textContent =
@@ -8538,7 +8609,11 @@
       document.getElementById('btnSalvarContato').textContent = paraCobrar ? 'Salvar e abrir' : 'Salvar';
       // Remover só faz sentido em quem já está cadastrado, e nunca no meio de
       // uma cobrança (a janela abriu justamente pra completar o cadastro).
-      document.getElementById('btnRemoverContato').classList.toggle('escondido', !existente || paraCobrar || !contatos[nome]);
+      /* O botão aparece pra QUALQUER nome já existente, e não só pra quem está
+         no cadastro. A lista mistura cadastro e histórico: um nome que veio de
+         um lançamento (um "Dud" digitado errado antes do cadastro existir)
+         ficava sem opção de remover, e não havia jeito nenhum de tirá-lo dali. */
+      document.getElementById('btnRemoverContato').classList.toggle('escondido', !existente || paraCobrar);
       const emUso = existente ? cobrancasAbertas().filter(c => c.nome === nome).length : 0;
       document.getElementById('dicaNomeContato').textContent = !existente
         ? 'Depois é só escolher esse nome na hora do lançamento.'
@@ -8603,6 +8678,23 @@
       fecharModal('modalContatoCobranca');
       renderizarContatos();
       renderizarEmprestimos();
+      // Veio do botão "+ Novo contato" de dentro de um lançamento: devolve a
+      // pessoa já escolhida, que é o motivo de ter cadastrado ela agora.
+      if (contatoVoltaPara) {
+        const ctxId = contatoVoltaPara;
+        contatoVoltaPara = null;
+        const ctx = CTX_PESSOAS[ctxId];
+        document.getElementById(ctx.busca).value = '';
+        const ordem = ordemDoSeletor[ctx.id];
+        if (ordem && !ordem.includes(nome)) ordem.unshift(nome);
+        if (!pessoasSelecionadas(ctxId).some(n => textoSeguro(n) === textoSeguro(nome))) {
+          alternarPessoaRateio(nome, ctxId);
+        } else {
+          renderizarSeletorPessoas(ctxId);
+        }
+        renderizarOpcoesPessoas(ctxId);
+        return;
+      }
       if (cobrancaPendente) dispararWhatsApp(normalizarTelefone(telDoContato(nome)));
     }
 
@@ -8661,18 +8753,75 @@
       salvarLocalStorage(); salvarFixos(); salvarLixeira(); salvarContatos();
     }
 
+    /* REMOVER TEM QUE REMOVER DE VERDADE
+       Antes isto apagava só a ficha do cadastro. Como a lista é a união do
+       cadastro com o histórico, o nome voltava na hora — e quem nunca teve
+       ficha (o "Dud" digitado errado num lançamento) não tinha nem botão.
+       Agora remover desmarca o empréstimo nos lançamentos também: é o que
+       faz a pessoa sumir de verdade. Os lançamentos ficam; o que se perde é
+       a cobrança, e a confirmação diz isso com todas as letras — junto com o
+       caminho melhor pra quem só errou o nome, que é renomear. */
     function removerContato() {
       const nome = document.getElementById('inputNomeContato').dataset.original;
-      if (!nome || !contatos[nome]) return;
+      if (!nome) return;
       const quantos = contarRegistrosDoContato(nome);
-      if (!confirm(quantos
-            ? `Remover o número de "${nome}"? ${quantos === 1 ? 'O lançamento' : 'Os ' + quantos + ' lançamentos'} continua${quantos === 1 ? '' : 'm'} no histórico, então o nome segue aparecendo na lista — só sem número salvo.`
-            : `Remover "${nome}" dos contatos?`)) return;
-      delete contatos[nome];
-      salvarContatos();
+      const abertas = cobrancasAbertas().filter(c => textoSeguro(c.nome) === textoSeguro(nome));
+      const emAberto = abertas.reduce((s, c) => s + c.valor, 0);
+
+      const aviso = quantos
+        ? `Remover "${nome}" de vez?\n\n`
+          + `Isso desmarca o empréstimo em ${quantos === 1 ? '1 lançamento' : quantos + ' lançamentos'}`
+          + (emAberto > 0 ? ` (${fmtVal(emAberto)} em aberto)` : '')
+          + `. Os lançamentos continuam no histórico, mas deixam de ser cobrança — essa dívida some dos Empréstimos.\n\n`
+          + `Se foi só erro de digitação, cancele e troque o nome aí em cima: as cobranças se juntam na pessoa certa, sem perder nada.`
+        : `Remover "${nome}" dos contatos?`;
+      if (!confirm(aviso)) return;
+
+      if (contatos[nome]) { delete contatos[nome]; salvarContatos(); }
+      if (quantos) removerPessoaDosLancamentos(nome);
       fecharModal('modalContatoCobranca');
       renderizarContatos();
       renderizarEmprestimos();
+      atualizarTudo();
+    }
+
+    // Tira a pessoa de todo lugar onde ela é devedora, sem apagar o lançamento.
+    function removerPessoaDosLancamentos(nome) {
+      const alvo = textoSeguro(nome);
+      const limparChave = mapa => {
+        if (!mapa) return;
+        Object.keys(mapa).forEach(k => { if (textoSeguro(k) === alvo) delete mapa[k]; });
+      };
+      const aplicar = l => {
+        const tinha = (l.emprestimoPara || '').split(',').some(n => textoSeguro(n.trim()) === alvo)
+          || (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => textoSeguro(d.nome) === alvo));
+        if (!tinha) return;
+
+        l.emprestimoPara = (l.emprestimoPara || '').split(',')
+          .map(n => n.trim()).filter(n => n && textoSeguro(n) !== alvo).join(', ');
+        if (Array.isArray(l.emprestimoRateio)) {
+          l.emprestimoRateio = l.emprestimoRateio.filter(d => textoSeguro(d.nome) !== alvo);
+          if (!l.emprestimoRateio.length) delete l.emprestimoRateio;
+        }
+        limparChave(l.rateioFracoes);
+        limparChave(l.cobrancaPor);
+        limparChave(l.alinhadoPor);
+        [['rateioFracoes'], ['cobrancaPor'], ['alinhadoPor']].forEach(([campo]) => {
+          if (l[campo] && !Object.keys(l[campo]).length) delete l[campo];
+        });
+        // Sem ninguém devendo, o que era empréstimo volta a ser gasto comum.
+        if (!l.emprestimoPara) {
+          l.emprestimoVence = '';
+          delete l.emprestimoTipo;
+          delete l.emprestimoQuitado;
+          delete l.adiamentos;
+          if ('diaCobranca' in l) l.diaCobranca = null;   // gasto fixo
+        }
+      };
+      lancamentos.forEach(aplicar);
+      fixos.forEach(aplicar);
+      lixeira.forEach(aplicar);
+      salvarLocalStorage(); salvarFixos(); salvarLixeira();
     }
 
     // Empréstimos consideram TODOS os lançamentos marcados, independente do mês:
@@ -12496,7 +12645,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.16-3';
+    const APP_VERSION = '2026.09.16-5';
 
     // Inicialização
     carregarLocalStorage();
