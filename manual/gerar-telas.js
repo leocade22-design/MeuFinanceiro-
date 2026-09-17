@@ -60,7 +60,29 @@ fs.mkdirSync(OUT, { recursive: true });
     orcamentosCategoria['Lazer'] = '300,00';
 
     transferencias.unshift({id:Date.now(),data:dia(8),origem:'PicPay',destino:'Itaú',valor:'400,00'});
-    contatos['Bernardo'] = '5511987654321';
+    contatos['Bernardo'] = { tel:'5511987654321', tom:'neutro' };
+    contatos['Ana']      = { tel:'5511912345678', tom:'neutro' };
+    contatos['Carlos']   = { tel:'', tom:'neutro' };
+
+    /* Bernardo entra nos DOIS lados: ele te deve o Airbnb e o Gympass, e você
+       pegou um dinheiro com ele. É esse cruzamento que liga o encontro de
+       contas — sem ele, a tela do acerto não existiria pra fotografar. */
+    lancamentos.push({id:novoIdLancamento(),tipo:'receita',descricao:'Peguei com o Bernardo',
+      valor:'90,00',data:d(-8),conta:'Itaú',formaModo:'Pix',categoria:'Outros',
+      emprestimoPara:'Bernardo',emprestimoVence:d(6),emprestimoTipo:'direto'});
+
+    // saldo inicial: o dinheiro que já estava na conta antes do app
+    const cItau = contas.find(c => c.nome === 'Itaú');
+    if (cItau) { cItau.saldoInicial = '2.500,00'; cItau.saldoInicialEm = dia(1); }
+    salvarContas();
+
+    // um grupo de investimento com aporte, pra fotografar o card e o balão de opções
+    if (!tiposAtivo.includes('Tesouro Direto')) tiposAtivo.push('Tesouro Direto');
+    investimentos.push({id:novoIdLancamento(),tipoAtivo:'Tesouro Direto',valor:'1.200,00',
+      data:d(-30),origem:'Itaú'});
+    salvarTiposAtivo(); salvarInvest();
+
+    uiPrefs.chavePix = '(11) 98765-4321';
 
     salvarLocalStorage(); salvarFixos(); salvarGrupos(); salvarOrcamentos(); salvarTransferencias(); salvarContatos();
     atualizarTudo();
@@ -165,6 +187,93 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(300);
   await tiro('ajustes', '#abaConfig');
   await secao('sons', false);
+
+  // 14) o seletor de contatos no empréstimo
+  await abrir('Lançamentos');
+  await page.evaluate(()=>{
+    alternarTipo('despesa');
+    document.getElementById('descricao').value = 'Conta do bar';
+    document.getElementById('valor').value = 'R$ 100,00';
+    abrirModalEmprestimo();
+    alternarPessoaRateio('Bernardo', 'emprestimo');
+    abrirSeletorPessoas('emprestimo');
+  });
+  await page.waitForTimeout(500);
+  await tiro('contatos_seletor', '#modalEmprestimo .modal-content');
+  await page.evaluate(()=>{ fecharSeletorPessoas('emprestimo'); limparEmprestimoModal(); });
+  await page.waitForTimeout(300);
+
+  // 15) a caixa de ditado (o plano B do microfone no iPhone)
+  await page.evaluate(()=>{
+    abrirDitado(true);
+    document.getElementById('textoDitado').value = 'mercado 240 em 3 vezes no cartão';
+  });
+  await page.waitForTimeout(400);
+  await tiro('ditado', '#modalDitado .modal-content');
+  await page.evaluate(()=>fecharModal('modalDitado'));
+  await page.waitForTimeout(300);
+
+  // 16) encontro de contas: o Bernardo está nos dois lados
+  await abrir('Faturas');
+  await secao('emprestimos', true);
+  await page.evaluate(()=>{
+    emprestimosPessoasAbertas = new Set(['devo:Bernardo']);
+    renderizarEmprestimos();
+  });
+  await page.waitForTimeout(450);
+  await tiro('acerto_contas', '[data-card="emprestimos"]');
+  await secao('emprestimos', false);
+
+  // 17) a Consulta com as duas réguas: conta e forma de pagamento
+  await abrir('Gráficos');
+  await page.evaluate(()=>{ setFiltroPeriodoGraficos('mesAtual','Este mês'); abrirModalConsulta('despesa'); });
+  await page.waitForTimeout(600);
+  await tiro('consulta_filtros', '#modalPanorama .modal-content');
+  await page.evaluate(()=>fecharModal('modalPanorama'));
+  await page.waitForTimeout(300);
+
+  // 18) corrigir saldo — o caminho de acertar com o banco sem lançamento
+  await abrir('Ajustes');
+  await page.evaluate(()=>{
+    abrirModalContas();
+    const c = contas.find(x => x.nome === 'Itaú');
+    contaAcoesId = c.id;
+    abrirCorrigirSaldo();
+    document.getElementById('saldoRealConta').value = 'R$ 9.000,00';
+    previewCorrecaoSaldo();
+  });
+  await page.waitForTimeout(500);
+  await tiro('corrigir_saldo', '#modalCorrigirSaldo .modal-content');
+  await page.evaluate(()=>{ fecharModal('modalCorrigirSaldo'); fecharModal('modalContas'); });
+  await page.waitForTimeout(300);
+
+  // 19) o saldo inicial no cadastro da conta
+  await page.evaluate(()=>{
+    abrirModalContas();
+    editarConta(contas.find(x => x.nome === 'Itaú').id);
+  });
+  await page.waitForTimeout(500);
+  await tiro('saldo_inicial', '#modalFormConta .modal-content');
+  await page.evaluate(()=>{ fecharFormConta(); fecharModal('modalContas'); });
+  await page.waitForTimeout(300);
+
+  // 20) o card do grupo de investimento, com o ⋯ das opções
+  await abrir('Investim.');
+  await page.evaluate(()=>renderizarInvestimentos());
+  await page.waitForTimeout(500);
+  await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
+
+  // 21) os dois cards de gráfico que ganharam o seletor Barras/Colunas
+  await abrir('Gráficos');
+  await secao('evolucaoMensal', true);
+  await secao('comprometidoFuturo', true);
+  await page.evaluate(()=>{ setTipoEvolucao('colunas'); setTipoComprometido('colunas'); });
+  await page.waitForTimeout(500);
+  await tiro('evolucao_colunas', '[data-card="evolucaoMensal"]');
+  await tiro('futuro_colunas', '[data-card="comprometidoFuturo"]');
+  await page.evaluate(()=>{ setTipoEvolucao('barras'); setTipoComprometido('barras'); });
+  await secao('evolucaoMensal', false);
+  await secao('comprometidoFuturo', false);
 
   console.log('\nerros:', erros.length?erros:'nenhum');
   await b.close();

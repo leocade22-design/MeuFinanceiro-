@@ -376,6 +376,12 @@
     .barra-bg { background-color: var(--campo); height: 8px; border-radius: 4px; overflow: hidden; }
     .barra-fill { height: 100%; border-radius: 4px; }
     .btn-mini { padding: 6px 12px; border: 1px solid var(--borda); border-radius: 20px; background: transparent; color: var(--texto-fraco); font-size: 11px; cursor: pointer; }
+    /* O botãozinho da calculadora dentro do campo de dinheiro. O campo-calc
+       é o embrulho que o código cola em volta de cada campo — a posição
+       absoluta do botão precisa de um pai posicionado. */
+    .campo-calc { position: relative; }
+    .btn-calc-campo { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent;
+      border: none; color: var(--texto-fraco); line-height: 0; padding: 7px; cursor: pointer; opacity: .75; width: auto; }
     .btn-mini.ativo { background: var(--borda); color: var(--texto); border-color: var(--texto-tenue); }
     .btn-mes { background: var(--campo); border: 1px solid var(--borda); color: var(--texto); width: 32px; height: 32px; border-radius: 8px; font-size: 16px; cursor: pointer; }
     /* pop-up centralizado na tela */
@@ -628,15 +634,9 @@
           </div>
           <div class="form-group">
             <label for="valor" id="labelValor">Valor</label>
-            <div style="position:relative;">
-              <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric" style="padding-right:44px;">
-              <!-- Desenho em SVG no lugar do emoji 🧮: em muitos celulares aquele caractere
-                   não existe na fonte e aparece como quadradinho vazio. Assim o ícone é o
-                   mesmo em qualquer aparelho — é o que já rodava no Propostas Corpus. -->
-              <button type="button" onclick="abrirCalculadora()" title="Calculadora" aria-label="Abrir calculadora"
-                style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:transparent;border:none;
-                       color:var(--texto-fraco);line-height:0;padding:7px;cursor:pointer;opacity:.75;"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7.6" y="5.6" width="8.8" height="3.4" rx="1" fill="currentColor"/><circle cx="8.6" cy="13.2" r="1.1" fill="currentColor"/><circle cx="12" cy="13.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="13.2" r="1.1" fill="currentColor"/><circle cx="8.6" cy="17.2" r="1.1" fill="currentColor"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="17.2" r="1.1" fill="currentColor"/></svg></button>
-            </div>
+            <!-- Sem botão escrito aqui: equiparCamposComCalculadora() cola o mesmo
+                 botão em todo campo de dinheiro do app, este inclusive. -->
+            <input type="text" id="valor" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
           </div>
           <div class="row-botoes-form">
             <button type="submit" id="btnSubmit" class="btn-salvar">Salvar</button>
@@ -945,7 +945,7 @@
           <span class="chevron-sec" id="chevron-evolucaoMensal">▸</span>
         </button>
         <div id="corpo-evolucaoMensal" class="escondido" style="margin-top:12px;">
-          <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px;">
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
             <button type="button" class="btn-mini ativo" id="btnEvolBarras" onclick="setTipoEvolucao('barras')">Barras</button>
             <button type="button" class="btn-mini" id="btnEvolColunas" onclick="setTipoEvolucao('colunas')">Colunas</button>
           </div>
@@ -978,6 +978,10 @@
         </button>
         <div id="corpo-comprometidoFuturo" class="escondido" style="margin-top:12px;">
           <p style="font-size:11px;color:var(--texto-tenue);margin-bottom:10px;">Quanto já está previsto de despesa fixa + parcelas em aberto pra cada um dos próximos meses.</p>
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <button type="button" class="btn-mini ativo" id="btnFuturoBarras" onclick="setTipoComprometido('barras')">Barras</button>
+            <button type="button" class="btn-mini" id="btnFuturoColunas" onclick="setTipoComprometido('colunas')">Colunas</button>
+          </div>
           <div id="containerComprometidoFuturo"></div>
         </div>
       </div>
@@ -3407,6 +3411,7 @@
                    oninput="mascaraMoeda(this); atualizarPreviaRateio();" inputmode="numeric">
           </div>`;
       }).join('');
+      equiparCamposComCalculadora(box);   // campo que nasceu agora também tem a calculadora
     }
 
     function salvarEmprestimoModal() {
@@ -5290,10 +5295,64 @@
       ['C','C'], ['⌫','B'], ['=','='], ['OK','OK']
     ];
 
-    function abrirCalculadora() {
-      // começa do que já está no campo, pra dar pra continuar a conta
-      const atual = document.getElementById('valor').value.replace(/[^\d,]/g, '');
-      calcExp = atual && parseVal(atual) > 0 ? atual : '';
+    /* Desenho em SVG no lugar do emoji 🧮: em muitos celulares aquele caractere
+       não existe na fonte e aparece como quadradinho vazio. Assim o ícone é o
+       mesmo em qualquer aparelho — é o que já rodava no Propostas Corpus. */
+    const SVG_CALCULADORA = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7.6" y="5.6" width="8.8" height="3.4" rx="1" fill="currentColor"/><circle cx="8.6" cy="13.2" r="1.1" fill="currentColor"/><circle cx="12" cy="13.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="13.2" r="1.1" fill="currentColor"/><circle cx="8.6" cy="17.2" r="1.1" fill="currentColor"/><circle cx="12" cy="17.2" r="1.1" fill="currentColor"/><circle cx="15.4" cy="17.2" r="1.1" fill="currentColor"/></svg>';
+
+    /* A calculadora era só do campo Valor do lançamento. Em todo outro lugar
+       onde entra dinheiro — a fatura que o banco cobrou, a parcela do consórcio,
+       quanto cada um deve no rateio, o saldo real da conta — era sair do app pra
+       somar. Em vez de repetir o botão à mão em treze lugares (e esquecer do
+       décimo quarto), o botão é colado por código em todo campo que usa a
+       máscara de dinheiro. Campo que nasce depois, como as cotas do rateio,
+       chama esta função de novo no fim do render. */
+    function equiparCamposComCalculadora(raiz) {
+      const escopo = raiz || document;
+      escopo.querySelectorAll('input[oninput*="mascaraMoeda"]').forEach(campo => {
+        if (campo.dataset.temCalculadora) return;
+        campo.dataset.temCalculadora = '1';
+        const embrulho = document.createElement('div');
+        embrulho.className = 'campo-calc';
+        campo.parentNode.insertBefore(embrulho, campo);
+        embrulho.appendChild(campo);
+        campo.style.paddingRight = '44px';
+        const botao = document.createElement('button');
+        botao.type = 'button';           // dentro de <form>, senão vira submit
+        botao.className = 'btn-calc-campo';
+        botao.title = 'Calculadora';
+        botao.setAttribute('aria-label', 'Abrir calculadora');
+        botao.innerHTML = SVG_CALCULADORA;
+        botao.onclick = () => abrirCalculadora(campo);
+        embrulho.appendChild(botao);
+      });
+    }
+
+    /* Campo de data: no Android tocar em qualquer parte do campo já abre o
+       calendário, mas no iPhone e no navegador do computador só abre acertando
+       o iconezinho do canto — daí a sensação de que o campo "não faz nada".
+       showPicker() abre o mesmo calendário nativo a partir de qualquer toque.
+       Onde o navegador não tem o método, nada muda: continua o de sempre. */
+    document.addEventListener('click', (e) => {
+      const campo = e.target && e.target.closest ? e.target.closest('input[type="date"]') : null;
+      if (!campo || campo.disabled || campo.readOnly) return;
+      if (typeof campo.showPicker !== 'function') return;
+      try { campo.showPicker(); } catch (_) { /* já aberto, ou fora de gesto do usuário */ }
+    });
+
+    // Qual campo a calculadora está preenchendo agora
+    let campoDaCalculadora = null;
+
+    function abrirCalculadora(campo) {
+      const alvo = (typeof campo === 'string' ? document.getElementById(campo) : campo)
+                   || document.getElementById('valor');
+      if (!alvo) return;
+      campoDaCalculadora = alvo;
+      // Começa do que já está no campo, pra dar pra continuar a conta. Valor
+      // negativo não serve de ponto de partida: a conta não pode começar com
+      // operador, então o campo de saldo no vermelho abre a calculadora limpa.
+      const atual = alvo.value.replace(/[^\d,]/g, '');
+      calcExp = atual && parseVal(atual) > 0 && !/^\s*-/.test(alvo.value) ? atual : '';
       montarTecladoCalc();
       atualizarVisorCalc();
       document.getElementById('modalCalculadora').classList.remove('escondido');
@@ -5324,9 +5383,16 @@
       else if (cod === '=') { const v = calcularExp(calcExp); if (v !== null) calcExp = fmtNumeroCalc(v); }
       else if (cod === 'OK') {
         const v = calcularExp(calcExp);
-        if (v === null || v <= 0) { avisar('valorInvalido'); return; }
-        const campo = document.getElementById('valor');
-        campo.value = 'R$ ' + v.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+,)/g, '$1.');
+        const campo = campoDaCalculadora || document.getElementById('valor');
+        // Saldo inicial e saldo real aceitam número negativo — conta no vermelho
+        // existe. Nos outros campos, zero ou menos continua sendo erro.
+        const aceitaNegativo = (campo.getAttribute('oninput') || '').includes('mascaraMoedaComSinal');
+        if (v === null || (aceitaNegativo ? v === 0 : v <= 0)) { avisar('valorInvalido'); return; }
+        const abs = Math.abs(v).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+,)/g, '$1.');
+        campo.value = (v < 0 ? '-' : '') + 'R$ ' + abs;
+        // Dispara o oninput do próprio campo: é ele que atualiza a prévia do
+        // rateio, o ajuste da fatura e a conta da correção de saldo.
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
         fecharModal('modalCalculadora');
         return;
       }
@@ -7127,6 +7193,38 @@
       });
     }
 
+    /* Colunas na ordem em que os dados chegam. É o que meses e dias da semana
+       pedem: abril vem antes de maio mesmo que maio seja maior. O renderizarColunas
+       logo abaixo ordena pelo maior, que é o certo pra ranking de categoria e o
+       errado pra linha do tempo. */
+    function renderizarColunasOrdem(container, dados, corBase, opcoes) {
+      const op = opcoes || {};
+      container.innerHTML = '';
+      const entradas = Object.entries(dados);
+      const max = Math.max(...entradas.map(([, v]) => v), 0);
+      if (!entradas.length || max <= 0) {
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem dados ainda.</p>';
+        return;
+      }
+      const box = document.createElement('div');
+      box.className = 'colunas';
+      box.style.height = (op.altura || 160) + 'px';
+      entradas.forEach(([nome, valor]) => {
+        const item = document.createElement('div');
+        item.className = 'coluna-item';
+        item.title = `${nome} · ${fmtVal(valor)}`;
+        item.innerHTML = `
+          <span class="coluna-valor" style="color:${corBase};">${valoresOcultos ? '•••' : fmtVal(valor).replace('R$ ', '')}</span>
+          <div class="coluna-par">
+            <div class="coluna-barra" style="height:${Math.max(2, Math.round((valor / max) * 100))}%;background-color:${corBase};"></div>
+          </div>
+          <span class="coluna-rotulo">${op.rotuloCurto ? nome.slice(0, 3) : nome}</span>
+        `;
+        box.appendChild(item);
+      });
+      container.appendChild(box);
+    }
+
     // Colunas verticais: boas pra comparar poucos itens lado a lado, enquanto as
     // barras horizontais aguentam nome comprido e lista longa.
     // Vermelho mais fechado que o var(--vermelho) dos valores: em área grande, o tom vivo
@@ -7347,26 +7445,7 @@
       // gente pensa "domingo pesa mais que quarta" — a barra deitada obriga a ler
       // de cima a baixo pra chegar na mesma conclusão.
       if (tipoDiaSemana === 'colunas') {
-        container.innerHTML = '';
-        const max = Math.max(...Object.values(porDia), 0.01);
-        const box = document.createElement('div');
-        box.className = 'colunas';
-        box.style.height = '160px';
-        NOMES_DIAS.forEach(nome => {
-          const v = porDia[nome];
-          const item = document.createElement('div');
-          item.className = 'coluna-item';
-          item.title = `${nome} · ${fmtVal(v)}`;
-          item.innerHTML = `
-            <span class="coluna-valor" style="color:var(--roxo);">${valoresOcultos ? '•••' : fmtVal(v).replace('R$ ', '')}</span>
-            <div class="coluna-par">
-              <div class="coluna-barra" style="height:${Math.max(2, Math.round((v / max) * 100))}%;background-color:var(--roxo);"></div>
-            </div>
-            <span class="coluna-rotulo">${nome.slice(0, 3)}</span>
-          `;
-          box.appendChild(item);
-        });
-        container.appendChild(box);
+        renderizarColunasOrdem(container, porDia, 'var(--roxo)', { rotuloCurto: true });
         return;
       }
 
@@ -7444,6 +7523,18 @@
       });
     }
 
+    let tipoComprometido = 'barras';
+
+    function setTipoComprometido(tipo) {
+      tipoComprometido = tipo;
+      const bB = document.getElementById('btnFuturoBarras'), bC = document.getElementById('btnFuturoColunas');
+      if (bB) bB.classList.toggle('ativo', tipo === 'barras');
+      if (bC) bC.classList.toggle('ativo', tipo === 'colunas');
+      uiPrefs.tipoComprometido = tipo;
+      salvarUiPrefs();
+      renderizarComprometidoFuturo();
+    }
+
     // Quanto já está previsto pros próximos 6 meses: parcelas já agendadas com
     // data futura (via fatura) + gastos fixos recorrentes (assume mesmo valor
     // se repetindo todo mês — ainda não materializados como lançamento futuro)
@@ -7467,6 +7558,10 @@
           .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === ref.getMonth() && f.ano === ref.getFullYear(); })
           .reduce((s, l) => s + parseVal(l.valor), 0);
         dados[label] = parcelasFuturas + totalFixos;
+      }
+      if (tipoComprometido === 'colunas') {
+        renderizarColunasOrdem(container, dados, 'var(--laranja)', { altura: 150 });
+        return;
       }
       renderizarBarrasOrdem(container, dados, 'var(--laranja)');
     }
@@ -13163,7 +13258,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.17-3';
+    const APP_VERSION = '2026.09.17-4';
 
     // Inicialização
     carregarLocalStorage();
@@ -13197,6 +13292,7 @@ function confirmarLancamentoVoz() {
     migrarRecorrentesAPagar();
     carregarUiPrefs();
     aplicarTravaDeZoom();   // antes de qualquer render: a tela já nasce na escala certa
+    equiparCamposComCalculadora();   // todo campo de dinheiro da tela, inclusive os dos modais
     aplicarOrdemCards('abaFaturas');
     aplicarOrdemCards('abaGraficos');
     aplicarSecao('indicadores');
@@ -13225,6 +13321,7 @@ function confirmarLancamentoVoz() {
     aplicarSecao('evolucaoMensal');
     if (uiPrefs.tipoEvolucao === 'colunas') setTipoEvolucao('colunas');
     if (uiPrefs.tipoDiaSemana === 'colunas') setTipoDiaSemana('colunas');
+    if (uiPrefs.tipoComprometido === 'colunas') setTipoComprometido('colunas');
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
