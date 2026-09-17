@@ -263,6 +263,18 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(500);
   await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
 
+  // 21) os dois cards de gráfico que ganharam o seletor Barras/Colunas
+  await abrir('Gráficos');
+  await secao('evolucaoMensal', true);
+  await secao('comprometidoFuturo', true);
+  await page.evaluate(()=>{ setTipoEvolucao('colunas'); setTipoComprometido('colunas'); });
+  await page.waitForTimeout(500);
+  await tiro('evolucao_colunas', '[data-card="evolucaoMensal"]');
+  await tiro('futuro_colunas', '[data-card="comprometidoFuturo"]');
+  await page.evaluate(()=>{ setTipoEvolucao('barras'); setTipoComprometido('barras'); });
+  await secao('evolucaoMensal', false);
+  await secao('comprometidoFuturo', false);
+
   console.log('\nerros:', erros.length?erros:'nenhum');
   await b.close();
 })();

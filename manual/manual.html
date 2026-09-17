@@ -135,11 +135,23 @@
       <li><strong>Despesa ou Receita</strong> — os dois botões no topo.</li>
       <li><strong>Forma</strong> — a escolha mais importante do formulário. Veja o item 5.</li>
       <li><strong>Valor</strong> — o ícone de calculadora dentro do campo abre uma com <em>+ − × ÷</em>, pra quando você precisa somar a conta do rachão antes de lançar. O resultado já volta formatado no campo.</li>
+      <li><strong>Data</strong> — toque em qualquer parte do campo e o calendário abre. Antes só abria acertando o iconezinho do canto, e no iPhone dava a impressão de que o campo não fazia nada.</li>
       <li><strong>Pix</strong> entrou na lista de formas. Ele se comporta como débito: sai da conta na data da compra e não entra em fatura nenhuma.</li>
       <li><strong>Parcelado</strong> — digite o valor <em>total</em> e o número de parcelas. O app cria todas as parcelas futuras sozinho, cada uma no seu mês.</li>
       <li><strong>Vincular a um grupo</strong> — marque para somar esse gasto numa viagem ou evento.</li>
       <li><strong>Emprestei para alguém</strong> — marque e diga o nome. Vira uma cobrança na aba Faturas.</li>
     </ul>
+    <div class="nota">
+      <strong>A calculadora está em todo campo de dinheiro, não só neste.</strong> Onde
+      entra valor, entra o iconezinho: a parcela e a carta do consórcio, o valor que o
+      banco cobrou na fatura, quanto cada um deve no rateio, o aporte, o gasto fixo, a
+      transferência, o saldo inicial e o saldo real da conta. A conta feita ali dentro
+      volta pro campo já formatada, e o que depende dela — a prévia do rateio, o ajuste
+      da fatura, a diferença da correção de saldo — se atualiza na hora.
+      <br><br>Nos dois campos de saldo, a conta pode terminar negativa
+      (<em>100 − 500</em>) e o app aceita: conta no vermelho existe. Nos outros, valor
+      zero ou negativo continua sendo recusado.
+    </div>
     <div class="nota">
       <strong>Pelo microfone.</strong> Toque no ícone de microfone e fale naturalmente:
       <em>“paguei 35 reais de uber ontem”</em> ou <em>“comprei um notebook de 4500 em 10 vezes no cartão”</em>.
@@ -580,8 +592,21 @@
       trocar de conta limpa uma forma que não exista ali, em vez de te deixar numa lista vazia
       sem explicação.
     </div>
-    <p>O card <strong>Gasto por dia da semana</strong> alterna entre barras e colunas — em colunas dá
-       pra ver os sete dias lado a lado e sacar de bate-pronto qual pesa mais.</p>
+    <div class="nota">
+      <strong>Barras ou colunas, nos três cards.</strong> <em>Evolução mensal</em>,
+      <em>Próximos meses</em> e <em>Gasto por dia da semana</em> têm o mesmo par de botões,
+      no mesmo canto esquerdo: <strong>Barras</strong> deita o gráfico, com o nome e o valor
+      escritos em cada linha; <strong>Colunas</strong> põe tudo lado a lado, que é o jeito de
+      bater o olho e ver qual mês ou qual dia pesa mais.
+      <br><br>Em colunas a ordem é sempre a do tempo — abril antes de maio, domingo antes de
+      segunda — mesmo que a coluna de maio seja a maior. Quem ordena do maior pro menor é o
+      gráfico por categoria, onde ranking é o que interessa.
+      <br><br>A escolha fica guardada por card: se você prefere a evolução em colunas e os
+      próximos meses em barras, é assim que os dois vão abrir da próxima vez.
+    </div>
+    <div class="tela metade"><img src="img/evolucao_colunas.png" alt="Evolução mensal em colunas"></div>
+    <div class="tela metade"><img src="img/futuro_colunas.png" alt="Próximos meses em colunas"></div>
+    <div class="legenda">Os mesmos dois botões, no mesmo lugar, nos três cards de gráfico.</div>
     <p>Em <strong>Metas</strong> você define um teto mensal por categoria. A meta acompanha o período escolhido:
        R$ 100 por mês vira R$ 1.200 quando você olha o ano inteiro.</p>
     <div class="tela metade"><img src="img/metas.png" alt="Card de metas"></div>
