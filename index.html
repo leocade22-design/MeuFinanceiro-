@@ -396,10 +396,14 @@
     /* ESTILOS DOS FILTROS DO MODAL DE CONSULTA */
     /* faixa de contas em uma linha só, deslizável: empilhadas ocupavam três
        linhas e empurravam o conteúdo pra baixo */
-    #chipsContasConsulta { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
-    #chipsContasConsulta::-webkit-scrollbar { height:3px; }
-    #chipsContasConsulta::-webkit-scrollbar-thumb { background:var(--borda); border-radius:3px; }
-    #chipsContasConsulta button { flex:0 0 auto; white-space:nowrap; }
+    #chipsContasConsulta, #chipsFormasConsulta { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px; -webkit-overflow-scrolling:touch; }
+    #chipsContasConsulta::-webkit-scrollbar, #chipsFormasConsulta::-webkit-scrollbar { height:3px; }
+    #chipsContasConsulta::-webkit-scrollbar-thumb,
+    #chipsFormasConsulta::-webkit-scrollbar-thumb { background:var(--borda); border-radius:3px; }
+    #chipsContasConsulta button, #chipsFormasConsulta button { flex:0 0 auto; white-space:nowrap; }
+    /* A régua da conta vem primeiro e é a principal; a da forma é um refino
+       dela, e o espaço menor entre as duas diz isso sem precisar de rótulo. */
+    #chipsContasConsulta { margin-bottom:6px; }
     .btn-periodo { padding: 8px; border: 1px solid var(--borda); border-radius: 8px; background: var(--campo); color: var(--texto-medio); font-size: 12px; cursor: pointer; text-align: center; }
     .btn-periodo.ativo { background: var(--borda); color: var(--texto); border-color: var(--texto-tenue); font-weight: bold; }
 
@@ -1159,6 +1163,16 @@
         <div id="corpo-tema" class="escondido" style="margin-top:10px;">
           <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Vale só neste aparelho. Seus dados não mudam.</p>
           <div id="listaTemas" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="chkTravarZoom" onchange="alternarTravaDeZoom()" aria-label="Travar o zoom da tela" style="width:auto;margin:0;">
+            <span>Travar o zoom da tela</span>
+          </label>
+          <p style="color:var(--texto-tenue);font-size:11px;margin-top:6px;line-height:1.45;">
+            No iPhone, um toque duplo sem querer dá zoom — e, com o app instalado na tela
+            inicial, não tem barra de endereço pra desfazer: fica torto até você ajustar com
+            os dedos. Ligando aqui, a tela para de dar zoom. Deixe desligado se você usa o
+            zoom pra enxergar melhor.
+          </p>
         </div>
       </div>
 
@@ -1301,6 +1315,10 @@
       </div>
 
       <div id="chipsContasConsulta"></div>
+      <!-- Segunda régua: a mesma pergunta do filtro de conta, feita por forma.
+           "No Itaú eu faço Pix, crédito e débito" — as duas juntas respondem
+           "quanto do Itaú foi no crédito". -->
+      <div id="chipsFormasConsulta"></div>
 
       <!-- RASTREADOR: só aparece quando a lista é grande o bastante pra valer a pena.
            Serve pra achar um lançamento ou fatiar o total por categoria, conta ou grupo
@@ -1679,6 +1697,24 @@
           <label for="nomeConta">Nome da conta / cartão</label>
           <input type="text" id="nomeConta" placeholder="Ex: Nubank, Carteira, Vale Refeição...">
         </div>
+        <!-- O dinheiro que já estava na conta antes de o app existir. Sem ele,
+             só dá pra acertar o saldo inventando uma receita que nunca houve. -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="saldoInicialConta">Saldo inicial <span style="color:var(--texto-tenue);">(opcional)</span></label>
+            <input type="text" id="saldoInicialConta" placeholder="R$ 0,00" inputmode="numeric" oninput="mascaraMoedaComSinal(this)">
+          </div>
+          <div class="form-group">
+            <label for="saldoInicialEmConta">A partir de</label>
+            <input type="date" id="saldoInicialEmConta">
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;">
+          Quanto essa conta já tinha quando você começou a usar o app. Entra no saldo,
+          mas <strong>não</strong> conta como receita: não aparece em "recebido", nem nos
+          gráficos, nem nas perguntas. Pode ser negativo (ex: <em>-150,00</em> numa conta no
+          vermelho).
+        </p>
         <label class="check-credito"><input type="checkbox" id="contaTemCreditoChk" aria-label="Tem cartão de crédito" onchange="atualizarCamposCartao()"> Tem cartão de crédito (permite parcelar)</label>
         <div class="form-row escondido" id="camposDiasCartao">
           <div class="form-group">
@@ -2034,7 +2070,51 @@
       </div>
       <div class="balao-acoes">
         <button class="btn-opcao-balao" onclick="executarEditarConta()">Editar</button>
+        <button class="btn-opcao-balao" onclick="abrirCorrigirSaldo()">Corrigir saldo</button>
         <button class="btn-opcao-balao danger" onclick="executarExcluirConta()">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORRIGIR SALDO — a conta de chegada, sem lançamento inventado.
+       Você diz quanto tem de verdade; o app calcula a diferença e a guarda no
+       saldo inicial da conta. -->
+  <div id="modalCorrigirSaldo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalCorrigirSaldo')">
+    <div class="modal-content" style="max-width:360px;">
+      <div class="modal-header">
+        <h3 id="tituloCorrigirSaldo">Corrigir saldo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalCorrigirSaldo')">&times;</button>
+      </div>
+      <p style="color:var(--texto-medio);font-size:12.5px;margin-bottom:12px;line-height:1.5;">
+        Abra o app do banco e digite aqui o saldo que está lá. O app acerta a diferença
+        no ponto de partida desta conta — <strong>sem criar lançamento nenhum</strong>.
+      </p>
+      <div class="box-resumo-modal" style="margin-bottom:12px;">
+        <div class="linha-subtotal" style="cursor:default;"><span>O app está mostrando</span><strong id="saldoCalculadoConta">R$ 0,00</strong></div>
+      </div>
+      <div class="form-group">
+        <label for="saldoRealConta">Saldo real, agora</label>
+        <input type="text" id="saldoRealConta" placeholder="R$ 0,00" inputmode="numeric"
+               oninput="mascaraMoedaComSinal(this); previewCorrecaoSaldo();">
+      </div>
+      <p id="previaCorrecaoSaldo" style="font-size:12px;margin-bottom:14px;line-height:1.45;color:var(--texto-fraco);"></p>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalCorrigirSaldo')">Cancelar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarCorrecaoSaldo()">Acertar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPÇÕES DO GRUPO DE INVESTIMENTO (o ⋯ no card, na aba Investim.) -->
+  <div id="modalAcoesGrupoInv" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAcoesGrupoInv')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloAcoesGrupoInv">Grupo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAcoesGrupoInv')">&times;</button>
+      </div>
+      <div class="balao-acoes">
+        <button class="btn-opcao-balao" onclick="executarRenomearGrupoInv()">Renomear</button>
+        <button class="btn-opcao-balao danger" onclick="executarExcluirGrupoInv()">Excluir grupo</button>
       </div>
     </div>
   </div>
@@ -3517,6 +3597,82 @@
       if (contaAcoesId) editarConta(contaAcoesId);
     }
 
+    /* CORRIGIR SALDO — a conta de chegada
+
+       Ninguém quer calcular saldo inicial de cabeça. O que a pessoa sabe é
+       quanto o banco mostra AGORA. Então ela informa isso e o app resolve a
+       equação pro lado que falta:
+
+           saldo inicial novo = saldo inicial atual + (saldo real − saldo do app)
+
+       O saldo do app aqui é o acumulado da conta no mês visto, o mesmo número
+       que aparece em "saldo por conta" — se a correção usasse outro, o número
+       continuaria sem bater depois de acertar, que é o pior resultado possível. */
+    let contaCorrigindo = null;
+
+    function saldoDaContaAgora(nome) {
+      const acumulado = (resumoFaturaAtual && resumoFaturaAtual.porContaAcumulado) || {};
+      return acumulado[nome] || 0;
+    }
+
+    function abrirCorrigirSaldo() {
+      const c = contas.find(x => x.id === contaAcoesId);
+      if (!c) return;
+      fecharModal('modalAcoesConta');
+      contaCorrigindo = c.id;
+      document.getElementById('tituloCorrigirSaldo').textContent = 'Corrigir saldo — ' + c.nome;
+      document.getElementById('saldoCalculadoConta').textContent = fmtVal(saldoDaContaAgora(c.nome));
+      document.getElementById('saldoRealConta').value = '';
+      document.getElementById('previaCorrecaoSaldo').textContent = '';
+      document.getElementById('modalCorrigirSaldo').classList.remove('escondido');
+    }
+
+    function previewCorrecaoSaldo() {
+      const c = contas.find(x => x.id === contaCorrigindo);
+      const el = document.getElementById('previaCorrecaoSaldo');
+      if (!c || !el) return;
+      const bruto = document.getElementById('saldoRealConta').value.trim();
+      if (!bruto) { el.textContent = ''; return; }
+      const diferenca = parseValComSinal(bruto) - saldoDaContaAgora(c.nome);
+      if (Math.abs(diferenca) < 0.005) {
+        el.style.color = 'var(--texto-fraco)';
+        el.textContent = 'Já está batendo — não há o que corrigir.';
+        return;
+      }
+      el.style.color = diferenca > 0 ? 'var(--verde)' : 'var(--vermelho)';
+      el.textContent = (diferenca > 0 ? 'Faltavam ' : 'Sobravam ') + fmtVal(Math.abs(diferenca))
+        + ' no ponto de partida da conta. Nada entra como receita nem como despesa.';
+    }
+
+    function confirmarCorrecaoSaldo() {
+      const c = contas.find(x => x.id === contaCorrigindo);
+      if (!c) return;
+      const bruto = document.getElementById('saldoRealConta').value.trim();
+      if (!bruto) { avisar('valorInvalido', 'Digite o saldo que o banco mostra.'); return; }
+      const diferenca = parseValComSinal(bruto) - saldoDaContaAgora(c.nome);
+      if (Math.abs(diferenca) < 0.005) { fecharModal('modalCorrigirSaldo'); return; }
+
+      const novo = parseValComSinal(c.saldoInicial) + diferenca;
+      c.saldoInicial = (novo < 0 ? '-' : '') + Math.abs(novo).toFixed(2).replace('.', ',');
+      // Correção feita hoje vale do começo do que está na tela: a data existente
+      // é preservada pra não empurrar pra frente um saldo que já valia antes.
+      if (!c.saldoInicialEm) c.saldoInicialEm = primeiraDataDaConta(c.nome) || obterDataBrasilia();
+      salvarContas();
+      fecharModal('modalCorrigirSaldo');
+      atualizarTudo();
+      renderizarListaContas();
+      avisar('saldoCorrigido', 'O saldo de ' + c.nome + ' agora mostra ' + fmtVal(parseValComSinal(bruto)) + '.');
+    }
+
+    // O primeiro dia em que essa conta aparece no histórico. É onde o saldo
+    // inicial precisa valer pra o acumulado bater em todos os meses, e não só
+    // no atual.
+    function primeiraDataDaConta(nome) {
+      const datas = lancamentos.filter(l => l.conta === nome && l.data).map(l => l.data)
+        .concat(transferencias.filter(t => t.origem === nome || t.destino === nome).map(t => t.data));
+      return datas.length ? datas.sort()[0] : '';
+    }
+
     function executarExcluirConta() {
       fecharModal('modalAcoesConta');
       if (contaAcoesId) excluirConta(contaAcoesId);
@@ -3534,6 +3690,9 @@
       document.getElementById('contaDiaVencimento').value = String(dias.vence);
       montarChecksFormasConta(c.formasAceitas || []);
       atualizarCamposCartao();
+      document.getElementById('saldoInicialConta').value =
+        c.saldoInicial ? (parseValComSinal(c.saldoInicial) < 0 ? '-' : '') + fmtVal(Math.abs(parseValComSinal(c.saldoInicial))) : '';
+      document.getElementById('saldoInicialEmConta').value = c.saldoInicialEm || '';
       document.getElementById('tituloFormConta').textContent = 'Editar conta';
       document.getElementById('btnCancelarConta').classList.remove('escondido');
       // Janela própria: some o problema de o formulário nascer abaixo da dobra,
@@ -3550,6 +3709,8 @@
       atualizarCamposCartao();
       document.getElementById('contaDiaFechamento').value = String(DIA_FECHAMENTO_CARTAO);
       document.getElementById('contaDiaVencimento').value = String(DIA_VENCIMENTO_CARTAO);
+      document.getElementById('saldoInicialConta').value = '';
+      document.getElementById('saldoInicialEmConta').value = obterDataBrasilia();
       document.getElementById('tituloFormConta').textContent = 'Adicionar nova conta';
       document.getElementById('btnCancelarConta').classList.add('escondido');
     }
@@ -3621,6 +3782,41 @@
       });
     }
 
+    /* SALDO INICIAL DE UMA CONTA
+
+       O app calcula o saldo somando lançamentos. Quem começa a usar no meio da
+       vida já tem dinheiro na conta, e até agora a única saída era inventar uma
+       "receita de ajuste" — que mentia em recebido, nos gráficos e nas
+       respostas das perguntas, só pra fazer um número bater.
+
+       O saldo inicial resolve isso sendo o que é: um ponto de partida. Ele entra
+       no SALDO e em mais lugar nenhum. Guardado como texto ("1.234,56"), igual
+       a todo valor do app, e com a data a partir da qual vale — meses anteriores
+       a ela não mostram um dinheiro que você ainda não tinha ali. */
+    function saldoInicialDoForm() {
+      const bruto = document.getElementById('saldoInicialConta').value.trim();
+      const v = parseValComSinal(bruto);
+      if (!bruto || v === 0) return { saldoInicial: '', saldoInicialEm: '' };
+      return {
+        saldoInicial: (v < 0 ? '-' : '') + Math.abs(v).toFixed(2).replace('.', ','),
+        saldoInicialEm: document.getElementById('saldoInicialEmConta').value || obterDataBrasilia()
+      };
+    }
+
+    function saldoInicialDaConta(nome) {
+      const c = contas.find(x => x.nome === nome);
+      return c ? parseValComSinal(c.saldoInicial) : 0;
+    }
+
+    // Vale do mês em que começou pra frente. Antes disso a conta não tinha esse
+    // dinheiro pra você — mostrar seria inventar passado.
+    function saldoInicialValeEm(c, ano, mes) {
+      if (!c || !c.saldoInicial) return false;
+      const desde = (c.saldoInicialEm || '').slice(0, 7);
+      if (!desde) return true;
+      return desde <= String(ano) + '-' + String(mes + 1).padStart(2, '0');
+    }
+
     function salvarConta() {
       const nome = document.getElementById('nomeConta').value.trim();
       if (!nome) { avisar('semNome', 'Digite o nome da conta.'); return; }
@@ -3654,12 +3850,13 @@
         c.diaFechamento = temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null;
         c.diaVencimento = temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null;
         c.formasAceitas = formasAceitas;
+        Object.assign(c, saldoInicialDoForm());
       } else {
-        contas.push({
+        contas.push(Object.assign({
           id: 'c' + Date.now(), nome, temCredito, formasAceitas,
           diaFechamento: temCredito ? parseInt(document.getElementById('contaDiaFechamento').value, 10) : null,
           diaVencimento: temCredito ? parseInt(document.getElementById('contaDiaVencimento').value, 10) : null
-        });
+        }, saldoInicialDoForm()));
       }
 
       salvarContas();
@@ -3940,16 +4137,105 @@
       renderizarInvestimentos();
     }
 
+    /* EXCLUIR UM GRUPO PRECISA RESOLVER OS APORTES DELE
+
+       Antes isto tirava o grupo da lista de Ajustes e deixava os aportes com o
+       nome antigo. Só que a aba Investimentos desenha um card pra TODO tipo que
+       tenha aporte, exista ele na lista ou não — então o grupo sumia de Ajustes
+       e continuava na aba, como se as duas telas falassem de apps diferentes.
+       Foi o "ETH Cripto" que o Borges não conseguia tirar da frente.
+
+       Agora, tendo aportes, a exclusão pergunta o que fazer com eles: mudar de
+       grupo (o histórico fica) ou apagar junto. Sem terceira via, porque a
+       terceira via era justamente o fantasma. */
     function excluirTipoAtivo(idx) {
       if (tiposAtivo.length <= 1) { avisar('minimoUm', 'É preciso ter pelo menos um tipo de ativo.'); return; }
       const nome = tiposAtivo[idx];
       if (nome === undefined) return;
-      if (!confirm(`Excluir o tipo "${nome}"? Os aportes já lançados continuam com esse tipo no histórico.`)) return;
+      const dentro = investimentos.filter(i => (i.tipoAtivo || 'Outros') === nome);
+
+      if (!dentro.length) {
+        if (!confirm(`Excluir o grupo "${nome}"?`)) return;
+        tiposAtivo.splice(idx, 1);
+        finalizarMudancaDeGrupos();
+        return;
+      }
+
+      const destinos = tiposAtivo.filter(t => t !== nome);
+      const total = dentro.reduce((s, i) => s + parseVal(i.valor), 0);
+      const lista = destinos.map((t, i) => `${i + 1}. ${t}`).join('\n');
+      const resposta = prompt(
+        `"${nome}" tem ${dentro.length === 1 ? '1 aporte' : dentro.length + ' aportes'}, somando ${fmtVal(total)}.\n\n`
+        + `Pra onde vão?\n\n${lista}\n\n`
+        + `Digite o número do grupo — ou deixe em branco e confirme pra APAGAR os aportes junto com o grupo.`,
+        '1');
+      if (resposta === null) return;                 // cancelou
+
+      const escolha = parseInt(resposta.trim(), 10);
+      if (resposta.trim() && destinos[escolha - 1]) {
+        const destino = destinos[escolha - 1];
+        dentro.forEach(i => { i.tipoAtivo = destino; });
+        salvarInvest();
+      } else if (!resposta.trim()) {
+        if (!confirm(`Apagar de vez ${dentro.length === 1 ? 'o aporte' : 'os ' + dentro.length + ' aportes'} de "${nome}" (${fmtVal(total)})?\n\nIsso não tem volta.`)) return;
+        investimentos = investimentos.filter(i => (i.tipoAtivo || 'Outros') !== nome);
+        salvarInvest();
+      } else {
+        avisar('valorInvalido', 'Número de grupo inválido. Tente de novo.');
+        return;
+      }
+
       tiposAtivo.splice(idx, 1);
+      finalizarMudancaDeGrupos();
+    }
+
+    /* As mesmas ações de Ajustes, alcançáveis de onde o problema é visto: o card.
+       Reaproveita editarTipoAtivo/excluirTipoAtivo pelo índice, então renomear e
+       excluir se comportam igual nos dois lugares — inclusive levando os aportes
+       junto. */
+    function abrirAcoesGrupoInvestimento(tipo) {
+      const idx = tiposAtivo.indexOf(tipo);
+      if (idx < 0) return;
+      grupoInvAcoesIdx = idx;
+      document.getElementById('tituloAcoesGrupoInv').textContent = tipo;
+      document.getElementById('modalAcoesGrupoInv').classList.remove('escondido');
+    }
+
+    let grupoInvAcoesIdx = null;
+
+    function executarRenomearGrupoInv() {
+      fecharModal('modalAcoesGrupoInv');
+      if (grupoInvAcoesIdx !== null) editarTipoAtivo(grupoInvAcoesIdx);
+    }
+
+    function executarExcluirGrupoInv() {
+      fecharModal('modalAcoesGrupoInv');
+      if (grupoInvAcoesIdx !== null) excluirTipoAtivo(grupoInvAcoesIdx);
+    }
+
+    function finalizarMudancaDeGrupos() {
       salvarTiposAtivo();
       popularSelectsTiposAtivo();
       renderizarListaTiposAtivo();
       renderizarInvestimentos();
+    }
+
+    /* REDE DE SEGURANÇA: GRUPO ÓRFÃO VOLTA PRA LISTA
+       Um aporte apontando pra um grupo que não existe mais é um grupo real —
+       ele está na sua carteira, com dinheiro dentro. Em vez de virar um card
+       fantasma que só a aba Investimentos enxerga, ele volta pra lista de
+       Ajustes, onde dá pra renomear ou excluir de verdade. Conserta sozinho os
+       dados que já ficaram tortos, sem pedir nada a ninguém. */
+    function repararGruposDeInvestimento() {
+      if (!Array.isArray(tiposAtivo) || !Array.isArray(investimentos)) return;
+      const faltando = [];
+      investimentos.forEach(i => {
+        const t = i.tipoAtivo || 'Outros';
+        if (!tiposAtivo.includes(t) && !faltando.includes(t)) faltando.push(t);
+      });
+      if (!faltando.length) return;
+      tiposAtivo = tiposAtivo.concat(faltando);
+      salvarTiposAtivo();
     }
 
     const opcoesReceita = ["Salário", "Reembolso", "Outros"];
@@ -3962,6 +4248,23 @@
       valor = valor.replace('.', ',');
       valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
       campo.value = 'R$ ' + valor;
+    }
+
+    /* Igual à máscara de sempre, só que aceita o sinal de menos na frente.
+       Conta no vermelho e saldo inicial negativo existem; em todo o resto do
+       app o sinal vem do tipo do lançamento, e por isso a máscara comum o
+       descarta. */
+    function mascaraMoedaComSinal(campo) {
+      const negativo = /^\s*-/.test(campo.value);
+      mascaraMoeda(campo);
+      if (negativo && campo.value) campo.value = '-' + campo.value;
+    }
+
+    // "-R$ 1.234,56" -> -1234.56. parseVal() sozinho ignora o sinal.
+    function parseValComSinal(vStr) {
+      const texto = String(vStr || '').trim();
+      const v = parseVal(texto.replace(/^-/, '').replace('R$', '').trim());
+      return /^-/.test(texto) ? -v : v;
     }
 
     function obterDataBrasilia() {
@@ -4768,6 +5071,42 @@
 
     function vibracaoLigada() { return localStorage.getItem('meu_financeiro_vibrar') === '1'; }
 
+    /* TRAVA DE ZOOM — opcional, e por aparelho
+       Os campos já estão todos em 16px, que é o que impede o Safari de dar zoom
+       sozinho ao focar um campo. O que sobra é o zoom de PINÇA e o de toque
+       duplo: no app instalado na tela inicial não existe barra de endereço, e
+       aí não há um toque que devolva a tela ao normal — fica torto até a pessoa
+       ajustar com os dedos. Foi o que incomodou o Borges no iPhone.
+
+       A cura é maximum-scale=1, mas ela custa caro pra quem usa zoom pra
+       enxergar. Por isso é interruptor, e não regra: quem precisa, liga;
+       quem não precisa, nem fica sabendo. Como mora no localStorage, vale só
+       naquele aparelho — o Android de um não muda por causa do iPhone do outro. */
+    const CHAVE_TRAVAR_ZOOM = 'meu_financeiro_travar_zoom';
+
+    function zoomTravado() {
+      try { return localStorage.getItem(CHAVE_TRAVAR_ZOOM) === '1'; } catch (e) { return false; }
+    }
+
+    function aplicarTravaDeZoom() {
+      const meta = document.querySelector('meta[name="viewport"]');
+      if (!meta) return;
+      meta.setAttribute('content', zoomTravado()
+        ? 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+        : 'width=device-width, initial-scale=1.0');
+      const chk = document.getElementById('chkTravarZoom');
+      if (chk) chk.checked = zoomTravado();
+    }
+
+    function alternarTravaDeZoom() {
+      const on = document.getElementById('chkTravarZoom').checked;
+      try { localStorage.setItem(CHAVE_TRAVAR_ZOOM, on ? '1' : '0'); } catch (e) { /* modo privado */ }
+      aplicarTravaDeZoom();
+      // Ligar com a tela já ampliada não desfaz o zoom sozinho no iOS; recarregar
+      // nasce em escala 1 e resolve na hora, que é o que a pessoa quer ao ligar.
+      if (on) avisar('zoomTravado');
+    }
+
     function alternarVibracao() {
       const on = document.getElementById('chkVibrar').checked;
       localStorage.setItem('meu_financeiro_vibrar', on ? '1' : '0');
@@ -4908,6 +5247,14 @@
       backupErro: { emoji: '💥', detalhe: 'Confira se o arquivo é o .json exportado por este app.', frases: [
         'Esse arquivo aí não é backup coisa nenhuma.',
         'Não consegui ler esse arquivo.'
+      ] },
+      saldoCorrigido: { emoji: '🎯', detalhe: '', frases: [
+        'Saldo acertado.',
+        'Pronto: o app e o banco falando a mesma língua.'
+      ] },
+      zoomTravado: { emoji: '🔒', detalhe: 'Se a tela já estava ampliada, feche e abra o app pra ela voltar ao normal.', frases: [
+        'Zoom travado. A tela para de fugir agora.',
+        'Pronto: nada de zoom sem querer.'
       ] },
       backupSalvo: { emoji: '💾', detalhe: 'O arquivo foi gravado na pasta que você escolheu.', frases: [
         'Backup salvo onde você mandou.',
@@ -5180,7 +5527,7 @@
       if (idAba === 'abaInvestimentos') { renderizarInvestimentos(); renderizarConsorcios(); }
       if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
-      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); }
+      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); aplicarTravaDeZoom(); }
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -6247,7 +6594,70 @@
         b.type = 'button';
         b.className = 'btn-mini' + (consultaConta === nome ? ' ativo' : '');
         b.textContent = nome === '' ? 'Todas as contas' : nome;
-        b.onclick = () => { consultaConta = nome; renderizarChipsContasConsulta(); atualizarModalConsulta(); };
+        b.onclick = () => {
+          consultaConta = nome;
+          // Trocar de conta pode deixar a forma escolhida sem nenhum lançamento
+          // ali (Pix no Ticket, por exemplo). Em vez de mostrar uma tela vazia
+          // sem explicação, o refino volta pra "todas".
+          if (consultaForma && !formasDaConsulta().includes(consultaForma)) consultaForma = '';
+          renderizarChipsContasConsulta();
+          renderizarChipsFormasConsulta();
+          atualizarModalConsulta();
+        };
+        box.appendChild(b);
+      });
+    }
+
+    /* FILTRO POR FORMA DE PAGAMENTO
+       A mesma conta recebe Pix, crédito e débito, e cada um responde por uma
+       parte do gasto. A régua de baixo fatia por isso.
+
+       Crédito à vista e crédito parcelado viram um chip só: na hora de olhar
+       "quanto foi no cartão", separar os dois só espalha o número. Quem quer
+       essa distinção tem a lista logo abaixo, onde cada lançamento diz a forma. */
+    let consultaForma = '';   // '' = todas as formas
+
+    function rotuloDaForma(formaModo) {
+      if (eCredito(formaModo)) return 'Crédito';
+      const achado = FORMAS_PAGAMENTO.find(f => f.valor === formaModo);
+      return achado ? achado.rotulo : (formaModo || 'Outros');
+    }
+
+    // Só as formas que existem no que está à vista: um chip que não filtra nada
+    // é um chip que só ocupa espaço.
+    function formasDaConsulta() {
+      let itens = lancamentos.filter(filtroPeriodoGraficos());
+      if (consultaConta) itens = itens.filter(l => l.conta === consultaConta);
+      if (tipoModalAtual === 'receita' || tipoModalAtual === 'despesa') {
+        itens = itens.filter(l => l.tipo === tipoModalAtual);
+      }
+      const vistas = [];
+      itens.forEach(l => {
+        const r = rotuloDaForma(l.formaModo);
+        if (!vistas.includes(r)) vistas.push(r);
+      });
+      // ordem fixa, a mesma do formulário — não muda de lugar conforme o mês
+      const ordem = ['Crédito', 'Débito', 'Pix', 'Dinheiro'];
+      return vistas.sort((a, b) => {
+        const ia = ordem.indexOf(a), ib = ordem.indexOf(b);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      });
+    }
+
+    function renderizarChipsFormasConsulta() {
+      const box = document.getElementById('chipsFormasConsulta');
+      if (!box) return;
+      const formas = formasDaConsulta();
+      // Com uma forma só (ou nenhuma), filtrar por forma não separa nada.
+      box.classList.toggle('escondido', formas.length < 2);
+      box.innerHTML = '';
+      if (formas.length < 2) return;
+      ['', ...formas].forEach(forma => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini' + (consultaForma === forma ? ' ativo' : '');
+        b.textContent = forma === '' ? 'Todas as formas' : forma;
+        b.onclick = () => { consultaForma = forma; renderizarChipsFormasConsulta(); atualizarModalConsulta(); };
         box.appendChild(b);
       });
     }
@@ -6267,6 +6677,7 @@
       tipoModalAtual = tipo;
       grupoModalAtualId = null;
       consultaConta = '';
+      consultaForma = '';
       consultaGrupo = '';
       document.getElementById('wrapFiltrosModal').classList.remove('escondido');
       document.getElementById('chipsContasConsulta').classList.remove('escondido');
@@ -6274,6 +6685,7 @@
       document.getElementById('labelPeriodoModalAtual').textContent = labelPeriodoGraficos;
       document.getElementById('rodapeGrupo').classList.add('escondido');
       renderizarChipsContasConsulta();
+      renderizarChipsFormasConsulta();
       document.getElementById('modalPanorama').classList.remove('escondido');
       atualizarModalConsulta();
     }
@@ -6547,6 +6959,7 @@
       // mesmo período selecionado na aba Gráficos — fonte única de verdade
       let itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
       if (consultaConta) itensPeriodo = itensPeriodo.filter(l => l.conta === consultaConta);
+      if (consultaForma) itensPeriodo = itensPeriodo.filter(l => rotuloDaForma(l.formaModo) === consultaForma);
 
       if (tipoModalAtual === 'receita') {
         titulo.textContent = 'Consulta: Receitas';
@@ -7891,6 +8304,15 @@
       // selecionado (inclusive) — é o que dá o saldo real acumulado, em vez de só
       // o que aconteceu isolado dentro do mês.
       const porContaAcumulado = {};
+      /* O saldo inicial é a SEMENTE do acumulado: o que a conta já tinha antes
+         do primeiro lançamento. Entra só aqui, e é por isso que ele não
+         contamina "recebido", gráficos nem as respostas das perguntas —
+         nenhum deles olha pra este mapa. */
+      contas.forEach(c => {
+        if (saldoInicialValeEm(c, ano, mes)) {
+          porContaAcumulado[c.nome] = (porContaAcumulado[c.nome] || 0) + parseValComSinal(c.saldoInicial);
+        }
+      });
       let totalRecebimentos = 0, saiuEmDebito = 0, compradoNoCredito = 0, aPagarNoMes = 0;
       lancamentos.forEach(l => {
         const v = parseVal(l.valor);
@@ -9863,6 +10285,7 @@
       
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
       document.getElementById('chipsContasConsulta').classList.add('escondido');
+      document.getElementById('chipsFormasConsulta').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.add('escondido');
       const boxSubFat = document.getElementById('boxSubtotaisModal');
       boxSubFat.innerHTML = '';
@@ -11559,6 +11982,11 @@
               </div>
               <span class="chevron-sec" id="chevron-${chave}">▾</span>
             </button>
+            <!-- Renomear e excluir o grupo sem ter que ir até Ajustes: quem está
+                 olhando o card é quem percebe que o nome ficou errado. -->
+            <button type="button" class="btn-acao" data-opcoes-grupo
+                    title="Opções do grupo" aria-label="Opções do grupo ${tipo}"
+                    style="flex-shrink:0;font-size:18px;line-height:1;padding:4px 8px;">⋯</button>
           </div>
           <div id="corpo-${chave}" style="margin-top:10px;">
             <div style="text-align:center;padding:6px 0 10px;">
@@ -11572,6 +12000,7 @@
         `;
 
         card.querySelector('[data-toggle-secao]').onclick = () => alternarSecao(chave);
+        card.querySelector('[data-opcoes-grupo]').onclick = (ev) => { ev.stopPropagation(); abrirAcoesGrupoInvestimento(tipo); };
         card.querySelector('[data-novo-aporte]').onclick = () => abrirFormAporte(tipo);
 
         const box = card.querySelector('[data-itens]');
@@ -11850,6 +12279,7 @@
       // Oculta filtro de período e chips de conta, mostra rodapé de ações do grupo
       document.getElementById('wrapFiltrosModal').classList.add('escondido');
       document.getElementById('chipsContasConsulta').classList.add('escondido');
+      document.getElementById('chipsFormasConsulta').classList.add('escondido');
       document.getElementById('filtroDetalhe').classList.add('escondido');
       document.getElementById('rodapeGrupo').classList.remove('escondido');
       const boxSub = document.getElementById('boxSubtotaisModal');
@@ -12645,7 +13075,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.16-6';
+    const APP_VERSION = '2026.09.17-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -12674,9 +13104,11 @@ function confirmarLancamentoVoz() {
        do carregarCategorias() gravava a lista ainda vazia por cima da sua —
        foi assim que a lista de categorias encolheu pra "Consórcio" sozinho. */
     repararCategoriasEmUso();
+    repararGruposDeInvestimento();   // grupo com aporte sempre existe nos dois lugares
     repararConsorciosSemFixo();   // antes do "a pagar": pode criar lançamento novo
     migrarRecorrentesAPagar();
     carregarUiPrefs();
+    aplicarTravaDeZoom();   // antes de qualquer render: a tela já nasce na escala certa
     aplicarOrdemCards('abaFaturas');
     aplicarOrdemCards('abaGraficos');
     aplicarSecao('indicadores');
