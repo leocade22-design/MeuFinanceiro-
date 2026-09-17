@@ -8689,6 +8689,60 @@
       return 'tranquilo';
     }
 
+    /* ENCONTRO DE CONTAS
+
+       Quando a mesma pessoa aparece nos dois lados — ela te deve e você deve a
+       ela — mandar duas mensagens separadas é bobagem: uma cobrando R$ 485 e
+       outra oferecendo R$ 91. O normal entre amigos é abater e acertar a
+       diferença, e é isso que a mensagem passa a propor.
+
+       Não entra botão novo na tela por causa disso. O botão de mensagem que já
+       existe em cada pessoa troca de texto, e uma linha no bloco aberto explica
+       a conta — senão a mensagem sairia propondo algo que a tela não mostrou. */
+    function contaCruzada(nome) {
+      const todas = cobrancasAbertas();
+      const doLado = devendo => todas
+        .filter(c => !!c.devo === devendo && textoSeguro(c.nome) === textoSeguro(nome))
+        .reduce((s, c) => s + c.valor, 0);
+      const meDeve = doLado(false);
+      const euDevo = doLado(true);
+      if (meDeve <= 0 || euDevo <= 0) return null;   // só existe com os dois lados
+      return { meDeve, euDevo, saldo: meDeve - euDevo };
+    }
+
+    function textoDoAcerto(nome) {
+      const x = contaCruzada(nome);
+      if (!x) return '';
+      const linhas = [
+        `Oi ${nome}! 👋 Olhei aqui e a gente se deve dos dois lados:`,
+        '',
+        `• Você comigo: ${fmtVal(x.meDeve)}`,
+        `• Eu com você: ${fmtVal(x.euDevo)}`,
+        ''
+      ];
+      if (Math.abs(x.saldo) < 0.005) {
+        linhas.push('Dá empate certinho — se topar, a gente zera tudo e fica quites 🤝');
+      } else if (x.saldo > 0) {
+        linhas.push(`Se topar, a gente abate um no outro e fica ${fmtVal(x.saldo)} pra mim — aí zera o resto.`);
+        const pix = chavePix();
+        if (pix) linhas.push('', 'Pix: ' + pix);
+      } else {
+        linhas.push(`Se topar, a gente abate um no outro e fica ${fmtVal(-x.saldo)} pra você — me manda a chave que eu resolvo 🙏`);
+      }
+      return linhas.join('\n');
+    }
+
+    /* Vai direto, sem passar pela escolha de tom: propor um acerto é conversa
+       de número, não de cobrança — zoeira ou seriedade não mudam nada aqui. */
+    function abrirAcertoWhatsApp(nome) {
+      const texto = textoDoAcerto(nome);
+      if (!texto) return;
+      cobrancaPendente = { nome, tom: tomDoContato(nome), texto };
+      const tel = normalizarTelefone(telDoContato(nome));
+      if (tel) return dispararWhatsApp(tel);
+      abrirModalContatoCobranca(nome);
+    }
+
     function textoDaCobranca(nome, lista, devo, tomForcado) {
       const hoje = obterDataBrasilia();
       // dd/mm basta na mensagem: o ano só polui uma frase curta de WhatsApp
@@ -9655,18 +9709,52 @@
             // A ação mora só aqui dentro. O rótulo acompanha o status, pra você já
             // saber o tom da mensagem que vai sair antes de tocar.
             const tom = tomDaCobranca(lista, emAtraso, perto);
+            /* Uma linha, e só quando a pessoa está nos dois lados. É ela que
+               dá sentido ao botão logo abaixo — sem a conta à vista, a mensagem
+               proporia um acerto que a tela nunca mostrou. */
+            const cruzada = contaCruzada(nome);
+            if (cruzada) {
+              const sobra = Math.abs(cruzada.saldo);
+              const linhaAcerto = document.createElement('div');
+              linhaAcerto.style.cssText = 'margin:8px 0 2px 6px;font-size:11.5px;color:var(--texto-fraco);line-height:1.45;';
+              linhaAcerto.innerHTML = `🔁 Vocês se devem dos dois lados: ele ${fmtOculto(cruzada.meDeve)}, você ${fmtOculto(cruzada.euDevo)}.<br>`
+                + (sobra < 0.005
+                  ? `<strong style="color:var(--texto-medio);">Abatendo, dá empate.</strong>`
+                  : `Abatendo, sobram <strong style="color:${cruzada.saldo > 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(sobra)}</strong> pra ${cruzada.saldo > 0 ? 'você receber' : 'você pagar'}.`);
+              listaEl.appendChild(linhaAcerto);
+            }
+
             const btnZapCheio = document.createElement('button');
             btnZapCheio.type = 'button';
             btnZapCheio.className = 'btn-mini';
             btnZapCheio.style.cssText = 'margin-top:8px;margin-left:6px;'
-              + (/atrasado/i.test(tom) ? 'color:var(--vermelho);border-color:rgba(239,83,80,.35);'
+              + (cruzada ? 'color:var(--azul);border-color:rgba(66,165,245,.4);'
+                : /atrasado/i.test(tom) ? 'color:var(--vermelho);border-color:rgba(239,83,80,.35);'
                 : ['semana','dias','hoje'].includes(tom) ? 'color:var(--amarelo);border-color:rgba(255,209,102,.35);' : '');
-            btnZapCheio.textContent = devo
-              ? '💬 Falar com ' + nome
-              : (/atrasado/i.test(tom) ? '💬 Cobrar ' + nome
-                : ['semana','dias','hoje'].includes(tom) ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
-            btnZapCheio.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
+            // Com conta dos dois lados, o botão deixa de cobrar e passa a propor
+            // o acerto: é a conversa que faz sentido ter.
+            btnZapCheio.textContent = cruzada
+              ? '🔁 Propor acerto com ' + nome
+              : devo
+                ? '💬 Falar com ' + nome
+                : (/atrasado/i.test(tom) ? '💬 Cobrar ' + nome
+                  : ['semana','dias','hoje'].includes(tom) ? '💬 Lembrar ' + nome : '💬 Combinar com ' + nome);
+            btnZapCheio.onclick = () => cruzada
+              ? abrirAcertoWhatsApp(nome)
+              : abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
             listaEl.appendChild(btnZapCheio);
+
+            /* Quem quiser cobrar/falar só de um lado continua podendo: o acerto
+               é a sugestão, não uma porta trancada. */
+            if (cruzada) {
+              const btnSoEsteLado = document.createElement('button');
+              btnSoEsteLado.type = 'button';
+              btnSoEsteLado.className = 'btn-mini';
+              btnSoEsteLado.style.cssText = 'margin-top:8px;margin-left:6px;';
+              btnSoEsteLado.textContent = devo ? 'só o que eu devo' : 'só o que ele deve';
+              btnSoEsteLado.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
+              listaEl.appendChild(btnSoEsteLado);
+            }
 
             /* JÁ ALINHEI
                O app carimba a data quando você abre o WhatsApp, mas não enxerga a
@@ -13075,7 +13163,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.17-2';
+    const APP_VERSION = '2026.09.17-3';
 
     // Inicialização
     carregarLocalStorage();
