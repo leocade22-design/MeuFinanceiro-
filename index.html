@@ -719,6 +719,14 @@
         <button type="button" id="avisoFaturaAberta" class="escondido" onclick="irParaPagamentoFatura()"
           aria-label="Ver fatura em aberto"
           style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:-6px 0 10px;"></button>
+        <!-- AJUSTE DE SALDO NESTE MÊS
+             Uma linha, sem valor: aqui o que importa é você notar que houve
+             ajuste. O número está a um toque, no histórico. -->
+        <button type="button" id="avisoCorrecoesSaldo" class="escondido" onclick="abrirHistoricoCorrecoes()"
+          aria-label="Ver os ajustes de saldo"
+          style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:-4px 0 10px;">
+          <span style="color:var(--amarelo);">●</span> <span id="textoAvisoCorrecoes"></span> <span style="color:var(--texto-tenue);">ver</span>
+        </button>
         <div id="listaFaturas"></div>
       </div>
 
@@ -1397,6 +1405,53 @@
         <button class="btn-opcao-balao" onclick="executarAcaoEditar()">Editar</button>
         <button class="btn-opcao-balao escondido" id="btnGerenciarParcelas" onclick="abrirGerenciarParcelas()">Gerenciar parcelas</button>
         <button class="btn-opcao-balao danger" onclick="executarAcaoExcluir()">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO DOS AJUSTES DE SALDO -->
+  <div id="modalCorrecoesSaldo" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalCorrecoesSaldo')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Ajustes de saldo</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalCorrecoesSaldo')">&times;</button>
+      </div>
+      <p style="color:var(--texto-tenue);font-size:11.5px;margin-bottom:12px;line-height:1.45;">
+        Cada vez que você acertou o saldo de uma conta pelo valor do banco. Não são lançamentos —
+        nada aqui entra como receita ou despesa. É o registro pra você encontrar de onde veio uma
+        diferença.
+      </p>
+      <div id="listaCorrecoesSaldo"></div>
+      <button type="button" class="btn-backup danger" style="margin-top:14px;" onclick="limparHistoricoCorrecoes()">Limpar histórico</button>
+    </div>
+  </div>
+
+  <!-- ACERTO FEITO
+       Dá baixa nos dois lados de uma vez e lança só a diferença, que é o único
+       dinheiro que muda de mãos num abatimento. -->
+  <div id="modalAcertoFeito" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAcertoFeito')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloAcertoFeito">Acerto</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAcertoFeito')">&times;</button>
+      </div>
+      <div id="resumoAcertoFeito" class="box-resumo-modal" style="margin-bottom:12px;"></div>
+      <div id="camposAcertoFeito">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contaAcerto" id="labelContaAcerto">Caiu em qual conta?</label>
+            <select id="contaAcerto"></select>
+          </div>
+          <div class="form-group">
+            <label for="dataAcerto">Quando</label>
+            <input type="date" id="dataAcerto">
+          </div>
+        </div>
+      </div>
+      <p id="avisoAcertoFeito" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:14px;line-height:1.45;"></p>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalAcertoFeito')">Cancelar</button>
+        <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarAcertoFeito()">Confirmar acerto</button>
       </div>
     </div>
   </div>
@@ -3607,6 +3662,22 @@
       popularSelectsContas();
     }
 
+    /* Em Ajustes a linha diz o VALOR da diferença — é aqui que você vem
+       investigar de onde ela saiu, então esconder o número não ajudaria. Na aba
+       Faturas é o contrário: lá basta saber que houve ajuste.
+
+       O marcador é um ● e não um emoji. Emoji depende da fonte do aparelho, e já
+       foi por isso que a calculadora virou SVG: o 🧮 aparecia como quadradinho
+       vazio em vários celulares. O círculo é forma geométrica, desenha igual em
+       todo lugar — e some no meio da linha em vez de puxar o olho. */
+    function textoUltimoAjuste(nomeConta) {
+      const ultimo = (correcoesSaldo || []).find(x => x.conta === nomeConta);
+      if (!ultimo) return '';
+      const subiu = ultimo.diferenca > 0;
+      return `<div style="font-size:10.5px;color:${subiu ? 'var(--verde)' : 'var(--vermelho)'};margin-top:2px;">`
+        + `● ajustada em ${(ultimo.data || '').split('-').reverse().join('/')} · ${subiu ? 'faltavam' : 'sobravam'} ${fmtOculto(Math.abs(ultimo.diferenca))}</div>`;
+    }
+
     function renderizarListaContas() {
       const box = document.getElementById('listaContasGerenciar');
       box.innerHTML = '';
@@ -3617,7 +3688,7 @@
         // ajuste que se faz de repetido, sem precisar de confirmação
         div.onclick = () => abrirAcoesConta(c.id);
         div.innerHTML = `
-          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:var(--texto-fraco);">${c.temCredito ? '💳 fecha dia ' + diasDoCartao(c.nome).fecha + ' · vence dia ' + diasDoCartao(c.nome).vence : 'sem cartão de crédito'}</div></div>
+          <div class="item-info"><strong>${c.nome}</strong><div style="font-size:11px;color:var(--texto-fraco);">${c.temCredito ? '💳 fecha dia ' + diasDoCartao(c.nome).fecha + ' · vence dia ' + diasDoCartao(c.nome).vence : 'sem cartão de crédito'}</div>${textoUltimoAjuste(c.nome)}</div>
           <div class="item-acoes">
             <button class="btn-acao btn-estrela" title="${c.favorita ? 'Remover destaque' : 'Deixar em destaque no formulário'}" aria-label="Favoritar" style="color:${c.favorita ? 'var(--amarelo)' : 'var(--texto-tenue)'};">${c.favorita ? '★' : '☆'}</button>
           </div>`;
@@ -3694,9 +3765,11 @@
       if (!c) return;
       const bruto = document.getElementById('saldoRealConta').value.trim();
       if (!bruto) { avisar('valorInvalido', 'Digite o saldo que o banco mostra.'); return; }
-      const diferenca = parseValComSinal(bruto) - saldoDaContaAgora(c.nome);
+      const antes = saldoDaContaAgora(c.nome);
+      const diferenca = parseValComSinal(bruto) - antes;
       if (Math.abs(diferenca) < 0.005) { fecharModal('modalCorrigirSaldo'); return; }
 
+      registrarCorrecaoSaldo(c.nome, antes, parseValComSinal(bruto), diferenca);
       const novo = parseValComSinal(c.saldoInicial) + diferenca;
       c.saldoInicial = (novo < 0 ? '-' : '') + Math.abs(novo).toFixed(2).replace('.', ',');
       // Correção feita hoje vale do começo do que está na tela: a data existente
@@ -3707,6 +3780,89 @@
       atualizarTudo();
       renderizarListaContas();
       avisar('saldoCorrigido', 'O saldo de ' + c.nome + ' agora mostra ' + fmtVal(parseValComSinal(bruto)) + '.');
+    }
+
+    /* HISTÓRICO DAS CORREÇÕES DE SALDO
+       Corrigir o saldo não cria lançamento nenhum — é isso que faz a correção
+       ser segura, porque ela não inventa receita nem despesa. O efeito colateral
+       é que a correção não deixava rastro: semanas depois, olhando um saldo que
+       não bate com a sua memória, não dava pra saber se alguém mexeu ali.
+
+       Então cada correção fica guardada aqui. Não entra em conta nenhuma: é
+       registro, pra você conseguir voltar e entender de onde veio a diferença. */
+    const CHAVE_CORRECOES = 'meu_financeiro_correcoes_saldo_v1';
+    let correcoesSaldo = [];
+
+    function carregarCorrecoes() {
+      try { correcoesSaldo = JSON.parse(localStorage.getItem(CHAVE_CORRECOES)) || []; }
+      catch (e) { correcoesSaldo = []; }
+    }
+
+    function salvarCorrecoes() {
+      localStorage.setItem(CHAVE_CORRECOES, JSON.stringify(correcoesSaldo));
+    }
+
+    function registrarCorrecaoSaldo(conta, antes, depois, diferenca) {
+      correcoesSaldo.unshift({
+        id: Date.now(), conta, data: obterDataBrasilia(),
+        antes: Math.round(antes * 100) / 100,
+        depois: Math.round(depois * 100) / 100,
+        diferenca: Math.round(diferenca * 100) / 100
+      });
+      // 60 é bastante pra procurar um ajuste antigo sem o arquivo crescer à toa
+      if (correcoesSaldo.length > 60) correcoesSaldo = correcoesSaldo.slice(0, 60);
+      salvarCorrecoes();
+    }
+
+    function correcoesDoMes(mes, ano) {
+      const alvo = String(ano) + '-' + String(mes + 1).padStart(2, '0');
+      return correcoesSaldo.filter(x => (x.data || '').slice(0, 7) === alvo);
+    }
+
+    /* O aviso na aba Faturas é só isto: "esta conta foi ajustada neste mês".
+       Sem valor de propósito — ali o que importa é você notar que houve ajuste e
+       poder ir olhar. O número está no detalhe, a um toque. */
+    function renderizarAvisoCorrecoes(mes, ano) {
+      const el = document.getElementById('avisoCorrecoesSaldo');
+      if (!el) return;
+      const doMes = correcoesDoMes(mes, ano);
+      el.classList.toggle('escondido', !doMes.length);
+      if (!doMes.length) return;
+      const nomes = [...new Set(doMes.map(x => x.conta))];
+      const quantos = doMes.length === 1 ? 'teve o saldo ajustado' : 'tiveram o saldo ajustado ' + doMes.length + ' vezes';
+      document.getElementById('textoAvisoCorrecoes').textContent = nomes.length === 1
+        ? nomes[0] + ' ' + (doMes.length === 1 ? 'teve o saldo ajustado neste mês.' : 'teve o saldo ajustado ' + doMes.length + ' vezes neste mês.')
+        : nomes.join(', ') + ' ' + quantos + ' neste mês.';
+    }
+
+    function abrirHistoricoCorrecoes() {
+      const box = document.getElementById('listaCorrecoesSaldo');
+      if (!box) return;
+      if (!correcoesSaldo.length) {
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum ajuste de saldo até agora.</p>';
+      } else {
+        box.innerHTML = correcoesSaldo.map(x => {
+          const subiu = x.diferenca > 0;
+          return `<div class="item-lancamento" style="cursor:default;">
+              <div class="item-info">
+                <strong style="font-size:13px;">${x.conta}</strong>
+                <div style="font-size:11px;color:var(--texto-fraco);">${(x.data || '').split('-').reverse().join('/')} · de ${fmtOculto(x.antes)} para ${fmtOculto(x.depois)}</div>
+              </div>
+              <span style="color:${subiu ? 'var(--verde)' : 'var(--vermelho)'};font-size:13px;">${subiu ? '+' : '−'} ${fmtOculto(Math.abs(x.diferenca))}</span>
+            </div>`;
+        }).join('');
+      }
+      document.getElementById('modalCorrecoesSaldo').classList.remove('escondido');
+    }
+
+    function limparHistoricoCorrecoes() {
+      if (!correcoesSaldo.length) return;
+      if (!confirm('Apagar o histórico dos ' + correcoesSaldo.length + ' ajustes de saldo?\n\nOs saldos das contas não mudam — some só o registro de que os ajustes aconteceram.')) return;
+      correcoesSaldo = [];
+      salvarCorrecoes();
+      abrirHistoricoCorrecoes();
+      atualizarTudo();
+      renderizarListaContas();
     }
 
     // O primeiro dia em que essa conta aparece no histórico. É onde o saldo
@@ -4574,7 +4730,8 @@
         categorias,
         transferencias,
         contatos,
-        lixeira
+        lixeira,
+        correcoesSaldo
       };
       // Só conta como backup feito quando o arquivo REALMENTE sai — por isso a
       // marca é gravada em cada caminho que conclui, não aqui no começo.
@@ -4663,6 +4820,8 @@
           transferencias = Array.isArray(data.transferencias) ? data.transferencias : [];
           contatos = data.contatos && typeof data.contatos === 'object' ? data.contatos : {};
           lixeira = Array.isArray(data.lixeira) ? data.lixeira : [];
+          // backup antigo não tem o histórico de ajustes: fica vazio, sem quebrar
+          correcoesSaldo = Array.isArray(data.correcoesSaldo) ? data.correcoesSaldo : [];
 
           // um backup gerado antes da correção traz de volta as parcelas com o
           // mesmo prazo; por isso a correção roda de novo aqui, forçada
@@ -4674,6 +4833,7 @@
           migrarInvestimentos();
 
           salvarLocalStorage();
+          salvarCorrecoes();
           salvarFixos();
           salvarInvest();
           salvarTiposAtivo();
@@ -5308,6 +5468,10 @@
       parcelasAcertadas: { emoji: '🗓️', detalhe: 'Cada parcela voltou um mês, e agora cai na fatura em que o banco cobra.', frases: [
         'Datas acertadas.',
         'Pronto: as parcelas voltaram pro lugar delas.'
+      ] },
+      acertoFeito: { emoji: '🤝', detalhe: '', frases: [
+        'Contas acertadas.',
+        'Pronto: vocês estão quites.'
       ] }
     };
 
@@ -5386,6 +5550,9 @@
 
     // Qual campo a calculadora está preenchendo agora
     let campoDaCalculadora = null;
+
+    // Qual lançamento a ficha de detalhes está mostrando
+    let lancamentoDetalhado = null;
 
     function abrirCalculadora(campo) {
       const alvo = (typeof campo === 'string' ? document.getElementById(campo) : campo)
@@ -8464,6 +8631,7 @@
       document.getElementById('tituloMesFatura').textContent = NOMES_MESES[mes] + ' ' + ano;
       const cap = document.getElementById('capFatura');
       if (cap) cap.textContent = textoFechamento(mes, ano);
+      renderizarAvisoCorrecoes(mes, ano);
       const btnAtual = document.getElementById('btnMesAtual');
       if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
       // Saldo é acumulado até o fim do mês visto: "atual" só é verdade no mês
@@ -8912,6 +9080,90 @@
         linhas.push(`Se topar, a gente abate um no outro e fica ${fmtVal(-x.saldo)} pra você — me manda a chave que eu resolvo 🙏`);
       }
       return linhas.join('\n');
+    }
+
+    /* DAR BAIXA NUM ACERTO
+       Num abatimento, as duas dívidas se encerram mas só a DIFERENÇA muda de
+       mãos. Fazendo à mão são três passos, e o passo do meio é uma armadilha:
+       "Paguei" lança o valor inteiro da cobrança, não a diferença, e o saldo
+       fica menor que a realidade. Aqui os dois lados saem por quitação sem
+       movimentação — porque foi isso que aconteceu, a dívida foi abatida — e a
+       diferença entra como um lançamento único e real. No empate não entra
+       lançamento nenhum, porque nada mudou de mãos. */
+    let acertoEmCurso = null;
+
+    function abrirAcertoFeito(nome) {
+      const x = contaCruzada(nome);
+      if (!x) return;
+      const sobra = Math.abs(x.saldo);
+      const empate = sobra < 0.005;
+      const euRecebo = x.saldo > 0;
+      acertoEmCurso = { nome, sobra, empate, euRecebo };
+
+      document.getElementById('tituloAcertoFeito').textContent = 'Acerto com ' + nome;
+      document.getElementById('resumoAcertoFeito').innerHTML = `
+        <div class="linha-subtotal" style="cursor:default;"><span>${nome} com você</span><strong>${fmtOculto(x.meDeve)}</strong></div>
+        <div class="linha-subtotal" style="cursor:default;"><span>Você com ${nome}</span><strong>${fmtOculto(x.euDevo)}</strong></div>
+        <div class="linha-subtotal" style="cursor:default;border-top:1px solid var(--borda-fraca);margin-top:4px;padding-top:6px;">
+          <span>${empate ? 'Abatendo' : (euRecebo ? 'Você recebe' : 'Você paga')}</span>
+          <strong style="color:${empate ? 'var(--texto-medio)' : (euRecebo ? 'var(--verde)' : 'var(--vermelho)')};">${empate ? 'dá empate' : fmtOculto(sobra)}</strong>
+        </div>`;
+
+      // No empate não há dinheiro pra lançar, então nem se pergunta a conta.
+      document.getElementById('camposAcertoFeito').classList.toggle('escondido', empate);
+      document.getElementById('labelContaAcerto').textContent = euRecebo ? 'Caiu em qual conta?' : 'Saiu de qual conta?';
+      const sel = document.getElementById('contaAcerto');
+      sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      sel.value = contaPadraoReembolso();
+      document.getElementById('dataAcerto').value = obterDataBrasilia();
+
+      document.getElementById('avisoAcertoFeito').innerHTML = empate
+        ? 'As duas dívidas se encerram e <strong>nenhum lançamento é criado</strong> — nada mudou de mãos.'
+        : `As duas dívidas se encerram, e só a diferença de <strong>${fmtVal(sobra)}</strong> entra como `
+          + `<strong>${euRecebo ? 'receita' : 'despesa'} à vista</strong> nessa conta. `
+          + 'O resto foi abatido, então não vira movimentação.';
+      document.getElementById('modalAcertoFeito').classList.remove('escondido');
+    }
+
+    function confirmarAcertoFeito() {
+      if (!acertoEmCurso) return;
+      const { nome, sobra, empate, euRecebo } = acertoEmCurso;
+      // relê as cobranças agora: entre abrir e confirmar, alguma pode ter saído
+      const chaves = cobrancasAbertas()
+        .filter(c => textoSeguro(c.nome) === textoSeguro(nome))
+        .map(c => c.chave);
+      const itens = cobrancasPorChave(chaves);
+      if (!itens.length) { fecharModal('modalAcertoFeito'); return; }
+
+      itens.forEach(c => marcarCobrancaQuitada(c));
+
+      if (!empate) {
+        const conta = document.getElementById('contaAcerto').value || primeiraConta();
+        const data = document.getElementById('dataAcerto').value || obterDataBrasilia();
+        localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
+        lancamentos.unshift({
+          id: novoIdLancamento(),
+          tipo: euRecebo ? 'receita' : 'despesa',
+          descricao: 'Acerto com ' + nome,
+          // à vista de propósito: acertar dívida sai por pix/dinheiro/débito e
+          // não pode ir parar na fatura do cartão
+          conta, formaModo: 'À Vista / Débito', numParcelas: '1',
+          categoria: euRecebo ? '' : categoriaPadrao(),
+          data,
+          emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+          valor: sobra.toFixed(2).replace('.', ','),
+          observacao: 'Diferença do abatimento entre o que vocês se deviam'
+        });
+      }
+
+      salvarLocalStorage();
+      fecharModal('modalAcertoFeito');
+      atualizarTudo();
+      renderizarEmprestimos();
+      acertoEmCurso = null;
+      avisar('acertoFeito', empate
+        ? 'As dívidas com ' + nome + ' se anularam. Nada entrou nem saiu da conta.'
+        : 'As dívidas com ' + nome + ' foram abatidas, e só ' + fmtVal(sobra) + ' virou lançamento.');
     }
 
     /* Vai direto, sem passar pela escolha de tom: propor um acerto é conversa
@@ -9940,6 +10192,19 @@
               btnSoEsteLado.textContent = devo ? 'só o que eu devo' : 'só o que ele deve';
               btnSoEsteLado.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
               listaEl.appendChild(btnSoEsteLado);
+
+              /* Propor o acerto era metade do caminho: depois que a pessoa
+                 topava, dar baixa à mão dava três passos e uma armadilha — usar
+                 "Paguei" no lado maior lança o valor INTEIRO, quando só a
+                 diferença mudou de mãos. Este botão faz a baixa inteira. */
+              const btnJaAcertamos = document.createElement('button');
+              btnJaAcertamos.type = 'button';
+              btnJaAcertamos.className = 'btn-mini';
+              btnJaAcertamos.style.cssText = 'margin-top:8px;margin-left:6px;color:var(--verde);border-color:rgba(102,187,106,.45);';
+              btnJaAcertamos.textContent = '✓ Já acertamos';
+              btnJaAcertamos.title = 'Dar baixa nos dois lados de uma vez';
+              btnJaAcertamos.onclick = () => abrirAcertoFeito(nome);
+              listaEl.appendChild(btnJaAcertamos);
             }
 
             /* JÁ ALINHEI
@@ -10103,13 +10368,25 @@
           const det = document.createElement('div');
           det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid var(--borda);';
           det.innerHTML = compras.map(l => `
-            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:default;">
+            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:pointer;"
+                 data-detalhe="${l.id}" title="Ver os detalhes deste lançamento">
               <div class="item-info">
                 <strong style="font-size:13px;">${l.descricao}</strong>
                 <div style="font-size:10.5px;color:var(--texto-fraco);">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}</div>
               </div>
               <span class="valor-despesa" style="font-size:13px;">${fmtOculto(parseVal(l.valor))}</span>
             </div>`).join('');
+          /* Tocar na compra abre a ficha dela. O extrato é irmão da linha do
+             cartão, não filho, então o toque já não chegaria lá pra fechar o
+             extrato — o stopPropagation fica como cinto de segurança caso o
+             dia de amanhã aninhe os dois. */
+          det.querySelectorAll('[data-detalhe]').forEach(el => {
+            el.onclick = (ev) => {
+              ev.stopPropagation();
+              const alvo = lancamentos.find(x => String(x.id) === el.dataset.detalhe);
+              if (alvo) abrirDetalheLancamento(alvo, null, null);
+            };
+          });
           box.appendChild(det);
         }
       });
@@ -10488,45 +10765,76 @@
     function abrirDetalheCobranca(chave) {
       const c = cobrancasPorChave([chave])[0];
       if (!c) return;
-      cobrancaDetalhada = chave;
-      const l = c.lanc;
+      abrirDetalheLancamento(c.lanc, c, chave);
+    }
+
+    /* A MESMA FICHA, VINDA DE DOIS LUGARES
+       Do card de Empréstimos ela chega com uma cobrança em mãos, e fala de
+       dívida: a parte daquela pessoa, o prazo, os carimbos de cobrança. Do
+       extrato da fatura ela chega só com o lançamento, e a pergunta é outra —
+       "que compra é essa e em que fatura ela caiu?". Uma função só, porque é a
+       mesma ficha do mesmo lançamento; o que muda é o que faz sentido mostrar. */
+    function abrirDetalheLancamento(l, c, chave) {
+      if (!l) return;
+      cobrancaDetalhada = c ? chave : null;
+      lancamentoDetalhado = l.id;
       const hoje = obterDataBrasilia();
       const dia = iso => (iso || '').split('-').reverse().join('/');
-      const atrasado = c.vence && c.vence < hoje;
+      const atrasado = c && c.vence && c.vence < hoje;
       const indireto = ehEmprestimoIndireto(l);
-      const parcela = rotuloParcela(l);
       const totalLanc = parseVal(l.valor);
+      const credito = eCredito(l.formaModo);
+      const fatura = credito && l.conta ? getMesFatura(l.data, l.formaModo, l.conta) : null;
+      const eReceita = l.tipo === 'receita';
 
       document.getElementById('tituloDetalheCobranca').textContent = descricaoBaseCompra(l.descricao);
 
-      /* O valor grande é a parte DESTA pessoa, que é o que a linha mostrava.
-         Num rateio ele é menor que o lançamento inteiro, e sem dizer isso o
-         número aqui pareceria contradizer a aba Lançamentos. */
-      const ehParte = Math.abs(totalLanc - c.valor) > 0.005;
+      /* Com cobrança, o valor grande é a parte DAQUELA pessoa, que é o que a
+         linha mostrava. Num rateio ele é menor que o lançamento inteiro, e sem
+         dizer isso o número aqui pareceria contradizer a aba Lançamentos. */
+      const valorTopo = c ? c.valor : totalLanc;
+      const ehParte = c && Math.abs(totalLanc - c.valor) > 0.005;
+      const rotuloTopo = c
+        ? (c.devo ? 'Você deve a ' + c.nome : 'Deve a você')
+        : (eReceita ? 'Entrou' : credito ? 'Foi pro cartão' : 'Saiu da conta');
+      const corTopo = c
+        ? (indireto ? 'var(--azul)' : (c.devo ? 'var(--vermelho)' : 'var(--verde)'))
+        : (eReceita ? 'var(--verde)' : 'var(--vermelho)');
 
       document.getElementById('corpoDetalheCobranca').innerHTML = `
         <div style="margin-bottom:10px;">
-          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${c.devo ? 'Você deve a ' : 'Deve a você'}${c.devo ? c.nome : ''}</span>
-          <h3 style="color:${indireto ? 'var(--azul)' : (c.devo ? 'var(--vermelho)' : 'var(--verde)')};font-size:23px;">${fmtOculto(c.valor)}</h3>
+          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${rotuloTopo}</span>
+          <h3 style="color:${corTopo};font-size:23px;">${fmtOculto(valorTopo)}</h3>
           ${ehParte ? `<div style="font-size:11px;color:var(--texto-tenue);">a parte ${c.devo ? 'que cabe a você' : 'de ' + c.nome} num lançamento de ${fmtOculto(totalLanc)}</div>` : ''}
         </div>
-        ${linhaDetalhe(c.devo ? 'Com quem' : 'Quem deve', c.nome)}
-        ${linhaDetalhe('Lançado em', dia(l.data))}
-        ${linhaDetalhe(c.devo ? 'Caiu em' : 'Saiu de', indireto && !l.conta ? 'ninguém — pagaram por você' : l.conta)}
+        ${c ? linhaDetalhe(c.devo ? 'Com quem' : 'Quem deve', c.nome) : ''}
+        ${linhaDetalhe(eReceita ? 'Recebido em' : 'Comprado em', dia(l.data))}
+        ${linhaDetalhe(
+            (c && c.devo) || eReceita ? 'Caiu em'
+              : credito ? 'Cartão'       // no crédito nada saiu ainda: dizer "saiu de" brigaria com a nota lá embaixo
+              : 'Saiu de',
+            indireto && !l.conta ? 'ninguém — pagaram por você' : l.conta)}
         ${linhaDetalhe('Como foi pago', indireto && !l.conta ? '—' : formaPorExtenso(l.formaModo))}
+        ${fatura ? linhaDetalhe('Cai na fatura de', NOMES_MESES[fatura.mes] + '/' + String(fatura.ano).slice(2), 'var(--amarelo)') : ''}
         ${linhaDetalhe('Categoria', l.categoria)}
-        ${linhaDetalhe('Parcela', parcela)}
+        ${linhaDetalhe('Parcela', rotuloParcela(l))}
         ${linhaDetalhe('Grupo', l.grupoViagemNome)}
         ${linhaDetalhe('Gasto fixo', l.fixoId ? 'sim — se repete todo mês' : '')}
-        ${linhaDetalhe(atrasado ? 'Venceu' : 'Vence', dia(c.vence), atrasado ? 'var(--vermelho)' : '')}
-        ${linhaDetalhe('Adiada', c.adiamentos ? c.adiamentos + (c.adiamentos === 1 ? ' vez' : ' vezes') : '', 'var(--amarelo)')}
-        ${linhaDetalhe('Cobrado em', dia(c.ultimaCobranca))}
-        ${linhaDetalhe('Alinhado em', dia(c.alinhadoEm), 'var(--verde)')}
+        ${!c && l.emprestimoPara ? linhaDetalhe('Emprestado a', l.emprestimoPara, 'var(--azul)') : ''}
+        ${c ? linhaDetalhe(atrasado ? 'Venceu' : 'Vence', dia(c.vence), atrasado ? 'var(--vermelho)' : '') : ''}
+        ${c ? linhaDetalhe('Adiada', c.adiamentos ? c.adiamentos + (c.adiamentos === 1 ? ' vez' : ' vezes') : '', 'var(--amarelo)') : ''}
+        ${c ? linhaDetalhe('Cobrado em', dia(c.ultimaCobranca)) : ''}
+        ${c ? linhaDetalhe('Alinhado em', dia(c.alinhadoEm), 'var(--verde)') : ''}
         ${indireto ? `<div style="font-size:11.5px;color:var(--azul);margin-top:10px;line-height:1.45;">Empréstimo indireto: essa pessoa pagou por você, então nada saiu das suas contas — por isso este valor não entra no seu saldo.</div>` : ''}
+        ${!c && fatura ? `<div style="font-size:11.5px;color:var(--texto-tenue);margin-top:10px;line-height:1.45;">Compra no crédito não sai da conta na data da compra: entra nessa fatura e o dinheiro só sai quando ela for paga.</div>` : ''}
         ${l.observacao ? `<div class="observacao-mini" style="margin-top:10px;">${l.observacao}</div>` : ''}
       `;
 
-      document.getElementById('btnDetalheMov').textContent = c.devo ? 'Paguei' : 'Recebi';
+      // Recebi/Paguei e Quitar são de dívida: fora do card de empréstimos não
+      // existe cobrança pra dar baixa, então eles nem aparecem.
+      document.getElementById('btnDetalheMov').textContent = c && c.devo ? 'Paguei' : 'Recebi';
+      document.getElementById('btnDetalheMov').classList.toggle('escondido', !c);
+      document.getElementById('btnDetalheQuitar').classList.toggle('escondido', !c);
       document.getElementById('btnDetalheParcelas').classList.toggle('escondido', !l.grupoId);
       document.getElementById('modalDetalheCobranca').classList.remove('escondido');
     }
@@ -10543,17 +10851,23 @@
       if (chave) quitarSemMovimentacao([chave]);
     }
 
+    // Editar e Ver parcelas valem pros dois caminhos, porque tratam do
+    // lançamento em si — e ele existe com ou sem cobrança em cima.
+    function lancamentoDaFicha() {
+      return lancamentos.find(l => l.id === lancamentoDetalhado) || null;
+    }
+
     function detalheEditarLancamento() {
-      const c = cobrancaDetalhada ? cobrancasPorChave([cobrancaDetalhada])[0] : null;
+      const l = lancamentoDaFicha();
       fecharModal('modalDetalheCobranca');
-      if (c) abrirEdicaoLancamentoGlobal(c.lanc.id);
+      if (l) abrirEdicaoLancamentoGlobal(l.id);
     }
 
     function detalheVerParcelas() {
-      const c = cobrancaDetalhada ? cobrancasPorChave([cobrancaDetalhada])[0] : null;
-      if (!c || !c.lanc.grupoId) return;
+      const l = lancamentoDaFicha();
+      if (!l || !l.grupoId) return;
       fecharModal('modalDetalheCobranca');
-      abrirGerenciarParcelasPorGrupoId(c.lanc.grupoId);
+      abrirGerenciarParcelasPorGrupoId(l.grupoId);
     }
 
     /* QUITAR SEM MOVIMENTAÇÃO
@@ -13459,7 +13773,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.18-1';
+    const APP_VERSION = '2026.09.18-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -13476,6 +13790,7 @@ function confirmarLancamentoVoz() {
     carregarTransferencias();
     carregarContatos();
     carregarLixeira();
+    carregarCorrecoes();
     carregarOrcamentos();
     carregarFaturasPagas();
     carregarContas();

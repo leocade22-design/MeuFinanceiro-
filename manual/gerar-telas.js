@@ -272,6 +272,50 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(500);
   await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
 
+  // 20b) a ficha de uma compra da fatura
+  await abrir('Faturas');
+  await secao('pagamentoFatura', true);
+  await page.evaluate(()=>{
+    const cartao = contas.find(c => c.temCredito);
+    faturasExpandidas = new Set([cartao.nome]);
+    renderizarPagamentoFaturas();
+    const linha = [...document.querySelectorAll('#listaPagamentoFatura [data-detalhe]')]
+      .find(x => /Notebook|Airbnb|Gasolina/.test(x.innerText)) 
+      || document.querySelector('#listaPagamentoFatura [data-detalhe]');
+    if (linha) linha.click();
+  });
+  await page.waitForTimeout(450);
+  await tiro('detalhe_fatura', '#modalDetalheCobranca .modal-content');
+  await page.evaluate(()=>{ fecharModal('modalDetalheCobranca'); });
+  await secao('pagamentoFatura', false);
+
+  // 20c) o acerto de contas sendo confirmado, e o registro dos ajustes de saldo
+  await abrir('Faturas');
+  await secao('emprestimos', true);
+  await page.evaluate(()=>{ abrirAcertoFeito('Bernardo'); });
+  await page.waitForTimeout(450);
+  await tiro('acerto_feito', '#modalAcertoFeito .modal-content');
+  await page.evaluate(()=>fecharModal('modalAcertoFeito'));
+  await secao('emprestimos', false);
+
+  await page.evaluate(()=>{
+    // dois ajustes de saldo, pra o histórico ter o que mostrar
+    const c = contas.find(x => x.nome === 'Itaú');
+    contaAcoesId = c.id; abrirCorrigirSaldo();
+    document.getElementById('saldoRealConta').value = 'R$ 9.000,00';
+    confirmarCorrecaoSaldo(); fecharModal('modalAviso');
+    contaAcoesId = c.id; abrirCorrigirSaldo();
+    document.getElementById('saldoRealConta').value = 'R$ 8.750,00';
+    confirmarCorrecaoSaldo(); fecharModal('modalAviso');
+    atualizarFaturas();
+  });
+  await page.waitForTimeout(450);
+  await tiro('aviso_ajuste', '#cardResumoFaturas');
+  await page.evaluate(()=>abrirHistoricoCorrecoes());
+  await page.waitForTimeout(400);
+  await tiro('historico_ajustes', '#modalCorrecoesSaldo .modal-content');
+  await page.evaluate(()=>fecharModal('modalCorrecoesSaldo'));
+
   // 21) os dois cards de gráfico que ganharam o seletor Barras/Colunas
   await abrir('Gráficos');
   await secao('evolucaoMensal', true);
