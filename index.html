@@ -725,7 +725,7 @@
         <button type="button" id="avisoCorrecoesSaldo" class="escondido" onclick="abrirHistoricoCorrecoes()"
           aria-label="Ver os ajustes de saldo"
           style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:-4px 0 10px;">
-          🎯 <span id="textoAvisoCorrecoes"></span> <span style="color:var(--texto-tenue);">ver</span>
+          <span style="color:var(--amarelo);">●</span> <span id="textoAvisoCorrecoes"></span> <span style="color:var(--texto-tenue);">ver</span>
         </button>
         <div id="listaFaturas"></div>
       </div>
@@ -3664,13 +3664,18 @@
 
     /* Em Ajustes a linha diz o VALOR da diferença — é aqui que você vem
        investigar de onde ela saiu, então esconder o número não ajudaria. Na aba
-       Faturas é o contrário: lá basta saber que houve ajuste. */
+       Faturas é o contrário: lá basta saber que houve ajuste.
+
+       O marcador é um ● e não um emoji. Emoji depende da fonte do aparelho, e já
+       foi por isso que a calculadora virou SVG: o 🧮 aparecia como quadradinho
+       vazio em vários celulares. O círculo é forma geométrica, desenha igual em
+       todo lugar — e some no meio da linha em vez de puxar o olho. */
     function textoUltimoAjuste(nomeConta) {
       const ultimo = (correcoesSaldo || []).find(x => x.conta === nomeConta);
       if (!ultimo) return '';
       const subiu = ultimo.diferenca > 0;
       return `<div style="font-size:10.5px;color:${subiu ? 'var(--verde)' : 'var(--vermelho)'};margin-top:2px;">`
-        + `🎯 ajustada em ${(ultimo.data || '').split('-').reverse().join('/')} · ${subiu ? 'faltavam' : 'sobravam'} ${fmtOculto(Math.abs(ultimo.diferenca))}</div>`;
+        + `● ajustada em ${(ultimo.data || '').split('-').reverse().join('/')} · ${subiu ? 'faltavam' : 'sobravam'} ${fmtOculto(Math.abs(ultimo.diferenca))}</div>`;
     }
 
     function renderizarListaContas() {
