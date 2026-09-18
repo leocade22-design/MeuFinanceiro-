@@ -538,6 +538,23 @@
       não existe e o botão continua o de sempre. E se você quiser tratar de um lado apenas,
       o botão <em>só o que eu devo</em> / <em>só o que ele deve</em> fica ao lado.
     </div>
+    <div class="nota">
+      <strong>Depois que a pessoa topar: “✓ Já acertamos”.</strong> Propor é uma coisa, dar
+      baixa é outra — e é aqui que era fácil errar. O botão <strong>Já acertamos</strong>
+      encerra os <strong>dois lados</strong> de uma vez e lança só a <strong>diferença</strong>,
+      que é o único dinheiro que muda de mãos num abatimento. Ele mostra a conta antes de
+      confirmar e pergunta de qual conta saiu (ou em qual caiu).
+      <br><br>Dando empate, não cria lançamento nenhum: as duas dívidas se encerram e pronto,
+      porque nada mudou de mãos.
+    </div>
+    <div class="nota atencao">
+      <strong>Não use “Paguei” num acerto.</strong> O <em>Paguei</em> lança o valor
+      <strong>inteiro</strong> da cobrança. Se você quitar o lado dele e der <em>Paguei</em> no
+      seu, o app registra a dívida toda saindo da conta — quando você só mandou a diferença — e
+      o saldo fica menor do que a realidade. É pra isso que o <em>Já acertamos</em> existe.
+    </div>
+    <div class="tela metade"><img src="img/acerto_feito.png" alt="Confirmação do acerto"></div>
+    <div class="legenda">A conta na sua frente, e só a diferença vira lançamento.</div>
     <p>Na primeira cobrança de cada pessoa o app pede o WhatsApp dela — dá para escolher da agenda
        do celular ou digitar. Depois disso, vai direto.</p>
 
@@ -879,6 +896,30 @@
     <div class="legenda">O saldo inicial fica no cadastro da conta, com a data a partir da qual vale.</div>
     <div class="tela metade"><img src="img/corrigir_saldo.png" alt="Corrigir saldo da conta"></div>
     <div class="legenda">Corrigir saldo: você digita o que o banco mostra e o app acerta a diferença, sem criar lançamento.</div>
+    <div class="nota">
+      <strong>Todo ajuste fica registrado.</strong> Justamente porque corrigir o saldo
+      <em>não</em> cria lançamento — é o que torna a correção segura —, ela não deixava rastro:
+      semanas depois, olhando um saldo que não bate com a sua memória, não dava pra saber se
+      alguém tinha mexido ali.
+      <br><br>Agora cada correção fica guardada. Em dois lugares, de propósito:
+      <ul>
+        <li>Na aba <strong>Faturas</strong>, uma linha discreta embaixo do resumo —
+            <em>“🎯 Itaú teve o saldo ajustado neste mês”</em>. <strong>Sem valor</strong>: ali
+            o que importa é você reparar que houve ajuste. Ela só aparece no mês em que o
+            ajuste aconteceu.</li>
+        <li>Aqui em <strong>Ajustes</strong>, na linha da própria conta, <strong>com o
+            valor</strong> da diferença e a data — porque é aqui que você vem investigar de
+            onde ela saiu.</li>
+      </ul>
+      Tocando no aviso da aba Faturas abre o histórico completo, com a conta, a data, o saldo de
+      antes, o de depois e a diferença. São os últimos 60 ajustes, e dá pra limpar a lista.
+      <br><br>Nada disso é lançamento: apagar o histórico não muda saldo nenhum, e esses
+      registros não entram em <em>Recebido</em> nem em <em>Saiu da conta</em>. O backup leva
+      tudo junto.
+    </div>
+    <div class="tela metade"><img src="img/aviso_ajuste.png" alt="Aviso de ajuste na aba Faturas"></div>
+    <div class="tela metade"><img src="img/historico_ajustes.png" alt="Histórico dos ajustes de saldo"></div>
+    <div class="legenda">Na aba Faturas, só o aviso. No histórico, os números.</div>
   </div>
 </section>
 
