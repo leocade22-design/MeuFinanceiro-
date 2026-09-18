@@ -40,7 +40,7 @@ fs.mkdirSync(OUT, { recursive: true });
     desp('Cinema','76,00','Lazer',dia(3),'Crédito à Vista');
 
     // empréstimos
-    desp('Airbnb da galera','200,00','Viagens ✈️',d(-14),'Crédito à Vista','Itaú',{emprestimoPara:'Bernardo',emprestimoVence:d(-4)});
+    desp('Airbnb da galera','200,00','Viagens ✈️',d(-14),'Crédito à Vista','Itaú',{emprestimoPara:'Bernardo',emprestimoVence:d(-4),observacao:'Ele me paga quando voltarmos da viagem'});
     desp('Gympass','140,00','Saúde',d(-10),'Crédito à Vista','Itaú',{emprestimoPara:'Bernardo',emprestimoVence:d(2)});
     desp('Ingresso do show','120,00','Lazer',d(-5),'À Vista / Débito','Itaú',{emprestimoPara:'Carlos',emprestimoVence:d(3)});
     desp('Almoço','48,00','Alimentação',d(-6),'À Vista / Débito','Itaú',{emprestimoPara:'Ana',emprestimoVence:d(45)});
@@ -222,6 +222,15 @@ fs.mkdirSync(OUT, { recursive: true });
   });
   await page.waitForTimeout(450);
   await tiro('acerto_contas', '[data-card="emprestimos"]');
+
+  // 16b) a ficha que abre ao tocar na linha da cobrança
+  await page.evaluate(()=>{
+    const c = cobrancasAbertas().find(x => x.lanc.observacao && !x.devo);
+    if (c) abrirDetalheCobranca(c.chave);
+  });
+  await page.waitForTimeout(450);
+  await tiro('detalhe_cobranca', '#modalDetalheCobranca .modal-content');
+  await page.evaluate(()=>fecharModal('modalDetalheCobranca'));
   await secao('emprestimos', false);
 
   // 17) a Consulta com as duas réguas: conta e forma de pagamento

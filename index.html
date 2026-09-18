@@ -1401,6 +1401,26 @@
     </div>
   </div>
 
+  <!-- DETALHE DA COBRANÇA
+       Abre ao tocar numa linha do card de Empréstimos. O card mostra só nome,
+       prazo e valor — o resto da história do lançamento (quando foi, em que
+       conta, como foi pago, a observação) fica aqui, sem encher a lista. -->
+  <div id="modalDetalheCobranca" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalDetalheCobranca')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloDetalheCobranca">Detalhes</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalDetalheCobranca')">&times;</button>
+      </div>
+      <div id="corpoDetalheCobranca"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        <button type="button" class="btn-mini" id="btnDetalheMov" onclick="detalheRegistrarMovimentacao()">Recebi</button>
+        <button type="button" class="btn-mini" id="btnDetalheQuitar" onclick="detalheQuitar()" title="Resolvido de outro jeito, sem dinheiro trocar de mãos">Quitar</button>
+        <button type="button" class="btn-mini" id="btnDetalheEditar" onclick="detalheEditarLancamento()">Editar lançamento</button>
+        <button type="button" class="btn-mini escondido" id="btnDetalheParcelas" onclick="detalheVerParcelas()">Ver as parcelas</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DE GERENCIAR PARCELAS -->
   <div id="modalParcelas" class="modal-overlay escondido">
     <div class="modal-content">
@@ -1410,7 +1430,10 @@
       </div>
       <div id="resumoParcelas" class="box-resumo-modal" style="margin-bottom:12px;"></div>
       <p style="color:var(--texto-tenue);font-size:11.5px;margin-bottom:10px;">A data de cada parcela define em qual fatura ela cai (fechamento dia 3).</p>
-      <button type="button" class="btn-mini" style="margin-bottom:12px;" onclick="adiarParcelasRestantes()">Adiar 1 mês as que faltam</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        <button type="button" class="btn-mini" onclick="adiarParcelasRestantes()">Adiar 1 mês as que faltam</button>
+        <button type="button" class="btn-mini" onclick="voltarCompraUmMes()" title="Quando a compra foi feita um mês antes do que está aqui">Voltar 1 mês a compra toda</button>
+      </div>
       <div id="listaGerenciarParcelas" onchange="previewFaturasParcelas(event)"></div>
       <div style="display:flex;gap:10px;margin-top:14px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalParcelas')">Fechar</button>
@@ -2311,6 +2334,23 @@
         fecha: parseInt(c && c.diaFechamento, 10) || DIA_FECHAMENTO_CARTAO,
         vence: parseInt(c && c.diaVencimento, 10) || DIA_VENCIMENTO_CARTAO
       };
+    }
+
+    /* A fatura de um mês fecha no dia de fechamento DAQUELE mês. O vencimento
+       quase sempre vem depois, no mesmo mês — mas o cartão que fecha dia 25 e
+       vence dia 5 só é pago no mês SEGUINTE. Sem dizer isso, a legenda ficava
+       "fecha em 7 dias · vence dia 5", como se vencesse vinte dias antes de
+       fechar. Quando o dia do vencimento é menor que o do fechamento, a frase
+       passa a nomear o mês: "vence dia 5 de outubro". */
+    function vencimentoCaiNoMesSeguinte(nomeConta) {
+      const dias = diasDoCartao(nomeConta);
+      return dias.vence < dias.fecha;
+    }
+
+    function textoMesDoVencimento(nomeConta, mes, ano) {
+      if (!vencimentoCaiNoMesSeguinte(nomeConta)) return '';
+      const ref = new Date(ano, mes + 1, 1);
+      return ' de ' + NOMES_MESES[ref.getMonth()].toLowerCase();
     }
 
     // Cartões de crédito cadastrados, na ordem da lista de contas
@@ -5264,6 +5304,10 @@
       backupSalvo: { emoji: '💾', detalhe: 'O arquivo foi gravado na pasta que você escolheu.', frases: [
         'Backup salvo onde você mandou.',
         'Guardado. Agora é só não perder a pasta.'
+      ] },
+      parcelasAcertadas: { emoji: '🗓️', detalhe: 'Cada parcela voltou um mês, e agora cai na fatura em que o banco cobra.', frases: [
+        'Datas acertadas.',
+        'Pronto: as parcelas voltaram pro lugar delas.'
       ] }
     };
 
@@ -6121,12 +6165,38 @@
       const hoje = obterDataBrasilia();
       if (!confirm('Isso empurra 1 mês pra frente todas as parcelas dessa compra que ainda não venceram. Continuar?')) return;
       lancamentos.forEach(l => {
-        if (l.grupoId === parcelasGrupoAtual && l.data > hoje) {
-          const d = new Date(l.data + 'T12:00:00');
-          d.setMonth(d.getMonth() + 1);
-          l.data = d.toISOString().slice(0, 10);
-        }
+        if (l.grupoId === parcelasGrupoAtual && l.data > hoje) l.data = somarMesesFiel(l.data, 1);
       });
+      salvarLocalStorage();
+      renderizarGerenciarParcelas();
+      atualizarTudo();
+    }
+
+    /* VOLTAR A COMPRA INTEIRA UM MÊS
+       Existe por causa de um defeito antigo: até a versão 2026.09.18-1, uma
+       compra parcelada feita depois do fechamento do cartão era GRAVADA com a
+       data um mês à frente, e ainda levava o empurrão do fechamento na hora de
+       exibir — caía uma fatura depois do lugar certo.
+
+       O defeito foi corrigido, mas o que já estava gravado continua como estava.
+       Consertar isso sozinho seria tentador e errado: uma parcela gravada em
+       20/09 é idêntica a uma compra feita de verdade em 20/09, e não existe no
+       dado nenhuma marca que separe as duas. Um corretor automático acertaria
+       umas e estragaria outras — e, rodado duas vezes, estragaria todas.
+
+       Então a decisão é sua, compra por compra, aqui onde você está vendo as
+       datas. Diferente do botão acima, este mexe em TODAS as parcelas, inclusive
+       as que já passaram: o erro começou na primeira. */
+    function voltarCompraUmMes() {
+      if (!parcelasGrupoAtual) return;
+      const grupo = lancamentos.filter(l => l.grupoId === parcelasGrupoAtual);
+      if (!grupo.length) return;
+      const novas = grupo.map(l => somarMesesFiel(l.data, -1).split('-').reverse().join('/'));
+      if (!confirm('Voltar 1 mês TODAS as ' + grupo.length + ' parcelas desta compra?\n\n'
+        + 'Elas ficam: ' + novas.join(', ') + '\n\n'
+        + 'Use quando a compra foi feita um mês antes do que está aqui — era o que acontecia com '
+        + 'compra parcelada feita depois do fechamento, até a versão 2026.09.18-1.')) return;
+      grupo.forEach(l => { l.data = somarMesesFiel(l.data, -1); });
       salvarLocalStorage();
       renderizarGerenciarParcelas();
       atualizarTudo();
@@ -6315,18 +6385,22 @@
       } else if (numParcelas > 1) {
         const grupoId = 'g' + Date.now();
         const valorParcela = valorTotal / numParcelas;
-        
-        // Regra de faturamento: se a compra for efetuada após o dia do fechamento (dia 3), a 1ª parcela rola pro mês seguinte
-        let dtCompra = new Date(dataBase + 'T12:00:00');
-        let mesOffsetInicial = 0;
-        if (dtCompra.getDate() > diasDoCartao(conta).fecha) {
-          mesOffsetInicial = 1;
-        }
 
+        /* A 1ª parcela NASCE NA DATA DA COMPRA, sem empurrão nenhum.
+           Antes havia aqui um mesOffsetInicial que rolava a primeira parcela pro
+           mês seguinte quando a compra era depois do fechamento. Só que quem
+           decide em qual fatura um lançamento cai é o getMesFatura(), e ELE já
+           faz exatamente esse mesmo deslocamento na hora de exibir. O resultado
+           era o empurrão aplicado duas vezes: uma compra parcelada em 20/08 num
+           cartão que fecha dia 3 virava parcela com data 20/09 e caía na fatura
+           de OUTUBRO — a fatura que vence 10/10 mostrando uma compra de agosto.
+           Compra à vista no crédito nunca teve esse problema, porque só passa
+           pelo getMesFatura(). Agora o parcelado segue a mesma regra, uma vez só.
+
+           De quebra, a data guardada volta a ser a data real da compra, que é o
+           que a lista do mês e os gráficos por data da compra mostram. */
         for (let n = 0; n < numParcelas; n++) {
-          const d = new Date(dataBase + 'T12:00:00');
-          d.setMonth(d.getMonth() + n + mesOffsetInicial);
-          const dataParcela = d.toISOString().slice(0, 10);
+          const dataParcela = somarMesesFiel(dataBase, n);
           lancamentos.push({
             id: novoIdLancamento(),
             tipo: 'despesa',
@@ -7660,12 +7734,24 @@
     }
 
     // Compras no crédito feitas DEPOIS do fechamento (dia 3) caem na fatura do mês seguinte
+    /* Em qual fatura esta compra cai. Comprou depois do fechamento? Entra na
+       fatura do mês seguinte.
+
+       O mês é somado no dia 1º de propósito. Antes era um setMonth() sobre a
+       data da compra, e aí "31 de janeiro + 1 mês" virava 3 de março, porque
+       31 de fevereiro não existe — uma compra do último dia de janeiro pulava a
+       fatura de fevereiro inteira e caía na de março. Começando do dia 1º não
+       existe transbordo: só o mês interessa aqui, o dia já cumpriu o papel dele
+       na comparação com o fechamento. */
     function getMesFatura(dataStr, formaModo, conta) {
-      const d = new Date(dataStr + 'T12:00:00');
-      if (eCredito(formaModo) && d.getDate() > diasDoCartao(conta).fecha) {
-        d.setMonth(d.getMonth() + 1);
+      const ano = parseInt(dataStr.slice(0, 4), 10);
+      const mes = parseInt(dataStr.slice(5, 7), 10) - 1;
+      const dia = parseInt(dataStr.slice(8, 10), 10);
+      if (eCredito(formaModo) && dia > diasDoCartao(conta).fecha) {
+        const d = new Date(ano, mes + 1, 1);
+        return { mes: d.getMonth(), ano: d.getFullYear() };
       }
-      return { mes: d.getMonth(), ano: d.getFullYear() };
+      return { mes, ano };
     }
 
     /* CAIXA DE PERGUNTAS (sem IA — reconhece um conjunto de perguntas comuns
@@ -8345,7 +8431,8 @@
       const descrever = (c, junto) => {
         const sep = junto ? ' · ' : '    ';
         const dias = diasDoCartao(c.nome);
-        if (!mesCorrente) return `fecha dia ${dias.fecha}${sep}vence dia ${dias.vence}`;
+        const venceTexto = 'vence dia ' + dias.vence + textoMesDoVencimento(c.nome, mes, ano);
+        if (!mesCorrente) return `fecha dia ${dias.fecha}${sep}${venceTexto}`;
         let faltam;
         if (hDia <= dias.fecha) {
           faltam = dias.fecha - hDia;
@@ -8354,7 +8441,7 @@
           faltam = diasNoMes - hDia + dias.fecha;
         }
         const frase = faltam === 0 ? 'fecha hoje' : (faltam === 1 ? 'fecha amanhã' : `fecha em ${faltam} dias`);
-        return `${frase}${sep}vence dia ${dias.vence}`;
+        return `${frase}${sep}${venceTexto}`;
       };
 
       // Cartões com o mesmo fechamento repetiam a mesma frase com nome na frente
@@ -9768,6 +9855,10 @@
                 `;
                 linha.querySelector('[data-acao="mov"]').onclick = (ev) => { ev.stopPropagation(); abrirReceberEmprestimo([c.chave]); };
                 linha.querySelector('[data-acao="quitar"]').onclick = (ev) => { ev.stopPropagation(); quitarSemMovimentacao([c.chave]); };
+                // Tocar na linha (fora dos botões) abre a ficha do lançamento
+                linha.style.cursor = 'pointer';
+                linha.title = 'Ver os detalhes deste lançamento';
+                linha.onclick = () => abrirDetalheCobranca(c.chave);
                 listaEl.appendChild(linha);
               });
 
@@ -9992,7 +10083,7 @@
             <div style="font-size:11px;color:${pago ? 'var(--verde)' : 'var(--texto-fraco)'};">
               ${pago
                 ? '✓ paga em ' + pago.data.split('-').reverse().join('/') + ' · ' + fmtOculto(parseVal(pago.valorPago))
-                : 'vence dia ' + diasDoCartao(c.nome).vence + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')}
+                : 'vence dia ' + diasDoCartao(c.nome).vence + textoMesDoVencimento(c.nome, mes, ano) + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
@@ -10366,6 +10457,103 @@
       return lancamentos
         .reduce((acc, l) => acc.concat(cobrancasDoLancamento(l)), [])
         .filter(c => chaves.includes(c.chave) && !c.quitado);
+    }
+
+    /* DETALHE DA COBRANÇA
+       O card de empréstimos mostra o mínimo pra decidir: nome, prazo e valor.
+       Mas quando bate a dúvida — "que gasto era esse mesmo?", "isso foi no
+       crédito ou no Pix?", "eu tinha anotado alguma coisa?" — a resposta estava
+       só na aba Lançamentos, procurando a linha no meio do mês. Tocar na linha
+       abre a ficha inteira aqui, e as ações que já existiam na linha vêm junto
+       pra não ter que fechar e voltar. */
+    let cobrancaDetalhada = null;
+
+    /* Aqui a forma vem por extenso, separando à vista de parcelado. O
+       rotuloDaForma() junta os dois num "Crédito" só de propósito, porque lá ele
+       serve pra filtrar "quanto foi no cartão" — numa ficha de detalhe, essa
+       mesma economia esconderia justamente o que você abriu pra descobrir. */
+    function formaPorExtenso(formaModo) {
+      const achado = FORMAS_PAGAMENTO.find(f => f.valor === formaModo);
+      return achado ? achado.rotulo : (formaModo || '');
+    }
+
+    function linhaDetalhe(rotulo, valor, cor) {
+      if (!valor) return '';
+      return `<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--borda-fraca);font-size:12.5px;">
+          <span style="color:var(--texto-fraco);flex-shrink:0;">${rotulo}</span>
+          <span style="color:${cor || 'var(--texto-forte)'};text-align:right;">${valor}</span>
+        </div>`;
+    }
+
+    function abrirDetalheCobranca(chave) {
+      const c = cobrancasPorChave([chave])[0];
+      if (!c) return;
+      cobrancaDetalhada = chave;
+      const l = c.lanc;
+      const hoje = obterDataBrasilia();
+      const dia = iso => (iso || '').split('-').reverse().join('/');
+      const atrasado = c.vence && c.vence < hoje;
+      const indireto = ehEmprestimoIndireto(l);
+      const parcela = rotuloParcela(l);
+      const totalLanc = parseVal(l.valor);
+
+      document.getElementById('tituloDetalheCobranca').textContent = descricaoBaseCompra(l.descricao);
+
+      /* O valor grande é a parte DESTA pessoa, que é o que a linha mostrava.
+         Num rateio ele é menor que o lançamento inteiro, e sem dizer isso o
+         número aqui pareceria contradizer a aba Lançamentos. */
+      const ehParte = Math.abs(totalLanc - c.valor) > 0.005;
+
+      document.getElementById('corpoDetalheCobranca').innerHTML = `
+        <div style="margin-bottom:10px;">
+          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${c.devo ? 'Você deve a ' : 'Deve a você'}${c.devo ? c.nome : ''}</span>
+          <h3 style="color:${indireto ? 'var(--azul)' : (c.devo ? 'var(--vermelho)' : 'var(--verde)')};font-size:23px;">${fmtOculto(c.valor)}</h3>
+          ${ehParte ? `<div style="font-size:11px;color:var(--texto-tenue);">a parte ${c.devo ? 'que cabe a você' : 'de ' + c.nome} num lançamento de ${fmtOculto(totalLanc)}</div>` : ''}
+        </div>
+        ${linhaDetalhe(c.devo ? 'Com quem' : 'Quem deve', c.nome)}
+        ${linhaDetalhe('Lançado em', dia(l.data))}
+        ${linhaDetalhe(c.devo ? 'Caiu em' : 'Saiu de', indireto && !l.conta ? 'ninguém — pagaram por você' : l.conta)}
+        ${linhaDetalhe('Como foi pago', indireto && !l.conta ? '—' : formaPorExtenso(l.formaModo))}
+        ${linhaDetalhe('Categoria', l.categoria)}
+        ${linhaDetalhe('Parcela', parcela)}
+        ${linhaDetalhe('Grupo', l.grupoViagemNome)}
+        ${linhaDetalhe('Gasto fixo', l.fixoId ? 'sim — se repete todo mês' : '')}
+        ${linhaDetalhe(atrasado ? 'Venceu' : 'Vence', dia(c.vence), atrasado ? 'var(--vermelho)' : '')}
+        ${linhaDetalhe('Adiada', c.adiamentos ? c.adiamentos + (c.adiamentos === 1 ? ' vez' : ' vezes') : '', 'var(--amarelo)')}
+        ${linhaDetalhe('Cobrado em', dia(c.ultimaCobranca))}
+        ${linhaDetalhe('Alinhado em', dia(c.alinhadoEm), 'var(--verde)')}
+        ${indireto ? `<div style="font-size:11.5px;color:var(--azul);margin-top:10px;line-height:1.45;">Empréstimo indireto: essa pessoa pagou por você, então nada saiu das suas contas — por isso este valor não entra no seu saldo.</div>` : ''}
+        ${l.observacao ? `<div class="observacao-mini" style="margin-top:10px;">${l.observacao}</div>` : ''}
+      `;
+
+      document.getElementById('btnDetalheMov').textContent = c.devo ? 'Paguei' : 'Recebi';
+      document.getElementById('btnDetalheParcelas').classList.toggle('escondido', !l.grupoId);
+      document.getElementById('modalDetalheCobranca').classList.remove('escondido');
+    }
+
+    function detalheRegistrarMovimentacao() {
+      const chave = cobrancaDetalhada;
+      fecharModal('modalDetalheCobranca');
+      if (chave) abrirReceberEmprestimo([chave]);
+    }
+
+    function detalheQuitar() {
+      const chave = cobrancaDetalhada;
+      fecharModal('modalDetalheCobranca');
+      if (chave) quitarSemMovimentacao([chave]);
+    }
+
+    function detalheEditarLancamento() {
+      const c = cobrancaDetalhada ? cobrancasPorChave([cobrancaDetalhada])[0] : null;
+      fecharModal('modalDetalheCobranca');
+      if (c) abrirEdicaoLancamentoGlobal(c.lanc.id);
+    }
+
+    function detalheVerParcelas() {
+      const c = cobrancaDetalhada ? cobrancasPorChave([cobrancaDetalhada])[0] : null;
+      if (!c || !c.lanc.grupoId) return;
+      fecharModal('modalDetalheCobranca');
+      abrirGerenciarParcelasPorGrupoId(c.lanc.grupoId);
     }
 
     /* QUITAR SEM MOVIMENTAÇÃO
@@ -10900,6 +11088,19 @@
       const d = new Date(dataStr + 'T12:00:00');
       d.setDate(d.getDate() + n);
       return d.toISOString().slice(0, 10);
+    }
+
+    /* Soma meses guardando o dia da compra, e encurta só quando o mês é curto:
+       31/01 vira 28/02 e volta a 31/03. O setMonth() cru faz o contrário —
+       31/01 + 1 mês vira 03/03, porque "31 de fevereiro" transborda. Numa
+       compra parcelada isso pulava fevereiro inteiro e jogava a parcela na
+       fatura errada. O somarMeses() logo abaixo corta todo dia acima de 28, o
+       que serve pro prazo de uma cobrança mas apagaria a data real da compra. */
+    function somarMesesFiel(dataStr, n) {
+      const [ano, mes, dia] = dataStr.split('-').map(Number);
+      const ultimoDia = new Date(ano, mes - 1 + n + 1, 0).getDate();
+      const d = new Date(ano, mes - 1 + n, Math.min(dia, ultimoDia), 12, 0, 0);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
 
     function somarMeses(dataStr, n) {
@@ -13258,7 +13459,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.17-4';
+    const APP_VERSION = '2026.09.18-1';
 
     // Inicialização
     carregarLocalStorage();

@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.17 · Leia em 18 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.18 · Leia em 18 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -216,6 +216,33 @@
       <tr><td><strong>Crédito à vista</strong><br><strong>Crédito parcelado</strong></td><td>Não mexe no saldo. Entra na <strong>fatura</strong> do cartão e só sai quando a fatura for paga.</td></tr>
       <tr><td><strong>Boleto a pagar</strong><br><span style="color:#6b7480;">gasto fixo fora do cartão</span></td><td>Não mexe no saldo enquanto você não der baixa. Aparece como <strong>a pagar</strong> e vira saída no dia e na conta que você informar (item 8).</td></tr>
     </table>
+    <div class="nota">
+      <strong>Em qual fatura cada compra cai.</strong> A regra é uma só, e vale igual pra compra
+      à vista no crédito e pra parcelada: <strong>comprou até o dia do fechamento, entra na fatura
+      daquele mês; comprou depois, entra na do mês seguinte.</strong> Num cartão que fecha dia 3,
+      a compra de 02/08 vai pra fatura de agosto e a de 20/08 vai pra de setembro. Numa compra
+      parcelada, a 1ª parcela segue essa mesma regra e cada parcela seguinte cai na fatura do mês
+      seguinte, sem buraco.
+      <br><br>Cada cartão tem os dias dele, em <strong>Ajustes → Contas</strong>. Quando o dia do
+      vencimento é <em>menor</em> que o do fechamento — o caso do cartão que fecha dia 25 e vence
+      dia 5 —, o pagamento cai no mês seguinte, e a legenda diz qual: <em>“fecha dia 25 · vence
+      dia 5 de outubro”</em>.
+    </div>
+    <div class="nota atencao">
+      <strong>Se você usa o app desde antes de setembro de 2026, confira suas compras parceladas.</strong>
+      Até a versão <strong>2026.09.18-1</strong> havia um defeito: numa compra parcelada feita
+      <em>depois</em> do fechamento, o app aplicava o empurrão do fechamento <strong>duas vezes</strong>
+      — uma ao gravar e outra ao exibir. A compra de agosto acabava caindo na fatura que vence em
+      outubro, uma fatura atrasada em relação ao banco. Compra à vista no crédito nunca teve esse
+      problema.
+      <br><br>O defeito está corrigido pras compras novas. As antigas continuam com a data que
+      foi gravada, e o app <strong>não</strong> corrige sozinho: uma parcela empurrada por engano
+      pro dia 20/09 é idêntica a uma compra feita de verdade em 20/09, e um corretor automático
+      acertaria umas e estragaria outras. Quem sabe qual é qual é você.
+      <br><br>Pra arrumar: abra a compra, toque em <strong>Gerenciar parcelas</strong> e use
+      <strong>Voltar 1 mês a compra toda</strong>. Ele mostra as datas novas e pergunta antes de
+      mexer, e vale só pra aquela compra.
+    </div>
     <div class="tela"><img src="img/resumo.png" alt="Resumo do mês na aba Faturas"></div>
     <ul>
       <li><strong>Saldo atual</strong> — quanto você tem de verdade, somado em todas as contas desde o início do histórico até o fim do mês que você está vendo. Não zera na virada do mês: sem lançamento novo, continua igual ao saldo final do mês anterior. Ao navegar pra outro mês o rótulo vira <strong>“Saldo no fim do mês”</strong>, porque ali o número é o retrato daquele fechamento, não o seu saldo de hoje.</li>
@@ -456,6 +483,24 @@
       <li><strong>Lembrar</strong> (amarelo) — leve, com o prazo em dias.</li>
       <li><strong>Combinar com</strong> (verde) — neutro, para alinhar antes da hora.</li>
     </ul>
+    <div class="nota">
+      <strong>Toque na linha da cobrança pra ver a ficha inteira.</strong> A lista mostra só o
+      necessário pra decidir — nome, prazo e valor. Quando bater a dúvida
+      (<em>“que gasto era esse mesmo?”</em>, <em>“isso foi no crédito ou no Pix?”</em>,
+      <em>“eu tinha anotado alguma coisa?”</em>), toque na linha: abre a ficha do lançamento
+      com o dia em que foi lançado, a conta, a forma de pagamento, a categoria, o grupo de
+      viagem, o prazo, quantas vezes foi adiada, quando você cobrou pela última vez e a sua
+      observação.
+      <br><br>Num rachão, o valor grande é <strong>a parte daquela pessoa</strong>, e logo
+      abaixo ele diz de que lançamento ela saiu — assim o número não parece brigar com o que
+      a aba Lançamentos mostra.
+      <br><br>Os botões continuam à mão lá dentro: <em>Recebi/Paguei</em>, <em>Quitar</em>,
+      <em>Editar lançamento</em> e, quando é compra parcelada, <em>Ver as parcelas</em>. Tocar
+      nos botões da linha continua fazendo direto o que eles sempre fizeram — a ficha só abre
+      quando você toca no resto da linha.
+    </div>
+    <div class="tela metade"><img src="img/detalhe_cobranca.png" alt="Ficha de uma cobrança"></div>
+    <div class="legenda">A ficha do lançamento por trás da cobrança, sem sair da aba.</div>
     <div class="nota">
       <strong>Quitar sem movimentar nada.</strong> Ao lado de <em>Recebi</em> / <em>Paguei</em>
       tem o botão <strong>Quitar</strong>. Os primeiros criam um lançamento de verdade (o dinheiro
