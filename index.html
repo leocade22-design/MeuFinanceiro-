@@ -5387,6 +5387,9 @@
     // Qual campo a calculadora está preenchendo agora
     let campoDaCalculadora = null;
 
+    // Qual lançamento a ficha de detalhes está mostrando
+    let lancamentoDetalhado = null;
+
     function abrirCalculadora(campo) {
       const alvo = (typeof campo === 'string' ? document.getElementById(campo) : campo)
                    || document.getElementById('valor');
@@ -10103,13 +10106,25 @@
           const det = document.createElement('div');
           det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid var(--borda);';
           det.innerHTML = compras.map(l => `
-            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:default;">
+            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:pointer;"
+                 data-detalhe="${l.id}" title="Ver os detalhes deste lançamento">
               <div class="item-info">
                 <strong style="font-size:13px;">${l.descricao}</strong>
                 <div style="font-size:10.5px;color:var(--texto-fraco);">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}</div>
               </div>
               <span class="valor-despesa" style="font-size:13px;">${fmtOculto(parseVal(l.valor))}</span>
             </div>`).join('');
+          /* Tocar na compra abre a ficha dela. O extrato é irmão da linha do
+             cartão, não filho, então o toque já não chegaria lá pra fechar o
+             extrato — o stopPropagation fica como cinto de segurança caso o
+             dia de amanhã aninhe os dois. */
+          det.querySelectorAll('[data-detalhe]').forEach(el => {
+            el.onclick = (ev) => {
+              ev.stopPropagation();
+              const alvo = lancamentos.find(x => String(x.id) === el.dataset.detalhe);
+              if (alvo) abrirDetalheLancamento(alvo, null, null);
+            };
+          });
           box.appendChild(det);
         }
       });
@@ -10488,45 +10503,76 @@
     function abrirDetalheCobranca(chave) {
       const c = cobrancasPorChave([chave])[0];
       if (!c) return;
-      cobrancaDetalhada = chave;
-      const l = c.lanc;
+      abrirDetalheLancamento(c.lanc, c, chave);
+    }
+
+    /* A MESMA FICHA, VINDA DE DOIS LUGARES
+       Do card de Empréstimos ela chega com uma cobrança em mãos, e fala de
+       dívida: a parte daquela pessoa, o prazo, os carimbos de cobrança. Do
+       extrato da fatura ela chega só com o lançamento, e a pergunta é outra —
+       "que compra é essa e em que fatura ela caiu?". Uma função só, porque é a
+       mesma ficha do mesmo lançamento; o que muda é o que faz sentido mostrar. */
+    function abrirDetalheLancamento(l, c, chave) {
+      if (!l) return;
+      cobrancaDetalhada = c ? chave : null;
+      lancamentoDetalhado = l.id;
       const hoje = obterDataBrasilia();
       const dia = iso => (iso || '').split('-').reverse().join('/');
-      const atrasado = c.vence && c.vence < hoje;
+      const atrasado = c && c.vence && c.vence < hoje;
       const indireto = ehEmprestimoIndireto(l);
-      const parcela = rotuloParcela(l);
       const totalLanc = parseVal(l.valor);
+      const credito = eCredito(l.formaModo);
+      const fatura = credito && l.conta ? getMesFatura(l.data, l.formaModo, l.conta) : null;
+      const eReceita = l.tipo === 'receita';
 
       document.getElementById('tituloDetalheCobranca').textContent = descricaoBaseCompra(l.descricao);
 
-      /* O valor grande é a parte DESTA pessoa, que é o que a linha mostrava.
-         Num rateio ele é menor que o lançamento inteiro, e sem dizer isso o
-         número aqui pareceria contradizer a aba Lançamentos. */
-      const ehParte = Math.abs(totalLanc - c.valor) > 0.005;
+      /* Com cobrança, o valor grande é a parte DAQUELA pessoa, que é o que a
+         linha mostrava. Num rateio ele é menor que o lançamento inteiro, e sem
+         dizer isso o número aqui pareceria contradizer a aba Lançamentos. */
+      const valorTopo = c ? c.valor : totalLanc;
+      const ehParte = c && Math.abs(totalLanc - c.valor) > 0.005;
+      const rotuloTopo = c
+        ? (c.devo ? 'Você deve a ' + c.nome : 'Deve a você')
+        : (eReceita ? 'Entrou' : credito ? 'Foi pro cartão' : 'Saiu da conta');
+      const corTopo = c
+        ? (indireto ? 'var(--azul)' : (c.devo ? 'var(--vermelho)' : 'var(--verde)'))
+        : (eReceita ? 'var(--verde)' : 'var(--vermelho)');
 
       document.getElementById('corpoDetalheCobranca').innerHTML = `
         <div style="margin-bottom:10px;">
-          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${c.devo ? 'Você deve a ' : 'Deve a você'}${c.devo ? c.nome : ''}</span>
-          <h3 style="color:${indireto ? 'var(--azul)' : (c.devo ? 'var(--vermelho)' : 'var(--verde)')};font-size:23px;">${fmtOculto(c.valor)}</h3>
+          <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${rotuloTopo}</span>
+          <h3 style="color:${corTopo};font-size:23px;">${fmtOculto(valorTopo)}</h3>
           ${ehParte ? `<div style="font-size:11px;color:var(--texto-tenue);">a parte ${c.devo ? 'que cabe a você' : 'de ' + c.nome} num lançamento de ${fmtOculto(totalLanc)}</div>` : ''}
         </div>
-        ${linhaDetalhe(c.devo ? 'Com quem' : 'Quem deve', c.nome)}
-        ${linhaDetalhe('Lançado em', dia(l.data))}
-        ${linhaDetalhe(c.devo ? 'Caiu em' : 'Saiu de', indireto && !l.conta ? 'ninguém — pagaram por você' : l.conta)}
+        ${c ? linhaDetalhe(c.devo ? 'Com quem' : 'Quem deve', c.nome) : ''}
+        ${linhaDetalhe(eReceita ? 'Recebido em' : 'Comprado em', dia(l.data))}
+        ${linhaDetalhe(
+            (c && c.devo) || eReceita ? 'Caiu em'
+              : credito ? 'Cartão'       // no crédito nada saiu ainda: dizer "saiu de" brigaria com a nota lá embaixo
+              : 'Saiu de',
+            indireto && !l.conta ? 'ninguém — pagaram por você' : l.conta)}
         ${linhaDetalhe('Como foi pago', indireto && !l.conta ? '—' : formaPorExtenso(l.formaModo))}
+        ${fatura ? linhaDetalhe('Cai na fatura de', NOMES_MESES[fatura.mes] + '/' + String(fatura.ano).slice(2), 'var(--amarelo)') : ''}
         ${linhaDetalhe('Categoria', l.categoria)}
-        ${linhaDetalhe('Parcela', parcela)}
+        ${linhaDetalhe('Parcela', rotuloParcela(l))}
         ${linhaDetalhe('Grupo', l.grupoViagemNome)}
         ${linhaDetalhe('Gasto fixo', l.fixoId ? 'sim — se repete todo mês' : '')}
-        ${linhaDetalhe(atrasado ? 'Venceu' : 'Vence', dia(c.vence), atrasado ? 'var(--vermelho)' : '')}
-        ${linhaDetalhe('Adiada', c.adiamentos ? c.adiamentos + (c.adiamentos === 1 ? ' vez' : ' vezes') : '', 'var(--amarelo)')}
-        ${linhaDetalhe('Cobrado em', dia(c.ultimaCobranca))}
-        ${linhaDetalhe('Alinhado em', dia(c.alinhadoEm), 'var(--verde)')}
+        ${!c && l.emprestimoPara ? linhaDetalhe('Emprestado a', l.emprestimoPara, 'var(--azul)') : ''}
+        ${c ? linhaDetalhe(atrasado ? 'Venceu' : 'Vence', dia(c.vence), atrasado ? 'var(--vermelho)' : '') : ''}
+        ${c ? linhaDetalhe('Adiada', c.adiamentos ? c.adiamentos + (c.adiamentos === 1 ? ' vez' : ' vezes') : '', 'var(--amarelo)') : ''}
+        ${c ? linhaDetalhe('Cobrado em', dia(c.ultimaCobranca)) : ''}
+        ${c ? linhaDetalhe('Alinhado em', dia(c.alinhadoEm), 'var(--verde)') : ''}
         ${indireto ? `<div style="font-size:11.5px;color:var(--azul);margin-top:10px;line-height:1.45;">Empréstimo indireto: essa pessoa pagou por você, então nada saiu das suas contas — por isso este valor não entra no seu saldo.</div>` : ''}
+        ${!c && fatura ? `<div style="font-size:11.5px;color:var(--texto-tenue);margin-top:10px;line-height:1.45;">Compra no crédito não sai da conta na data da compra: entra nessa fatura e o dinheiro só sai quando ela for paga.</div>` : ''}
         ${l.observacao ? `<div class="observacao-mini" style="margin-top:10px;">${l.observacao}</div>` : ''}
       `;
 
-      document.getElementById('btnDetalheMov').textContent = c.devo ? 'Paguei' : 'Recebi';
+      // Recebi/Paguei e Quitar são de dívida: fora do card de empréstimos não
+      // existe cobrança pra dar baixa, então eles nem aparecem.
+      document.getElementById('btnDetalheMov').textContent = c && c.devo ? 'Paguei' : 'Recebi';
+      document.getElementById('btnDetalheMov').classList.toggle('escondido', !c);
+      document.getElementById('btnDetalheQuitar').classList.toggle('escondido', !c);
       document.getElementById('btnDetalheParcelas').classList.toggle('escondido', !l.grupoId);
       document.getElementById('modalDetalheCobranca').classList.remove('escondido');
     }
@@ -10543,17 +10589,23 @@
       if (chave) quitarSemMovimentacao([chave]);
     }
 
+    // Editar e Ver parcelas valem pros dois caminhos, porque tratam do
+    // lançamento em si — e ele existe com ou sem cobrança em cima.
+    function lancamentoDaFicha() {
+      return lancamentos.find(l => l.id === lancamentoDetalhado) || null;
+    }
+
     function detalheEditarLancamento() {
-      const c = cobrancaDetalhada ? cobrancasPorChave([cobrancaDetalhada])[0] : null;
+      const l = lancamentoDaFicha();
       fecharModal('modalDetalheCobranca');
-      if (c) abrirEdicaoLancamentoGlobal(c.lanc.id);
+      if (l) abrirEdicaoLancamentoGlobal(l.id);
     }
 
     function detalheVerParcelas() {
-      const c = cobrancaDetalhada ? cobrancasPorChave([cobrancaDetalhada])[0] : null;
-      if (!c || !c.lanc.grupoId) return;
+      const l = lancamentoDaFicha();
+      if (!l || !l.grupoId) return;
       fecharModal('modalDetalheCobranca');
-      abrirGerenciarParcelasPorGrupoId(c.lanc.grupoId);
+      abrirGerenciarParcelasPorGrupoId(l.grupoId);
     }
 
     /* QUITAR SEM MOVIMENTAÇÃO
@@ -13459,7 +13511,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.18-1';
+    const APP_VERSION = '2026.09.18-2';
 
     // Inicialização
     carregarLocalStorage();

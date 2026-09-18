@@ -272,6 +272,23 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(500);
   await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
 
+  // 20b) a ficha de uma compra da fatura
+  await abrir('Faturas');
+  await secao('pagamentoFatura', true);
+  await page.evaluate(()=>{
+    const cartao = contas.find(c => c.temCredito);
+    faturasExpandidas = new Set([cartao.nome]);
+    renderizarPagamentoFaturas();
+    const linha = [...document.querySelectorAll('#listaPagamentoFatura [data-detalhe]')]
+      .find(x => /Notebook|Airbnb|Gasolina/.test(x.innerText)) 
+      || document.querySelector('#listaPagamentoFatura [data-detalhe]');
+    if (linha) linha.click();
+  });
+  await page.waitForTimeout(450);
+  await tiro('detalhe_fatura', '#modalDetalheCobranca .modal-content');
+  await page.evaluate(()=>{ fecharModal('modalDetalheCobranca'); });
+  await secao('pagamentoFatura', false);
+
   // 21) os dois cards de gráfico que ganharam o seletor Barras/Colunas
   await abrir('Gráficos');
   await secao('evolucaoMensal', true);
