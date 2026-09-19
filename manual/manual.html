@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.19 · Leia em 19 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.19-2 · Leia em 20 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -120,6 +120,15 @@
       <tr><td><strong>Investim.</strong></td><td>Anotar aplicações, acompanhar o patrimônio e controlar consórcios.</td></tr>
       <tr><td><strong>Ajustes</strong></td><td>Contas, categorias, ordem dos cards, sons e backup.</td></tr>
     </table>
+    <div class="nota">
+      <strong>A aba acompanha o dedo.</strong> Arrastando pro lado, a aba atual sai e a próxima
+      entra colada nela, na medida em que você puxa — dá pra <strong>espiar</strong> o que vem
+      e voltar atrás no meio do caminho: solte antes de um terço da tela e tudo volta pro lugar.
+      Passando disso, ou com um peteleco rápido, a troca completa sozinha. Depois da última aba
+      o gesto volta pra primeira.
+      <br><br>Antes a tela só trocava quando o dedo saía do vidro: você arrastava no escuro e a
+      página aparecia de uma vez.
+    </div>
   </div>
 </section>
 
@@ -251,6 +260,14 @@
       <li><strong>Fatura em aberto</strong> — o que está no cartão e ainda vai sair. Toque para ir direto ao pagamento.</li>
       <li><strong>Boletos a pagar</strong> — os gastos recorrentes fora do cartão deste mês que ainda dependem de você. Toque para ver a lista.</li>
     </ul>
+    <div class="nota">
+      <strong>Pra trocar de mês, arraste dentro deste card.</strong> Ele acompanha o dedo:
+      vai saindo conforme você puxa e, passando de um terço da tela (ou com um peteleco rápido),
+      o mês troca e o novo entra pelo outro lado. Solte antes disso e o card volta pro lugar
+      sem mudar nada. O botão <em>mês atual</em>, no canto, traz você de volta de uma vez.
+      <br><br>O gesto aqui muda o <strong>mês</strong>, não a aba — arrastar neste card nunca
+      leva pra Gráficos.
+    </div>
     <p>Toque em <strong>Saldo atual</strong> para abrir o detalhamento:</p>
     <div class="tela metade"><img src="img/popup_saldo.png" alt="Popup do saldo atual"></div>
     <div class="legenda">Em cima, o saldo de cada conta até agora. Embaixo, o que se moveu só neste mês — e o cartão, que ainda não passou.</div>
@@ -320,10 +337,19 @@
       qual compra faltou registrar, em vez de ficar caçando centavos.
     </div>
     <p>Depois de marcada como paga, aquele valor entra em <strong>Saiu da conta</strong> e o saldo do mês se acerta.</p>
-    <h3>As três faturas</h3>
-    <p>No topo do card ficam a fatura <strong>anterior</strong>, a <strong>atual</strong> e a
-       <strong>próxima em formação</strong> — com o quanto já está indo pra ela. Toque em qualquer uma
-       pra pular direto pro mês dela.</p>
+    <h3>O trilho de meses</h3>
+    <p>No topo do card corre um trilho com <strong>treze meses</strong> — seis pra trás, o que você
+       está vendo no meio, e seis pra frente. Arraste pros lados como quem rola uma lista: ele anda
+       com a inércia do dedo e encaixa no mês mais perto. Toque num mês pra pular direto pra fatura
+       dele — e a página <strong>não sai do lugar</strong>, você continua olhando o mesmo card.</p>
+    <p>Cada mês diz em que pé está: <strong>paga</strong> (verde), <strong>em aberto</strong>
+       (vermelho), <strong>sem fatura</strong> quando não houve compra, e
+       <strong>em formação</strong> pros meses que ainda nem fecharam.
+       Num mês sem fatura o trilho continua ali — é por ele que você volta.</p>
+    <div class="nota">
+      Antes eram três meses fixos: o anterior, o atual e o próximo. Pra chegar em abril você
+      tinha que andar mês a mês pelo card de cima.
+    </div>
 
     <h3>Ver o que está na fatura</h3>
     <p>Toque no nome do cartão e a fatura abre, listando as compras que formam aquele valor,
@@ -798,6 +824,17 @@
       <em>R$ 394,78 desde mar/26 · R$ 612,00 desde set/26</em>.
     </div>
     <div class="nota">
+      <strong>O card do topo não fecha — e agora diz mais do que um número.</strong> Igual ao
+      <em>Resumo</em> da aba de Faturas, ele é o retrato da aba: fica sempre aberto, no lugar.
+      À esquerda, o <strong>total aportado</strong> e quanto isso vale hoje; à direita, um
+      <strong>resumo por tipo</strong> — Tesouro, CDB, poupança, cada um com o quanto vale.
+      Tocando num deles você desce direto pro card daquele tipo (e ele abre, se estiver fechado).
+      Embaixo, o <strong>+ Novo aporte</strong>.
+      <br><br>Antes esse card recolhia, e recolhido a aba abria sem nenhum número à vista.
+    </div>
+    <div class="tela metade"><img src="img/investimentos_resumo.png" alt="Card fixo no topo da aba Investim., com o total e o resumo por tipo"></div>
+    <div class="legenda">O total à esquerda, o resumo de cada tipo à direita. Toque num tipo pra ir até o card dele.</div>
+    <div class="nota">
       <strong>Cada tipo de investimento é um card.</strong> Tesouro, poupança, fundos — cada grupo
       tem o seu, com quanto vale hoje, o rendimento desde o aporte, a lista dos aportes e um botão
       <strong>+ Novo aporte</strong> que já entra com o grupo escolhido. Criar, renomear, excluir e
@@ -834,11 +871,15 @@
     </div>
     <div class="nota">
       <strong>Com vários grupos a aba fica comprida — dá pra fechar o que não está olhando.</strong>
-      Todos os cards da aba (Investimentos, cada grupo de investimento, Consórcios
-      e os encerrados) têm uma seta no título: toque nela pra recolher. Fechado, o card mostra um
-      resumo de uma linha — o total aportado, quanto o grupo vale hoje, quantos consórcios ativos —
-      pra você não perder o número de vista. O <strong>olho</strong> ao lado da seta esconde os
-      valores.
+      Os cards de baixo (cada grupo de investimento, Consórcios e os encerrados) têm uma seta
+      no título: toque nela pra recolher. Fechado, o card mostra um
+      resumo de uma linha — quanto o grupo vale hoje, quantos consórcios ativos —
+      pra você não perder o número de vista. O card do topo é o único que não fecha.
+      O <strong>olho</strong>, no cabeçalho dele, esconde os valores da aba inteira — incluindo os
+      do consórcio, que antes continuavam à mostra quando você tocava no olho por esta aba.
+      <br><br>E a ordem desses cards é sua: <strong>Ajustes → Ordem dos cards — Investimentos</strong>.
+      Quem não tem consórcio joga o card pro fim; quem não tem aporte faz o contrário. O card do
+      topo fica sempre no topo.
       <br><br>Cada consórcio também fecha sozinho: toque na linha do nome e sobra só nome,
       valor da parcela, progresso e o status. Toque de novo pra abrir. O app lembra o que você
       deixou aberto ou fechado, inclusive depois de fechar e reabrir.
@@ -876,7 +917,7 @@
       <li><strong>Saldo inicial</strong> — dentro de cada conta. É quanto ela já tinha quando você começou a usar o app. Entra no saldo e em mais lugar nenhum: não vira receita, não aparece em “recebido”, nos gráficos nem nas perguntas. Pode ser negativo.</li>
       <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número.</li>
       <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.</li>
-      <li><strong>Ordem dos cards</strong> — arraste pelas listrinhas para deixar no topo o que você olha primeiro.</li>
+      <li><strong>Ordem dos cards</strong> — três listas, uma pra cada aba que tem mais de um card: <em>Faturas</em>, <em>Gráficos</em> e <em>Investimentos</em>. Arraste pelas listrinhas para deixar no topo o que você olha primeiro. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro. Card que não está aparecendo agora — <em>Consórcios encerrados</em> sem nenhum encerrado, por exemplo — também não entra na lista, e volta no fim da aba quando reaparecer.</li>
       <li><strong>Contatos de cobrança</strong> — a agenda de quem você empresta. Cadastre pelo <em>+ Novo contato</em> (o telefone é opcional: sem ele a pessoa existe igual, só não dá pra abrir o WhatsApp) e depois é só escolher o nome na hora do lançamento. Quem você já emprestou antes aparece aqui sozinho, vindo do histórico.</li>
       <li><strong>Travar o zoom</strong> — dentro de <em>Aparência</em>. No iPhone um toque duplo sem querer dá zoom e, com o app instalado na tela inicial, não existe barra de endereço pra desfazer: a tela fica torta até você ajustar com os dedos. Ligando isso, a tela para de dar zoom. Vale só naquele aparelho, e vem desligado — quem usa o zoom pra enxergar melhor não perde nada.</li>
       <li><strong>Aparência</strong> — oito temas: Escuro, Claro, Índigo (escuro azulado), Sépia (fundo quente), Floresta (verde à noite), Papel (cinza-bege claro), Rosa (suave e claro) e Violeta (roxo-azulado). Vale só neste aparelho: não entra no backup, então quem receber seus dados continua com o tema dele.</li>

@@ -139,6 +139,12 @@
       --acento:#9d6ce8; --acento-claro:#b78ff0; --acento-palido:#dcc7f5;
     }
 
+    /* O arraste entre abas empurra a aba atual pra fora da tela. Sem isto o
+       navegador entenderia esse deslocamento como conteúdo novo e abriria uma
+       barra de rolagem horizontal no meio do gesto. Fica no html (e não no
+       body) de propósito: ali o navegador repassa pro viewport sem transformar
+       o body num container de rolagem, o que bagunçaria o scroll no iPhone. */
+    html { overflow-x: hidden; }
     body { background-color: var(--fundo); color: var(--texto); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; display: flex; justify-content: center; }
     .app-container { width: 100%; max-width: 480px; }
     
@@ -499,6 +505,48 @@
     @keyframes abaSlideDir { from { opacity:.6; transform:translateX(-8px); } to { opacity:1; transform:none; } }
     .aba-conteudo.anim-esq, .card.anim-esq { animation: abaSlideEsq .35s cubic-bezier(.25,.6,.35,1); }
     .aba-conteudo.anim-dir, .card.anim-dir { animation: abaSlideDir .35s cubic-bezier(.25,.6,.35,1); }
+
+    /* ARRASTE PROGRESSIVO ENTRE ABAS
+       Antes a tela só trocava quando o dedo saía do vidro: você arrastava no
+       escuro e a página aparecia de repente. Agora a aba atual acompanha o
+       dedo e a vizinha vem junto, encostada nela — dá pra ver pra onde está
+       indo e desistir no meio do caminho.
+       .arrastando desliga a transição enquanto o dedo manda; .soltando liga de
+       volta pro trecho final (completar ou voltar) correr sozinho. */
+    .aba-conteudo.arrastando, .card.arrastando { transition: none; }
+    .aba-conteudo.soltando { transition: transform .26s cubic-bezier(.25,.7,.35,1), opacity .26s ease; }
+    .card.soltando { transition: transform .24s cubic-bezier(.25,.7,.35,1), opacity .24s ease; }
+    /* A vizinha sai do fluxo: presa ao viewport ela não empurra nada nem muda a
+       altura da página no meio do gesto. Recortada embaixo porque é só uma
+       espiada — o conteúdo inteiro chega quando a aba de fato troca. */
+    .aba-conteudo.espiando {
+      display: block; position: fixed; z-index: 4;
+      overflow: hidden; pointer-events: none;
+      -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+    }
+
+    /* FAIXA DE MESES DA FATURA DO CARTÃO
+       Era uma linha fixa de três meses. Virou trilho rolável com encaixe: o
+       dedo corre pros lados com a inércia do próprio navegador, que é o
+       movimento mais macio que existe — nenhuma animação escrita à mão
+       chega perto. */
+    .faixa-meses {
+      display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      margin-bottom: 14px; padding: 2px 0 4px; scroll-padding: 0 50%;
+    }
+    .faixa-meses::-webkit-scrollbar { display: none; }
+    .faixa-meses .mes-fatura {
+      /* 29% e não 33%: sobra uma lasquinha dos meses vizinhos nas bordas, que é
+         o que conta pro dedo que o trilho anda. Três meses cheios continuam
+         cabendo. */
+      flex: 0 0 29%; min-width: 92px; scroll-snap-align: center;
+      background: transparent; border: 1px solid var(--borda-fraca);
+      border-radius: 10px; padding: 7px 4px; cursor: pointer; text-align: center;
+      transition: background .18s ease, border-color .18s ease;
+    }
+    .faixa-meses .mes-fatura.selecionado { background: var(--campo); border-color: var(--borda-forte); }
 
     .data-grupo { font-size:10px; color:var(--texto-tenue); text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
     .data-grupo:first-child { margin-top:2px; }
@@ -1012,27 +1060,32 @@
     </div>
 
     <div id="abaInvestimentos" class="aba-conteudo">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('investimentos')">
-            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-              <h3>Investimentos</h3>
-              <span id="resumoFechado-investimentos" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
-            </div>
-            <span class="chevron-sec" id="chevron-investimentos">▾</span>
-          </button>
-          <button class="btn-olho" id="btnOlhoInvest" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+      <!-- CARD FIXO DO TOPO — mesmo papel do Resumo na aba de Faturas: é o
+           retrato da aba, então não fecha e não sai do lugar. Antes ele
+           recolhia e mostrava só o total aportado; recolhido, a aba abria sem
+           nenhum número. Agora o total vem acompanhado da lista de quanto há
+           em cada tipo, pra dar a visão geral sem precisar descer. -->
+      <div class="card" id="cardResumoInvestimentos">
+        <div class="cabecalho-fatura">
+          <span class="rotulo-resumo">Resumo</span>
+          <h3>Investimentos</h3>
+          <div class="acoes-resumo">
+            <button class="btn-olho" id="btnOlhoInvest" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+          </div>
         </div>
-        <div id="corpo-investimentos">
-          <div style="text-align:center;padding:14px 0;">
-            <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">Total aportado</span>
-            <h2 style="color:var(--azul);font-size:28px;margin-top:4px;" id="totalInvestido">R$ 0,00</h2>
+        <div class="painel-topo" style="margin:10px 0 12px;">
+          <div class="card-saldo-destaque" style="cursor:default;">
+            <span>Total aportado</span>
+            <h4 class="val-saldo" id="totalInvestido" style="color:var(--azul);">R$ 0,00</h4>
             <!-- Só aparece quando há diferença: sem ganho/perda ainda registrado, uma
                  segunda linha vazia seria só ruído embaixo do número principal. -->
-            <div id="ganhoPerdaTotal" style="font-size:12.5px;margin-top:4px;min-height:1em;"></div>
+            <div id="ganhoPerdaTotal" style="font-size:11px;margin-top:4px;line-height:1.4;"></div>
           </div>
-          <button type="button" class="btn-adicionar" onclick="abrirFormAporte()">+ Novo aporte</button>
+          <!-- O resumo ao lado: cada tipo e quanto vale hoje. Tocar leva ao
+               card daquele tipo, mais abaixo. -->
+          <div class="painel-direita" id="resumoTiposInvestimento"></div>
         </div>
+        <button type="button" class="btn-adicionar" style="margin-top:0;" onclick="abrirFormAporte()">+ Novo aporte</button>
       </div>
 
       <!-- UM CARD POR GRUPO DE INVESTIMENTO
@@ -1040,12 +1093,15 @@
            dele. Com mais de um tipo, ou com o card fechado, não dava pra olhar
            só o Tesouro sem carregar o resto junto. Agora cada grupo é um card,
            com seus totais e seu próprio abre-fecha — do mesmo tamanho que o
-           card de Consórcios, que é o que ele é: um tipo de investimento. -->
-      <div id="cardsGruposInvestimento"></div>
+           card de Consórcios, que é o que ele é: um tipo de investimento.
+           O invólucro com data-card junta todos eles num bloco só pro
+           reordenamento em Ajustes: quem não tem aporte manda o bloco inteiro
+           pro fim da aba com um arrasto. -->
+      <div id="cardsGruposInvestimento" data-card="aportes" data-card-titulo="Aportes"></div>
 
       <!-- CONSÓRCIOS — separado dos aportes de propósito: é compra parcelada de
            uma carta de crédito, não dinheiro rendendo. Totais próprios. -->
-      <div class="card">
+      <div class="card" data-card="consorcios" data-card-titulo="Consórcios">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('consorcios')">
             <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
@@ -1063,7 +1119,7 @@
       </div>
 
       <!-- Card só aparece quando existe algum grupo encerrado — vazio seria ruído. -->
-      <div class="card escondido" id="cardConsorciosEncerrados">
+      <div class="card escondido" id="cardConsorciosEncerrados" data-card="consorciosEncerrados" data-card-titulo="Consórcios encerrados">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('consorciosEncerrados')">
             <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
@@ -1230,6 +1286,19 @@
         <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
           <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
           <div id="ordemCardsAbaGraficos"></div>
+        </div>
+      </div>
+
+      <!-- Mesma liberdade que já existia em Faturas e Gráficos: quem não tem
+           consórcio joga o card pro fim, quem não tem aporte faz o contrário. -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemInvestimentos')">
+          <h3 style="font-size:16px;">Ordem dos cards — Investimentos</h3>
+          <span class="chevron-sec" id="chevron-ordemInvestimentos">▸</span>
+        </button>
+        <div id="corpo-ordemInvestimentos" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <div id="ordemCardsAbaInvestimentos"></div>
         </div>
       </div>
 
@@ -2873,8 +2942,10 @@
        Investimentos é o contrário — o conteúdo é o motivo de entrar nela, então
        esses nascem abertos e só ficam fechados se você fechar. Cada consórcio
        individual (chave "consorcio-<id>") segue a mesma régua. */
+    // 'investimentos' saiu daqui: o card do topo da aba virou fixo, como o
+    // Resumo das Faturas — não abre nem fecha, então não tem seção.
     const SECOES_ABERTAS_POR_PADRAO = new Set([
-      'investimentos', 'aportes', 'consorcios', 'consorciosEncerrados',
+      'aportes', 'consorcios', 'consorciosEncerrados',
       'grupos', 'gruposEncerrados'
     ]);
 
@@ -2898,6 +2969,25 @@
       // Resumo de uma linha só faz sentido com o corpo escondido
       const resumo = document.getElementById('resumoFechado-' + nome);
       if (resumo) resumo.classList.toggle('escondido', aberto);
+      // Trilho de meses escondido mede zero: só dá pra centralizar depois que
+      // o card abre. Sem isto o card abria mostrando janeiro, lá no começo.
+      if (aberto) centralizarFaixaMeses(corpo);
+    }
+
+    /* Deixa o mês selecionado no meio do trilho. Mede o que já está na tela,
+       então sai calado quando o trilho ainda não tem largura. */
+    function centralizarFaixaMeses(raiz) {
+      const escopo = raiz || document;
+      (escopo.querySelectorAll ? escopo.querySelectorAll('.faixa-meses') : []).forEach(faixa => {
+        const sel = faixa.querySelector('.selecionado');
+        if (!sel || !faixa.clientWidth) return;
+        /* Medido por retângulo, e não por offsetLeft: o trilho não é elemento
+           posicionado, então o offsetLeft do botão viria contado a partir de um
+           ancestral mais acima e a conta saía deslocada pela margem da página. */
+        const rf = faixa.getBoundingClientRect();
+        const rs = sel.getBoundingClientRect();
+        faixa.scrollLeft += (rs.left - rf.left) - (faixa.clientWidth - rs.width) / 2;
+      });
     }
 
     function alternarSecao(nome) {
@@ -2992,6 +3082,11 @@
       container.innerHTML = '';
       chaves.forEach(chave => {
         const el = document.querySelector('#' + idAba + ' > [data-card="' + chave + '"]');
+        /* Card que não está na tela não entra na lista: "Consórcios encerrados"
+           só existe quando você encerrou algum, e oferecer pra reordenar um
+           card invisível é convidar pra mover o nada. A ordem salva dele não se
+           perde — o aplicarOrdemCards continua lendo a lista inteira. */
+        if (el && el.classList.contains('escondido')) return;
         const titulo = el ? el.dataset.cardTitulo : chave;
         const linha = document.createElement('div');
         linha.className = 'linha-ordem-card';
@@ -3002,7 +3097,10 @@
 
       tornarListaArrastavel(container, ordem => {
         if (!uiPrefs.ordemCards) uiPrefs.ordemCards = {};
-        uiPrefs.ordemCards[idAba] = ordem;
+        // Os que ficaram de fora por estarem escondidos vão pro fim em vez de
+        // sumirem da preferência — reaparecem no fim da aba, como card novo.
+        const fora = (uiPrefs.ordemCards[idAba] || []).filter(c => !ordem.includes(c));
+        uiPrefs.ordemCards[idAba] = ordem.concat(fora);
         salvarUiPrefs();
         aplicarOrdemCards(idAba);
       });
@@ -5721,6 +5819,10 @@
       // mudarAba() disparava esses dois renders, nunca este toggle.
       renderizarGrupos();
       renderizarInvestimentos();
+      // Mesmo caso, e ainda mais visível: Consórcios divide a aba com os
+      // Investimentos. Tocar no olho ali escondia os aportes e deixava as
+      // parcelas do consórcio à mostra, logo abaixo, na mesma tela.
+      renderizarConsorcios();
     }
 
     // TROCA DE ABA POR GESTO: deslizar o dedo pra esquerda avança, pra direita volta
@@ -5731,13 +5833,122 @@
       return Array.from(document.querySelectorAll('.modal-overlay')).some(m => !m.classList.contains('escondido'));
     }
 
+    /* ARRASTE PROGRESSIVO ENTRE ABAS
+       O gesto deixou de ser um comando ("passei o dedo, troca") e virou
+       condução: a aba atual sai acompanhando o dedo e a vizinha entra colada
+       nela, na mesma proporção. Solto antes da metade do caminho, tudo volta
+       pro lugar — dá pra espiar a aba do lado e desistir.
+
+       `arraste` guarda o gesto em curso. Fora dele é null, e TODO caminho de
+       saída passa por encerrarArraste(): uma aba esquecida em position:fixed
+       ficaria colada na tela por cima de tudo. */
+    let arraste = null;
+
+    // Qual aba está a um passo da atual, com a volta ao começo depois da última
+    function idAbaVizinha(passo) {
+      const idx = ORDEM_ABAS.findIndex(id => {
+        const el = document.getElementById(id);
+        return el && el.classList.contains('ativo');
+      });
+      if (idx === -1) return null;   // Ajustes fica fora do rodízio do gesto
+      let destino = idx + passo;
+      if (destino >= ORDEM_ABAS.length) destino = 0;
+      if (destino < 0) destino = ORDEM_ABAS.length - 1;
+      return ORDEM_ABAS[destino];
+    }
+
+    function iniciarArraste(dx) {
+      if (arraste) return false;
+      const atualEl = document.querySelector('.aba-conteudo.ativo');
+      if (!atualEl) return false;
+      const sentido = dx < 0 ? -1 : 1;              // -1 avança, +1 volta
+      const id = idAbaVizinha(sentido < 0 ? 1 : -1);
+      if (!id) return false;
+      const entraEl = document.getElementById(id);
+      if (!entraEl || entraEl === atualEl) return false;
+
+      const r = atualEl.getBoundingClientRect();
+      const topo = Math.max(r.top, 0);
+      const largura = r.width || window.innerWidth;
+
+      // Visível ANTES de renderizar: com display:none qualquer medida de
+      // largura dentro dos gráficos voltaria zero.
+      entraEl.classList.add('espiando', 'arrastando');
+      entraEl.style.left = r.left + 'px';
+      entraEl.style.width = largura + 'px';
+      entraEl.style.top = topo + 'px';
+      entraEl.style.maxHeight = (window.innerHeight - topo) + 'px';
+      entraEl.style.transform = 'translateX(' + (-sentido * largura) + 'px)';
+      entraEl.style.opacity = '.55';
+
+      // A vizinha entraria desatualizada se ninguém a montasse. É o mesmo
+      // trabalho que o mudarAba() faria daqui a pouco, só que adiantado pra
+      // você já arrastar olhando o conteúdo certo.
+      prepararAba(id);
+
+      atualEl.classList.add('arrastando');
+      arraste = { atualEl, entraEl, id, largura, sentido, dx: 0, soltando: false };
+      return true;
+    }
+
+    function moverArraste(dx) {
+      if (!arraste || arraste.soltando) return;
+      // Preso ao sentido em que o gesto nasceu: voltar o dedo pro outro lado
+      // não faz a aba oposta aparecer no meio do caminho.
+      const avanco = arraste.sentido < 0 ? Math.min(dx, 0) : Math.max(dx, 0);
+      const d = Math.max(-arraste.largura, Math.min(arraste.largura, avanco));
+      const fracao = Math.abs(d) / arraste.largura;
+      arraste.dx = d;
+      arraste.atualEl.style.transform = 'translateX(' + d + 'px)';
+      arraste.atualEl.style.opacity = String(1 - fracao * 0.45);
+      arraste.entraEl.style.transform = 'translateX(' + (d - arraste.sentido * arraste.largura) + 'px)';
+      arraste.entraEl.style.opacity = String(0.55 + fracao * 0.45);
+    }
+
+    function encerrarArraste(trocar) {
+      if (!arraste || arraste.soltando) return;
+      const a = arraste;
+      a.soltando = true;
+
+      // O trecho final corre sozinho: completa a passagem ou devolve as duas
+      // abas pro lugar, sempre no mesmo tempo, venha o dedo de onde vier.
+      a.atualEl.classList.remove('arrastando');
+      a.entraEl.classList.remove('arrastando');
+      a.atualEl.classList.add('soltando');
+      a.entraEl.classList.add('soltando');
+      const alvo = trocar ? a.sentido * a.largura : 0;
+      a.atualEl.style.transform = 'translateX(' + alvo + 'px)';
+      a.atualEl.style.opacity = trocar ? '.4' : '1';
+      a.entraEl.style.transform = 'translateX(' + (alvo - a.sentido * a.largura) + 'px)';
+      a.entraEl.style.opacity = trocar ? '1' : '.55';
+
+      setTimeout(() => {
+        arraste = null;
+        a.atualEl.classList.remove('arrastando', 'soltando');
+        a.entraEl.classList.remove('arrastando', 'soltando', 'espiando');
+        a.atualEl.style.transform = '';
+        a.atualEl.style.opacity = '';
+        ['transform', 'opacity', 'left', 'top', 'width', 'maxHeight']
+          .forEach(p => { a.entraEl.style[p] = ''; });
+        if (!trocar) return;
+        const btn = document.querySelector(`.nav-tab[onclick*="${a.id}"]`);
+        // terceiro argumento: a passagem já aconteceu no dedo, não repete
+        mudarAba(a.id, btn, true);
+        if (btn && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      }, 270);   // casado com o .26s do .soltando
+    }
+
     document.addEventListener('touchstart', (e) => {
       // dentro do card de resumo das Faturas o gesto muda o MÊS, não a aba
       // e.target nem sempre é Element (pode vir texto ou o próprio document);
       // sem a checagem, o handler estourava e o gesto parava de funcionar
       const alvo = e.target && e.target.closest ? e.target : null;
-      toqueValido = e.touches.length === 1 && !algumModalAberto()
-        && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas, .colunas, .chips-periodo'));
+      /* Tudo que rola sozinho pros lados fica de fora: a fileira de abas, as
+         colunas dos gráficos, os chips, o trilho de meses. Importa mais agora
+         que o arraste segura a rolagem — dentro de um desses o dedo é deles. */
+      toqueValido = e.touches.length === 1 && !algumModalAberto() && !arraste
+        && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas,'
+          + ' .colunas, .chips-periodo, .faixa-meses, #chipsContasConsulta, #chipsFormasConsulta'));
       direcaoTravada = null;
       if (!toqueValido) return;
       toqueIniX = e.touches[0].clientX;
@@ -5748,41 +5959,58 @@
     // A direção é decidida nos primeiros pixels e TRAVA ali. Antes só o ponto
     // final contava, então uma rolagem que derivasse de lado no meio do caminho
     // acabava trocando de aba sozinha.
+    // Não é mais passive: travada a horizontal, o arraste precisa segurar a
+    // rolagem vertical — senão a página desce enquanto a aba anda pro lado.
     document.addEventListener('touchmove', (e) => {
-      if (!toqueValido || direcaoTravada || e.touches.length !== 1) return;
+      if (!toqueValido || e.touches.length !== 1) return;
       const dx = e.touches[0].clientX - toqueIniX;
       const dy = e.touches[0].clientY - toqueIniY;
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
-    }, { passive: true });
+      if (!direcaoTravada) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        direcaoTravada = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
+        // Sem vizinha (Ajustes) o gesto morre aqui em vez de ficar tentando
+        if (direcaoTravada === 'horizontal' && !iniciarArraste(dx)) toqueValido = false;
+      }
+      if (direcaoTravada !== 'horizontal' || !arraste) return;
+      if (e.cancelable) e.preventDefault();
+      moverArraste(dx);
+    }, { passive: false });
 
     document.addEventListener('touchend', (e) => {
-      if (!toqueValido || algumModalAberto()) return;
-      if (direcaoTravada !== 'horizontal') return;   // rolagem nunca vira troca de aba
+      toqueValido = false;
+      if (!arraste || arraste.soltando) return;
+      if (algumModalAberto()) { encerrarArraste(false); return; }
       const dx = e.changedTouches[0].clientX - toqueIniX;
-      const dy = e.changedTouches[0].clientY - toqueIniY;
-      // arrasto demorado é navegação lenta, não gesto rápido de troca
-      // Limites folgados de propósito: a direção já travou no touchmove, então
-      // não há risco de rolagem virar troca de aba. Antes exigia gesto rápido
-      // (700ms) e longo (60px) ao mesmo tempo, e o dedo mais calmo não passava.
-      if (Date.now() - toqueIniT > 1200) return;
-      if (Math.abs(dx) < 42) return;
-      const idxAtual = ORDEM_ABAS.findIndex(id => {
-        const el = document.getElementById(id);
-        return el && el.classList.contains('ativo');
-      });
-      if (idxAtual === -1) return;
-      // scroll infinito: passou da última aba, volta pra primeira (e vice-versa)
-      let destino = dx < 0 ? idxAtual + 1 : idxAtual - 1;
-      if (destino >= ORDEM_ABAS.length) destino = 0;
-      if (destino < 0) destino = ORDEM_ABAS.length - 1;
-      const idAba = ORDEM_ABAS[destino];
-      const btn = document.querySelector(`.nav-tab[onclick*="${idAba}"]`);
-      mudarAba(idAba, btn);
-      if (btn && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      // Duas formas de completar: levar a aba além de um terço da tela, ou dar
+      // um peteleco curto e rápido. A segunda é o que o polegar faz sem pensar.
+      const peteleco = Date.now() - toqueIniT < 400 && Math.abs(dx) > 28;
+      const passouDoMeio = Math.abs(dx) > arraste.largura * 0.32;
+      encerrarArraste(peteleco || passouDoMeio);
     }, { passive: true });
 
-    function mudarAba(idAba, elemento) {
+    // Ligação recebida, notificação, dedo saindo pela borda: o navegador cancela
+    // o toque e nunca manda o touchend. Sem isto a aba ficava presa no meio.
+    document.addEventListener('touchcancel', () => {
+      toqueValido = false;
+      encerrarArraste(false);
+    }, { passive: true });
+
+    /* Monta o conteúdo de uma aba. Separado do mudarAba() porque o arraste
+       precisa da aba vizinha pronta ANTES de ela aparecer na espiada. */
+    function prepararAba(idAba) {
+      if (idAba === 'abaGraficos') atualizarResumoEGraficos();
+      if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); }
+      if (idAba === 'abaInvestimentos') { renderizarInvestimentos(); renderizarConsorcios(); }
+      if (idAba === 'abaGrupos') renderizarGrupos();
+      if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
+      if (idAba === 'abaConfig') {
+        renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos');
+        renderizarOrdemCards('abaInvestimentos');
+        renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); aplicarTravaDeZoom();
+      }
+    }
+
+    function mudarAba(idAba, elemento, semAnimacao) {
       /* A direção do deslize sai da posição das abas: indo pra direita na fileira,
          o conteúdo entra pela direita. Antes isso só existia no gesto — tocar no
          botão da aba trocava a tela num corte seco. */
@@ -5801,19 +6029,16 @@
       if (alvo) alvo.classList.add('ativo');
       if (elemento) elemento.classList.add('ativo');
 
-      if (alvo && de !== -1 && para !== -1 && de !== para) {
+      // Depois de um arraste a passagem já foi feita no dedo: repetir a
+      // animaçãozinha aqui daria um segundo salto, do nada.
+      if (!semAnimacao && alvo && de !== -1 && para !== -1 && de !== para) {
         void alvo.offsetWidth;   // reinicia a animação
         alvo.classList.add(para > de ? 'anim-esq' : 'anim-dir');
       }
       // Trocar de aba com a página rolada deixava você no meio do conteúdo novo
       if (de !== para) window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      if (idAba === 'abaGraficos') atualizarResumoEGraficos();
-      if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); }
-      if (idAba === 'abaInvestimentos') { renderizarInvestimentos(); renderizarConsorcios(); }
-      if (idAba === 'abaGrupos') renderizarGrupos();
-      if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
-      if (idAba === 'abaConfig') { renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos'); renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); aplicarTravaDeZoom(); }
+      prepararAba(idAba);
     }
 
     /* REQUISIÇÃO 1: FILTRAR GRUPOS FECHADOS E CONTROLAR VISIBILIDADE DO SELETOR DE GRUPO */
@@ -8586,24 +8811,92 @@
       renderizarLancamentos();
     }
 
-    // Gesto de deslizar dentro do card de resumo das Faturas: muda o mês
+    /* Gesto de deslizar dentro do card de resumo das Faturas: muda o mês.
+       Mesma ideia do arraste entre abas — o card acompanha o dedo em vez de
+       ficar parado esperando o gesto acabar. Aqui não há vizinho pra espiar
+       (o mês seguinte é o MESMO card remontado), então o que se vê é o card
+       saindo e o novo mês entrando pelo outro lado. */
     (function () {
       const card = document.getElementById('cardResumoFaturas');
       if (!card) return;
-      let iniX = 0, iniY = 0;
+      let iniX = 0, iniY = 0, iniT = 0, dir = null, largura = 1, arrastandoMes = false, soltando = false;
+
+      const devolver = () => {
+        card.classList.remove('arrastando', 'soltando');
+        card.style.transform = '';
+        card.style.opacity = '';
+        arrastandoMes = false;
+        soltando = false;
+        dir = null;
+      };
+
       card.addEventListener('touchstart', (e) => {
+        if (soltando || e.touches.length !== 1 || algumModalAberto()) return;
+        // o trilho de meses e os chips têm rolagem própria: ali o dedo é deles
+        const alvo = e.target && e.target.closest ? e.target : null;
+        if (alvo && alvo.closest('.faixa-meses, .chips-periodo, input, select, textarea')) return;
         iniX = e.touches[0].clientX;
         iniY = e.touches[0].clientY;
+        iniT = Date.now();
+        dir = null;
+        largura = card.getBoundingClientRect().width || window.innerWidth;
       }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (soltando || !iniT || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - iniX;
+        const dy = e.touches[0].clientY - iniY;
+        if (!dir) {
+          if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+          dir = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'horizontal' : 'vertical';
+          if (dir === 'horizontal') { arrastandoMes = true; card.classList.add('arrastando'); }
+        }
+        if (!arrastandoMes) return;
+        if (e.cancelable) e.preventDefault();
+        // Resistência: o card anda pouco mais da metade do dedo. Ele não vai
+        // pra lugar nenhum de verdade, então deixar correr solto mentiria
+        // sobre o quanto falta.
+        const d = Math.max(-largura, Math.min(largura, dx)) * 0.55;
+        card.style.transform = 'translateX(' + d + 'px)';
+        card.style.opacity = String(1 - Math.abs(d) / largura * 0.5);
+      }, { passive: false });
+
       card.addEventListener('touchend', (e) => {
-        if (algumModalAberto()) return;
+        if (soltando || !arrastandoMes) { iniT = 0; dir = null; return; }
         const dx = e.changedTouches[0].clientX - iniX;
-        const dy = e.changedTouches[0].clientY - iniY;
-        if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 2) return;
-        mudarMesFatura(dx < 0 ? 1 : -1);
-        card.classList.remove('anim-esq', 'anim-dir');
-        void card.offsetWidth;
-        card.classList.add(dx < 0 ? 'anim-esq' : 'anim-dir');
+        const peteleco = Date.now() - iniT < 400 && Math.abs(dx) > 30;
+        const passou = Math.abs(dx) > largura * 0.28;
+        iniT = 0;
+        if (algumModalAberto() || !(peteleco || passou)) {
+          soltando = true;
+          card.classList.remove('arrastando');
+          card.classList.add('soltando');
+          card.style.transform = '';
+          card.style.opacity = '';
+          setTimeout(devolver, 250);
+          return;
+        }
+        // Completa a saída pro lado do dedo, troca o mês por baixo e traz o
+        // novo entrando pelo lado oposto: o movimento não tem emenda.
+        soltando = true;
+        const sentido = dx < 0 ? -1 : 1;
+        card.classList.remove('arrastando');
+        card.classList.add('soltando');
+        card.style.transform = 'translateX(' + (sentido * largura * 0.5) + 'px)';
+        card.style.opacity = '.15';
+        setTimeout(() => {
+          mudarMesFatura(sentido < 0 ? 1 : -1);
+          devolver();
+          card.classList.remove('anim-esq', 'anim-dir');
+          void card.offsetWidth;
+          card.classList.add(sentido < 0 ? 'anim-esq' : 'anim-dir');
+        }, 200);
+      }, { passive: true });
+
+      card.addEventListener('touchcancel', () => {
+        if (soltando) return;
+        iniT = 0;
+        devolver();
       }, { passive: true });
     })();
 
@@ -9000,10 +9293,14 @@
     }
 
     // Leva a aba Faturas pro mês pedido, calculando o deslocamento em relação ao atual.
-    function irParaFatura(mes, ano) {
+    /* semRolar: tocar num mês do trilho não pode arrancar a página lá pra cima —
+       o dedo está no card de baixo e é ali que ele quer continuar. Vindo do
+       modal de resumo, ao contrário, a rolagem é o que leva você até o card. */
+    function irParaFatura(mes, ano, semRolar) {
       const agora = getMesReferencia(0);
       faturaMesOffset = (ano - agora.getFullYear()) * 12 + (mes - agora.getMonth());
       atualizarFaturas();
+      if (semRolar) return;
       const card = document.getElementById('cardResumoFaturas');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -10319,10 +10616,13 @@
 
       box.innerHTML = '';
 
-      /* LINHA DO TEMPO DO CARTÃO
+      /* TRILHO DE MESES DO CARTÃO
          O card mostrava só o mês selecionado, sem contexto: você via um número e
          não sabia se vinha de uma fatura fechada, da que está aberta, ou quanto já
-         está indo pra próxima. Estas três linhas respondem isso de bate-pronto. */
+         está indo pra próxima.
+         Eram três meses fixos, presos na largura da tela. Agora é um trilho que
+         corre pros lados com a inércia do próprio navegador e encaixa no mês mais
+         perto — meio ano pra trás e meio pra frente, sem botão de avançar. */
       if (!comCredito.length) {
         box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum cartão de crédito cadastrado.</p>';
         return;
@@ -10330,30 +10630,40 @@
       const somaMes = (m, a) => comCredito.reduce((s, c) => s + totalFaturaConta(c.nome, m, a), 0);
       const pagoMes = (m, a) => comCredito.every(c => totalFaturaConta(c.nome, m, a) <= 0
         || faturasPagas[chaveFatura(c.nome, m, a)]);
-      const ant = new Date(ano, mes - 1, 1), prox = new Date(ano, mes + 1, 1);
-      const linhaTempo = [
-        { rot: NOMES_MESES[ant.getMonth()], total: somaMes(ant.getMonth(), ant.getFullYear()),
-          pago: pagoMes(ant.getMonth(), ant.getFullYear()), m: ant.getMonth(), a: ant.getFullYear(), estado: 'anterior' },
-        { rot: NOMES_MESES[mes], total: somaMes(mes, ano), pago: pagoMes(mes, ano), m: mes, a: ano, estado: 'atual' },
-        { rot: NOMES_MESES[prox.getMonth()], total: somaMes(prox.getMonth(), prox.getFullYear()),
-          pago: false, m: prox.getMonth(), a: prox.getFullYear(), estado: 'proxima' }
-      ];
+      const hojeRef = getMesReferencia(0);
+      const mesCorrente = hojeRef.getMonth(), anoCorrente = hojeRef.getFullYear();
+      const ordinal = (m, a) => a * 12 + m;
+      const MESES_TRILHO = 6;   // pra cada lado
+
       const boxTempo = document.createElement('div');
-      boxTempo.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
+      boxTempo.className = 'faixa-meses';
       boxTempo.dataset.linhaTempo = '1';
-      boxTempo.innerHTML = linhaTempo.map(f => {
-        const destaque = f.estado === 'atual';
-        const cor = (f.total <= 0 || f.estado === 'proxima') ? 'var(--texto-fraco)' : (f.pago ? 'var(--verde)' : 'var(--vermelho)');
-        const nota = f.estado === 'proxima' ? 'em formação' : (f.total <= 0 ? 'sem fatura' : (f.pago ? 'paga' : 'em aberto'));
-        return `<button type="button" onclick="irParaFatura(${f.m}, ${f.a})"
-          style="flex:1;min-width:0;background:${destaque ? 'var(--campo)' : 'transparent'};border:1px solid ${destaque ? 'var(--borda-forte)' : 'var(--borda-fraca)'};
-                 border-radius:10px;padding:7px 4px;cursor:pointer;text-align:center;">
-          <div style="font-size:9.5px;color:var(--texto-tenue);text-transform:uppercase;letter-spacing:.4px;">${f.rot.slice(0, 3)}</div>
-          <div style="font-size:12.5px;font-weight:700;color:${cor};margin:2px 0;">${fmtOculto(f.total)}</div>
+      const partes = [];
+      for (let n = -MESES_TRILHO; n <= MESES_TRILHO; n++) {
+        const d = new Date(ano, mes + n, 1);
+        const m = d.getMonth(), a = d.getFullYear();
+        const selecionado = n === 0;
+        /* "Em formação" é qualquer mês depois do corrente: a fatura ainda está
+           recebendo compra. Marcar de vermelho um mês que nem fechou seria
+           cobrar uma dívida que ainda não existe. */
+        const futura = ordinal(m, a) > ordinal(mesCorrente, anoCorrente);
+        const total = somaMes(m, a);
+        const pago = futura ? false : pagoMes(m, a);
+        const cor = (total <= 0 || futura) ? 'var(--texto-fraco)' : (pago ? 'var(--verde)' : 'var(--vermelho)');
+        const nota = futura ? 'em formação' : (total <= 0 ? 'sem fatura' : (pago ? 'paga' : 'em aberto'));
+        // O ano só aparece quando o trilho cruza a virada — dentro do mesmo ano
+        // ele seria a mesma informação repetida treze vezes.
+        const rotulo = a === anoCorrente ? NOMES_MESES[m].slice(0, 3) : NOMES_MESES[m].slice(0, 3) + '/' + String(a).slice(2);
+        partes.push(`<button type="button" class="mes-fatura${selecionado ? ' selecionado' : ''}" onclick="irParaFatura(${m}, ${a}, true)">
+          <div style="font-size:9.5px;color:var(--texto-tenue);text-transform:uppercase;letter-spacing:.4px;">${rotulo}</div>
+          <div style="font-size:12.5px;font-weight:700;color:${cor};margin:2px 0;">${fmtOculto(total)}</div>
           <div style="font-size:9px;color:var(--texto-tenue);">${nota}</div>
-        </button>`;
-      }).join('');
+        </button>`);
+      }
+      boxTempo.innerHTML = partes.join('');
       box.appendChild(boxTempo);
+      // Depois de estar no DOM: antes disso o trilho não tem largura pra medir
+      centralizarFaixaMeses(box);
 
       comCredito.forEach(c => {
         const total = totalFaturaConta(c.nome, mes, ano);
@@ -10419,10 +10729,15 @@
         }
       });
 
-      // A linha do tempo sempre entra, então "vazio" é não ter nenhuma linha de
-      // cartão — e nesse caso ela também não faz sentido sozinha.
+      /* Mês sem fatura ganha um recado, mas o trilho FICA. Antes a mensagem
+         substituía o card inteiro; agora que é por ele que se anda entre os
+         meses, apagá-lo deixaria você preso num mês vazio, sem caminho de
+         volta. O aviso entra embaixo. */
       if (!box.querySelector('.item-lancamento')) {
-        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhuma fatura de cartão neste mês.</p>';
+        const vazio = document.createElement('p');
+        vazio.style.cssText = 'color:var(--texto-medio);font-size:13px;';
+        vazio.textContent = 'Nenhuma fatura de cartão neste mês.';
+        box.appendChild(vazio);
       }
     }
 
@@ -12484,7 +12799,7 @@
           ? `<div style="font-size:10.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.5;">${
               c.historicoValores.map(h => {
                 const m = NOMES_MESES[parseInt(h.desde.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + h.desde.slice(2, 4);
-                return `${fmtVal(parseVal(h.valor))} desde ${m}`;
+                return `${fmtOculto(parseVal(h.valor))} desde ${m}`;
               }).join(' · ')}</div>`
           : '';
 
@@ -12553,7 +12868,7 @@
           <button type="button" class="card-header-toggle" style="width:100%;padding:0;" onclick="alternarSecao('${chave}')">
             <div style="min-width:0;flex:1;text-align:left;">
               <strong>${c.nome}</strong>
-              <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtVal(parseVal(c.valorParcela))} · ${t.qtdPagas} de ${t.total}</div>
+              <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtOculto(parseVal(c.valorParcela))} · ${t.qtdPagas} de ${t.total}</div>
             </div>
             ${alertaMes ? `<span title="${quando}" style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:6px;${
               alertaMes === 'vencida'
@@ -12679,10 +12994,6 @@
       const totalAportado = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
       const totalAtual = investimentos.reduce((s, i) => s + valorAtualDoAporte(i), 0);
       totalEl.textContent = fmtOculto(totalAportado);
-      // Com o card fechado o total vira a única informação visível — sem ele,
-      // fechar significaria perder o número de vista.
-      const resumoInv = document.getElementById('resumoFechado-investimentos');
-      if (resumoInv) resumoInv.textContent = fmtOculto(totalAportado);
 
       const diffTotal = totalAtual - totalAportado;
       const ganhoPerdaEl = document.getElementById('ganhoPerdaTotal');
@@ -12691,14 +13002,11 @@
           const pct = totalAportado > 0 ? (diffTotal / totalAportado * 100) : 0;
           const sinal = diffTotal >= 0 ? '+' : '−';
           const cor = diffTotal >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-          ganhoPerdaEl.innerHTML = `vale ${fmtOculto(totalAtual)} hoje · <strong style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1)}%)</strong>`;
+          ganhoPerdaEl.innerHTML = `vale ${fmtOculto(totalAtual)} hoje<br><strong style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1)}%)</strong>`;
         } else {
           ganhoPerdaEl.innerHTML = '';
         }
       }
-
-      if (!container) return;
-      container.innerHTML = '';
 
       /* A ordem dos cards é a ordem dos grupos em Ajustes, não a do maior saldo:
          quem arrastou pra deixar a Poupança em cima espera achar ela em cima no
@@ -12707,6 +13015,49 @@
       investimentosPorTipo().forEach(g => { porTipo[g.tipo] = g; });
       const ordem = tiposAtivo.filter(t => porTipo[t])
         .concat(Object.keys(porTipo).filter(t => !tiposAtivo.includes(t)));
+
+      /* RESUMO AO LADO DO TOTAL
+         O card do topo mostrava um número grande e mais nada. Com a lista de
+         tipos ao lado, a aba abre respondendo "quanto eu tenho, e em quê" sem
+         precisar rolar até os cards de baixo. */
+      const resumoTipos = document.getElementById('resumoTiposInvestimento');
+      if (resumoTipos) {
+        resumoTipos.innerHTML = '';
+        if (!ordem.length) {
+          const vazio = document.createElement('div');
+          vazio.className = 'card-mini';
+          vazio.style.cursor = 'default';
+          vazio.innerHTML = '<span style="margin:0;">nenhum aporte</span>';
+          resumoTipos.appendChild(vazio);
+        } else {
+          // Com muitos tipos a coluna cresceria mais que o card ao lado: os
+          // quatro maiores ficam, o resto vira uma linha de contagem.
+          const MAX_LINHAS = 4;
+          const mostrar = ordem.slice(0, ordem.length > MAX_LINHAS ? MAX_LINHAS - 1 : MAX_LINHAS);
+          mostrar.forEach(tipo => {
+            const g = porTipo[tipo];
+            const mini = document.createElement('div');
+            mini.className = 'card-mini';
+            mini.title = 'Ver os aportes em ' + tipo;
+            const cor = g.diff > 0 ? 'var(--verde)' : (g.diff < 0 ? 'var(--vermelho)' : 'var(--texto-forte)');
+            mini.innerHTML = `<span style="margin:0;">${tipo}</span><h4 style="font-size:13px;color:${cor};">${fmtOculto(g.atual)}</h4>`;
+            mini.onclick = () => irParaGrupoInvestimento(tipo);
+            resumoTipos.appendChild(mini);
+          });
+          if (ordem.length > MAX_LINHAS) {
+            const resto = ordem.length - mostrar.length;
+            const soma = ordem.slice(mostrar.length).reduce((s, t) => s + porTipo[t].atual, 0);
+            const mini = document.createElement('div');
+            mini.className = 'card-mini';
+            mini.innerHTML = `<span style="margin:0;">+ ${resto} ${resto === 1 ? 'tipo' : 'tipos'}</span><h4 style="font-size:13px;">${fmtOculto(soma)}</h4>`;
+            mini.onclick = () => irParaGrupoInvestimento(ordem[mostrar.length]);
+            resumoTipos.appendChild(mini);
+          }
+        }
+      }
+
+      if (!container) return;
+      container.innerHTML = '';
 
       if (!ordem.length) {
         const vazio = document.createElement('div');
@@ -12728,6 +13079,7 @@
 
         const card = document.createElement('div');
         card.className = 'card';
+        card.dataset.grupoInv = tipo;   // alvo do resumo lá de cima
         card.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <button type="button" class="card-header-toggle" style="flex:1;" data-toggle-secao>
@@ -12786,6 +13138,23 @@
       // a lista em Ajustes mostra quantos aportes cada grupo tem: sem isto ela
       // ficaria com a contagem do momento em que o app abriu
       renderizarListaTiposAtivo();
+    }
+
+    /* Do resumo do topo pro card daquele tipo, lá embaixo. Abre a seção se ela
+       estiver recolhida — chegar num card fechado seria uma viagem perdida. */
+    function irParaGrupoInvestimento(tipo) {
+      const chave = 'grupoInv-' + tipo;
+      if (!secaoEstaAberta(chave)) {
+        uiPrefs['secao_' + chave] = true;
+        salvarUiPrefs();
+        aplicarSecao(chave);
+      }
+      // Comparação em JS, e não por seletor: o nome do tipo é digitado pelo
+      // usuário e pode trazer aspas, acento ou colchete — qualquer um deles
+      // quebraria o seletor de atributo.
+      const card = [...document.querySelectorAll('[data-grupo-inv]')]
+        .find(el => el.dataset.grupoInv === tipo);
+      if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function abrirModalAtualizarValor(id) {
@@ -13870,7 +14239,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.19-1';
+    const APP_VERSION = '2026.09.19-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -13908,6 +14277,7 @@ function confirmarLancamentoVoz() {
     equiparCamposComCalculadora();   // todo campo de dinheiro da tela, inclusive os dos modais
     aplicarOrdemCards('abaFaturas');
     aplicarOrdemCards('abaGraficos');
+    aplicarOrdemCards('abaInvestimentos');
     aplicarSecao('indicadores');
     aplicarSecao('metas');
     aplicarSecao('fixos');
@@ -13940,7 +14310,6 @@ function confirmarLancamentoVoz() {
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
     // Cards da aba Investimentos: nascem abertos (ver SECOES_ABERTAS_POR_PADRAO)
-    aplicarSecao('investimentos');
     aplicarSecao('aportes');
     aplicarSecao('consorcios');
     aplicarSecao('consorciosEncerrados');
