@@ -175,6 +175,17 @@ fs.mkdirSync(OUT, { recursive: true });
   await abrir('Grupos');
   await tiro('grupos', '#abaGrupos > .card');
 
+  // 11b) o detalhe do grupo, em pizza
+  await page.evaluate(()=>{
+    setTipoGraficoGrupo('pizza');
+    abrirModalGrupo('gUb');
+  });
+  await page.waitForTimeout(450);
+  await tiro('grupo_pizza', '#modalPanorama .modal-content');
+  // setTipoGraficoGrupo() reabre o modal (é assim que ele troca de gráfico),
+  // então volta pra barras ANTES de fechar — na ordem errada, o fechar reabria.
+  await page.evaluate(()=>{ setTipoGraficoGrupo('barras'); fecharModal('modalPanorama'); });
+
   // 12) transferência
   await abrir('Lançamentos');
   await page.click('button[title="Transferências pessoais"]'); await page.waitForTimeout(400);

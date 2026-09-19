@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.18 · Leia em 18 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.19 · Leia em 19 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -463,7 +463,9 @@
     </div>
     <div class="nota">
       <strong>Quando é VOCÊ que deve, tem duas situações.</strong> Ao marcar o empréstimo numa
-      receita, o app pergunta se o dinheiro passou pela sua conta:
+      receita, o app pergunta se o dinheiro passou pela sua conta — e já vem marcado com a opção
+      mais comum, <strong>“Não, pagaram por mim”</strong>, porque é o caso mais frequente
+      (alguém cobrir sua parte direto com quem ia receber):
       <br><br>• <strong>Sim, entrou</strong> — a pessoa te mandou a grana. Conta como receita
       normalmente e você devolve depois.
       <br>• <strong>Não, pagaram por mim</strong> — ela cobriu sua parte direto com quem ia
@@ -474,6 +476,8 @@
       <br><br>Como nada passou por conta nenhuma, o campo <strong>Conta / Cartão</strong> some do
       formulário nesse caso — não faz sentido apontar uma conta pra um dinheiro que nunca esteve
       lá. Se você trocar de volta pra “Sim, entrou”, o campo reaparece e volta a ser obrigatório.
+      <br><br>Um empréstimo já lançado antes dessa escolha existir continua exatamente como
+      estava — abrir pra editar não reclassifica nada sozinho.
       <br><br>Na lista, esse lançamento usa o <strong>azul</strong> da transferência enquanto a
       dívida está aberta — a mesma cor de “movimento que não é entrada nem saída” — com a marcação
       <em>pagaram por você</em>. Quando você resolve (por <em>Paguei</em> ou por <em>Quitar</em>),
@@ -509,9 +513,22 @@
       abaixo ele diz de que lançamento ela saiu — assim o número não parece brigar com o que
       a aba Lançamentos mostra.
       <br><br>Os botões continuam à mão lá dentro: <em>Recebi/Paguei</em>, <em>Quitar</em>,
-      <em>Editar lançamento</em> e, quando é compra parcelada, <em>Ver as parcelas</em>. Tocar
-      nos botões da linha continua fazendo direto o que eles sempre fizeram — a ficha só abre
-      quando você toca no resto da linha.
+      <em>Editar lançamento</em>, <em>Excluir</em> e, quando é compra parcelada, <em>Ver as
+      parcelas</em>. Tocar nos botões da linha continua fazendo direto o que eles sempre
+      fizeram — a ficha só abre quando você toca no resto da linha.
+      <br><br>A mesma ficha abre em qualquer lugar que mostre um lançamento avulso: dentro de um
+      <strong>grupo</strong> (item 12) e na lista <strong>Lançamentos do mês</strong>, em
+      Faturas — sem cobrança em jogo, ela mostra só o que faz sentido pra uma compra, com
+      <em>Editar</em> e <em>Excluir</em>.
+    </div>
+    <div class="nota">
+      <strong>O reembolso virou um só, no gráfico.</strong> Quando você marca <em>Recebi</em>
+      numa cobrança, o app lança o reembolso com a descrição simples <strong>“Reembolso”</strong>
+      — de quem e do quê fica na <strong>observação</strong> do lançamento. Antes cada reembolso
+      levava o nome da pessoa e da compra na própria descrição, e como cada compra gerava um
+      texto diferente, o gráfico de <em>Receitas por Fonte</em> espalhava em dezenas de fatias
+      de 1-2%. Agora todo reembolso sem grupo cai no mesmo pedaço; os de uma viagem continuam
+      juntos pelo nome do grupo, como já era.
     </div>
     <div class="tela metade"><img src="img/detalhe_cobranca.png" alt="Ficha de uma cobrança"></div>
     <div class="legenda">A ficha do lançamento por trás da cobrança, sem sair da aba.</div>
@@ -706,6 +723,16 @@
       <br><br>O <strong>olho</strong> no cabeçalho esconde os valores, igual ao da aba Faturas —
       útil pra mostrar a tela pra alguém sem abrir os números.
     </div>
+    <div class="nota">
+      <strong>Abrindo um grupo, o gráfico de categorias também vira pizza.</strong> Logo acima
+      da lista de gastos tem o mesmo par de botões <em>Barras / Pizza</em> dos gráficos gerais —
+      a escolha fica guardada, e vale pro próximo grupo que você abrir também.
+      <br><br>E tocar numa linha da lista abre a <strong>ficha do lançamento</strong> (a mesma do
+      item 9), com <em>Editar</em> e <em>Excluir</em> à mão — sem precisar ir até a aba
+      Lançamentos pra mexer numa compra que está dentro de um grupo.
+    </div>
+    <div class="tela metade"><img src="img/grupo_pizza.png" alt="Detalhe do grupo com o gráfico em pizza"></div>
+    <div class="legenda">O mesmo detalhe do grupo, agora em pizza — e a ficha abrindo ao tocar num item.</div>
   </div>
 </section>
 
