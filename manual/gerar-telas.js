@@ -76,10 +76,13 @@ fs.mkdirSync(OUT, { recursive: true });
     if (cItau) { cItau.saldoInicial = '2.500,00'; cItau.saldoInicialEm = dia(1); }
     salvarContas();
 
-    // um grupo de investimento com aporte, pra fotografar o card e o balão de opções
-    if (!tiposAtivo.includes('Tesouro Direto')) tiposAtivo.push('Tesouro Direto');
+    // dois grupos de investimento com aporte: um rendendo e outro parado. Dois
+    // porque o resumo do topo da aba só mostra do que serve com mais de um tipo.
+    ['Tesouro Direto','CDB'].forEach(t => { if (!tiposAtivo.includes(t)) tiposAtivo.push(t); });
     investimentos.push({id:novoIdLancamento(),tipoAtivo:'Tesouro Direto',valor:'1.200,00',
-      data:d(-30),origem:'Itaú'});
+      data:d(-30),origem:'Itaú',valorAtual:'1.284,00',atualizadoEm:d(-2)});
+    investimentos.push({id:novoIdLancamento(),tipoAtivo:'CDB',valor:'800,00',
+      data:d(-60),origem:'PicPay'});
     salvarTiposAtivo(); salvarInvest();
 
     uiPrefs.chavePix = '(11) 98765-4321';
@@ -277,10 +280,11 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.evaluate(()=>{ fecharFormConta(); fecharModal('modalContas'); });
   await page.waitForTimeout(300);
 
-  // 20) o card do grupo de investimento, com o ⋯ das opções
+  // 20) o card fixo do topo de Investimentos e o card de um grupo, com o ⋯
   await abrir('Investim.');
   await page.evaluate(()=>renderizarInvestimentos());
   await page.waitForTimeout(500);
+  await tiro('investimentos_resumo', '#cardResumoInvestimentos');
   await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
 
   // 20b) a ficha de uma compra da fatura
