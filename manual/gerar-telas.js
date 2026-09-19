@@ -38,6 +38,13 @@ fs.mkdirSync(OUT, { recursive: true });
     desp('Notebook (1/6)','1.250,00','Outros',dia(3),'Crédito Parcelado','Itaú',{grupoId:'gNb',numParcelas:'6'});
     for (let i=1;i<=5;i++) desp('Notebook ('+(i+1)+'/6)','1.250,00','Outros',mes(i),'Crédito Parcelado','Itaú',{grupoId:'gNb',numParcelas:'6'});
     desp('Cinema','76,00','Lazer',dia(3),'Crédito à Vista');
+    // Observação comprida de propósito: é ela que mostra o "ver tudo" da ficha
+    desp('Restaurante','188,10','Lazer',dia(7),'À Vista / Débito','Itaú',{observacao:
+      'Rooftop do hotel em Copacabana. Fomos conhecer e foi lindo demais, o pôr do sol bateu '
+      + 'na pedra na hora certa. Dividimos o couvert, dois drinks e a entrada de polvo. O garçom '
+      + 'sugeriu ficar até o show começar e valeu cada centavo — anotar pra repetir no aniversário, '
+      + 'de preferência reservando a mesa da ponta. Estacionamento sai R$ 40 e não vale: dá pra ir '
+      + 'de metrô até a Cardeal Arcoverde e subir a pé em dez minutos.'});
 
     // empréstimos
     desp('Airbnb da galera','200,00','Viagens ✈️',d(-14),'Crédito à Vista','Itaú',{emprestimoPara:'Bernardo',emprestimoVence:d(-4),observacao:'Ele me paga quando voltarmos da viagem'});
@@ -286,6 +293,25 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(500);
   await tiro('investimentos_resumo', '#cardResumoInvestimentos');
   await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
+
+  // 20a) a revisão dos rendimentos, com os aportes atrasados na mesma tela
+  await page.evaluate(()=>abrirRevisaoAportes());
+  await page.waitForTimeout(450);
+  await tiro('revisar_aportes', '#modalRevisarAportes .modal-content');
+  await page.evaluate(()=>fecharModal('modalRevisarAportes'));
+  await page.waitForTimeout(300);
+
+  // 20a2) a ficha com uma observação comprida, mostrando o "ver tudo"
+  await abrir('Faturas');
+  await secao('lancamentosMes', true);
+  await page.evaluate(()=>{
+    const l = lancamentos.find(x => /Rooftop/.test(x.observacao || ''));
+    if (l) abrirDetalheLancamentoPorId(l.id);
+  });
+  await page.waitForTimeout(450);
+  await tiro('obs_completa', '#modalDetalheCobranca .modal-content');
+  await page.evaluate(()=>fecharModal('modalDetalheCobranca'));
+  await secao('lancamentosMes', false);
 
   // 20b) a ficha de uma compra da fatura
   await abrir('Faturas');

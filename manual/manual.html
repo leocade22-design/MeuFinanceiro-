@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.19-2 · Leia em 20 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.19-3 · Leia em 21 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -124,8 +124,9 @@
       <strong>A aba acompanha o dedo.</strong> Arrastando pro lado, a aba atual sai e a próxima
       entra colada nela, na medida em que você puxa — dá pra <strong>espiar</strong> o que vem
       e voltar atrás no meio do caminho: solte antes de um terço da tela e tudo volta pro lugar.
-      Passando disso, ou com um peteleco rápido, a troca completa sozinha. Depois da última aba
-      o gesto volta pra primeira.
+      Passando disso, ou com um peteleco rápido, a troca completa sozinha. O rodízio passa pelas
+      <strong>seis</strong> abas, Ajustes inclusive, e depois dele volta pra Lançamentos —
+      antes o gesto parava em Investim. e Ajustes só se chegava tocando no botão.
       <br><br>Antes a tela só trocava quando o dedo saía do vidro: você arrastava no escuro e a
       página aparecia de uma vez.
     </div>
@@ -366,6 +367,17 @@
       <em>Ver as parcelas</em>. Abrir a ficha não fecha o extrato: você volta e continua de onde
       parou.
     </div>
+    <div class="nota">
+      <strong>A observação vem inteira.</strong> Na lista ela é cortada numa linha só — são
+      dezenas de linhas e ali a observação é detalhe. Na ficha é o contrário: você abriu
+      justamente pra ler, então o texto quebra em várias linhas e o bloco cresce com ele.
+      Passando de cinco linhas aparece um <em>ver tudo</em>; um toque em qualquer ponto do texto
+      abre o resto, e outro recolhe.
+      <br><br>Antes ela era cortada com reticências também aqui, e não havia jeito nenhum de ler
+      o que faltava sem entrar na edição.
+    </div>
+    <div class="tela metade"><img src="img/obs_completa.png" alt="Ficha com uma observação comprida e o link ver tudo"></div>
+    <div class="legenda">Observação comprida: o texto abre em várias linhas e o <em>ver tudo</em> traz o resto.</div>
     <div class="tela metade"><img src="img/detalhe_fatura.png" alt="Ficha de uma compra da fatura"></div>
     <div class="legenda">A ficha da compra, com a linha que diz em qual fatura ela caiu.</div>
     <div class="tela"><img src="img/fatura_extrato.png" alt="Fatura aberta mostrando as compras"></div>
@@ -824,16 +836,45 @@
       <em>R$ 394,78 desde mar/26 · R$ 612,00 desde set/26</em>.
     </div>
     <div class="nota">
-      <strong>O card do topo não fecha — e agora diz mais do que um número.</strong> Igual ao
-      <em>Resumo</em> da aba de Faturas, ele é o retrato da aba: fica sempre aberto, no lugar.
-      À esquerda, o <strong>total aportado</strong> e quanto isso vale hoje; à direita, um
-      <strong>resumo por tipo</strong> — Tesouro, CDB, poupança, cada um com o quanto vale.
-      Tocando num deles você desce direto pro card daquele tipo (e ele abre, se estiver fechado).
-      Embaixo, o <strong>+ Novo aporte</strong>.
+      <strong>O card do topo não fecha — e responde “quanto eu coloquei, e em quê”.</strong>
+      Igual ao <em>Resumo</em> da aba de Faturas, ele é o retrato da aba: fica sempre aberto,
+      no lugar. À esquerda, o <strong>total aportado</strong>; à direita, quanto entrou em
+      <strong>cada ativo</strong> — Tesouro, CDB, fundo imobiliário. Tocando num deles você desce
+      direto pro card daquele ativo (e ele abre, se estiver fechado).
       <br><br>Antes esse card recolhia, e recolhido a aba abria sem nenhum número à vista.
     </div>
-    <div class="tela metade"><img src="img/investimentos_resumo.png" alt="Card fixo no topo da aba Investim., com o total e o resumo por tipo"></div>
-    <div class="legenda">O total à esquerda, o resumo de cada tipo à direita. Toque num tipo pra ir até o card dele.</div>
+    <div class="nota">
+      <strong>Aportar é sempre aportar em alguma coisa.</strong> Por isso o botão não mora aqui
+      em cima: ele fica no rodapé do card de cada ativo — <em>+ Novo aporte em Tesouro Direto</em> —
+      e já entra com o tipo escolhido. Enquanto você não tem nenhum ativo cadastrado, o
+      <strong>+ Novo aporte</strong> aparece no card de baixo, junto do recado.
+    </div>
+    <div class="nota">
+      <strong>E dá pra recortar no tempo.</strong> Os chips no alto do card — <em>30 dias</em>,
+      <em>Este mês</em>, <em>Este ano</em>, <em>Desde o início</em> — mudam a pergunta:
+      “quanto eu coloquei neste período, e em quê”. Em <em>Desde o início</em> (o padrão) o card
+      mostra o patrimônio inteiro e quanto ele vale hoje; nos outros, o que saiu do bolso pra
+      dentro dos investimentos naquele pedaço de tempo. O período escolhido fica guardado.
+      <br><br>O rendimento não aparece nos períodos curtos de propósito: o ganho é do aporte
+      inteiro, desde o dia em que você fez, não da fatia que caiu dentro do filtro.
+      <strong>Quanto cada ativo vale hoje</strong> continua no card dele, logo abaixo.
+    </div>
+    <div class="tela metade"><img src="img/investimentos_resumo.png" alt="Card fixo no topo da aba Investim., com o total e o aportado em cada ativo"></div>
+    <div class="legenda">O total à esquerda, o que entrou em cada ativo à direita. Toque num ativo pra ir até o card dele.</div>
+    <div class="nota">
+      <strong>Revisar os rendimentos.</strong> O app é offline: não tem como buscar a cotação do
+      Tesouro nem a taxa do seu CDB. Então ele faz aqui o mesmo que faz com o saldo das contas —
+      <strong>lembra você de conferir</strong>. Passados 45 dias sem revisão, uma linha discreta
+      aparece no card do topo: <em>● 2 aportes sem revisar há mais de um mês · revisar</em>.
+      <br><br>Tocando nela, todos os atrasados entram na <strong>mesma tela</strong>, cada um com
+      o valor de hoje já preenchido. Você abre o app do banco, corrige o que mudou e salva de uma
+      vez. O que você não mexer <strong>também sai da lista</strong> — você conferiu e estava
+      certo, e sem isso o aviso nunca iria embora.
+      <br><br>Consórcio fica de fora: ali o valor é de contrato, não de mercado. Quando você é
+      contemplado e a parcela muda, quem registra isso é o botão <em>Fui contemplado</em>.
+    </div>
+    <div class="tela metade"><img src="img/revisar_aportes.png" alt="Janela de revisão dos rendimentos"></div>
+    <div class="legenda">Os aportes atrasados na mesma tela, com o valor de hoje já preenchido.</div>
     <div class="nota">
       <strong>Cada tipo de investimento é um card.</strong> Tesouro, poupança, fundos — cada grupo
       tem o seu, com quanto vale hoje, o rendimento desde o aporte, a lista dos aportes e um botão
@@ -859,6 +900,9 @@
       <strong>Consórcio não entra no “Total aportado”.</strong> É compra parcelada de uma carta de
       crédito, não dinheiro rendendo — somar os dois no mesmo número misturaria coisas diferentes.
       O card tem os totais dele: quanto já foi pago e quanto tem em cartas.
+      <br><br>Ele <em>aparece</em> na lista de ativos do card do topo, com a borda pontilhada, porque
+      também é dinheiro que você colocou pra dentro e faz falta na resposta de “quanto eu já pus”.
+      Mas continua fora do número grande à esquerda.
     </div>
     <div class="nota">
       <strong>Encerrar antes do fim.</strong> Vendeu a cota, desistiu, saiu do grupo? O botão
@@ -918,6 +962,7 @@
       <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número.</li>
       <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.</li>
       <li><strong>Ordem dos cards</strong> — três listas, uma pra cada aba que tem mais de um card: <em>Faturas</em>, <em>Gráficos</em> e <em>Investimentos</em>. Arraste pelas listrinhas para deixar no topo o que você olha primeiro. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro. Card que não está aparecendo agora — <em>Consórcios encerrados</em> sem nenhum encerrado, por exemplo — também não entra na lista, e volta no fim da aba quando reaparecer.</li>
+      <li><strong>Grupos de investimento</strong> — Tesouro, fundos, poupança, ações: cada grupo vira um card na aba <em>Investim.</em> Fica logo depois de <em>Contas e cartões</em> porque é o mesmo assunto — o cadastro de onde o dinheiro mora.</li>
       <li><strong>Contatos de cobrança</strong> — a agenda de quem você empresta. Cadastre pelo <em>+ Novo contato</em> (o telefone é opcional: sem ele a pessoa existe igual, só não dá pra abrir o WhatsApp) e depois é só escolher o nome na hora do lançamento. Quem você já emprestou antes aparece aqui sozinho, vindo do histórico.</li>
       <li><strong>Travar o zoom</strong> — dentro de <em>Aparência</em>. No iPhone um toque duplo sem querer dá zoom e, com o app instalado na tela inicial, não existe barra de endereço pra desfazer: a tela fica torta até você ajustar com os dedos. Ligando isso, a tela para de dar zoom. Vale só naquele aparelho, e vem desligado — quem usa o zoom pra enxergar melhor não perde nada.</li>
       <li><strong>Aparência</strong> — oito temas: Escuro, Claro, Índigo (escuro azulado), Sépia (fundo quente), Floresta (verde à noite), Papel (cinza-bege claro), Rosa (suave e claro) e Violeta (roxo-azulado). Vale só neste aparelho: não entra no backup, então quem receber seus dados continua com o tema dele.</li>
