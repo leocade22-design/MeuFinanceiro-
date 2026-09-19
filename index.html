@@ -1123,7 +1123,10 @@
           style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:0 0 10px;">
           <span style="color:var(--amarelo);">●</span> <span id="textoAvisoRevisar"></span> <span style="color:var(--texto-tenue);">revisar</span>
         </button>
-        <button type="button" class="btn-adicionar" style="margin-top:0;" onclick="abrirFormAporte()">+ Novo aporte</button>
+        <!-- Sem "+ Novo aporte" aqui: este card é retrato, não mesa de trabalho.
+             Aportar é sempre aportar EM alguma coisa, e o botão de cada tipo,
+             logo abaixo, já entra com o tipo escolhido. Sem tipo nenhum ainda,
+             o botão aparece no card de baixo, junto do recado. -->
       </div>
 
       <!-- UM CARD POR GRUPO DE INVESTIMENTO
@@ -13326,9 +13329,18 @@
       container.innerHTML = '';
 
       if (!ordem.length) {
+        /* Sem nenhum tipo ainda não existe "+ Novo aporte em X" pra tocar, e o
+           card do topo não tem mais botão: então a primeira porta de entrada
+           mora aqui, junto do recado que explica o que vai acontecer. */
         const vazio = document.createElement('div');
         vazio.className = 'card';
-        vazio.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte registrado ainda. Use <strong>+ Novo aporte</strong> aí em cima — cada tipo de investimento vira um card aqui.</p>';
+        vazio.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte registrado ainda — cada tipo de investimento vira um card aqui.</p>';
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'btn-adicionar';
+        botao.textContent = '+ Novo aporte';
+        botao.onclick = () => abrirFormAporte();
+        vazio.appendChild(botao);
         container.appendChild(vazio);
         return;
       }
