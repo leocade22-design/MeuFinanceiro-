@@ -496,6 +496,27 @@
     /* indicativo de leitura rápida, não centro de atenção: pequena, apagada e
        sempre em uma linha só, pra não esticar o card */
     .observacao-mini { margin-top:3px; font-size:10px; color:var(--texto-tenue); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* OBSERVAÇÃO NA FICHA DO LANÇAMENTO
+       Na lista, cortar numa linha é o certo: são dezenas de linhas e a
+       observação é detalhe. Na ficha é o contrário — você abriu justamente pra
+       ler. Aqui ela quebra em várias linhas e cresce com o texto; passando de
+       cinco linhas, encolhe e um toque abre o resto. */
+    .observacao-ficha {
+      margin-top:12px; padding-top:10px; border-top:1px solid var(--borda-fraca);
+      font-size:11.5px; color:var(--texto-fraco); line-height:1.55;
+    }
+    /* O pre-wrap mora no texto, e não no bloco: no bloco ele transformaria a
+       indentação do próprio HTML em espaço em branco de verdade, e sobravam
+       linhas vazias em volta da observação. */
+    .observacao-ficha .texto-obs { display:block; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .observacao-ficha.recolhida .texto-obs {
+      display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .observacao-ficha .ver-obs {
+      display:none; margin-top:6px; background:transparent; border:none; padding:0;
+      font-family:inherit; font-size:11px; color:var(--azul); cursor:pointer;
+    }
+    .observacao-ficha.tem-corte .ver-obs { display:block; }
 
     /* SEÇÕES RETRÁTEIS, OBSERVAÇÃO E GERENCIAMENTO DE CONTAS */
     .card-header-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; background:transparent; border:none; cursor:pointer; padding:0; text-align:left; color:inherit; font-family:inherit; }
@@ -1073,18 +1094,35 @@
             <button class="btn-olho" id="btnOlhoInvest" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
           </div>
         </div>
+        <!-- "Quanto eu coloquei", recortado no tempo. Mesmos chips da aba de
+             Gráficos: o período é uma pergunta que se faz do mesmo jeito em
+             toda a casa. -->
+        <div class="chips-periodo" id="periodoInvestimentos" style="margin:10px 0 4px;">
+          <button type="button" class="btn-periodo" data-periodo="30" onclick="setPeriodoInvestimentos('30')">30 dias</button>
+          <button type="button" class="btn-periodo" data-periodo="mesAtual" onclick="setPeriodoInvestimentos('mesAtual')">Este mês</button>
+          <button type="button" class="btn-periodo" data-periodo="anoAtual" onclick="setPeriodoInvestimentos('anoAtual')">Este ano</button>
+          <button type="button" class="btn-periodo ativo" data-periodo="tudo" onclick="setPeriodoInvestimentos('tudo')">Desde o início</button>
+        </div>
         <div class="painel-topo" style="margin:10px 0 12px;">
           <div class="card-saldo-destaque" style="cursor:default;">
-            <span>Total aportado</span>
+            <span id="rotuloTotalInvestido">Total aportado</span>
             <h4 class="val-saldo" id="totalInvestido" style="color:var(--azul);">R$ 0,00</h4>
-            <!-- Só aparece quando há diferença: sem ganho/perda ainda registrado, uma
+            <!-- Só aparece quando há o que dizer: sem ganho/perda registrado uma
                  segunda linha vazia seria só ruído embaixo do número principal. -->
             <div id="ganhoPerdaTotal" style="font-size:11px;margin-top:4px;line-height:1.4;"></div>
           </div>
-          <!-- O resumo ao lado: cada tipo e quanto vale hoje. Tocar leva ao
-               card daquele tipo, mais abaixo. -->
+          <!-- O resumo ao lado: quanto entrou em cada ativo no período. Tocar
+               leva ao card daquele ativo, mais abaixo. -->
           <div class="painel-direita" id="resumoTiposInvestimento"></div>
         </div>
+        <!-- REVISÃO DOS RENDIMENTOS
+             Uma linha, no mesmo tom do aviso de ajuste de saldo nas Faturas.
+             Só existe quando há aporte parado há mais de um mês. -->
+        <button type="button" id="avisoRevisarAportes" class="escondido" onclick="abrirRevisaoAportes()"
+          aria-label="Revisar o valor dos aportes"
+          style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:0 0 10px;">
+          <span style="color:var(--amarelo);">●</span> <span id="textoAvisoRevisar"></span> <span style="color:var(--texto-tenue);">revisar</span>
+        </button>
         <button type="button" class="btn-adicionar" style="margin-top:0;" onclick="abrirFormAporte()">+ Novo aporte</button>
       </div>
 
@@ -1189,6 +1227,29 @@
             <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalContas()">Contas e cartões</button>
             <button type="button" class="btn-cancelar" style="margin:0;" onclick="abrirModalCategorias()">Categorias</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Cada grupo destes vira um card na aba Investim. Criar e ordenar é
+           configuração, e configuração mora aqui — não no meio da carteira.
+           Fica logo abaixo de Contas e categorias porque é o mesmo assunto:
+           o cadastro de onde o dinheiro mora. -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('gruposInvestimento'); renderizarListaTiposAtivo();">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">Grupos de investimento</h3>
+            <span id="contadorGruposInv" style="font-size:11px;color:var(--texto-medio);"></span>
+          </div>
+          <span class="chevron-sec" id="chevron-gruposInvestimento">▸</span>
+        </button>
+        <div id="corpo-gruposInvestimento" class="escondido" style="margin-top:10px;">
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">
+            Tesouro, fundos, poupança, ações… Cada grupo vira um card na aba <strong>Investim.</strong>,
+            com os aportes e o rendimento dele. Arraste pelas listrinhas pra mudar a ordem dos cards,
+            e toque na linha pra renomear ou excluir.
+          </p>
+          <div id="listaTiposAtivoGerenciar"></div>
+          <button type="button" class="btn-adicionar" onclick="abrirFormTipoAtivo()">+ Novo grupo de investimento</button>
         </div>
       </div>
 
@@ -1299,27 +1360,6 @@
         <div id="corpo-ordemInvestimentos" class="escondido" style="margin-top:10px;">
           <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
           <div id="ordemCardsAbaInvestimentos"></div>
-        </div>
-      </div>
-
-      <!-- Cada grupo destes vira um card na aba Investim. Criar e ordenar é
-           configuração, e configuração mora aqui — não no meio da carteira. -->
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('gruposInvestimento'); renderizarListaTiposAtivo();">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="font-size:16px;">Grupos de investimento</h3>
-            <span id="contadorGruposInv" style="font-size:11px;color:var(--texto-medio);"></span>
-          </div>
-          <span class="chevron-sec" id="chevron-gruposInvestimento">▸</span>
-        </button>
-        <div id="corpo-gruposInvestimento" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">
-            Tesouro, fundos, poupança, ações… Cada grupo vira um card na aba <strong>Investim.</strong>,
-            com os aportes e o rendimento dele. Arraste pelas listrinhas pra mudar a ordem dos cards,
-            e toque na linha pra renomear ou excluir.
-          </p>
-          <div id="listaTiposAtivoGerenciar"></div>
-          <button type="button" class="btn-adicionar" onclick="abrirFormTipoAtivo()">+ Novo grupo de investimento</button>
         </div>
       </div>
 
@@ -1788,6 +1828,26 @@
       </div>
       <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">Digite quanto essa aplicação vale hoje. A diferença pro que você aportou aparece como ganho ou perda.</p>
       <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarValorAtualizado()">Salvar valor</button>
+    </div>
+  </div>
+
+  <!-- REVISÃO DOS RENDIMENTOS
+       O app é offline: não tem como buscar a cotação do Tesouro nem a taxa do
+       CDB. Então ele faz o que já faz com o saldo das contas — lembra você de
+       conferir, e aceita o número que você viu no banco. Um aporte de cada vez
+       era penoso; aqui todos os atrasados entram na mesma tela. -->
+  <div id="modalRevisarAportes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalRevisarAportes')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Revisar rendimentos</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalRevisarAportes')">&times;</button>
+      </div>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">
+        Abra o app do banco e copie quanto cada aplicação vale hoje. O que você não mexer
+        fica como está — e mesmo assim sai da lista de pendentes, porque você já conferiu.
+      </p>
+      <div id="listaRevisaoAportes"></div>
+      <button type="button" class="btn-salvar" style="margin-top:4px;" onclick="salvarRevisaoAportes()">Salvar revisão</button>
     </div>
   </div>
 
@@ -5476,6 +5536,11 @@
        repetir. O `detalhe` é a explicação séria embaixo da piada: quem abriu o app
        pela primeira vez precisa entender o que fazer, não só levar a zoada. */
     const AVISOS = {
+      revisaoSalva: { emoji: '📈', detalhe: '', frases: [
+        'Carteira em dia.',
+        'Pronto — os números voltaram a ser verdade.',
+        'Revisado. O ganho que aparece agora é o de hoje.'
+      ] },
       semValor: { emoji: '🤨', detalhe: 'Preencha o campo Valor antes de salvar.', frases: [
         'Você é pateta ou o quê? Salvar lançamento sem valor?',
         'Um gasto de R$ 0,00? Me poupe.',
@@ -5826,7 +5891,10 @@
     }
 
     // TROCA DE ABA POR GESTO: deslizar o dedo pra esquerda avança, pra direita volta
-    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos'];
+    /* Ajustes ficava de fora: dava pra passar o dedo pelas cinco primeiras e
+       parar na última, e pra chegar em Ajustes só tocando no botão. Agora ele
+       fecha o círculo — o rodízio passa por ele e volta pra Lançamentos. */
+    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos', 'abaConfig'];
     let toqueIniX = 0, toqueIniY = 0, toqueIniT = 0, toqueValido = false, direcaoTravada = null;
 
     function algumModalAberto() {
@@ -11170,8 +11238,14 @@
         ${c ? linhaDetalhe('Alinhado em', dia(c.alinhadoEm), 'var(--verde)') : ''}
         ${indireto ? `<div style="font-size:11.5px;color:var(--azul);margin-top:10px;line-height:1.45;">Empréstimo indireto: essa pessoa pagou por você, então nada saiu das suas contas — por isso este valor não entra no seu saldo.</div>` : ''}
         ${!c && fatura ? `<div style="font-size:11.5px;color:var(--texto-tenue);margin-top:10px;line-height:1.45;">Compra no crédito não sai da conta na data da compra: entra nessa fatura e o dinheiro só sai quando ela for paga.</div>` : ''}
-        ${l.observacao ? `<div class="observacao-mini" style="margin-top:10px;">${l.observacao}</div>` : ''}
+        ${l.observacao ? `<div class="observacao-ficha recolhida" id="obsDaFicha">
+            <span class="texto-obs"></span>
+            <button type="button" class="ver-obs">ver tudo</button>
+          </div>` : ''}
       `;
+      // O texto entra por textContent, e não no HTML acima: observação é texto
+      // digitado por você, e um "<" no meio viraria marcação em vez de sinal.
+      if (l.observacao) document.querySelector('#obsDaFicha .texto-obs').textContent = l.observacao;
 
       // Recebi/Paguei e Quitar são de dívida: fora do card de empréstimos não
       // existe cobrança pra dar baixa, então eles nem aparecem.
@@ -11180,6 +11254,27 @@
       document.getElementById('btnDetalheQuitar').classList.toggle('escondido', !c);
       document.getElementById('btnDetalheParcelas').classList.toggle('escondido', !l.grupoId);
       document.getElementById('modalDetalheCobranca').classList.remove('escondido');
+      // Depois de a ficha aparecer: escondida, toda medida de altura volta zero
+      // e o "ver tudo" nunca apareceria.
+      prepararObservacaoDaFicha();
+    }
+
+    /* Só oferece "ver tudo" quando de fato houve corte. Medir é o único jeito:
+       o mesmo texto cabe em cinco linhas num aparelho e estoura em outro, e
+       contar caracteres erraria nos dois. O botão de fechar volta a recolher —
+       e o toque vale no texto inteiro, não só no link. */
+    function prepararObservacaoDaFicha() {
+      const box = document.getElementById('obsDaFicha');
+      if (!box) return;
+      const texto = box.querySelector('.texto-obs');
+      const botao = box.querySelector('.ver-obs');
+      if (texto.scrollHeight > texto.clientHeight + 2) box.classList.add('tem-corte');
+      const alternar = () => {
+        if (!box.classList.contains('tem-corte')) return;
+        const recolhida = box.classList.toggle('recolhida');
+        botao.textContent = recolhida ? 'ver tudo' : 'ver menos';
+      };
+      box.onclick = alternar;
     }
 
     function detalheRegistrarMovimentacao() {
@@ -12986,20 +13081,161 @@
       });
     }
 
+    /* FILTRO DE PERÍODO DA ABA INVESTIMENTOS
+       Guardado no uiPrefs como todo filtro do app: voltar pra aba amanhã e
+       achar a mesma pergunta respondida é o esperado. */
+    let periodoInvestimentos = 'tudo';
+
+    function setPeriodoInvestimentos(p) {
+      periodoInvestimentos = p;
+      uiPrefs.periodoInvestimentos = p;
+      salvarUiPrefs();
+      renderizarInvestimentos();
+    }
+
+    // Primeiro dia do período, em texto ISO. null = desde sempre.
+    function inicioDoPeriodoInvestimentos() {
+      const hoje = obterDataBrasilia();
+      if (periodoInvestimentos === 'mesAtual') return hoje.slice(0, 8) + '01';
+      if (periodoInvestimentos === 'anoAtual') return hoje.slice(0, 4) + '-01-01';
+      if (periodoInvestimentos === '30') {
+        const d = new Date(hoje + 'T12:00:00');
+        d.setDate(d.getDate() - 30);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
+      return null;
+    }
+
+    // Quanto saiu do bolso em parcela de consórcio dentro do período
+    function consorcioNoPeriodo(desde) {
+      return consorcios.reduce((soma, c) => soma + parcelasPagasConsorcio(c)
+        .filter(l => !desde || l.data >= desde)
+        .reduce((s, l) => s + parseVal(l.valor), 0), 0);
+    }
+
+    /* REVISÃO DOS RENDIMENTOS
+       Sem internet não dá pra buscar cotação nenhuma, então o app faz o que já
+       faz com o saldo das contas: lembra você de conferir. Um aporte "vence"
+       depois de 45 dias sem revisão — mais que um mês, pra não cobrar você no
+       dia seguinte ao fechamento, e menos que dois, pra não deixar o número
+       envelhecer demais. */
+    const DIAS_PARA_REVISAR = 45;
+
+    function diasSemRevisar(inv) {
+      const base = inv.atualizadoEm || inv.data;
+      if (!base) return 0;
+      const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
+      const d = new Date(base + 'T12:00:00');
+      return Math.floor((hoje - d) / 86400000);
+    }
+
+    function aportesParaRevisar() {
+      return investimentos.filter(i => diasSemRevisar(i) >= DIAS_PARA_REVISAR);
+    }
+
+    function atualizarAvisoRevisao() {
+      const aviso = document.getElementById('avisoRevisarAportes');
+      if (!aviso) return;
+      const pendentes = aportesParaRevisar();
+      aviso.classList.toggle('escondido', !pendentes.length);
+      if (!pendentes.length) return;
+      const n = pendentes.length;
+      // O mais antigo é quem dá a régua do atraso: é o que mais mente hoje.
+      const maior = Math.max(...pendentes.map(diasSemRevisar));
+      // "mais de N meses" com N arredondado pra baixo mentiria justo nos
+      // múltiplos exatos (60 dias não é "mais de 2 meses", é 2 meses).
+      const quanto = maior >= 365 ? 'mais de um ano'
+        : maior >= 60 ? Math.floor(maior / 30) + ' meses'
+        : 'mais de um mês';
+      document.getElementById('textoAvisoRevisar').textContent =
+        `${n} ${n === 1 ? 'aporte sem revisar há' : 'aportes sem revisar há'} ${quanto} ·`;
+    }
+
+    function abrirRevisaoAportes() {
+      const box = document.getElementById('listaRevisaoAportes');
+      if (!box) return;
+      box.innerHTML = '';
+      const pendentes = aportesParaRevisar()
+        .sort((a, b) => diasSemRevisar(b) - diasSemRevisar(a));
+      if (!pendentes.length) {
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte pendente de revisão.</p>';
+      }
+      pendentes.forEach(inv => {
+        const dias = diasSemRevisar(inv);
+        const linha = document.createElement('div');
+        linha.className = 'form-group';
+        linha.innerHTML = `
+          <label for="rev-${inv.id}">${inv.tipoAtivo || 'Outros'} · aportado ${fmtVal(parseVal(inv.valor))} em ${inv.data.split('-').reverse().join('/')}</label>
+          <input type="text" id="rev-${inv.id}" data-revisar="${inv.id}" placeholder="R$ 0,00"
+                 oninput="mascaraMoeda(this)" inputmode="numeric" value="${fmtVal(valorAtualDoAporte(inv))}">
+          <div style="font-size:10.5px;color:var(--texto-tenue);margin-top:4px;">
+            ${inv.atualizadoEm ? 'revisado pela última vez em ' + inv.atualizadoEm.split('-').reverse().join('/') : 'nunca revisado'} · ${dias} dias
+          </div>`;
+        box.appendChild(linha);
+      });
+      // os campos de dinheiro do app todo ganham calculadora no mesmo lugar
+      equiparCamposComCalculadora(box);
+      document.getElementById('modalRevisarAportes').classList.remove('escondido');
+    }
+
+    function salvarRevisaoAportes() {
+      const hoje = obterDataBrasilia();
+      let mexidos = 0;
+      document.querySelectorAll('#listaRevisaoAportes [data-revisar]').forEach(campo => {
+        const inv = investimentos.find(i => String(i.id) === campo.dataset.revisar);
+        if (!inv) return;
+        const txt = (campo.value || '').replace('R$', '').trim();
+        const valor = txt ? parseVal(txt) : NaN;
+        // Campo vazio ou negativo: não inventa número, só carimba a conferência
+        if (!isNaN(valor) && valor >= 0) {
+          if (valor !== valorAtualDoAporte(inv)) mexidos++;
+          inv.valorAtual = valor.toFixed(2).replace('.', ',');
+        }
+        // A data entra mesmo sem mudança de valor: você conferiu e estava certo,
+        // então o aporte sai da lista de pendentes — senão o aviso nunca sumiria.
+        inv.atualizadoEm = hoje;
+      });
+      salvarInvest();
+      fecharModal('modalRevisarAportes');
+      renderizarInvestimentos();
+      avisar('revisaoSalva', mexidos
+        ? (mexidos === 1 ? '1 aporte atualizado.' : mexidos + ' aportes atualizados.')
+        : 'Revisão registrada — nada mudou de valor.');
+    }
+
     function renderizarInvestimentos() {
       const totalEl = document.getElementById('totalInvestido');
       const container = document.getElementById('cardsGruposInvestimento');
       if (!totalEl) return;
 
-      const totalAportado = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
+      /* O TOPO RESPONDE "QUANTO EU COLOQUEI", RECORTADO NO TEMPO
+         Em "Desde o início" é o retrato do patrimônio: tudo que foi aportado e
+         quanto vale hoje. Nos outros períodos a pergunta é outra — quanto saiu
+         do bolso pra dentro dos investimentos naquele pedaço de tempo — e aí
+         "vale hoje" não cabe: o rendimento é do aporte inteiro, não da fatia. */
+      const per = periodoInvestimentos;
+      const desde = inicioDoPeriodoInvestimentos();
+      const noPeriodo = i => !desde || (i.data || '') >= desde;
+      const aportesDoPeriodo = investimentos.filter(noPeriodo);
+
+      const totalAportado = aportesDoPeriodo.reduce((s, i) => s + parseVal(i.valor), 0);
       const totalAtual = investimentos.reduce((s, i) => s + valorAtualDoAporte(i), 0);
+      const totalTudo = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
       totalEl.textContent = fmtOculto(totalAportado);
 
-      const diffTotal = totalAtual - totalAportado;
+      const rotuloEl = document.getElementById('rotuloTotalInvestido');
+      if (rotuloEl) rotuloEl.textContent = per === 'tudo' ? 'Total aportado' : 'Aportado no período';
+
       const ganhoPerdaEl = document.getElementById('ganhoPerdaTotal');
       if (ganhoPerdaEl) {
-        if (diffTotal !== 0) {
-          const pct = totalAportado > 0 ? (diffTotal / totalAportado * 100) : 0;
+        const diffTotal = totalAtual - totalTudo;
+        if (per !== 'tudo') {
+          const n = aportesDoPeriodo.length;
+          ganhoPerdaEl.innerHTML = n
+            ? `${n} ${n === 1 ? 'aporte' : 'aportes'}<br><span style="color:var(--texto-tenue);">de ${fmtOculto(totalTudo)} no total</span>`
+            : '<span style="color:var(--texto-tenue);">nenhum aporte neste período</span>';
+        } else if (diffTotal !== 0) {
+          const pct = totalTudo > 0 ? (diffTotal / totalTudo * 100) : 0;
           const sinal = diffTotal >= 0 ? '+' : '−';
           const cor = diffTotal >= 0 ? 'var(--verde)' : 'var(--vermelho)';
           ganhoPerdaEl.innerHTML = `vale ${fmtOculto(totalAtual)} hoje<br><strong style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1)}%)</strong>`;
@@ -13007,6 +13243,11 @@
           ganhoPerdaEl.innerHTML = '';
         }
       }
+
+      document.querySelectorAll('#periodoInvestimentos .btn-periodo').forEach(b => {
+        b.classList.toggle('ativo', b.dataset.periodo === per);
+      });
+      atualizarAvisoRevisao();
 
       /* A ordem dos cards é a ordem dos grupos em Ajustes, não a do maior saldo:
          quem arrastou pra deixar a Poupança em cima espera achar ela em cima no
@@ -13016,43 +13257,68 @@
       const ordem = tiposAtivo.filter(t => porTipo[t])
         .concat(Object.keys(porTipo).filter(t => !tiposAtivo.includes(t)));
 
+      // Quanto entrou em cada tipo DENTRO do período escolhido
+      const aportadoNoPeriodo = {};
+      aportesDoPeriodo.forEach(i => {
+        const t = i.tipoAtivo || 'Outros';
+        aportadoNoPeriodo[t] = (aportadoNoPeriodo[t] || 0) + parseVal(i.valor);
+      });
+      const comEntrada = ordem.filter(t => (aportadoNoPeriodo[t] || 0) > 0);
+
       /* RESUMO AO LADO DO TOTAL
          O card do topo mostrava um número grande e mais nada. Com a lista de
-         tipos ao lado, a aba abre respondendo "quanto eu tenho, e em quê" sem
-         precisar rolar até os cards de baixo. */
+         ativos ao lado, a aba abre respondendo "quanto eu coloquei, e em quê"
+         sem precisar rolar até os cards de baixo. Quanto cada um VALE hoje fica
+         no card do tipo, logo abaixo — aqui é o que entrou. */
       const resumoTipos = document.getElementById('resumoTiposInvestimento');
       if (resumoTipos) {
         resumoTipos.innerHTML = '';
-        if (!ordem.length) {
+        // Com muitos tipos a coluna cresceria mais que o card ao lado: os
+        // maiores ficam, o resto vira uma linha de contagem.
+        const MAX_LINHAS = consorcioNoPeriodo(desde) > 0 ? 3 : 4;
+        if (!comEntrada.length) {
           const vazio = document.createElement('div');
           vazio.className = 'card-mini';
           vazio.style.cursor = 'default';
-          vazio.innerHTML = '<span style="margin:0;">nenhum aporte</span>';
+          vazio.innerHTML = `<span style="margin:0;">${per === 'tudo' ? 'nenhum aporte' : 'nada no período'}</span>`;
           resumoTipos.appendChild(vazio);
         } else {
-          // Com muitos tipos a coluna cresceria mais que o card ao lado: os
-          // quatro maiores ficam, o resto vira uma linha de contagem.
-          const MAX_LINHAS = 4;
-          const mostrar = ordem.slice(0, ordem.length > MAX_LINHAS ? MAX_LINHAS - 1 : MAX_LINHAS);
+          const mostrar = comEntrada.slice(0, comEntrada.length > MAX_LINHAS ? MAX_LINHAS - 1 : MAX_LINHAS);
           mostrar.forEach(tipo => {
-            const g = porTipo[tipo];
             const mini = document.createElement('div');
             mini.className = 'card-mini';
             mini.title = 'Ver os aportes em ' + tipo;
-            const cor = g.diff > 0 ? 'var(--verde)' : (g.diff < 0 ? 'var(--vermelho)' : 'var(--texto-forte)');
-            mini.innerHTML = `<span style="margin:0;">${tipo}</span><h4 style="font-size:13px;color:${cor};">${fmtOculto(g.atual)}</h4>`;
+            mini.innerHTML = `<span style="margin:0;">${tipo}</span><h4 style="font-size:13px;">${fmtOculto(aportadoNoPeriodo[tipo])}</h4>`;
             mini.onclick = () => irParaGrupoInvestimento(tipo);
             resumoTipos.appendChild(mini);
           });
-          if (ordem.length > MAX_LINHAS) {
-            const resto = ordem.length - mostrar.length;
-            const soma = ordem.slice(mostrar.length).reduce((s, t) => s + porTipo[t].atual, 0);
+          if (comEntrada.length > MAX_LINHAS) {
+            const resto = comEntrada.length - mostrar.length;
+            const soma = comEntrada.slice(mostrar.length).reduce((s, t) => s + aportadoNoPeriodo[t], 0);
             const mini = document.createElement('div');
             mini.className = 'card-mini';
             mini.innerHTML = `<span style="margin:0;">+ ${resto} ${resto === 1 ? 'tipo' : 'tipos'}</span><h4 style="font-size:13px;">${fmtOculto(soma)}</h4>`;
-            mini.onclick = () => irParaGrupoInvestimento(ordem[mostrar.length]);
+            mini.onclick = () => irParaGrupoInvestimento(comEntrada[mostrar.length]);
             resumoTipos.appendChild(mini);
           }
+        }
+        /* Consórcio entra na lista mas fica com a borda mais fraca: é dinheiro
+           que você colocou, e faz falta na resposta de "quanto eu já pus pra
+           dentro" — mas não é aporte, e por isso continua fora do total grande
+           à esquerda (é compra parcelada de uma carta, não dinheiro rendendo). */
+        const pagoConsorcio = consorcioNoPeriodo(desde);
+        if (pagoConsorcio > 0) {
+          const mini = document.createElement('div');
+          mini.className = 'card-mini';
+          mini.style.borderStyle = 'dashed';
+          mini.title = 'Parcelas de consórcio pagas no período — à parte do total aportado';
+          mini.innerHTML = `<span style="margin:0;">Consórcios</span><h4 style="font-size:13px;color:var(--texto-medio);">${fmtOculto(pagoConsorcio)}</h4>`;
+          mini.onclick = () => {
+            if (!secaoEstaAberta('consorcios')) { uiPrefs.secao_consorcios = true; salvarUiPrefs(); aplicarSecao('consorcios'); }
+            const card = document.querySelector('#abaInvestimentos [data-card="consorcios"]');
+            if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          };
+          resumoTipos.appendChild(mini);
         }
       }
 
@@ -14239,7 +14505,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.19-2';
+    const APP_VERSION = '2026.09.19-3';
 
     // Inicialização
     carregarLocalStorage();
@@ -14306,6 +14572,7 @@ function confirmarLancamentoVoz() {
     if (uiPrefs.tipoDiaSemana === 'colunas') setTipoDiaSemana('colunas');
     if (uiPrefs.tipoComprometido === 'colunas') setTipoComprometido('colunas');
     if (uiPrefs.tipoGraficoGrupo === 'pizza') tipoGraficoGrupo = 'pizza';
+    if (uiPrefs.periodoInvestimentos) periodoInvestimentos = uiPrefs.periodoInvestimentos;
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
