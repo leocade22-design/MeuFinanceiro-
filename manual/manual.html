@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.19-3 · Leia em 21 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.23-1 · Leia em 23 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -161,6 +161,23 @@
       <br><br>Nos dois campos de saldo, a conta pode terminar negativa
       (<em>100 − 500</em>) e o app aceita: conta no vermelho existe. Nos outros, valor
       zero ou negativo continua sendo recusado.
+    </div>
+    <div class="nota">
+      <strong>Categoria "Investimento" puxa o destino do dinheiro.</strong> Escolha essa categoria
+      num lançamento novo e aparece um campo a mais — <em>Aportar em / dar baixa em</em> — misturando
+      os dois lugares onde esse dinheiro pode ir: um <strong>tipo de ativo</strong> (Tesouro Direto,
+      CDB…) ou um <strong>consórcio</strong> em andamento.
+      <ul>
+        <li>Escolhendo um <strong>tipo de ativo</strong>: o lançamento é criado do jeito de sempre, e
+            de quebra um aporte é registrado nele — o mesmo que aconteceria abrindo o formulário
+            dedicado de aporte, só que sem sair da tela de lançar.</li>
+        <li>Escolhendo um <strong>consórcio</strong>: não nasce um lançamento avulso — o valor dá
+            baixa na parcela daquele mês, exatamente como o botão <em>Registrar pagamento</em> do
+            consórcio já faz (capítulo 13). Evita o boleto contando duas vezes.</li>
+      </ul>
+      O campo só aparece em lançamento <strong>novo</strong>: editar um lançamento de categoria
+      Investimento que já existe não repete a ação — a essa altura o aporte ou a baixa já
+      aconteceram.
     </div>
     <div class="nota">
       <strong>Pelo microfone.</strong> Toque no ícone de microfone e fale naturalmente:
@@ -612,6 +629,14 @@
     <div class="legenda">A conta na sua frente, e só a diferença vira lançamento.</div>
     <p>Na primeira cobrança de cada pessoa o app pede o WhatsApp dela — dá para escolher da agenda
        do celular ou digitar. Depois disso, vai direto.</p>
+    <div class="nota">
+      <strong>No iPhone não aparece o botão "Escolher da agenda"? Não é bug.</strong> Esse atalho
+      depende de um recurso do Safari que, no iPhone, vem desligado por padrão. No lugar do botão
+      some, aparece uma ajuda recolhível explicando o caminho:
+      <em>Ajustes do aparelho → busca "Recursos Experimentais" → ativar "Contact Picker API"</em>.
+      Fechando e abrindo o app de novo depois de ativar, o atalho passa a aparecer. Enquanto isso —
+      ou se preferir não mexer — o campo manual funciona igual, em qualquer aparelho.
+    </div>
 
     <h3>Quem enrola não some do radar</h3>
     <p>Os botões <strong>−1 mês / +1 mês</strong> adiam o prazo de uma cobrança. Só que adiar joga a
@@ -710,6 +735,18 @@
       todas as contas, como sempre.
     </div>
     <div class="nota">
+      <strong>Descontar reembolsos já recebidos.</strong> Logo abaixo do seletor de conta, na visão
+      <em>Despesas</em>, tem essa opção — <strong>desligada por padrão</strong>. Ligada, o total de
+      cada <strong>categoria</strong> (e o <em>Maiores gastos</em>) passa a mostrar o valor
+      <strong>líquido</strong>: uma janta de R$ 300 rateada, com R$ 150 já reembolsados, conta como
+      R$ 150 na categoria — não os R$ 300 que de fato saíram do seu cartão.
+      <br><br>É pra uma revisão específica — <em>"tirando o que já voltou pro meu bolso, no que eu
+      realmente gastei?"</em> — sem mexer no número do dia a dia: o <strong>total geral de
+      despesas</strong>, lá em cima, continua sempre bruto, porque é o que de fato saiu da conta na
+      hora da compra. A opção some nas visões <em>Receitas</em> e <em>Contas</em>, onde não se
+      aplica, e a preferência fica guardada.
+    </div>
+    <div class="nota">
       <strong>E por forma de pagamento.</strong> Tocando no total de <em>Despesas</em> ou
       <em>Receitas</em> abre a Consulta, e nela há <strong>duas réguas</strong>: a de cima
       escolhe a conta, a de baixo escolhe a forma — <em>Crédito</em>, <em>Débito</em>,
@@ -754,12 +791,16 @@
        na hora de lançar. O app soma tudo, mostra por categoria e permite fechar o grupo quando acabar.</p>
     <p>Funciona junto com os empréstimos: se você pagou a pousada e vai dividir depois, marque as duas coisas.</p>
     <div class="nota">
-      <strong>Quem fechou sai da frente.</strong> Grupo encerrado vai pro card
-      <strong>Grupos encerrados</strong>, logo abaixo — a viagem que ainda está rolando não divide
-      espaço com as que já acabaram. Os dois cards recolhem pela seta, e fechado o de cima mostra
-      quantos grupos seguem em aberto.
+      <strong>Quem fechou sai da frente.</strong> Grupo encerrado dobra pra dentro de um bloco
+      <strong>Grupos encerrados</strong>, no final do mesmo card — a viagem que ainda está rolando
+      não divide espaço com as que já acabaram, e o bloco só aparece quando existe algum grupo
+      encerrado. Toque no cabeçalho de cada um pra recolher; fechado, o card mostra quantos grupos
+      seguem em aberto.
       <br><br>O <strong>olho</strong> no cabeçalho esconde os valores, igual ao da aba Faturas —
       útil pra mostrar a tela pra alguém sem abrir os números.
+      <br><br>Os botões <strong>Encerrar</strong> e <strong>Reabrir</strong>, ao lado de cada grupo,
+      trocaram o cadeado colorido (🔒/🔓) por um traço fino que acompanha a cor do texto ao redor —
+      o mesmo peso visual dos outros ícones do app.
     </div>
     <div class="nota">
       <strong>Abrindo um grupo, o gráfico de categorias também vira pizza.</strong> Logo acima
@@ -779,10 +820,10 @@
   <h2><span class="numero">13</span>Consórcios</h2>
   <p class="resumo">A parcela entra sozinha todo mês, do jeito que você paga, e você dá baixa ali mesmo.</p>
   <div class="conteudo">
-    <p>Na aba <strong>Investim.</strong>, abaixo dos aportes, tem o card <strong>Consórcios</strong>.
-       Cadastre o grupo com o nome, o valor da carta de crédito, a parcela, quantas parcelas são,
-       o dia do boleto, a conta que paga, <strong>como você paga a parcela</strong> e em que
-       <strong>categoria</strong> ele entra.</p>
+    <p>Na aba <strong>Investim.</strong>, toque em <strong>+ Novo consórcio</strong>, no rodapé do
+       card <em>Meus investimentos</em>. Cadastre o grupo com o nome, o valor da carta de crédito,
+       a parcela, quantas parcelas são, o dia do boleto, a conta que paga,
+       <strong>como você paga a parcela</strong> e em que <strong>categoria</strong> ele entra.</p>
     <div class="nota">
       <strong>A categoria é sua escolha.</strong> O padrão é <em>Consórcio</em>, pra separar o
       boleto dos gastos comuns no gráfico. Mas se pra você consórcio é dinheiro guardado e não
@@ -846,8 +887,9 @@
     <div class="nota">
       <strong>Aportar é sempre aportar em alguma coisa.</strong> Por isso o botão não mora aqui
       em cima: ele fica no rodapé do card de cada ativo — <em>+ Novo aporte em Tesouro Direto</em> —
-      e já entra com o tipo escolhido. Enquanto você não tem nenhum ativo cadastrado, o
-      <strong>+ Novo aporte</strong> aparece no card de baixo, junto do recado.
+      e já entra com o tipo escolhido. Sem nenhum ativo escolhido ainda, ou pra abrir um consórcio
+      novo, o rodapé do card <em>Meus investimentos</em> (ver a seguir) tem
+      <strong>+ Novo aporte</strong> e <strong>+ Novo consórcio</strong>, lado a lado.
     </div>
     <div class="nota">
       <strong>E dá pra recortar no tempo.</strong> Os chips no alto do card — <em>30 dias</em>,
@@ -910,23 +952,27 @@
       venceram somem da fatura e param de ser gerados; as parcelas que você já pagou continuam
       no histórico.
       <br><br>Consórcios que acabaram — seja porque você pagou a última parcela, seja porque
-      encerrou antes — saem do card principal e vão pro card <strong>Consórcios encerrados</strong>,
-      logo abaixo, em formato mais enxuto: quanto custou no total, como terminou e quando.
+      encerrou antes — saem da lista principal e vão pra um bloco <strong>Consórcios encerrados</strong>,
+      dobrado dentro do mesmo card, no final da lista, em formato mais enxuto: quanto custou no
+      total, como terminou e quando. Só aparece quando existe algum.
     </div>
     <div class="nota">
-      <strong>Com vários grupos a aba fica comprida — dá pra fechar o que não está olhando.</strong>
-      Os cards de baixo (cada grupo de investimento, Consórcios e os encerrados) têm uma seta
-      no título: toque nela pra recolher. Fechado, o card mostra um
-      resumo de uma linha — quanto o grupo vale hoje, quantos consórcios ativos —
-      pra você não perder o número de vista. O card do topo é o único que não fecha.
-      O <strong>olho</strong>, no cabeçalho dele, esconde os valores da aba inteira — incluindo os
-      do consórcio, que antes continuavam à mostra quando você tocava no olho por esta aba.
-      <br><br>E a ordem desses cards é sua: <strong>Ajustes → Ordem dos cards — Investimentos</strong>.
-      Quem não tem consórcio joga o card pro fim; quem não tem aporte faz o contrário. O card do
-      topo fica sempre no topo.
-      <br><br>Cada consórcio também fecha sozinho: toque na linha do nome e sobra só nome,
-      valor da parcela, progresso e o status. Toque de novo pra abrir. O app lembra o que você
-      deixou aberto ou fechado, inclusive depois de fechar e reabrir.
+      <strong>Aportes e consórcios moram na mesma lista — <em>Meus investimentos</em>.</strong>
+      Cada tipo de ativo e cada consórcio é um item dessa lista, com um selo dizendo o que é
+      (<em>Aporte</em> ou <em>Consórcio</em>), ordenados pela <strong>atividade mais recente</strong> —
+      quem você acabou de aportar ou pagar sobe pro topo sozinho, sem precisar arrastar nada.
+      <br><br>Antes eram dois cards separados (Aportes e Consórcios), cada um com o seu
+      reordenamento em Ajustes. Como agora é uma lista só, essa tela de ordenação saiu do ar —
+      não tinha mais o que reordenar.
+    </div>
+    <div class="nota">
+      <strong>Cada item fecha sozinho — não tem mais um botão que recolha todos de uma vez.</strong>
+      Toque no cabeçalho de um aporte ou consórcio e sobra só o essencial (nome, valor, status);
+      toque de novo pra abrir. O app lembra o que você deixou aberto ou fechado, inclusive depois
+      de fechar e reabrir o app. Só o card do topo (o retrato fixo) nunca fecha.
+      <br><br>O <strong>olho</strong>, no cabeçalho do card do topo, esconde os valores da aba
+      inteira — incluindo os do consórcio, que antes continuavam à mostra quando você tocava no
+      olho por esta aba.
     </div>
     <div class="nota atencao">
       <strong>A parcela avisa quando está chegando a hora.</strong> Enquanto ela está em aberto, a
@@ -961,7 +1007,8 @@
       <li><strong>Saldo inicial</strong> — dentro de cada conta. É quanto ela já tinha quando você começou a usar o app. Entra no saldo e em mais lugar nenhum: não vira receita, não aparece em “recebido”, nos gráficos nem nas perguntas. Pode ser negativo.</li>
       <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número.</li>
       <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.</li>
-      <li><strong>Ordem dos cards</strong> — três listas, uma pra cada aba que tem mais de um card: <em>Faturas</em>, <em>Gráficos</em> e <em>Investimentos</em>. Arraste pelas listrinhas para deixar no topo o que você olha primeiro. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro. Card que não está aparecendo agora — <em>Consórcios encerrados</em> sem nenhum encerrado, por exemplo — também não entra na lista, e volta no fim da aba quando reaparecer.</li>
+      <li><strong>Ordem dos cards</strong> — duas listas, uma pra <em>Faturas</em> e outra pra <em>Gráficos</em>. Arraste pelas listrinhas para deixar no topo o que você olha primeiro. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro. Card que não está aparecendo agora também não entra na lista, e volta no fim da aba quando reaparecer.
+      <br><br><em>Investimentos</em> não tem mais essa tela: os aportes e consórcios viraram uma lista só (ver capítulo 13), ordenada sozinha pela atividade mais recente — não tem mais dois cards pra escolher a ordem entre eles.</li>
       <li><strong>Grupos de investimento</strong> — Tesouro, fundos, poupança, ações: cada grupo vira um card na aba <em>Investim.</em> Fica logo depois de <em>Contas e cartões</em> porque é o mesmo assunto — o cadastro de onde o dinheiro mora.</li>
       <li><strong>Contatos de cobrança</strong> — a agenda de quem você empresta. Cadastre pelo <em>+ Novo contato</em> (o telefone é opcional: sem ele a pessoa existe igual, só não dá pra abrir o WhatsApp) e depois é só escolher o nome na hora do lançamento. Quem você já emprestou antes aparece aqui sozinho, vindo do histórico.</li>
       <li><strong>Travar o zoom</strong> — dentro de <em>Aparência</em>. No iPhone um toque duplo sem querer dá zoom e, com o app instalado na tela inicial, não existe barra de endereço pra desfazer: a tela fica torta até você ajustar com os dedos. Ligando isso, a tela para de dar zoom. Vale só naquele aparelho, e vem desligado — quem usa o zoom pra enxergar melhor não perde nada.</li>

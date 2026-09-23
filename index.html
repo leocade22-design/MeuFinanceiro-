@@ -694,12 +694,21 @@
           <div class="form-row">
             <div class="form-group" id="grupoCategoria">
               <label for="categoria">Categoria</label>
-              <select id="categoria" name="categoria"></select>
+              <select id="categoria" name="categoria" onchange="atualizarDestinoInvestimento()"></select>
             </div>
             <div class="form-group">
               <label for="dataCompra">Data da Compra</label>
               <input type="date" id="dataCompra" name="dataCompra">
             </div>
+          </div>
+          <!-- CATEGORIA "INVESTIMENTO" PUXA O DESTINO
+               Só em lançamento novo: editar um "Investimento" já existente não
+               deve registrar um segundo aporte nem dar baixa de novo numa
+               parcela — a ação já aconteceu quando o lançamento nasceu. -->
+          <div class="form-group escondido" id="grupoDestinoInvestimento">
+            <label for="destinoInvestimento">Aportar em / dar baixa em</label>
+            <select id="destinoInvestimento" name="destinoInvestimento"></select>
+            <p id="avisoSemDestinoInvestimento" class="escondido" style="font-size:11.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.4;">Nenhum tipo de investimento ou consórcio cadastrado ainda — cadastre em Ajustes ou na aba Investim.</p>
           </div>
           <div class="form-group">
             <label for="valor" id="labelValor">Valor</label>
@@ -956,6 +965,16 @@
           <select id="filtroContaGraficos" aria-label="Filtrar os gráficos por conta"
                   onchange="atualizarResumoEGraficos()"
                   style="font-size:12.5px;padding:8px 9px;width:100%;margin-bottom:14px;"></select>
+          <!-- DESCONTAR REEMBOLSO DO TOTAL POR CATEGORIA
+               Desligado por padrão: o número do dia a dia é o que de fato saiu
+               da conta na hora da compra. Ligar serve só pra uma revisão
+               específica — "tirando o que já voltou pro meu bolso, no que eu
+               realmente gastei?" — sem mudar o que você já está acostumado a
+               ver. Só faz sentido na visão de Despesas. -->
+          <label id="labelDescontarReembolsos" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--texto-medio);margin:-6px 0 14px;cursor:pointer;">
+            <input type="checkbox" id="chkDescontarReembolsos" onchange="alternarDescontarReembolsos()" style="width:16px;height:16px;flex-shrink:0;">
+            Descontar reembolsos já recebidos
+          </label>
           <div id="containerGraficoCategorias"></div>
           <div id="containerGraficoReceitas" class="escondido"></div>
           <div id="containerGraficoContas" class="escondido"></div>
@@ -1129,49 +1148,36 @@
              o botão aparece no card de baixo, junto do recado. -->
       </div>
 
-      <!-- UM CARD POR GRUPO DE INVESTIMENTO
-           Antes era um card "Aportes" só, com os tipos virando subtítulos dentro
-           dele. Com mais de um tipo, ou com o card fechado, não dava pra olhar
-           só o Tesouro sem carregar o resto junto. Agora cada grupo é um card,
-           com seus totais e seu próprio abre-fecha — do mesmo tamanho que o
-           card de Consórcios, que é o que ele é: um tipo de investimento.
-           O invólucro com data-card junta todos eles num bloco só pro
-           reordenamento em Ajustes: quem não tem aporte manda o bloco inteiro
-           pro fim da aba com um arrasto. -->
-      <div id="cardsGruposInvestimento" data-card="aportes" data-card-titulo="Aportes"></div>
-
-      <!-- CONSÓRCIOS — separado dos aportes de propósito: é compra parcelada de
-           uma carta de crédito, não dinheiro rendendo. Totais próprios. -->
-      <div class="card" data-card="consorcios" data-card-titulo="Consórcios">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('consorcios')">
-            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-              <h3>Consórcios</h3>
-              <span id="resumoFechado-consorcios" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
-            </div>
-            <span class="chevron-sec" id="chevron-consorcios">▾</span>
-          </button>
+      <!-- LISTA ÚNICA: APORTES (por tipo de ativo) + CONSÓRCIOS
+           Antes eram cards separados — um bloco de "Aportes" e um card de
+           "Consórcios" — cada um reordenável em Ajustes. Viraram uma lista só,
+           ordenada pela atividade mais recente, com um selo em cada item
+           dizendo o que ele é. Cada item mantém seu próprio abre-fecha, na
+           MESMA chave de seção de sempre (grupoInv-<tipo> / consorcio-<id>) —
+           quem já tinha uma preferência salva não perde nada com a fusão.
+           Com um card só, não sobra o que reordenar em Ajustes. -->
+      <div class="card">
+        <h3 style="margin-bottom:10px;">Meus investimentos</h3>
+        <div id="listaInvestimentosUnificada"></div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn-adicionar" style="margin:0;flex:1;" onclick="abrirFormAporte()">+ Novo aporte</button>
+          <button type="button" class="btn-adicionar" style="margin:0;flex:1;" onclick="abrirFormConsorcio()">+ Novo consórcio</button>
         </div>
-        <div id="corpo-consorcios" style="margin-top:8px;">
-          <div id="totaisConsorcios" class="escondido" style="display:flex;gap:8px;margin-bottom:14px;"></div>
-          <div id="listaConsorcios"></div>
-          <button type="button" class="btn-adicionar" onclick="abrirFormConsorcio()">+ Novo consórcio</button>
-        </div>
-      </div>
 
-      <!-- Card só aparece quando existe algum grupo encerrado — vazio seria ruído. -->
-      <div class="card escondido" id="cardConsorciosEncerrados" data-card="consorciosEncerrados" data-card-titulo="Consórcios encerrados">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('consorciosEncerrados')">
+        <!-- Encerrado é história, não é o dia a dia: dobra pra dentro do mesmo
+             card, recolhido, e só aparece quando existe algum — vazio seria
+             ruído. -->
+        <div class="escondido" id="blocoConsorciosEncerrados" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borda-fraca);">
+          <button type="button" class="card-header-toggle" style="width:100%;" onclick="alternarSecao('consorciosEncerrados')">
             <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
               <h4 style="color:var(--texto-medio);">Consórcios encerrados</h4>
               <span id="qtdConsorciosEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
             </div>
             <span class="chevron-sec" id="chevron-consorciosEncerrados">▾</span>
           </button>
-        </div>
-        <div id="corpo-consorciosEncerrados" style="margin-top:12px;">
-          <div id="listaConsorciosEncerrados"></div>
+          <div id="corpo-consorciosEncerrados" style="margin-top:12px;">
+            <div id="listaConsorciosEncerrados"></div>
+          </div>
         </div>
       </div>
 
@@ -1197,23 +1203,23 @@
           </div>
           <div id="listaGrupos"></div>
           <button type="button" class="btn-adicionar" onclick="criarGrupoRapido()">+ Novo grupo</button>
-        </div>
-      </div>
 
-      <!-- Grupo encerrado é história: sai do card de cima pra não competir com
-           a viagem que ainda está rolando, mas continua acessível. -->
-      <div class="card escondido" id="cardGruposEncerrados">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('gruposEncerrados')">
-            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-              <h4 style="color:var(--texto-medio);">Grupos encerrados</h4>
-              <span id="qtdGruposEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+          <!-- Grupo encerrado é história: dobra pra dentro do mesmo card, recolhido,
+               pra não competir com a viagem que ainda está rolando — mas continua
+               acessível, um card à parte já não fazia diferença nenhuma. Só aparece
+               quando existe algum encerrado. -->
+          <div class="escondido" id="blocoGruposEncerrados" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borda-fraca);">
+            <button type="button" class="card-header-toggle" style="width:100%;" onclick="alternarSecao('gruposEncerrados')">
+              <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+                <h4 style="color:var(--texto-medio);">Grupos encerrados</h4>
+                <span id="qtdGruposEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+              </div>
+              <span class="chevron-sec" id="chevron-gruposEncerrados">▾</span>
+            </button>
+            <div id="corpo-gruposEncerrados" style="margin-top:12px;">
+              <div id="listaGruposEncerrados"></div>
             </div>
-            <span class="chevron-sec" id="chevron-gruposEncerrados">▾</span>
-          </button>
-        </div>
-        <div id="corpo-gruposEncerrados" style="margin-top:12px;">
-          <div id="listaGruposEncerrados"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1353,18 +1359,9 @@
         </div>
       </div>
 
-      <!-- Mesma liberdade que já existia em Faturas e Gráficos: quem não tem
-           consórcio joga o card pro fim, quem não tem aporte faz o contrário. -->
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemInvestimentos')">
-          <h3 style="font-size:16px;">Ordem dos cards — Investimentos</h3>
-          <span class="chevron-sec" id="chevron-ordemInvestimentos">▸</span>
-        </button>
-        <div id="corpo-ordemInvestimentos" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
-          <div id="ordemCardsAbaInvestimentos"></div>
-        </div>
-      </div>
+      <!-- "Ordem dos cards — Investimentos" saiu daqui: os cards de Aportes e
+           Consórcios viraram uma lista unificada só, dentro de um único card
+           na aba. Com um card só, não sobra o que reordenar. -->
 
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('lixeira')">
@@ -2200,6 +2197,20 @@
       </div>
       <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Guardado só aqui no aparelho. Na próxima cobrança dessa pessoa já vai direto.</p>
       <button type="button" id="btnEscolherDaAgenda" class="btn-backup escondido" style="margin-bottom:10px;" onclick="escolherDaAgenda()">📇 Escolher da agenda</button>
+      <!-- Sem o picker (todo iPhone, e Android sem o recurso ligado): não é bug,
+           é uma API atrás de flag experimental no Safari. Sem isto o usuário só
+           via o campo manual e achava que o app tinha esquecido do atalho. -->
+      <div id="ajudaAgendaIphone" class="escondido" style="margin-bottom:10px;">
+        <button type="button" class="card-header-toggle" style="font-size:11.5px;color:var(--texto-fraco);" onclick="alternarSecao('ajudaAgendaIphone')">
+          <span>📱 iPhone: não aparece o botão da agenda?</span>
+          <span class="chevron-sec" id="chevron-ajudaAgendaIphone">▸</span>
+        </button>
+        <div id="corpo-ajudaAgendaIphone" class="escondido" style="margin-top:8px;font-size:11.5px;color:var(--texto-fraco);line-height:1.55;">
+          Vá em <strong>Ajustes do aparelho</strong>, use a <strong>busca</strong> no topo e digite
+          <strong>"Recursos Experimentais"</strong>. Dentro da lista, ative
+          <strong>"Contact Picker API"</strong>. Feche e abra o app de novo.
+        </div>
+      </div>
       <!-- O nome é a chave da cobrança. Editá-lo aqui é o que junta o "dudu" e o
            "Dudu" que o campo livre deixou criar antes do cadastro existir. -->
       <div class="form-group">
@@ -2503,6 +2514,8 @@
     let visaoGraficoAtual = 'despesas';
     let tipoGraficoReceita = 'barras';
     let tipoGraficoConta = 'barras';
+    // Desligado por padrão: liga só pra revisão, não muda o número do dia a dia
+    let descontarReembolsos = false;
 
     // Variáveis de estado da consulta no modal
     let tipoModalAtual = 'saldo';
@@ -3007,9 +3020,11 @@
        individual (chave "consorcio-<id>") segue a mesma régua. */
     // 'investimentos' saiu daqui: o card do topo da aba virou fixo, como o
     // Resumo das Faturas — não abre nem fecha, então não tem seção.
+    // 'aportes' e 'consorcios' também saíram: eram os cards-container de cada
+    // bloco, e viraram uma lista única — quem abre e fecha agora é cada item,
+    // por 'grupoInv-<tipo>' ou 'consorcio-<id>' (tratado abaixo, por prefixo).
     const SECOES_ABERTAS_POR_PADRAO = new Set([
-      'aportes', 'consorcios', 'consorciosEncerrados',
-      'grupos', 'gruposEncerrados'
+      'consorciosEncerrados', 'grupos', 'gruposEncerrados'
     ]);
 
     function secaoEstaAberta(nome) {
@@ -3131,6 +3146,12 @@
     }
 
     const SVG_PEGADOR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="16" x2="20" y2="16"/></svg>';
+
+    /* Cadeado fechado/aberto pra "Encerrar"/"Reabrir" grupo — trocou o emoji
+       colorido (🔒/🔓) por um traço fino que herda a cor do texto ao redor
+       (currentColor), no mesmo peso dos outros ícones do app. */
+    const SVG_CADEADO_FECHADO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    const SVG_CADEADO_ABERTO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.5-2.2"/></svg>';
 
     function renderizarOrdemCards(idAba) {
       const container = document.getElementById('ordemCards' + idAba.replace('aba', 'Aba'));
@@ -3757,6 +3778,10 @@
       document.getElementById('btnVerDespesas').classList.toggle('ativo', visao === 'despesas');
       document.getElementById('btnVerReceitas').classList.toggle('ativo', visao === 'receitas');
       document.getElementById('btnVerContas').classList.toggle('ativo', visao === 'contas');
+      // Só faz sentido descontar reembolso na visão de Despesas — nas outras
+      // duas o campo nem entra na conta.
+      const labelDesconto = document.getElementById('labelDescontarReembolsos');
+      if (labelDesconto) labelDesconto.classList.toggle('escondido', visao !== 'despesas');
       Object.entries(VISOES).forEach(([nome, v]) => {
         document.getElementById(v.container).classList.toggle('escondido', nome !== visao);
       });
@@ -6076,7 +6101,6 @@
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
       if (idAba === 'abaConfig') {
         renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos');
-        renderizarOrdemCards('abaInvestimentos');
         renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); aplicarTravaDeZoom();
       }
     }
@@ -6308,6 +6332,7 @@
         // receita também aceita empréstimo — aqui é dinheiro que ENTROU e você deve
         document.getElementById('linkEmprestimo').classList.remove('escondido');
         atualizarLinkEmprestimo();
+        document.getElementById('grupoDestinoInvestimento').classList.add('escondido');
       } else {
         btnD.className = 'btn-tipo ativo-despesa';
         btnR.className = 'btn-tipo';
@@ -6315,8 +6340,62 @@
         document.getElementById('linkEmprestimo').classList.remove('escondido');
         atualizarLinkEmprestimo();   // o rótulo muda com a direção; sem isto ficava o texto da receita
         atualizarVisibilidadeForma();
+        atualizarDestinoInvestimento();
       }
       carregarDescricoes(tipo);
+    }
+
+    /* Um seletor só, misturando tipo de ativo (vira aporte) e consórcio ativo
+       (dá baixa na parcela do mês) — mostra quando a categoria é
+       "Investimento", só em lançamento NOVO (edição não repete a ação). */
+    function atualizarDestinoInvestimento() {
+      const grupo = document.getElementById('grupoDestinoInvestimento');
+      if (!grupo) return;
+      const emEdicao = !!document.getElementById('idEditando').value;
+      const categoria = document.getElementById('categoria').value;
+      const mostrar = !emEdicao && tipoAtual === 'despesa' && categoria === 'Investimento';
+      grupo.classList.toggle('escondido', !mostrar);
+      if (mostrar) popularSelectDestinoInvestimento();
+    }
+
+    function popularSelectDestinoInvestimento() {
+      const sel = document.getElementById('destinoInvestimento');
+      if (!sel) return;
+      const atual = sel.value;
+      sel.innerHTML = '';
+
+      if (tiposAtivo.length) {
+        const grupoAtivos = document.createElement('optgroup');
+        grupoAtivos.label = 'Aporte em';
+        tiposAtivo.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = 'ativo:' + t;
+          opt.textContent = t;
+          grupoAtivos.appendChild(opt);
+        });
+        sel.appendChild(grupoAtivos);
+      }
+
+      // Só os consórcios em andamento: o encerrado não tem mais parcela pra
+      // dar baixa, e oferecer ele aqui seria convidar pra uma baixa fantasma.
+      const consorciosAtivos = consorcios.filter(c => !consorcioEncerrado(c));
+      if (consorciosAtivos.length) {
+        const grupoCons = document.createElement('optgroup');
+        grupoCons.label = 'Parcela de consórcio';
+        consorciosAtivos.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = 'consorcio:' + c.id;
+          opt.textContent = c.nome;
+          grupoCons.appendChild(opt);
+        });
+        sel.appendChild(grupoCons);
+      }
+
+      const vazio = !sel.options.length;
+      sel.classList.toggle('escondido', vazio);
+      const aviso = document.getElementById('avisoSemDestinoInvestimento');
+      if (aviso) aviso.classList.toggle('escondido', !vazio);
+      if (atual && Array.from(sel.options).some(o => o.value === atual)) sel.value = atual;
     }
 
     /* LISTA DE LANÇAMENTOS: filtrada pelo mês selecionado nas Faturas, agrupada por dia */
@@ -6780,6 +6859,37 @@
       const grupoObj = grupos.find(g => g.id === grupoViagemId);
       const grupoViagemNome = grupoObj ? grupoObj.nome : '';
 
+      /* CATEGORIA "INVESTIMENTO": o destino escolhido no formulário decide o
+         que mais acontece além do lançamento em si — ver atualizarDestinoInvestimento().
+         Só em lançamento NOVO: o campo já nasce escondido ao editar. */
+      const grupoDestino = document.getElementById('grupoDestinoInvestimento');
+      const destinoInvestimento = (!idEditando && grupoDestino && !grupoDestino.classList.contains('escondido'))
+        ? document.getElementById('destinoInvestimento').value : '';
+
+      /* DESTINO = CONSÓRCIO: a parcela do mês já existe (ou vai nascer) pelo
+         motor do gasto fixo — criar TAMBÉM um lançamento avulso aqui duplicaria
+         a saída. Sai cedo, sem tocar em `lancamentos` pelo caminho normal.
+         Se o consórcio sumiu entre abrir e salvar o form (caso raríssimo), cai
+         pro fluxo normal abaixo e vira uma despesa comum — nunca trava o
+         salvamento por causa disso. */
+      if (destinoInvestimento.startsWith('consorcio:')) {
+        const cons = consorcios.find(c => c.id === destinoInvestimento.slice('consorcio:'.length));
+        const fixo = cons && fixos.find(f => f.id === cons.fixoId);
+        if (fixo) {
+          const comoPagou = COMO_DA_FORMA[formaModo] || 'débito em conta';
+          const contaDoPagamento = conta || fixo.conta || primeiraConta();
+          // mês da OCORRÊNCIA a dar baixa, não "hoje": respeita a data escolhida
+          // no formulário, pra uma parcela atrasada lançada com a data certa
+          // cair na parcela dela, e não sempre na do mês corrente.
+          registrarPagamentoFixo(fixo, dataBase.slice(0, 7), valorTotal, dataBase, comoPagou, contaDoPagamento);
+          cancelarEdicao();
+          atualizarTudo();
+          renderizarInvestimentos();
+          renderizarConsorcios();
+          return;
+        }
+      }
+
       if (idEditando) {
         const idx = lancamentos.findIndex(l => l.id === parseInt(idEditando, 10));
         if (idx !== -1) {
@@ -6906,6 +7016,13 @@
       }
 
       salvarLocalStorage();
+      // DESTINO = TIPO DE ATIVO: o lançamento normal já foi criado acima do
+      // jeito de sempre — aqui só carimba o aporte, com o mesmo valor, conta
+      // e data que o usuário já preencheu.
+      if (destinoInvestimento.startsWith('ativo:')) {
+        registrarAporte(valorTotal, conta, destinoInvestimento.slice('ativo:'.length), dataBase);
+        renderizarInvestimentos();
+      }
       if (!idEditando && tipoAtual === 'receita' && somLigado()) tocarSomReceita();
       if (!idEditando) vibrar(tipoAtual === 'receita' ? 'receita' : 'despesa');
       cancelarEdicao();
@@ -7898,6 +8015,8 @@
       const selConta = document.getElementById('filtroContaGraficos');
       if (selConta) contaFiltroGraficos = selConta.value;
       atualizarVisibilidadeVisaoContas();
+      const chkDesconto = document.getElementById('chkDescontarReembolsos');
+      if (chkDesconto) chkDesconto.checked = descontarReembolsos;
 
       let itensPeriodo = lancamentos.filter(filtroPeriodoGraficos());
       if (contaFiltroGraficos) itensPeriodo = itensPeriodo.filter(l => l.conta === contaFiltroGraficos);
@@ -7916,7 +8035,10 @@
         else {
           desp += v;
           const cat = l.categoria || 'Outros';
-          porCategoria[cat] = (porCategoria[cat] || 0) + v;
+          // Só o total POR CATEGORIA respeita o desconto — o card de cima
+          // ("Gastei R$ X") continua mostrando o bruto, que é o que de fato
+          // saiu da conta na hora da compra.
+          porCategoria[cat] = (porCategoria[cat] || 0) + (descontarReembolsos ? valorLiquidoDespesa(l) : v);
           const cta = l.conta || 'Outros';
           porContaGrafico[cta] = (porContaGrafico[cta] || 0) + v;
         }
@@ -7963,7 +8085,11 @@
     function renderizarRankingGastos(itensPeriodo) {
       const container = document.getElementById('containerRankingGastos');
       if (!container) return;
-      const despesas = itensPeriodo.filter(l => l.tipo === 'despesa').sort((a, b) => parseVal(b.valor) - parseVal(a.valor)).slice(0, 5);
+      // Mesmo desconto do total por categoria, pro ranking bater com o número
+      // que o motivou: sem isto, uma despesa já reembolsada continuaria no
+      // topo da lista mesmo depois de "descontar reembolsos" tirá-la do bolo.
+      const valorRanking = l => descontarReembolsos ? valorLiquidoDespesa(l) : parseVal(l.valor);
+      const despesas = itensPeriodo.filter(l => l.tipo === 'despesa').sort((a, b) => valorRanking(b) - valorRanking(a)).slice(0, 5);
       container.innerHTML = '';
       if (!despesas.length) { container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Sem despesas nesse período.</p>'; return; }
       despesas.forEach((item, i) => {
@@ -7976,7 +8102,7 @@
             <strong>${i + 1}. ${item.descricao}</strong>
             <div style="font-size:11px;color:var(--texto-fraco);">${dataFmt}${item.conta ? ' • ' + item.conta : (ehEmprestimoIndireto(item) ? ' • pagaram por você' : '')}${item.categoria ? ' • ' + item.categoria : ''}</div>
           </div>
-          <span class="valor-despesa">${fmtOculto(parseVal(item.valor))}</span>
+          <span class="valor-despesa">${fmtOculto(valorRanking(item))}</span>
         `;
         container.appendChild(div);
       });
@@ -9931,6 +10057,9 @@
       const btnAgenda = document.getElementById('btnEscolherDaAgenda');
       const temPicker = !!(navigator.contacts && navigator.contacts.select);
       btnAgenda.classList.toggle('escondido', !temPicker);
+      // A ajuda ocupa o lugar do botão quando ele não existe — nunca os dois
+      // juntos, e nunca nenhum dos dois quando o picker já está disponível.
+      document.getElementById('ajudaAgendaIphone').classList.toggle('escondido', temPicker);
 
       document.getElementById('modalContatoCobranca').classList.remove('escondido');
     }
@@ -10204,6 +10333,27 @@
         }];
       }
       return [];
+    }
+
+    function alternarDescontarReembolsos() {
+      descontarReembolsos = document.getElementById('chkDescontarReembolsos').checked;
+      uiPrefs.descontarReembolsos = descontarReembolsos;
+      salvarUiPrefs();
+      atualizarResumoEGraficos();
+    }
+
+    /* Quanto de uma despesa emprestada/rateada JÁ voltou pro seu bolso —
+       reembolso recebido ou "Já acertamos" sem movimentação, tanto faz: o
+       flag `quitado` é a mesma fonte da verdade nos dois casos (ver
+       marcarCobrancaQuitada). Serve só pra revisão por categoria — o valor
+       bruto do lançamento continua sendo o que de fato saiu da conta na hora
+       da compra, e é ele que aparece em todo o resto do app. */
+    function valorLiquidoDespesa(l) {
+      if (l.tipo !== 'despesa' || !l.emprestimoPara) return parseVal(l.valor);
+      const somaQuitado = cobrancasDoLancamento(l)
+        .filter(c => c.quitado)
+        .reduce((s, c) => s + c.valor, 0);
+      return parseVal(l.valor) - somaQuitado;
     }
 
     /* Quantos dias antes do prazo a cobrança recorrente já aparece no card. Dez
@@ -12460,6 +12610,19 @@
       'cartão de crédito': 'Crédito Parcelado'
     };
 
+    /* Direção inversa: usada quando a forma já foi escolhida (o formulário
+       principal de lançamento só tem "forma", não "como pagou") e precisamos
+       de uma palavra pra descrever o pagamento na ficha do consórcio. É com
+       perda — "boleto", "transferência" e "débito em conta" viram a MESMA
+       forma (À Vista / Débito) — então na volta fica o mais genérico deles. */
+    const COMO_DA_FORMA = {
+      'À Vista / Débito': 'débito em conta',
+      'Pix': 'pix',
+      'Dinheiro': 'dinheiro',
+      'Crédito Parcelado': 'cartão de crédito',
+      'Crédito à Vista': 'cartão de crédito'
+    };
+
     // Ocorrências já projetadas de um gasto fixo, em ordem
     /* AS OCORRÊNCIAS QUE O MODAL DE BAIXA OFERECE
 
@@ -12676,19 +12839,16 @@
       document.getElementById('btnDesfazerPagamentoRecorrente').classList.toggle('escondido', !temBaixaRegistrada(l));
     }
 
-    function confirmarPagamentoRecorrente() {
-      const f = fixoSendoPago();
-      if (!f) return;
-      let l = parcelaSelecionadaRecorrente();
-      const mes = mesSelecionadoRecorrente();
-      if (!mes) return;
-
-      const valor = parseVal(document.getElementById('valorPagarRecorrente').value.replace('R$', '').trim());
-      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
-      const data = document.getElementById('dataPagarRecorrente').value || obterDataBrasilia();
-      const como = document.getElementById('comoPagarRecorrente').value;
-      const conta = document.getElementById('contaPagarRecorrente').value || f.conta || primeiraConta();
+    /* NÚCLEO DE "DAR BAIXA" NUMA PARCELA DE GASTO FIXO (comum ou consórcio)
+       Separado do modal dedicado pra poder ser chamado também a partir do
+       lançamento comum, quando a categoria é "Investimento" e o destino
+       escolhido é um consórcio — ali NÃO se cria um lançamento do zero, dá-se
+       baixa na parcela já projetada daquele mês, exatamente como o botão
+       dedicado (Registrar pagamento) já faz. */
+    function registrarPagamentoFixo(f, mes, valor, data, como, conta) {
       const cons = consorcioDoFixo(f.id);
+      const ocorrencia = ocorrenciasDoFixo(f.id).find(x => x.mes === mes);
+      let l = ocorrencia ? ocorrencia.lanc : null;
 
       let forma = FORMA_DO_COMO_PAGOU[como] || 'À Vista / Débito';
       // crédito em conta sem cartão cairia numa fatura que não existe
@@ -12732,6 +12892,23 @@
       l.observacao = (cons ? 'Consórcio' : 'Gasto fixo mensal') + ' · pago via ' + como;
 
       salvarLocalStorage();
+      return l;
+    }
+
+    function confirmarPagamentoRecorrente() {
+      const f = fixoSendoPago();
+      if (!f) return;
+      const mes = mesSelecionadoRecorrente();
+      if (!mes) return;
+
+      const valor = parseVal(document.getElementById('valorPagarRecorrente').value.replace('R$', '').trim());
+      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
+      const data = document.getElementById('dataPagarRecorrente').value || obterDataBrasilia();
+      const como = document.getElementById('comoPagarRecorrente').value;
+      const conta = document.getElementById('contaPagarRecorrente').value || f.conta || primeiraConta();
+
+      registrarPagamentoFixo(f, mes, valor, data, como, conta);
+
       fecharModal('modalPagarRecorrente');
       atualizarTudo();
       renderizarConsorcios();
@@ -12853,194 +13030,166 @@
       renderizarConsorcios();
     }
 
-    function renderizarConsorcios() {
-      const lista = document.getElementById('listaConsorcios');
-      const boxTotais = document.getElementById('totaisConsorcios');
-      if (!lista) return;
+    /* Monta o card de UM consórcio (extraído do antigo renderizarConsorcios,
+       que tinha essa lógica dentro do próprio forEach). Usado pela lista
+       unificada de Investimentos — cada consórcio ativo vira um item nela,
+       misturado com os cards de tipo de ativo. */
+    function montarCardConsorcio(c) {
+      const t = totaisConsorcio(c);
+      const pct = t.total ? Math.round((t.qtdPagas / t.total) * 100) : 0;
+      const fim = ultimoMesConsorcio(c);
+      const fimTxt = fim ? NOMES_MESES[parseInt(fim.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + fim.slice(2, 4) : '—';
 
-      const ativos = consorcios.filter(c => !consorcioEncerrado(c));
-      const encerrados = consorcios.filter(c => consorcioEncerrado(c));
-      renderizarConsorciosEncerrados(encerrados);
+      const bloco = document.createElement('div');
+      bloco.className = 'card';
+      bloco.dataset.consorcioId = c.id;
 
-      // Fechado, o card precisa dizer ao menos quantos grupos estão rodando
-      const resumoCons = document.getElementById('resumoFechado-consorcios');
-      if (resumoCons) {
-        resumoCons.textContent = ativos.length
-          ? (ativos.length === 1 ? '1 ativo' : ativos.length + ' ativos')
-          : 'nenhum ativo';
-      }
+      const historico = (c.contemplado && Array.isArray(c.historicoValores) && c.historicoValores.length > 1)
+        ? `<div style="font-size:10.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.5;">${
+            c.historicoValores.map(h => {
+              const m = NOMES_MESES[parseInt(h.desde.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + h.desde.slice(2, 4);
+              return `${fmtOculto(parseVal(h.valor))} desde ${m}`;
+            }).join(' · ')}</div>`
+        : '';
 
-      lista.innerHTML = '';
-      if (!ativos.length) {
-        boxTotais.classList.add('escondido');
-        lista.innerHTML = consorcios.length
-          ? '<p style="color:var(--texto-medio);font-size:13px;">Nenhum consórcio em andamento.</p>'
-          : '<p style="color:var(--texto-medio);font-size:13px;">Nenhum consórcio cadastrado ainda.</p>';
-        return;
-      }
+      /* O cabeçalho inteiro é o botão de abrir/fechar — com vários grupos, é
+         daqui que vem o ganho de altura. A edição saiu do "toque no bloco" e
+         virou botão junto das outras ações: com o bloco fechado não sobraria
+         área pra tocar sem cair na edição sem querer. */
+      const chave = 'consorcio-' + c.id;
+      const credito = eCredito(formaDoConsorcio(c));
 
-      let somaPago = 0, somaCarta = 0;
-      ativos.forEach(c => {
-        const t = totaisConsorcio(c);
-        somaPago += t.jaPago;
-        somaCarta += t.carta;
+      /* Linha de status da parcela do mês corrente. Sem baixa registrada ela
+         fica neutra, nunca em alerta: consórcio cadastrado antes desta versão
+         não tem baixa em nenhuma parcela, e pintar tudo de "em atraso" seria
+         inventar um problema que não existe. */
+      const mesCorrente = obterDataBrasilia().slice(0, 7);
+      const parcelaMes = parcelaDoMesConsorcio(c, mesCorrente);
+      const pagoNoMes = !!(parcelaMes && parcelaMes.consorcioPagoEm);
+      const nomeMes = NOMES_MESES[parseInt(mesCorrente.slice(5, 7), 10) - 1].toLowerCase();
+      const faltamParcelas = parcelasFaltantesDoFixo(c.fixoId);
+      /* ALERTA DE VENCIMENTO
 
-        const pct = t.total ? Math.round((t.qtdPagas / t.total) * 100) : 0;
-        const fim = ultimoMesConsorcio(c);
-        const fimTxt = fim ? NOMES_MESES[parseInt(fim.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + fim.slice(2, 4) : '—';
+         A condição é "a parcela está PENDENTE", não "não tem baixa". São
+         coisas diferentes desde que os recorrentes fora do cartão passaram a
+         nascer "a pagar": parcela antiga sem baixa é histórico, já está
+         contada no "já paguei" logo abaixo — pintar ela de vermelho seria o
+         card se contradizendo em duas linhas. E consórcio no cartão nunca
+         fica pendente, porque a cobrança acontece sozinha: não há o que
+         alertar. */
+      const pendenteMes = aguardandoPagamento(parcelaMes);
+      const diasParaVencer = pendenteMes ? diasAte(parcelaMes.data) : null;
+      const alertaMes = !pendenteMes ? null
+        : diasParaVencer < 0 ? 'vencida'
+        : diasParaVencer <= DIAS_ALERTA_PARCELA ? 'perto'
+        : null;
 
-        const bloco = document.createElement('div');
-        bloco.className = 'item-lancamento';
-        bloco.style.cssText = 'display:block;padding:12px 0;';
+      const diaVenc = parcelaMes ? parcelaMes.data.slice(8, 10) : '';
+      const quando = !pendenteMes ? ''
+        : diasParaVencer < -1 ? `venceu há ${-diasParaVencer} dias`
+        : diasParaVencer === -1 ? 'venceu ontem'
+        : diasParaVencer === 0 ? 'vence hoje'
+        : diasParaVencer === 1 ? 'vence amanhã'
+        : `vence em ${diasParaVencer} dias`;
+      /* O selo do cabeçalho divide a linha com o nome do consórcio e com o
+         "em andamento": frase inteira ali empurra o nome pra duas linhas. A
+         versão curta basta pra bater o olho — o texto completo fica no corpo. */
+      const seloQuando = diasParaVencer === 0 ? 'hoje'
+        : diasParaVencer === 1 ? 'amanhã'
+        : `${diasParaVencer} dias`;
 
-        const historico = (c.contemplado && Array.isArray(c.historicoValores) && c.historicoValores.length > 1)
-          ? `<div style="font-size:10.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.5;">${
-              c.historicoValores.map(h => {
-                const m = NOMES_MESES[parseInt(h.desde.slice(5, 7), 10) - 1].slice(0, 3).toLowerCase() + '/' + h.desde.slice(2, 4);
-                return `${fmtOculto(parseVal(h.valor))} desde ${m}`;
-              }).join(' · ')}</div>`
-          : '';
+      const statusMes = !parcelaMes
+        ? `sem parcela em ${nomeMes}`
+        : pagoNoMes
+          ? `✓ parcela de ${nomeMes} paga em ${parcelaMes.consorcioPagoEm.slice(8, 10)}/${parcelaMes.consorcioPagoEm.slice(5, 7)}`
+            + (parcelaMes.pagoComo ? ' · ' + parcelaMes.pagoComo : '')
+          : pendenteMes
+            ? `${alertaMes === 'vencida' ? '⚠ ' : alertaMes === 'perto' ? '⏰ ' : ''}`
+              + `parcela de ${nomeMes}: ${fmtOculto(parseVal(parcelaMes.valor))} · ${quando} (dia ${diaVenc})`
+            : `parcela de ${nomeMes}: ${fmtOculto(parseVal(parcelaMes.valor))} · vence dia ${diaVenc}`;
 
-        /* O cabeçalho inteiro é o botão de abrir/fechar — com vários grupos, é
-           daqui que vem o ganho de altura. A edição saiu do "toque no bloco" e
-           virou botão junto das outras ações: com o bloco fechado não sobraria
-           área pra tocar sem cair na edição sem querer. */
-        const chave = 'consorcio-' + c.id;
-        const credito = eCredito(formaDoConsorcio(c));
+      const corStatus = pagoNoMes ? 'var(--verde)'
+        : alertaMes === 'vencida' ? 'var(--vermelho)'
+        : alertaMes === 'perto' ? 'var(--amarelo)'
+        : 'var(--texto-medio)';
 
-        /* Linha de status da parcela do mês corrente. Sem baixa registrada ela
-           fica neutra, nunca em alerta: consórcio cadastrado antes desta versão
-           não tem baixa em nenhuma parcela, e pintar tudo de "em atraso" seria
-           inventar um problema que não existe. */
-        const mesCorrente = obterDataBrasilia().slice(0, 7);
-        const parcelaMes = parcelaDoMesConsorcio(c, mesCorrente);
-        const pagoNoMes = !!(parcelaMes && parcelaMes.consorcioPagoEm);
-        const nomeMes = NOMES_MESES[parseInt(mesCorrente.slice(5, 7), 10) - 1].toLowerCase();
-        const faltamParcelas = parcelasFaltantesDoFixo(c.fixoId);
-        /* ALERTA DE VENCIMENTO
-
-           A condição é "a parcela está PENDENTE", não "não tem baixa". São
-           coisas diferentes desde que os recorrentes fora do cartão passaram a
-           nascer "a pagar": parcela antiga sem baixa é histórico, já está
-           contada no "já paguei" logo abaixo — pintar ela de vermelho seria o
-           card se contradizendo em duas linhas. E consórcio no cartão nunca
-           fica pendente, porque a cobrança acontece sozinha: não há o que
-           alertar. */
-        const pendenteMes = aguardandoPagamento(parcelaMes);
-        const diasParaVencer = pendenteMes ? diasAte(parcelaMes.data) : null;
-        const alertaMes = !pendenteMes ? null
-          : diasParaVencer < 0 ? 'vencida'
-          : diasParaVencer <= DIAS_ALERTA_PARCELA ? 'perto'
-          : null;
-
-        const diaVenc = parcelaMes ? parcelaMes.data.slice(8, 10) : '';
-        const quando = !pendenteMes ? ''
-          : diasParaVencer < -1 ? `venceu há ${-diasParaVencer} dias`
-          : diasParaVencer === -1 ? 'venceu ontem'
-          : diasParaVencer === 0 ? 'vence hoje'
-          : diasParaVencer === 1 ? 'vence amanhã'
-          : `vence em ${diasParaVencer} dias`;
-        /* O selo do cabeçalho divide a linha com o nome do consórcio e com o
-           "em andamento": frase inteira ali empurra o nome pra duas linhas. A
-           versão curta basta pra bater o olho — o texto completo fica no corpo. */
-        const seloQuando = diasParaVencer === 0 ? 'hoje'
-          : diasParaVencer === 1 ? 'amanhã'
-          : `${diasParaVencer} dias`;
-
-        const statusMes = !parcelaMes
-          ? `sem parcela em ${nomeMes}`
-          : pagoNoMes
-            ? `✓ parcela de ${nomeMes} paga em ${parcelaMes.consorcioPagoEm.slice(8, 10)}/${parcelaMes.consorcioPagoEm.slice(5, 7)}`
-              + (parcelaMes.pagoComo ? ' · ' + parcelaMes.pagoComo : '')
-            : pendenteMes
-              ? `${alertaMes === 'vencida' ? '⚠ ' : alertaMes === 'perto' ? '⏰ ' : ''}`
-                + `parcela de ${nomeMes}: ${fmtOculto(parseVal(parcelaMes.valor))} · ${quando} (dia ${diaVenc})`
-              : `parcela de ${nomeMes}: ${fmtOculto(parseVal(parcelaMes.valor))} · vence dia ${diaVenc}`;
-
-        const corStatus = pagoNoMes ? 'var(--verde)'
-          : alertaMes === 'vencida' ? 'var(--vermelho)'
-          : alertaMes === 'perto' ? 'var(--amarelo)'
-          : 'var(--texto-medio)';
-
-        bloco.innerHTML = `
-          <button type="button" class="card-header-toggle" style="width:100%;padding:0;" onclick="alternarSecao('${chave}')">
-            <div style="min-width:0;flex:1;text-align:left;">
+      bloco.innerHTML = `
+        <button type="button" class="card-header-toggle" style="width:100%;padding:0;" onclick="alternarSecao('${chave}')">
+          <div style="min-width:0;flex:1;text-align:left;">
+            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
               <strong>${c.nome}</strong>
-              <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtOculto(parseVal(c.valorParcela))} · ${t.qtdPagas} de ${t.total}</div>
+              <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--texto-tenue);">Consórcio</span>
             </div>
-            ${alertaMes ? `<span title="${quando}" style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:6px;${
-              alertaMes === 'vencida'
-                ? 'color:var(--vermelho);border:1px solid var(--vermelho);'
-                : 'color:var(--amarelo);border:1px solid var(--amarelo);'}">${alertaMes === 'vencida' ? '⚠ vencida' : '⏰ ' + seloQuando}</span>` : ''}
-            <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:8px;${
-              c.contemplado
-                ? 'color:var(--verde);border:1px solid var(--verde-escuro);'
-                : 'color:var(--azul);border:1px solid var(--azul-forte);'}">${c.contemplado ? 'contemplado' : 'em andamento'}</span>
-            <span class="chevron-sec" id="chevron-${chave}">▾</span>
-          </button>
-          <div id="corpo-${chave}">
-            <div style="font-size:11px;color:var(--texto-fraco);margin-top:8px;">dia ${c.diaVencimento} · ${c.conta} · ${credito ? 'entra na fatura' : 'sai da conta'}</div>
-            <div style="font-size:11.5px;margin-top:6px;color:${corStatus};font-weight:${alertaMes ? '600' : 'normal'};">${statusMes}</div>
-            ${faltamParcelas ? `<div style="font-size:11px;margin-top:4px;color:var(--amarelo);">⚠ ${faltamParcelas === 1 ? 'falta 1 cobrança' : 'faltam ' + faltamParcelas + ' cobranças'} na projeção — use “Recriar cobranças”</div>` : ''}
-            <div class="barra-bg" style="margin:10px 0 6px;">
-              <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-fraco);">
-              <span>${t.qtdPagas} de ${t.total} parcelas</span>
-              <span>quita em ${fimTxt}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
-              <span style="color:var(--texto-medio);">já paguei <strong style="color:var(--texto-forte);">${fmtOculto(t.jaPago)}</strong></span>
-              <span style="color:var(--texto-medio);">falta <strong style="color:var(--texto-forte);">${fmtOculto(t.falta)}</strong></span>
-            </div>
-            <div style="font-size:11px;color:var(--texto-medio);margin-top:4px;">carta de crédito: <strong style="color:var(--azul);">${fmtOculto(t.carta)}</strong></div>
-            ${historico}
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;" data-acoes></div>
+            <div style="font-size:11px;color:var(--texto-fraco);">${c.bem ? c.bem + ' · ' : ''}parcela ${fmtOculto(parseVal(c.valorParcela))} · ${t.qtdPagas} de ${t.total}</div>
           </div>
-        `;
-
-        const boxAcoes = bloco.querySelector('[data-acoes]');
-        const acao = (rotulo, titulo, fn) => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'btn-mini';
-          b.textContent = rotulo;
-          if (titulo) b.title = titulo;
-          b.onclick = (ev) => { ev.stopPropagation(); fn(); };
-          boxAcoes.appendChild(b);
-        };
-        acao('Registrar pagamento', 'Dar baixa na parcela com o valor, a data e a conta que saíram de verdade', () => abrirPagamentoRecorrente(c.fixoId));
-        if (faltamParcelas) acao('Recriar cobranças', 'Trazer de volta as parcelas que sumiram da projeção', () => recriarParcelasFaltantes(c.fixoId));
-        acao('Editar', 'Mudar valor, parcelas, conta, forma de pagamento...', () => abrirFormConsorcio(c.id));
-        if (!c.contemplado) acao('Fui contemplado', '', () => abrirContemplacao(c.id));
-        acao('Encerrar grupo', 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)', () => abrirEncerrarConsorcio(c.id));
-
-        lista.appendChild(bloco);
-        aplicarSecao(chave);
-      });
-
-      boxTotais.classList.remove('escondido');
-      boxTotais.innerHTML = `
-        <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
-          <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">já pago</span>
-          <div style="font-size:16px;font-weight:bold;color:var(--texto-forte);margin-top:2px;">${fmtOculto(somaPago)}</div>
-        </div>
-        <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
-          <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">em cartas</span>
-          <div style="font-size:16px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(somaCarta)}</div>
+          ${alertaMes ? `<span title="${quando}" style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:6px;${
+            alertaMes === 'vencida'
+              ? 'color:var(--vermelho);border:1px solid var(--vermelho);'
+              : 'color:var(--amarelo);border:1px solid var(--amarelo);'}">${alertaMes === 'vencida' ? '⚠ vencida' : '⏰ ' + seloQuando}</span>` : ''}
+          <span style="font-size:10px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:20px;margin-right:8px;${
+            c.contemplado
+              ? 'color:var(--verde);border:1px solid var(--verde-escuro);'
+              : 'color:var(--azul);border:1px solid var(--azul-forte);'}">${c.contemplado ? 'contemplado' : 'em andamento'}</span>
+          <span class="chevron-sec" id="chevron-${chave}">▾</span>
+        </button>
+        <div id="corpo-${chave}" style="margin-top:8px;">
+          <div style="font-size:11px;color:var(--texto-fraco);">dia ${c.diaVencimento} · ${c.conta} · ${credito ? 'entra na fatura' : 'sai da conta'}</div>
+          <div style="font-size:11.5px;margin-top:6px;color:${corStatus};font-weight:${alertaMes ? '600' : 'normal'};">${statusMes}</div>
+          ${faltamParcelas ? `<div style="font-size:11px;margin-top:4px;color:var(--amarelo);">⚠ ${faltamParcelas === 1 ? 'falta 1 cobrança' : 'faltam ' + faltamParcelas + ' cobranças'} na projeção — use “Recriar cobranças”</div>` : ''}
+          <div class="barra-bg" style="margin:10px 0 6px;">
+            <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--texto-fraco);">
+            <span>${t.qtdPagas} de ${t.total} parcelas</span>
+            <span>quita em ${fimTxt}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
+            <span style="color:var(--texto-medio);">já paguei <strong style="color:var(--texto-forte);">${fmtOculto(t.jaPago)}</strong></span>
+            <span style="color:var(--texto-medio);">falta <strong style="color:var(--texto-forte);">${fmtOculto(t.falta)}</strong></span>
+          </div>
+          <div style="font-size:11px;color:var(--texto-medio);margin-top:4px;">carta de crédito: <strong style="color:var(--azul);">${fmtOculto(t.carta)}</strong></div>
+          ${historico}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;" data-acoes></div>
         </div>
       `;
+
+      const boxAcoes = bloco.querySelector('[data-acoes]');
+      const acao = (rotulo, titulo, fn) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini';
+        b.textContent = rotulo;
+        if (titulo) b.title = titulo;
+        b.onclick = (ev) => { ev.stopPropagation(); fn(); };
+        boxAcoes.appendChild(b);
+      };
+      acao('Registrar pagamento', 'Dar baixa na parcela com o valor, a data e a conta que saíram de verdade', () => abrirPagamentoRecorrente(c.fixoId));
+      if (faltamParcelas) acao('Recriar cobranças', 'Trazer de volta as parcelas que sumiram da projeção', () => recriarParcelasFaltantes(c.fixoId));
+      acao('Editar', 'Mudar valor, parcelas, conta, forma de pagamento...', () => abrirFormConsorcio(c.id));
+      if (!c.contemplado) acao('Fui contemplado', '', () => abrirContemplacao(c.id));
+      acao('Encerrar grupo', 'Saiu do grupo antes do fim (vendeu a cota, desistiu...)', () => abrirEncerrarConsorcio(c.id));
+
+      // aplicarSecao lê o DOM por id — só funciona depois que o bloco estiver
+      // de fato preso no documento, então quem chama isto é o container, logo
+      // após o appendChild (ver renderizarListaInvestimentosUnificada).
+      return bloco;
+    }
+
+    // Consórcio virou item da lista unificada de Investimentos — chamar isto
+    // é o mesmo que pedir pra ela inteira ser redesenhada.
+    function renderizarConsorcios() {
+      renderizarInvestimentos();
     }
 
     /* Card dos encerrados: mais enxuto que o dos ativos. Aqui não interessa
        progresso nem o que falta — interessa quanto custou e como terminou. */
     function renderizarConsorciosEncerrados(encerrados) {
-      const card = document.getElementById('cardConsorciosEncerrados');
+      const bloco = document.getElementById('blocoConsorciosEncerrados');
       const lista = document.getElementById('listaConsorciosEncerrados');
       const qtd = document.getElementById('qtdConsorciosEncerrados');
-      if (!card || !lista) return;
+      if (!bloco || !lista) return;
 
-      card.classList.toggle('escondido', !encerrados.length);
+      bloco.classList.toggle('escondido', !encerrados.length);
       if (!encerrados.length) { lista.innerHTML = ''; return; }
       if (qtd) qtd.textContent = encerrados.length === 1 ? '1 grupo' : encerrados.length + ' grupos';
 
@@ -13208,7 +13357,6 @@
 
     function renderizarInvestimentos() {
       const totalEl = document.getElementById('totalInvestido');
-      const container = document.getElementById('cardsGruposInvestimento');
       if (!totalEl) return;
 
       /* O TOPO RESPONDE "QUANTO EU COLOQUEI", RECORTADO NO TEMPO
@@ -13317,99 +13465,167 @@
           mini.title = 'Parcelas de consórcio pagas no período — à parte do total aportado';
           mini.innerHTML = `<span style="margin:0;">Consórcios</span><h4 style="font-size:13px;color:var(--texto-medio);">${fmtOculto(pagoConsorcio)}</h4>`;
           mini.onclick = () => {
-            if (!secaoEstaAberta('consorcios')) { uiPrefs.secao_consorcios = true; salvarUiPrefs(); aplicarSecao('consorcios'); }
-            const card = document.querySelector('#abaInvestimentos [data-card="consorcios"]');
-            if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const lista = document.getElementById('listaInvestimentosUnificada');
+            if (lista && lista.scrollIntoView) lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
           };
           resumoTipos.appendChild(mini);
         }
       }
 
+      renderizarListaInvestimentosUnificada(ordem, porTipo);
+    }
+
+    /* Monta o card de UM tipo de ativo (extraído do antigo forEach de
+       renderizarInvestimentos). Usado pela lista unificada — cada tipo com
+       aporte vira um item nela, misturado com os cards de consórcio. */
+    function montarCardTipoAtivo(tipo, g) {
+      const chave = 'grupoInv-' + tipo;
+      let diffTxt = '';
+      if (g.diff !== 0) {
+        const sinal = g.diff >= 0 ? '+' : '−';
+        const cor = g.diff >= 0 ? 'var(--verde)' : 'var(--vermelho)';
+        diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%) desde o aporte</div>`;
+      }
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.grupoInv = tipo;   // alvo do resumo lá de cima
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" data-toggle-secao>
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h4 style="color:var(--texto-medio);">${tipo}</h4>
+              <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--texto-tenue);">Aporte</span>
+              <span id="resumoFechado-${chave}" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-${chave}">▾</span>
+          </button>
+          <!-- Renomear e excluir o grupo sem ter que ir até Ajustes: quem está
+               olhando o card é quem percebe que o nome ficou errado. -->
+          <button type="button" class="btn-acao" data-opcoes-grupo
+                  title="Opções do grupo" aria-label="Opções do grupo ${tipo}"
+                  style="flex-shrink:0;font-size:18px;line-height:1;padding:4px 8px;">⋯</button>
+        </div>
+        <div id="corpo-${chave}" style="margin-top:10px;">
+          <div style="text-align:center;padding:6px 0 10px;">
+            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">vale hoje</span>
+            <div style="font-size:20px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(g.atual)}</div>
+            ${diffTxt}
+          </div>
+          <div data-itens></div>
+          <button type="button" class="btn-adicionar" data-novo-aporte>+ Novo aporte em ${tipo}</button>
+        </div>
+      `;
+
+      card.querySelector('[data-toggle-secao]').onclick = () => alternarSecao(chave);
+      card.querySelector('[data-opcoes-grupo]').onclick = (ev) => { ev.stopPropagation(); abrirAcoesGrupoInvestimento(tipo); };
+      card.querySelector('[data-novo-aporte]').onclick = () => abrirFormAporte(tipo);
+
+      const box = card.querySelector('[data-itens]');
+      g.itens.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(inv => {
+        const dataFmt = inv.data.split('-').reverse().join('/');
+        const atual = valorAtualDoAporte(inv);
+        const diffInv = atual - parseVal(inv.valor);
+        const div = document.createElement('div');
+        div.className = 'item-lancamento';
+        div.onclick = () => abrirModalAtualizarValor(inv.id);
+        let subLinha = inv.atualizadoEm ? `atualizado ${inv.atualizadoEm.split('-').reverse().join('/')}` : 'nunca atualizado';
+        if (diffInv !== 0) {
+          const sinal = diffInv >= 0 ? '+' : '−';
+          const cor = diffInv >= 0 ? 'var(--verde)' : 'var(--vermelho)';
+          subLinha += ` · <span style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffInv))}</span>`;
+        }
+        const classeValor = diffInv < 0 ? 'valor-despesa' : 'valor-receita';
+        div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div><div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">${subLinha}</div></div><span class="${classeValor}">${fmtOculto(atual)}</span>`;
+        box.appendChild(div);
+      });
+
+      // aplicarSecao lê o DOM por id — só funciona depois que o card estiver
+      // preso no documento, então quem chama isto é o container (ver abaixo).
+      return card;
+    }
+
+    /* LISTA ÚNICA DE INVESTIMENTOS
+       Junta os cards de tipo de ativo (aporte) e de consórcio numa lista só,
+       ordenada pela atividade mais recente de cada item. Não mexe nos dados —
+       investimentos[] e consorcios[] continuam arrays separados, isto é só a
+       renderização combinada. */
+    function renderizarListaInvestimentosUnificada(ordem, porTipo) {
+      const container = document.getElementById('listaInvestimentosUnificada');
       if (!container) return;
       container.innerHTML = '';
 
-      if (!ordem.length) {
-        /* Sem nenhum tipo ainda não existe "+ Novo aporte em X" pra tocar, e o
-           card do topo não tem mais botão: então a primeira porta de entrada
-           mora aqui, junto do recado que explica o que vai acontecer. */
-        const vazio = document.createElement('div');
-        vazio.className = 'card';
-        vazio.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte registrado ainda — cada tipo de investimento vira um card aqui.</p>';
-        const botao = document.createElement('button');
-        botao.type = 'button';
-        botao.className = 'btn-adicionar';
-        botao.textContent = '+ Novo aporte';
-        botao.onclick = () => abrirFormAporte();
-        vazio.appendChild(botao);
+      const ativos = consorcios.filter(c => !consorcioEncerrado(c));
+      const encerrados = consorcios.filter(c => consorcioEncerrado(c));
+      renderizarConsorciosEncerrados(encerrados);
+
+      if (!ordem.length && !ativos.length) {
+        const vazio = document.createElement('p');
+        vazio.style.cssText = 'color:var(--texto-medio);font-size:13px;';
+        vazio.textContent = 'Nada por aqui ainda — um aporte ou um consórcio vira um item nesta lista.';
         container.appendChild(vazio);
+        renderizarListaTiposAtivo();
         return;
       }
 
-      ordem.forEach(tipo => {
-        const g = porTipo[tipo];
-        const chave = 'grupoInv-' + tipo;
-        let diffTxt = '';
-        if (g.diff !== 0) {
-          const sinal = g.diff >= 0 ? '+' : '−';
-          const cor = g.diff >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-          diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%) desde o aporte</div>`;
-        }
+      // Data mais recente de cada item, pra ordenar "mais recente primeiro":
+      // do aporte, o último aportado ou revisado; do consórcio, a última
+      // parcela paga (ou o início, se nenhuma ainda saiu).
+      const dataDoAporte = (tipo) => Math.max(...porTipo[tipo].itens
+        .map(i => new Date((i.atualizadoEm || i.data) + 'T12:00:00').getTime()));
+      const dataDoConsorcio = (c) => {
+        const pagas = parcelasPagasConsorcio(c).map(l => l.consorcioPagoEm || l.data).filter(Boolean).sort();
+        const base = pagas.length ? pagas[pagas.length - 1] : c.dataInicio;
+        return new Date((base || c.dataInicio) + 'T12:00:00').getTime();
+      };
 
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.dataset.grupoInv = tipo;   // alvo do resumo lá de cima
-        card.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <button type="button" class="card-header-toggle" style="flex:1;" data-toggle-secao>
-              <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-                <h4 style="color:var(--texto-medio);">${tipo}</h4>
-                <span id="resumoFechado-${chave}" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
-              </div>
-              <span class="chevron-sec" id="chevron-${chave}">▾</span>
-            </button>
-            <!-- Renomear e excluir o grupo sem ter que ir até Ajustes: quem está
-                 olhando o card é quem percebe que o nome ficou errado. -->
-            <button type="button" class="btn-acao" data-opcoes-grupo
-                    title="Opções do grupo" aria-label="Opções do grupo ${tipo}"
-                    style="flex-shrink:0;font-size:18px;line-height:1;padding:4px 8px;">⋯</button>
+      const itens = ordem.map(tipo => ({ tipoItem: 'ativo', chave: tipo, quando: dataDoAporte(tipo) }))
+        .concat(ativos.map(c => ({ tipoItem: 'consorcio', chave: c.id, quando: dataDoConsorcio(c) })))
+        .sort((a, b) => b.quando - a.quando);
+
+      // O resumo "já pago / em cartas" só existindo consórcio ativo — é a
+      // mesma informação que o card de Consórcios sozinho mostrava antes.
+      if (ativos.length) {
+        let somaPago = 0, somaCarta = 0;
+        ativos.forEach(c => {
+          const t = totaisConsorcio(c);
+          somaPago += t.jaPago;
+          somaCarta += t.carta;
+        });
+        const boxTotais = document.createElement('div');
+        boxTotais.id = 'totaisConsorciosUnificado';
+        boxTotais.style.cssText = 'display:flex;gap:8px;margin-bottom:14px;';
+        boxTotais.innerHTML = `
+          <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
+            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">consórcio: já pago</span>
+            <div style="font-size:16px;font-weight:bold;color:var(--texto-forte);margin-top:2px;">${fmtOculto(somaPago)}</div>
           </div>
-          <div id="corpo-${chave}" style="margin-top:10px;">
-            <div style="text-align:center;padding:6px 0 10px;">
-              <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">vale hoje</span>
-              <div style="font-size:20px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(g.atual)}</div>
-              ${diffTxt}
-            </div>
-            <div data-itens></div>
-            <button type="button" class="btn-adicionar" data-novo-aporte>+ Novo aporte em ${tipo}</button>
+          <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
+            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">em cartas</span>
+            <div style="font-size:16px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(somaCarta)}</div>
           </div>
         `;
+        container.appendChild(boxTotais);
+      }
 
-        card.querySelector('[data-toggle-secao]').onclick = () => alternarSecao(chave);
-        card.querySelector('[data-opcoes-grupo]').onclick = (ev) => { ev.stopPropagation(); abrirAcoesGrupoInvestimento(tipo); };
-        card.querySelector('[data-novo-aporte]').onclick = () => abrirFormAporte(tipo);
-
-        const box = card.querySelector('[data-itens]');
-        g.itens.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(inv => {
-          const dataFmt = inv.data.split('-').reverse().join('/');
-          const atual = valorAtualDoAporte(inv);
-          const diffInv = atual - parseVal(inv.valor);
-          const div = document.createElement('div');
-          div.className = 'item-lancamento';
-          div.onclick = () => abrirModalAtualizarValor(inv.id);
-          let subLinha = inv.atualizadoEm ? `atualizado ${inv.atualizadoEm.split('-').reverse().join('/')}` : 'nunca atualizado';
-          if (diffInv !== 0) {
-            const sinal = diffInv >= 0 ? '+' : '−';
-            const cor = diffInv >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-            subLinha += ` · <span style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffInv))}</span>`;
-          }
-          const classeValor = diffInv < 0 ? 'valor-despesa' : 'valor-receita';
-          div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div><div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">${subLinha}</div></div><span class="${classeValor}">${fmtOculto(atual)}</span>`;
-          box.appendChild(div);
-        });
-
+      itens.forEach(item => {
+        let card, chave;
+        if (item.tipoItem === 'ativo') {
+          card = montarCardTipoAtivo(item.chave, porTipo[item.chave]);
+          chave = 'grupoInv-' + item.chave;
+          card.style.marginBottom = '10px';
+        } else {
+          const c = ativos.find(x => x.id === item.chave);
+          if (!c) return;
+          card = montarCardConsorcio(c);
+          chave = 'consorcio-' + c.id;
+          card.style.marginBottom = '10px';
+        }
         container.appendChild(card);
-        const resumo = card.querySelector('[id^="resumoFechado-"]');
-        if (resumo) resumo.textContent = fmtOculto(g.atual);
+        if (item.tipoItem === 'ativo') {
+          const resumo = card.querySelector('[id^="resumoFechado-"]');
+          if (resumo) resumo.textContent = fmtOculto(porTipo[item.chave].atual);
+        }
         aplicarSecao(chave);
       });
 
@@ -13475,16 +13691,12 @@
       document.getElementById('modalAporte').classList.remove('escondido');
     }
 
-    function salvarAporteModal(e) {
-      e.preventDefault();
-      const valorStr = document.getElementById('valorAporte').value.replace('R$', '').trim();
-      const valor = parseVal(valorStr);
-      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
-
-      const origem = document.getElementById('origemAporte').value;
-      const tipoAtivo = document.getElementById('tipoAtivoAporte').value || tipoAtivoPadrao();
-      const data = obterDataBrasilia();
-
+    /* NÚCLEO DO APORTE
+       Separado do modal dedicado pra também ser chamado a partir do
+       lançamento comum, quando a categoria é "Investimento" e o destino
+       escolhido é um tipo de ativo — ali quem cria o lançamento é o
+       formulário principal; aqui só se carimba o aporte em si. */
+    function registrarAporte(valor, origem, tipoAtivo, data) {
       investimentos.push({
         id: 'i' + Date.now(),
         valor: valor.toFixed(2).replace('.', ','),
@@ -13495,6 +13707,19 @@
         data
       });
       salvarInvest();
+    }
+
+    function salvarAporteModal(e) {
+      e.preventDefault();
+      const valorStr = document.getElementById('valorAporte').value.replace('R$', '').trim();
+      const valor = parseVal(valorStr);
+      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
+
+      const origem = document.getElementById('origemAporte').value;
+      const tipoAtivo = document.getElementById('tipoAtivoAporte').value || tipoAtivoPadrao();
+      const data = obterDataBrasilia();
+
+      registrarAporte(valor, origem, tipoAtivo, data);
 
       lancamentos.unshift({
         id: Date.now(),
@@ -13592,7 +13817,7 @@
           </div>
           <div class="item-acoes">
             <span class="${liquido >= 0 ? 'valor-despesa' : 'valor-receita'}">${fmtOculto(liquido)}</span>
-            <button class="btn-acao" onclick="event.stopPropagation(); alternarStatusGrupo('${g.id}')" title="${g.status === 'aberto' ? 'Encerrar grupo' : 'Reabrir grupo'}">${g.status === 'aberto' ? '🔒 Encerrar' : '🔓 Reabrir'}</button>
+            <button class="btn-acao" style="display:inline-flex;align-items:center;gap:4px;" onclick="event.stopPropagation(); alternarStatusGrupo('${g.id}')" title="${g.status === 'aberto' ? 'Encerrar grupo' : 'Reabrir grupo'}">${g.status === 'aberto' ? SVG_CADEADO_FECHADO + 'Encerrar' : SVG_CADEADO_ABERTO + 'Reabrir'}</button>
           </div>
         `;
         return div;
@@ -13614,10 +13839,12 @@
           : 'nenhum em aberto';
       }
 
-      const card = document.getElementById('cardGruposEncerrados');
+      // Dobrado pra dentro do mesmo card dos abertos (ver item 5): não é mais
+      // um card à parte, é um bloco que só aparece quando existe encerrado.
+      const bloco = document.getElementById('blocoGruposEncerrados');
       const qtd = document.getElementById('qtdGruposEncerrados');
-      if (card && containerFechados) {
-        card.classList.toggle('escondido', !fechados.length);
+      if (bloco && containerFechados) {
+        bloco.classList.toggle('escondido', !fechados.length);
         if (qtd) qtd.textContent = fechados.length === 1 ? '1 grupo' : fechados.length + ' grupos';
         containerFechados.innerHTML = '';
         fechados.forEach(g => containerFechados.appendChild(linha(g)));
@@ -14517,7 +14744,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.19-3';
+    const APP_VERSION = '2026.09.23-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -14555,7 +14782,6 @@ function confirmarLancamentoVoz() {
     equiparCamposComCalculadora();   // todo campo de dinheiro da tela, inclusive os dos modais
     aplicarOrdemCards('abaFaturas');
     aplicarOrdemCards('abaGraficos');
-    aplicarOrdemCards('abaInvestimentos');
     aplicarSecao('indicadores');
     aplicarSecao('metas');
     aplicarSecao('fixos');
@@ -14585,12 +14811,11 @@ function confirmarLancamentoVoz() {
     if (uiPrefs.tipoComprometido === 'colunas') setTipoComprometido('colunas');
     if (uiPrefs.tipoGraficoGrupo === 'pizza') tipoGraficoGrupo = 'pizza';
     if (uiPrefs.periodoInvestimentos) periodoInvestimentos = uiPrefs.periodoInvestimentos;
+    descontarReembolsos = !!uiPrefs.descontarReembolsos;
     aplicarSecao('comprometidoFuturo');
     aplicarSecao('rankingGastos');
     aplicarSecao('gastoDiaSemana');
     // Cards da aba Investimentos: nascem abertos (ver SECOES_ABERTAS_POR_PADRAO)
-    aplicarSecao('aportes');
-    aplicarSecao('consorcios');
     aplicarSecao('consorciosEncerrados');
     aplicarSecao('grupos');
     aplicarSecao('gruposEncerrados');
