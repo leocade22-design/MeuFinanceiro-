@@ -287,12 +287,12 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.evaluate(()=>{ fecharFormConta(); fecharModal('modalContas'); });
   await page.waitForTimeout(300);
 
-  // 20) o card fixo do topo de Investimentos e o card de um grupo, com o ⋯
+  // 20) o card fixo do topo de Investimentos e um item da lista unificada
   await abrir('Investim.');
   await page.evaluate(()=>renderizarInvestimentos());
   await page.waitForTimeout(500);
   await tiro('investimentos_resumo', '#cardResumoInvestimentos');
-  await tiro('grupo_investimento', '#cardsGruposInvestimento > .card');
+  await tiro('grupo_investimento', '#listaInvestimentosUnificada > .card[data-grupo-inv]');
 
   // 20a) a revisão dos rendimentos, com os aportes atrasados na mesma tela
   await page.evaluate(()=>abrirRevisaoAportes());
