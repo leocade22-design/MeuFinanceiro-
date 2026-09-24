@@ -310,6 +310,12 @@
     .chips-antecedencia { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto-medio); font-size: 12.5px; cursor: pointer; }
     .chip-antec.on { border-color: var(--amarelo); color: var(--amarelo); background: rgba(255,209,102,.1); }
+    /* Destino do aporte: um botão por card da aba Investimentos */
+    .chips-destino { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip-destino { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto-medio); font-size: 13px; cursor: pointer; }
+    .chip-destino .selo-destino { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--texto-tenue); }
+    .chip-destino.on { border-color: var(--acento); color: var(--texto); background: rgba(95,153,51,.16); font-weight: 600; }
+    .chip-destino.on .selo-destino { color: var(--acento-claro); }
 
     /* SELETOR DE CONTATOS
        Escolher em vez de digitar é o que impede "dudu" e "Dudu" de virarem dois
@@ -706,8 +712,10 @@
                deve registrar um segundo aporte nem dar baixa de novo numa
                parcela — a ação já aconteceu quando o lançamento nasceu. -->
           <div class="form-group escondido" id="grupoDestinoInvestimento">
-            <label for="destinoInvestimento">Aportar em / dar baixa em</label>
-            <select id="destinoInvestimento" name="destinoInvestimento"></select>
+            <label>Onde entra esse dinheiro?</label>
+            <input type="hidden" id="destinoInvestimento" value="">
+            <div id="chipsDestinoInvestimento" class="chips-destino"></div>
+            <p id="dicaDestinoInvestimento" style="font-size:11.5px;color:var(--texto-tenue);margin-top:7px;line-height:1.4;"></p>
             <p id="avisoSemDestinoInvestimento" class="escondido" style="font-size:11.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.4;">Nenhum tipo de investimento ou consórcio cadastrado ainda — cadastre em Ajustes ou na aba Investim.</p>
           </div>
           <div class="form-group">
@@ -2359,6 +2367,22 @@
     </div>
   </div>
 
+  <!-- EXCLUIR CATEGORIA QUE AINDA TEM LANÇAMENTOS -->
+  <div id="modalExcluirCategoria" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalExcluirCategoria')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloExcluirCategoria">Excluir categoria</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalExcluirCategoria')">&times;</button>
+      </div>
+      <p id="infoExcluirCategoria" style="font-size:12.5px;color:var(--texto-fraco);margin-bottom:12px;line-height:1.45;"></p>
+      <div class="form-group">
+        <label for="destinoExcluirCategoria">O que fazer com eles?</label>
+        <select id="destinoExcluirCategoria"></select>
+      </div>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarExclusaoCategoria()">Excluir categoria</button>
+    </div>
+  </div>
+
   <!-- EDIÇÃO DE META DE CATEGORIA (toque na linha em Metas por categoria) -->
   <div id="modalEdicaoMeta" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalEdicaoMeta')">
     <div class="modal-content">
@@ -2747,10 +2771,11 @@
     // em "Outros" e continua sem ganho/perda até você atualizar o valor dele.
     function migrarInvestimentos() {
       let mexeu = false;
-      if (!tiposAtivo.includes('Outros')) { tiposAtivo.push('Outros'); salvarTiposAtivo(); }
       investimentos.forEach(inv => {
         if (!inv.tipoAtivo) { inv.tipoAtivo = 'Outros'; mexeu = true; }
       });
+      // só recria "Outros" se algum aporte precisou dele — senão apagar o grupo não pegava
+      if (mexeu && !tiposAtivo.includes('Outros')) { tiposAtivo.push('Outros'); salvarTiposAtivo(); }
       if (mexeu) salvarInvest();
     }
 
@@ -2949,6 +2974,13 @@
     const STORAGE_KEY_CATEGORIAS_FAV = "meu_financeiro_categorias_favoritas_v1";
     let categoriasFavoritas = [];
 
+    /* Categorias que você apagou de propósito. O reparo do boot recoloca na
+       lista toda categoria que algum lançamento ainda usa — sem esta lista ele
+       não distinguia "sumiu por bug" de "eu apaguei", e a categoria voltava. */
+    const STORAGE_KEY_CATEGORIAS_EXCLUIDAS = "meu_financeiro_categorias_excluidas_v1";
+    let categoriasExcluidas = [];
+    function salvarCategoriasExcluidas() { localStorage.setItem(STORAGE_KEY_CATEGORIAS_EXCLUIDAS, JSON.stringify(categoriasExcluidas)); }
+
     function salvarCategorias() { localStorage.setItem(STORAGE_KEY_CATEGORIAS, JSON.stringify(categorias)); }
     function carregarCategorias() {
       const d = localStorage.getItem(STORAGE_KEY_CATEGORIAS);
@@ -2956,6 +2988,9 @@
       if (!Array.isArray(categorias) || categorias.length === 0) categorias = CATEGORIAS_PADRAO.slice();
       const df = localStorage.getItem(STORAGE_KEY_CATEGORIAS_FAV);
       if (df) { try { categoriasFavoritas = JSON.parse(df) || []; } catch (e) { categoriasFavoritas = []; } }
+      const de = localStorage.getItem(STORAGE_KEY_CATEGORIAS_EXCLUIDAS);
+      if (de) { try { categoriasExcluidas = JSON.parse(de) || []; } catch (e) { categoriasExcluidas = []; } }
+      if (!Array.isArray(categoriasExcluidas)) categoriasExcluidas = [];
     }
 
     function salvarCategoriasFavoritas() { localStorage.setItem(STORAGE_KEY_CATEGORIAS_FAV, JSON.stringify(categoriasFavoritas)); }
@@ -4377,6 +4412,9 @@
       } else {
         categorias.push(nome);
       }
+      // recriar uma categoria que você tinha apagado vale como "quero ela de volta"
+      const iExcl = categoriasExcluidas.findIndex(c => c.toLowerCase() === nome.toLowerCase());
+      if (iExcl >= 0) { categoriasExcluidas.splice(iExcl, 1); salvarCategoriasExcluidas(); }
 
       salvarCategorias();
       popularSelectsCategorias();
@@ -4387,11 +4425,69 @@
       atualizarResumoEGraficos();
     }
 
+    /* Quem gera lançamento no futuro (gasto fixo e consórcio) conta junto: se
+       ficasse com a categoria apagada, o boleto do mês que vem nasceria com ela. */
+    function usoDaCategoria(nome) {
+      return {
+        lancamentos: lancamentos.filter(l => l.categoria === nome).length,
+        fixos: fixos.filter(f => f.categoria === nome).length,
+        consorcios: consorcios.filter(c => c.categoria === nome).length
+      };
+    }
+
+    let categoriaExcluindo = null;
+
     function excluirCategoria(idx) {
       if (categorias.length <= 1) { avisar('minimoUm', 'É preciso ter pelo menos uma categoria.'); return; }
       const nome = categorias[idx];
       if (nome === undefined) return;
-      if (!confirm(`Excluir a categoria "${nome}"? Os lançamentos antigos continuam com esse nome no histórico.`)) return;
+      const uso = usoDaCategoria(nome);
+      if (!uso.lancamentos && !uso.fixos && !uso.consorcios) {
+        if (!confirm(`Excluir a categoria "${nome}"?`)) return;
+        concluirExclusaoCategoria(nome, '');
+        return;
+      }
+      categoriaExcluindo = nome;
+      const partes = [];
+      if (uso.lancamentos) partes.push(uso.lancamentos === 1 ? '1 lançamento' : uso.lancamentos + ' lançamentos');
+      if (uso.fixos) partes.push(uso.fixos === 1 ? '1 gasto fixo' : uso.fixos + ' gastos fixos');
+      if (uso.consorcios) partes.push(uso.consorcios === 1 ? '1 consórcio' : uso.consorcios + ' consórcios');
+      const lista = partes.length > 1 ? partes.slice(0, -1).join(', ') + ' e ' + partes[partes.length - 1] : partes[0];
+      document.getElementById('tituloExcluirCategoria').textContent = `Excluir "${nome}"`;
+      document.getElementById('infoExcluirCategoria').textContent = `${lista} ainda ${uso.lancamentos + uso.fixos + uso.consorcios > 1 ? 'usam' : 'usa'} essa categoria.`;
+      const sel = document.getElementById('destinoExcluirCategoria');
+      sel.innerHTML = '';
+      categoriasEmOrdem().filter(c => c !== nome).forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = 'Mover para ' + c;
+        sel.appendChild(o);
+      });
+      const manter = document.createElement('option');
+      manter.value = ''; manter.textContent = `Não mover (continuam como "${nome}" no histórico)`;
+      sel.appendChild(manter);
+      // Consórcio apagado quase sempre é "agora isso é investimento"
+      sel.value = categorias.includes('Investimento') && nome !== 'Investimento' ? 'Investimento' : '';
+      document.getElementById('modalExcluirCategoria').classList.remove('escondido');
+    }
+
+    function confirmarExclusaoCategoria() {
+      const nome = categoriaExcluindo;
+      if (!nome || !categorias.includes(nome)) { fecharModal('modalExcluirCategoria'); return; }
+      concluirExclusaoCategoria(nome, document.getElementById('destinoExcluirCategoria').value);
+      categoriaExcluindo = null;
+      fecharModal('modalExcluirCategoria');
+    }
+
+    function concluirExclusaoCategoria(nome, destino) {
+      const idx = categorias.indexOf(nome);
+      if (idx < 0) return;
+      if (destino && categorias.includes(destino)) {
+        lancamentos.forEach(l => { if (l.categoria === nome) l.categoria = destino; });
+        fixos.forEach(f => { if (f.categoria === nome) f.categoria = destino; });
+        consorcios.forEach(c => { if (c.categoria === nome) c.categoria = destino; });
+        salvarLocalStorage(); salvarFixos(); salvarConsorcios();
+      }
+      if (!categoriasExcluidas.includes(nome)) { categoriasExcluidas.push(nome); salvarCategoriasExcluidas(); }
       categorias.splice(idx, 1);
       delete orcamentosCategoria[nome];
       salvarOrcamentos();
@@ -4400,6 +4496,7 @@
       salvarCategorias();
       popularSelectsCategorias();
       renderizarListaCategorias();
+      if (destino) { renderizarLancamentos(); atualizarFaturas(); }
       atualizarResumoEGraficos();
     }
 
@@ -4918,6 +5015,7 @@
         faturasPagas,
         contas,
         categorias,
+        categoriasExcluidas,
         transferencias,
         contatos,
         lixeira,
@@ -5007,6 +5105,7 @@
           faturasPagas = data.faturasPagas && typeof data.faturasPagas === 'object' ? data.faturasPagas : {};
           if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
+          if (Array.isArray(data.categoriasExcluidas)) { categoriasExcluidas = data.categoriasExcluidas; salvarCategoriasExcluidas(); }
           transferencias = Array.isArray(data.transferencias) ? data.transferencias : [];
           contatos = data.contatos && typeof data.contatos === 'object' ? data.contatos : {};
           lixeira = Array.isArray(data.lixeira) ? data.lixeira : [];
@@ -6345,9 +6444,11 @@
       carregarDescricoes(tipo);
     }
 
-    /* Um seletor só, misturando tipo de ativo (vira aporte) e consórcio ativo
-       (dá baixa na parcela do mês) — mostra quando a categoria é
-       "Investimento", só em lançamento NOVO (edição não repete a ação). */
+    /* Um botão por card da aba Investimentos: cada grupo (vira aporte) e cada
+       consórcio em andamento (dá baixa na parcela do mês). Aparece quando a
+       categoria é "Investimento", só em lançamento NOVO (edição não repete a
+       ação). Nenhum vem marcado: sem toque, fica só como despesa — a lista
+       antiga já nascia no primeiro grupo e registrava aporte sem você ver. */
     function atualizarDestinoInvestimento() {
       const grupo = document.getElementById('grupoDestinoInvestimento');
       if (!grupo) return;
@@ -6355,47 +6456,66 @@
       const categoria = document.getElementById('categoria').value;
       const mostrar = !emEdicao && tipoAtual === 'despesa' && categoria === 'Investimento';
       grupo.classList.toggle('escondido', !mostrar);
-      if (mostrar) popularSelectDestinoInvestimento();
+      if (mostrar) popularChipsDestinoInvestimento();
     }
 
-    function popularSelectDestinoInvestimento() {
-      const sel = document.getElementById('destinoInvestimento');
-      if (!sel) return;
-      const atual = sel.value;
-      sel.innerHTML = '';
-
-      if (tiposAtivo.length) {
-        const grupoAtivos = document.createElement('optgroup');
-        grupoAtivos.label = 'Aporte em';
-        tiposAtivo.forEach(t => {
-          const opt = document.createElement('option');
-          opt.value = 'ativo:' + t;
-          opt.textContent = t;
-          grupoAtivos.appendChild(opt);
-        });
-        sel.appendChild(grupoAtivos);
-      }
-
+    function opcoesDestinoInvestimento() {
       // Só os consórcios em andamento: o encerrado não tem mais parcela pra
       // dar baixa, e oferecer ele aqui seria convidar pra uma baixa fantasma.
-      const consorciosAtivos = consorcios.filter(c => !consorcioEncerrado(c));
-      if (consorciosAtivos.length) {
-        const grupoCons = document.createElement('optgroup');
-        grupoCons.label = 'Parcela de consórcio';
-        consorciosAtivos.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = 'consorcio:' + c.id;
-          opt.textContent = c.nome;
-          grupoCons.appendChild(opt);
-        });
-        sel.appendChild(grupoCons);
-      }
+      return tiposAtivo.map(t => ({ valor: 'ativo:' + t, nome: t, consorcio: null }))
+        .concat(consorcios.filter(c => !consorcioEncerrado(c))
+          .map(c => ({ valor: 'consorcio:' + c.id, nome: c.nome, consorcio: c })));
+    }
 
-      const vazio = !sel.options.length;
-      sel.classList.toggle('escondido', vazio);
-      const aviso = document.getElementById('avisoSemDestinoInvestimento');
-      if (aviso) aviso.classList.toggle('escondido', !vazio);
-      if (atual && Array.from(sel.options).some(o => o.value === atual)) sel.value = atual;
+    function popularChipsDestinoInvestimento() {
+      const input = document.getElementById('destinoInvestimento');
+      const box = document.getElementById('chipsDestinoInvestimento');
+      if (!input || !box) return;
+      const opcoes = opcoesDestinoInvestimento();
+      if (!opcoes.some(o => o.valor === input.value)) input.value = '';
+      box.innerHTML = '';
+      opcoes.forEach(o => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip-destino' + (o.valor === input.value ? ' on' : '');
+        b.dataset.destino = o.valor;
+        b.textContent = o.nome;
+        if (o.consorcio) {
+          const selo = document.createElement('span');
+          selo.className = 'selo-destino';
+          selo.textContent = 'consórcio';
+          b.appendChild(selo);
+        }
+        b.onclick = () => escolherDestinoInvestimento(o.valor);
+        box.appendChild(b);
+      });
+      const vazio = !opcoes.length;
+      box.classList.toggle('escondido', vazio);
+      document.getElementById('avisoSemDestinoInvestimento').classList.toggle('escondido', !vazio);
+      atualizarDicaDestinoInvestimento(opcoes);
+    }
+
+    // tocar no que já está marcado desmarca: volta a ser só despesa
+    function escolherDestinoInvestimento(valor) {
+      const input = document.getElementById('destinoInvestimento');
+      input.value = input.value === valor ? '' : valor;
+      popularChipsDestinoInvestimento();
+    }
+
+    function atualizarDicaDestinoInvestimento(opcoes) {
+      const dica = document.getElementById('dicaDestinoInvestimento');
+      if (!dica) return;
+      const escolhido = opcoes.find(o => o.valor === document.getElementById('destinoInvestimento').value);
+      dica.classList.toggle('escondido', !opcoes.length);
+      if (!escolhido) dica.textContent = 'Toque em um pra registrar o aporte. Sem nenhum marcado, fica só como despesa.';
+      else if (escolhido.consorcio) dica.textContent = `Dá baixa na parcela deste mês do ${escolhido.nome}.`;
+      else dica.textContent = `Também registra um aporte em ${escolhido.nome}.`;
+    }
+
+    function limparDestinoInvestimento() {
+      const input = document.getElementById('destinoInvestimento');
+      if (input) input.value = '';
+      if (!document.getElementById('grupoDestinoInvestimento').classList.contains('escondido')) popularChipsDestinoInvestimento();
     }
 
     /* LISTA DE LANÇAMENTOS: filtrada pelo mês selecionado nas Faturas, agrupada por dia */
@@ -6865,6 +6985,7 @@
       const grupoDestino = document.getElementById('grupoDestinoInvestimento');
       const destinoInvestimento = (!idEditando && grupoDestino && !grupoDestino.classList.contains('escondido'))
         ? document.getElementById('destinoInvestimento').value : '';
+      limparDestinoInvestimento();   // o próximo lançamento começa sem destino marcado
 
       /* DESTINO = CONSÓRCIO: a parcela do mês já existe (ou vai nascer) pelo
          motor do gasto fixo — criar TAMBÉM um lançamento avulso aqui duplicaria
@@ -12171,7 +12292,7 @@
           valor: c.valorParcela,
           conta: c.conta || primeiraConta(),
           diaVencimento: c.diaVencimento,
-          categoria: c.categoria || 'Consórcio',
+          categoria: c.categoria || categoriaConsorcioPadrao(),
           formaModo: c.formaPagamento || 'À Vista / Débito',
           emprestimoPara: '',
           diaCobranca: null,
@@ -12358,12 +12479,18 @@
        lista salva deixava de estar vazia, o carregarCategorias() seguinte
        aceitava ela como verdade em vez de cair no padrão. */
     function garantirCategoriaConsorcio(nome) {
-      const alvo = nome || 'Consórcio';
+      const alvo = nome || categoriaConsorcioPadrao();
       if (!Array.isArray(categorias) || !categorias.length) return;
-      if (categorias.includes(alvo)) return;
+      if (categorias.includes(alvo) || categoriasExcluidas.includes(alvo)) return;
       categorias.push(alvo);
       salvarCategorias();
       popularSelectsCategorias();
+    }
+
+    // "Consórcio" enquanto ela existir; apagou, o consórcio passa a ser investimento
+    function categoriaConsorcioPadrao() {
+      if (!categoriasExcluidas.includes('Consórcio')) return 'Consórcio';
+      return categorias.includes('Investimento') ? 'Investimento' : categoriaPadrao();
     }
 
     /* REPARO: CATEGORIA EM USO QUE SUMIU DA LISTA
@@ -12395,12 +12522,14 @@
       Object.keys(orcamentosCategoria || {}).forEach(c => { if (c) usadas.add(c); });
       (Array.isArray(categoriasFavoritas) ? categoriasFavoritas : []).forEach(c => { if (c) usadas.add(c); });
 
-      const faltando = [...usadas].filter(c => !categorias.includes(c));
-      const perdeuTudo = categorias.length <= 1;
+      // o que você apagou de propósito não é "sumiço" — fica fora
+      const apagada = c => categoriasExcluidas.includes(c);
+      const faltando = [...usadas].filter(c => !categorias.includes(c) && !apagada(c));
+      const perdeuTudo = categorias.length === 0 || (categorias.length === 1 && !categoriasExcluidas.length);
       if (!faltando.length && !perdeuTudo) return;
 
       faltando.forEach(c => categorias.push(c));
-      if (perdeuTudo) CATEGORIAS_PADRAO.forEach(c => { if (!categorias.includes(c)) categorias.push(c); });
+      if (perdeuTudo) CATEGORIAS_PADRAO.forEach(c => { if (!categorias.includes(c) && !apagada(c)) categorias.push(c); });
       salvarCategorias();
       popularSelectsCategorias();
     }
@@ -12434,9 +12563,9 @@
          gastos comuns no gráfico. Mas quem acha que isso é investimento, e não
          despesa corriqueira, troca aqui. */
       const selCat = document.getElementById('categoriaConsorcio');
-      const catAtual = c ? (c.categoria || 'Consórcio') : 'Consórcio';
+      const catAtual = c ? (c.categoria || categoriaConsorcioPadrao()) : categoriaConsorcioPadrao();
       garantirOpcaoCategoria(selCat, catAtual);
-      if (!Array.from(selCat.options).some(o => o.value === 'Consórcio')) {
+      if (!categoriasExcluidas.includes('Consórcio') && !Array.from(selCat.options).some(o => o.value === 'Consórcio')) {
         const opt = document.createElement('option');
         opt.value = 'Consórcio'; opt.textContent = 'Consórcio';
         selCat.appendChild(opt);
@@ -12486,7 +12615,7 @@
           ? 'Crédito Parcelado' : 'À Vista / Débito',
         // Consórcio é gasto, mas é gasto pra virar bem: quem decide em que
         // prateleira ele entra no gráfico é você, não o app.
-        categoria: document.getElementById('categoriaConsorcio').value || 'Consórcio',
+        categoria: document.getElementById('categoriaConsorcio').value || categoriaConsorcioPadrao(),
         dataInicio: document.getElementById('inicioConsorcio').value || obterDataBrasilia()
       };
 
@@ -14744,7 +14873,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.23-1';
+    const APP_VERSION = '2026.09.24-1';
 
     // Inicialização
     carregarLocalStorage();

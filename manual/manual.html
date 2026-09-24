@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.23-1 · Leia em 23 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.24-1 · Leia em 23 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -164,9 +164,12 @@
     </div>
     <div class="nota">
       <strong>Categoria "Investimento" puxa o destino do dinheiro.</strong> Escolha essa categoria
-      num lançamento novo e aparece um campo a mais — <em>Aportar em / dar baixa em</em> — misturando
-      os dois lugares onde esse dinheiro pode ir: um <strong>tipo de ativo</strong> (Tesouro Direto,
-      CDB…) ou um <strong>consórcio</strong> em andamento.
+      num lançamento novo e aparece <em>Onde entra esse dinheiro?</em>, com um botão para cada
+      card da aba Investimentos: cada <strong>grupo de investimento</strong> (Poupança, Ações…) e
+      cada <strong>consórcio</strong> em andamento, que leva o selo <em>consórcio</em>. Um toque
+      marca, outro toque desmarca. <strong>Nenhum vem marcado</strong>: se você não tocar em
+      nenhum, o lançamento fica só como despesa, sem aporte — a frase embaixo dos botões sempre
+      diz o que vai acontecer.
       <ul>
         <li>Escolhendo um <strong>tipo de ativo</strong>: o lançamento é criado do jeito de sempre, e
             de quebra um aporte é registrado nele — o mesmo que aconteceria abrindo o formulário
@@ -826,12 +829,13 @@
        <strong>como você paga a parcela</strong> e em que <strong>categoria</strong> ele entra.</p>
     <div class="nota">
       <strong>A categoria é sua escolha.</strong> O padrão é <em>Consórcio</em>, pra separar o
-      boleto dos gastos comuns no gráfico. Mas se pra você consórcio é dinheiro guardado e não
+      boleto dos gastos comuns no gráfico. Se você apagar a categoria <em>Consórcio</em> em
+      Ajustes, o padrão passa a ser <em>Investimento</em>. Mas se pra você consórcio é dinheiro guardado e não
       despesa do mês, troque pra <em>Investimento</em> — ou qualquer outra. Mudando num consórcio
       que já roda, as parcelas que ainda vão vencer acompanham; as que já venceram ficam como
       estão.
     </div>
-    <p>A partir daí a parcela <strong>entra sozinha todo mês</strong> na categoria <em>Consórcio</em>:
+    <p>A partir daí a parcela <strong>entra sozinha todo mês</strong> na categoria escolhida:
        aparece nos lançamentos e nos gráficos sem você lançar nada na mão. Se cadastrar com data
        retroativa, as parcelas que já passaram são criadas de uma vez. E a parcela
        <strong>para de nascer</strong> quando chega na última.</p>
@@ -1006,7 +1010,11 @@
       <li><strong>Contas e cartões</strong> — cadastre seus bancos, marque quais têm crédito e informe o dia de fechamento e vencimento de cada cartão. Isso é o que faz a fatura cair no mês certo.</li>
       <li><strong>Saldo inicial</strong> — dentro de cada conta. É quanto ela já tinha quando você começou a usar o app. Entra no saldo e em mais lugar nenhum: não vira receita, não aparece em “recebido”, nos gráficos nem nas perguntas. Pode ser negativo.</li>
       <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número.</li>
-      <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.</li>
+      <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.
+          Ao <strong>excluir</strong> uma categoria que ainda tem lançamentos, o app pergunta o que fazer com eles:
+          <em>mover para</em> outra categoria (os gastos fixos e consórcios vão junto, então os boletos futuros
+          já nascem na nova) ou deixar os antigos com o nome velho no histórico. Categoria apagada
+          não volta sozinha — só se você criar de novo com o mesmo nome.</li>
       <li><strong>Ordem dos cards</strong> — duas listas, uma pra <em>Faturas</em> e outra pra <em>Gráficos</em>. Arraste pelas listrinhas para deixar no topo o que você olha primeiro. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro. Card que não está aparecendo agora também não entra na lista, e volta no fim da aba quando reaparecer.
       <br><br><em>Investimentos</em> não tem mais essa tela: os aportes e consórcios viraram uma lista só (ver capítulo 13), ordenada sozinha pela atividade mais recente — não tem mais dois cards pra escolher a ordem entre eles.</li>
       <li><strong>Grupos de investimento</strong> — Tesouro, fundos, poupança, ações: cada grupo vira um card na aba <em>Investim.</em> Fica logo depois de <em>Contas e cartões</em> porque é o mesmo assunto — o cadastro de onde o dinheiro mora.</li>
