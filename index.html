@@ -310,12 +310,10 @@
     .chips-antecedencia { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip-antec { padding: 7px 12px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto-medio); font-size: 12.5px; cursor: pointer; }
     .chip-antec.on { border-color: var(--amarelo); color: var(--amarelo); background: rgba(255,209,102,.1); }
-    /* Destino do aporte: um botão por card da aba Investimentos */
+    /* Destino do aporte: um botão por grupo de investimento */
     .chips-destino { display: flex; flex-wrap: wrap; gap: 7px; }
     .chip-destino { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 20px; border: 1px solid var(--borda); background: var(--campo); color: var(--texto-medio); font-size: 13px; cursor: pointer; }
-    .chip-destino .selo-destino { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--texto-tenue); }
     .chip-destino.on { border-color: var(--acento); color: var(--texto); background: rgba(95,153,51,.16); font-weight: 600; }
-    .chip-destino.on .selo-destino { color: var(--acento-claro); }
 
     /* SELETOR DE CONTATOS
        Escolher em vez de digitar é o que impede "dudu" e "Dudu" de virarem dois
@@ -661,6 +659,11 @@
                  como direto, que é como o app sempre se comportou. -->
             <input type="hidden" id="emprestimoTipo" value="">
             <input type="hidden" id="emprestimoRateioIncluiVoce" value="1">
+            <!-- Uma pessoa só + "dividir incluindo a minha parte": metade pra cada.
+                 Flag à parte do IncluiVoce de propósito — esse já vale "1" em todo
+                 empréstimo antigo de uma pessoa, e reaproveitá-lo cortaria pela
+                 metade dívidas que sempre foram do valor inteiro. -->
+            <input type="hidden" id="emprestimoDividirComigo" value="">
             <!-- Quanto cada pessoa deve, quando não é parte igual. JSON {nome: "30,00"},
                  relativo ao valor total digitado. Vazio = divide igual, como sempre foi. -->
             <input type="hidden" id="emprestimoCotas" value="">
@@ -716,7 +719,7 @@
             <input type="hidden" id="destinoInvestimento" value="">
             <div id="chipsDestinoInvestimento" class="chips-destino"></div>
             <p id="dicaDestinoInvestimento" style="font-size:11.5px;color:var(--texto-tenue);margin-top:7px;line-height:1.4;"></p>
-            <p id="avisoSemDestinoInvestimento" class="escondido" style="font-size:11.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.4;">Nenhum tipo de investimento ou consórcio cadastrado ainda — cadastre em Ajustes ou na aba Investim.</p>
+            <p id="avisoSemDestinoInvestimento" class="escondido" style="font-size:11.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.4;">Nenhum grupo de investimento cadastrado ainda — crie um em Ajustes › Grupos de investimento.</p>
           </div>
           <div class="form-group">
             <label for="valor" id="labelValor">Valor</label>
@@ -1132,7 +1135,7 @@
         </div>
         <div class="painel-topo" style="margin:10px 0 12px;">
           <div class="card-saldo-destaque" style="cursor:default;">
-            <span id="rotuloTotalInvestido">Total aportado</span>
+            <span id="rotuloTotalInvestido">Total investido</span>
             <h4 class="val-saldo" id="totalInvestido" style="color:var(--azul);">R$ 0,00</h4>
             <!-- Só aparece quando há o que dizer: sem ganho/perda registrado uma
                  segunda linha vazia seria só ruído embaixo do número principal. -->
@@ -2040,6 +2043,13 @@
         <button class="btn-fechar" onclick="fecharModal('modalEmprestimo')">&times;</button>
       </div>
       <p id="textoModalEmprestimo" style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;"></p>
+      <!-- Espelho do Valor do formulário: digitar aqui já preenche lá, pra não
+           precisar fechar a janela só pra pôr o valor e voltar pra ver a divisão. -->
+      <div class="form-group">
+        <label for="emprestimoValorTemp">Valor</label>
+        <input type="text" id="emprestimoValorTemp" placeholder="R$ 0,00" inputmode="numeric"
+               oninput="mascaraMoeda(this); espelharValorEmprestimo();">
+      </div>
       <!-- Só aparece quando é VOCÊ que deve: quando alguém te deve, o gasto saiu
            da sua conta de verdade e não existe variante indireta. -->
       <div class="form-group escondido" id="wrapTipoEmprestimo">
@@ -2085,7 +2095,7 @@
         </div>
       </div>
       <label class="check-credito escondido" id="wrapRateioIncluiVoce">
-        <input type="checkbox" id="rateioIncluiVoce" aria-label="Incluir você no rateio" checked onchange="atualizarPreviaRateio()">
+        <input type="checkbox" id="rateioIncluiVoce" aria-label="Incluir você no rateio" checked onchange="alternarIncluiVoce()">
         dividir incluindo a minha parte
       </label>
       <div id="cotasRateio" class="escondido" style="margin-bottom:10px;"></div>
@@ -2633,9 +2643,8 @@
        isso o consórcio já entra em fatura, gráfico, categoria e saldo sem uma
        linha de código nova — e sem lançamento manual.
 
-       Fica fora do "Total aportado" da aba de propósito: consórcio não é aporte
-       rendendo, é compra parcelada de uma carta de crédito. Somar os dois no mesmo
-       número misturaria coisas diferentes. */
+       Soma no "Total investido" do topo da aba junto com os aportes: é dinheiro
+       que você colocou. Só não entra no ganho/perda, porque não rende. */
     let consorcios = [];
     const STORAGE_KEY_CONSORCIOS = "meu_financeiro_consorcios_v1";
 
@@ -3342,7 +3351,10 @@
       document.getElementById('labelPrazoEmprestimo').textContent = devo ? 'Prazo pra devolver' : 'Prazo pra pagar';
       document.getElementById('emprestimoTemp').value = document.getElementById('emprestimoPara').value;
       document.getElementById('emprestimoVenceTemp').value = document.getElementById('emprestimoVence').value;
-      document.getElementById('rateioIncluiVoce').checked = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
+      incluiVoceVarios = document.getElementById('emprestimoRateioIncluiVoce').value !== '0';
+      incluiVoceUm = document.getElementById('emprestimoDividirComigo').value === '1';
+      casoIncluiVoceNaTela = null;
+      document.getElementById('emprestimoValorTemp').value = document.getElementById('valor').value;
       // volta no modo em que foi salvo, com os valores que você digitou
       const salvo = lerCotasSalvas();
       modoRateioEscolhido = (salvo && Object.keys(salvo.cotas).length) ? 'livre' : 'igual';
@@ -3387,6 +3399,37 @@
        a sua parte. Funciona também com UMA pessoa só, que é o caso de "paguei
        R$ 100, ele me deve R$ 30". */
     let modoRateioEscolhido = 'igual';
+
+    /* "Dividir incluindo a minha parte" guarda duas respostas: com uma pessoa só
+       o padrão é ela dever tudo (desmarcado); com duas ou mais, o padrão é você
+       entrar na divisão (marcado). A caixinha mostra a resposta do caso da vez,
+       e trocar o número de pessoas não apaga o que você marcou no outro. */
+    let incluiVoceVarios = true;
+    let incluiVoceUm = false;
+    let casoIncluiVoceNaTela = null;   // 'um' | 'varios' — de qual resposta a caixinha está mostrando
+
+    /* Dentro do mesmo caso a caixinha manda; ao trocar de caso, guarda a
+       resposta do caso que saiu e mostra a do que entrou. */
+    function sincronizarIncluiVoce(qtdNomes) {
+      const caixa = document.getElementById('rateioIncluiVoce');
+      const caso = qtdNomes === 1 ? 'um' : (qtdNomes > 1 ? 'varios' : null);
+      if (casoIncluiVoceNaTela === 'um') incluiVoceUm = caixa.checked;
+      if (casoIncluiVoceNaTela === 'varios') incluiVoceVarios = caixa.checked;
+      if (caso) caixa.checked = caso === 'um' ? incluiVoceUm : incluiVoceVarios;
+      casoIncluiVoceNaTela = caso;
+      return caso === 'um' ? incluiVoceUm : incluiVoceVarios;
+    }
+
+    function alternarIncluiVoce() {
+      atualizarPreviaRateio();
+    }
+
+    function espelharValorEmprestimo() {
+      const valor = document.getElementById('valor');
+      valor.value = document.getElementById('emprestimoValorTemp').value;
+      valor.dispatchEvent(new Event('input', { bubbles: true }));
+      atualizarPreviaRateio();
+    }
 
     function lerCotasSalvas() {
       const bruto = document.getElementById('emprestimoCotas').value;
@@ -3653,7 +3696,8 @@
       const livre = modoRateioEscolhido === 'livre';
       // "incluir a minha parte" é pergunta do modo igual: no livre, a sua parte
       // é o que sobra depois das outras, e ela aparece sozinha no resumo.
-      wrapIncluiVoce.classList.toggle('escondido', livre || nomes.length <= 1);
+      wrapIncluiVoce.classList.toggle('escondido', livre);
+      const incluiVoce = sincronizarIncluiVoce(nomes.length);
       boxCotas.classList.toggle('escondido', !livre);
       previa.classList.remove('escondido');
 
@@ -3680,19 +3724,18 @@
 
       // ---- modo igual: o comportamento de sempre ----
       boxCotas.innerHTML = '';
-      if (nomes.length <= 1) {
+      if (nomes.length <= 1 && !incluiVoce) {
         previa.innerHTML = `
           <div class="linha-subtotal" style="cursor:default;">
             <span>${nomes[0]}</span>
             <strong>${total ? fmtVal(total) : 'digite o valor'}</strong>
           </div>
           <div style="font-size:11px;color:var(--texto-fraco);margin-top:4px;">
-            ${tipoAtual === 'receita' ? 'Você devolve o valor inteiro.' : 'A pessoa te deve o valor inteiro. Se foi só uma parte, use “Valor por pessoa”.'}
+            ${tipoAtual === 'receita' ? 'Você devolve o valor inteiro.' : 'A pessoa te deve o valor inteiro.'} Pra rachar meio a meio, marque a caixinha acima; pra outro valor, use “Valor por pessoa”.
           </div>
         `;
         return;
       }
-      const incluiVoce = document.getElementById('rateioIncluiVoce').checked;
       const divisor = nomes.length + (incluiVoce ? 1 : 0);
       const cota = total / divisor;
       previa.innerHTML = `
@@ -3701,7 +3744,7 @@
           <strong>${total ? 'R$ ' + cota.toFixed(2).replace('.', ',') + ' cada' : 'digite o valor'}</strong>
         </div>
         <div style="font-size:11px;color:var(--texto-fraco);margin-top:4px;">
-          ${tipoAtual === 'receita' ? 'Você vai devolver a' : 'Vão te dever'}: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na conta.' : ''}
+          ${tipoAtual === 'receita' ? 'Você vai devolver a' : (nomes.length === 1 ? 'Vai te dever' : 'Vão te dever')}: ${nomes.join(', ')}${incluiVoce ? ' — a sua parte não entra na conta.' : ''}
         </div>
       `;
     }
@@ -3733,11 +3776,14 @@
     function salvarEmprestimoModal() {
       const bruto = document.getElementById('emprestimoTemp').value.trim();
       const nomes = nomesEmprestimo(bruto);
+      sincronizarIncluiVoce(nomes.length);   // o que está marcado na tela agora é a resposta
       document.getElementById('emprestimoPara').value = nomes.join(', ');
       document.getElementById('emprestimoVence').value = nomes.length ? document.getElementById('emprestimoVenceTemp').value : '';
       document.getElementById('emprestimoParcelas').value = (nomes.length && tipoAtual === 'receita')
         ? document.getElementById('emprestimoParcelasTemp').value : '1';
-      document.getElementById('emprestimoRateioIncluiVoce').value = document.getElementById('rateioIncluiVoce').checked ? '1' : '0';
+      document.getElementById('emprestimoRateioIncluiVoce').value = incluiVoceVarios ? '1' : '0';
+      document.getElementById('emprestimoDividirComigo').value =
+        (nomes.length === 1 && modoRateioEscolhido === 'igual' && incluiVoceUm) ? '1' : '';
       /* As cotas são guardadas em REAIS, do jeito que você digitou, junto com o
          total que estava na tela. É a dupla que permite converter em fração
          depois — e é a fração que sobrevive a parcelar a compra. */
@@ -3760,6 +3806,7 @@
       document.getElementById('emprestimoTipo').value = '';
       tipoEmprestimoEscolhido = 'indireto';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+      document.getElementById('emprestimoDividirComigo').value = '';
       document.getElementById('emprestimoCotas').value = '';
       document.getElementById('emprestimoParcelas').value = '1';
       modoRateioEscolhido = 'igual';
@@ -6444,11 +6491,13 @@
       carregarDescricoes(tipo);
     }
 
-    /* Um botão por card da aba Investimentos: cada grupo (vira aporte) e cada
-       consórcio em andamento (dá baixa na parcela do mês). Aparece quando a
+    /* Um botão por grupo de investimento (vira aporte). Aparece quando a
        categoria é "Investimento", só em lançamento NOVO (edição não repete a
        ação). Nenhum vem marcado: sem toque, fica só como despesa — a lista
-       antiga já nascia no primeiro grupo e registrava aporte sem você ver. */
+       antiga já nascia no primeiro grupo e registrava aporte sem você ver.
+       Consórcio não entra: a parcela nasce sozinha todo mês pelo gasto fixo e
+       se paga pelo "Paguei" dele ou pelo card do consórcio — um terceiro
+       caminho aqui só abria espaço pra pagar a mesma parcela duas vezes. */
     function atualizarDestinoInvestimento() {
       const grupo = document.getElementById('grupoDestinoInvestimento');
       if (!grupo) return;
@@ -6460,11 +6509,7 @@
     }
 
     function opcoesDestinoInvestimento() {
-      // Só os consórcios em andamento: o encerrado não tem mais parcela pra
-      // dar baixa, e oferecer ele aqui seria convidar pra uma baixa fantasma.
-      return tiposAtivo.map(t => ({ valor: 'ativo:' + t, nome: t, consorcio: null }))
-        .concat(consorcios.filter(c => !consorcioEncerrado(c))
-          .map(c => ({ valor: 'consorcio:' + c.id, nome: c.nome, consorcio: c })));
+      return tiposAtivo.map(t => ({ valor: 'ativo:' + t, nome: t }));
     }
 
     function popularChipsDestinoInvestimento() {
@@ -6480,12 +6525,6 @@
         b.className = 'chip-destino' + (o.valor === input.value ? ' on' : '');
         b.dataset.destino = o.valor;
         b.textContent = o.nome;
-        if (o.consorcio) {
-          const selo = document.createElement('span');
-          selo.className = 'selo-destino';
-          selo.textContent = 'consórcio';
-          b.appendChild(selo);
-        }
         b.onclick = () => escolherDestinoInvestimento(o.valor);
         box.appendChild(b);
       });
@@ -6508,7 +6547,6 @@
       const escolhido = opcoes.find(o => o.valor === document.getElementById('destinoInvestimento').value);
       dica.classList.toggle('escondido', !opcoes.length);
       if (!escolhido) dica.textContent = 'Toque em um pra registrar o aporte. Sem nenhum marcado, fica só como despesa.';
-      else if (escolhido.consorcio) dica.textContent = `Dá baixa na parcela deste mês do ${escolhido.nome}.`;
       else dica.textContent = `Também registra um aporte em ${escolhido.nome}.`;
     }
 
@@ -6972,6 +7010,11 @@
           fracoesRateio[nome] = v / cotasSalvas.base;
         });
       }
+      // Meio a meio com uma pessoa vira a fração 0,5 — o mesmo caminho do
+      // "valor por pessoa", que já sabe sobreviver a compra parcelada.
+      const dividirComigo = nomesEmpr.length === 1 && !Object.keys(fracoesRateio).length
+        && document.getElementById('emprestimoDividirComigo').value === '1';
+      if (dividirComigo) fracoesRateio[nomesEmpr[0]] = 0.5;
 
       let grupoViagemId = '';
       const selGrupo = document.getElementById('grupoViagem').value;
@@ -6986,30 +7029,6 @@
       const destinoInvestimento = (!idEditando && grupoDestino && !grupoDestino.classList.contains('escondido'))
         ? document.getElementById('destinoInvestimento').value : '';
       limparDestinoInvestimento();   // o próximo lançamento começa sem destino marcado
-
-      /* DESTINO = CONSÓRCIO: a parcela do mês já existe (ou vai nascer) pelo
-         motor do gasto fixo — criar TAMBÉM um lançamento avulso aqui duplicaria
-         a saída. Sai cedo, sem tocar em `lancamentos` pelo caminho normal.
-         Se o consórcio sumiu entre abrir e salvar o form (caso raríssimo), cai
-         pro fluxo normal abaixo e vira uma despesa comum — nunca trava o
-         salvamento por causa disso. */
-      if (destinoInvestimento.startsWith('consorcio:')) {
-        const cons = consorcios.find(c => c.id === destinoInvestimento.slice('consorcio:'.length));
-        const fixo = cons && fixos.find(f => f.id === cons.fixoId);
-        if (fixo) {
-          const comoPagou = COMO_DA_FORMA[formaModo] || 'débito em conta';
-          const contaDoPagamento = conta || fixo.conta || primeiraConta();
-          // mês da OCORRÊNCIA a dar baixa, não "hoje": respeita a data escolhida
-          // no formulário, pra uma parcela atrasada lançada com a data certa
-          // cair na parcela dela, e não sempre na do mês corrente.
-          registrarPagamentoFixo(fixo, dataBase.slice(0, 7), valorTotal, dataBase, comoPagou, contaDoPagamento);
-          cancelarEdicao();
-          atualizarTudo();
-          renderizarInvestimentos();
-          renderizarConsorcios();
-          return;
-        }
-      }
 
       if (idEditando) {
         const idx = lancamentos.findIndex(l => l.id === parseInt(idEditando, 10));
@@ -7040,7 +7059,7 @@
             valor: valorParcelaStr,
             grupoViagemId, grupoViagemNome,
             emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
-            rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+            rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined, dividirComigo: dividirComigo || undefined,
             emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
             emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
@@ -7076,7 +7095,7 @@
                 grupoViagemId, grupoViagemNome,
                 emprestimoPara, rateioIncluiVoce, emprestimoTipo,
                 emprestimoVence: emprestimoPara ? somarMeses(emprestimoVence, passos) : '',
-                rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+                rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined, dividirComigo: dividirComigo || undefined,
                 emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
                 emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
                 valor: valorParcelaStr
@@ -7115,7 +7134,7 @@
             // o prazo acompanha a parcela: 1ª vence no mês escolhido, as seguintes
             // no mesmo dia dos meses seguintes
             emprestimoPara, emprestimoVence: somarMeses(emprestimoVence, n), emprestimoTipo, rateioIncluiVoce,
-            rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+            rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined, dividirComigo: dividirComigo || undefined,
             emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
             emprestimoQuitado: false
           });
@@ -7130,7 +7149,7 @@
           valor: valorTotal.toFixed(2).replace('.', ','),
           grupoViagemId, grupoViagemNome,
           emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
-          rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined,
+          rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined, dividirComigo: dividirComigo || undefined,
           emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorTotal, parcelasDivida, emprestimoVence, fracoesRateio),
           emprestimoQuitado: false
         });
@@ -7188,7 +7207,8 @@
          total. Na reabertura ela é reconvertida pelo total do próprio
          lançamento, então mudar o valor da compra reajusta as partes na mesma
          proporção em vez de deixar números soltos que não somam mais. */
-      if (item.rateioFracoes && Object.keys(item.rateioFracoes).length) {
+      document.getElementById('emprestimoDividirComigo').value = item.dividirComigo ? '1' : '';
+      if (item.rateioFracoes && Object.keys(item.rateioFracoes).length && !item.dividirComigo) {
         const base = parseVal(item.valor) * (parseInt(item.numParcelas, 10) || 1);
         const cotas = {};
         Object.entries(item.rateioFracoes).forEach(([nome, f]) => { cotas[nome] = base * f; });
@@ -7258,6 +7278,7 @@
       document.getElementById('emprestimoVence').value = '';
       document.getElementById('emprestimoTipo').value = '';
       document.getElementById('emprestimoRateioIncluiVoce').value = '1';
+      document.getElementById('emprestimoDividirComigo').value = '';
       document.getElementById('emprestimoCotas').value = '';
       document.getElementById('emprestimoParcelas').value = '1';
       modoRateioEscolhido = 'igual';
@@ -12739,19 +12760,6 @@
       'cartão de crédito': 'Crédito Parcelado'
     };
 
-    /* Direção inversa: usada quando a forma já foi escolhida (o formulário
-       principal de lançamento só tem "forma", não "como pagou") e precisamos
-       de uma palavra pra descrever o pagamento na ficha do consórcio. É com
-       perda — "boleto", "transferência" e "débito em conta" viram a MESMA
-       forma (À Vista / Débito) — então na volta fica o mais genérico deles. */
-    const COMO_DA_FORMA = {
-      'À Vista / Débito': 'débito em conta',
-      'Pix': 'pix',
-      'Dinheiro': 'dinheiro',
-      'Crédito Parcelado': 'cartão de crédito',
-      'Crédito à Vista': 'cartão de crédito'
-    };
-
     // Ocorrências já projetadas de um gasto fixo, em ordem
     /* AS OCORRÊNCIAS QUE O MODAL DE BAIXA OFERECE
 
@@ -13498,22 +13506,30 @@
       const noPeriodo = i => !desde || (i.data || '') >= desde;
       const aportesDoPeriodo = investimentos.filter(noPeriodo);
 
-      const totalAportado = aportesDoPeriodo.reduce((s, i) => s + parseVal(i.valor), 0);
-      const totalAtual = investimentos.reduce((s, i) => s + valorAtualDoAporte(i), 0);
-      const totalTudo = investimentos.reduce((s, i) => s + parseVal(i.valor), 0);
+      /* O número grande é TUDO que você colocou: aportes + parcelas de
+         consórcio pagas. Consórcio não rende, então ele só soma — o ganho ou
+         perda embaixo continua vindo dos aportes. */
+      const consorcioPeriodo = consorcioNoPeriodo(desde);
+      const consorcioTudo = consorcioNoPeriodo(null);
+      const totalAportado = aportesDoPeriodo.reduce((s, i) => s + parseVal(i.valor), 0) + consorcioPeriodo;
+      const totalAtual = investimentos.reduce((s, i) => s + valorAtualDoAporte(i), 0) + consorcioTudo;
+      const totalTudo = investimentos.reduce((s, i) => s + parseVal(i.valor), 0) + consorcioTudo;
       totalEl.textContent = fmtOculto(totalAportado);
 
       const rotuloEl = document.getElementById('rotuloTotalInvestido');
-      if (rotuloEl) rotuloEl.textContent = per === 'tudo' ? 'Total aportado' : 'Aportado no período';
+      if (rotuloEl) rotuloEl.textContent = per === 'tudo' ? 'Total investido' : 'Investido no período';
 
       const ganhoPerdaEl = document.getElementById('ganhoPerdaTotal');
       if (ganhoPerdaEl) {
         const diffTotal = totalAtual - totalTudo;
         if (per !== 'tudo') {
           const n = aportesDoPeriodo.length;
-          ganhoPerdaEl.innerHTML = n
-            ? `${n} ${n === 1 ? 'aporte' : 'aportes'}<br><span style="color:var(--texto-tenue);">de ${fmtOculto(totalTudo)} no total</span>`
-            : '<span style="color:var(--texto-tenue);">nenhum aporte neste período</span>';
+          const partes = [];
+          if (n) partes.push(`${n} ${n === 1 ? 'aporte' : 'aportes'}`);
+          if (consorcioPeriodo > 0) partes.push('consórcio');
+          ganhoPerdaEl.innerHTML = partes.length
+            ? `${partes.join(' + ')}<br><span style="color:var(--texto-tenue);">de ${fmtOculto(totalTudo)} no total</span>`
+            : '<span style="color:var(--texto-tenue);">nada investido neste período</span>';
         } else if (diffTotal !== 0) {
           const pct = totalTudo > 0 ? (diffTotal / totalTudo * 100) : 0;
           const sinal = diffTotal >= 0 ? '+' : '−';
@@ -13555,8 +13571,8 @@
         resumoTipos.innerHTML = '';
         // Com muitos tipos a coluna cresceria mais que o card ao lado: os
         // maiores ficam, o resto vira uma linha de contagem.
-        const MAX_LINHAS = consorcioNoPeriodo(desde) > 0 ? 3 : 4;
-        if (!comEntrada.length) {
+        const MAX_LINHAS = consorcioPeriodo > 0 ? 3 : 4;
+        if (!comEntrada.length && !(consorcioPeriodo > 0)) {
           const vazio = document.createElement('div');
           vazio.className = 'card-mini';
           vazio.style.cursor = 'default';
@@ -13582,17 +13598,12 @@
             resumoTipos.appendChild(mini);
           }
         }
-        /* Consórcio entra na lista mas fica com a borda mais fraca: é dinheiro
-           que você colocou, e faz falta na resposta de "quanto eu já pus pra
-           dentro" — mas não é aporte, e por isso continua fora do total grande
-           à esquerda (é compra parcelada de uma carta, não dinheiro rendendo). */
-        const pagoConsorcio = consorcioNoPeriodo(desde);
-        if (pagoConsorcio > 0) {
+        // Consórcio é mais uma linha do resumo, somando no total ao lado
+        if (consorcioPeriodo > 0) {
           const mini = document.createElement('div');
           mini.className = 'card-mini';
-          mini.style.borderStyle = 'dashed';
-          mini.title = 'Parcelas de consórcio pagas no período — à parte do total aportado';
-          mini.innerHTML = `<span style="margin:0;">Consórcios</span><h4 style="font-size:13px;color:var(--texto-medio);">${fmtOculto(pagoConsorcio)}</h4>`;
+          mini.title = 'Parcelas de consórcio pagas no período';
+          mini.innerHTML = `<span style="margin:0;">Consórcios</span><h4 style="font-size:13px;">${fmtOculto(consorcioPeriodo)}</h4>`;
           mini.onclick = () => {
             const lista = document.getElementById('listaInvestimentosUnificada');
             if (lista && lista.scrollIntoView) lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -13711,31 +13722,6 @@
       const itens = ordem.map(tipo => ({ tipoItem: 'ativo', chave: tipo, quando: dataDoAporte(tipo) }))
         .concat(ativos.map(c => ({ tipoItem: 'consorcio', chave: c.id, quando: dataDoConsorcio(c) })))
         .sort((a, b) => b.quando - a.quando);
-
-      // O resumo "já pago / em cartas" só existindo consórcio ativo — é a
-      // mesma informação que o card de Consórcios sozinho mostrava antes.
-      if (ativos.length) {
-        let somaPago = 0, somaCarta = 0;
-        ativos.forEach(c => {
-          const t = totaisConsorcio(c);
-          somaPago += t.jaPago;
-          somaCarta += t.carta;
-        });
-        const boxTotais = document.createElement('div');
-        boxTotais.id = 'totaisConsorciosUnificado';
-        boxTotais.style.cssText = 'display:flex;gap:8px;margin-bottom:14px;';
-        boxTotais.innerHTML = `
-          <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
-            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">consórcio: já pago</span>
-            <div style="font-size:16px;font-weight:bold;color:var(--texto-forte);margin-top:2px;">${fmtOculto(somaPago)}</div>
-          </div>
-          <div style="flex:1;text-align:center;background:var(--campo);border:1px solid var(--borda);border-radius:10px;padding:10px 8px;">
-            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">em cartas</span>
-            <div style="font-size:16px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(somaCarta)}</div>
-          </div>
-        `;
-        container.appendChild(boxTotais);
-      }
 
       itens.forEach(item => {
         let card, chave;
@@ -14873,7 +14859,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.24-1';
+    const APP_VERSION = '2026.09.26-1';
 
     // Inicialização
     carregarLocalStorage();
