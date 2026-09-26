@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.24-1 · Leia em 23 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.26-1 · Leia em 23 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -165,22 +165,17 @@
     <div class="nota">
       <strong>Categoria "Investimento" puxa o destino do dinheiro.</strong> Escolha essa categoria
       num lançamento novo e aparece <em>Onde entra esse dinheiro?</em>, com um botão para cada
-      card da aba Investimentos: cada <strong>grupo de investimento</strong> (Poupança, Ações…) e
-      cada <strong>consórcio</strong> em andamento, que leva o selo <em>consórcio</em>. Um toque
-      marca, outro toque desmarca. <strong>Nenhum vem marcado</strong>: se você não tocar em
-      nenhum, o lançamento fica só como despesa, sem aporte — a frase embaixo dos botões sempre
-      diz o que vai acontecer.
-      <ul>
-        <li>Escolhendo um <strong>tipo de ativo</strong>: o lançamento é criado do jeito de sempre, e
-            de quebra um aporte é registrado nele — o mesmo que aconteceria abrindo o formulário
-            dedicado de aporte, só que sem sair da tela de lançar.</li>
-        <li>Escolhendo um <strong>consórcio</strong>: não nasce um lançamento avulso — o valor dá
-            baixa na parcela daquele mês, exatamente como o botão <em>Registrar pagamento</em> do
-            consórcio já faz (capítulo 13). Evita o boleto contando duas vezes.</li>
-      </ul>
-      O campo só aparece em lançamento <strong>novo</strong>: editar um lançamento de categoria
-      Investimento que já existe não repete a ação — a essa altura o aporte ou a baixa já
-      aconteceram.
+      <strong>grupo de investimento</strong> (Poupança, Ações…). Um toque marca, outro toque
+      desmarca. <strong>Nenhum vem marcado</strong>: se você não tocar em nenhum, o lançamento
+      fica só como despesa, sem aporte — a frase embaixo dos botões sempre diz o que vai acontecer.
+      Marcando um grupo, o lançamento é criado do jeito de sempre e de quebra um aporte é
+      registrado nele — o mesmo que o formulário de aporte faria, sem sair da tela de lançar.
+      <br><br><strong>Consórcio não aparece aqui.</strong> A parcela dele nasce sozinha todo mês e
+      se paga pelo <em>Paguei</em> do card <em>Gastos fixos</em> ou pelo <em>Registrar pagamento</em>
+      do card do consórcio (capítulo 13). Um terceiro caminho só abriria espaço pra pagar a mesma
+      parcela duas vezes.
+      <br><br>O campo só aparece em lançamento <strong>novo</strong>: editar um lançamento de categoria
+      Investimento que já existe não repete o aporte.
     </div>
     <div class="nota">
       <strong>Pelo microfone.</strong> Toque no ícone de microfone e fale naturalmente:
@@ -506,7 +501,9 @@
       <strong>Nem toda conta divide igual.</strong> No campo <em>Como dividir</em> você escolhe:
       <ul>
         <li><strong>Partes iguais</strong> — o valor é rachado entre as pessoas. Marcando
-            <em>dividir incluindo a minha parte</em>, você entra na conta como mais um.</li>
+            <em>dividir incluindo a minha parte</em>, você entra na conta como mais um. Vale também
+            com <strong>uma pessoa só</strong>: marcada, vira meio a meio (<em>“2 pessoas (você + 1)
+            · R$ 50,00 cada”</em>); desmarcada — o padrão com uma pessoa —, ela deve o valor inteiro.</li>
         <li><strong>Valor por pessoa</strong> — aparece um campo por nome e você digita quanto cada
             um deve. O que sobrar do total é a sua parte, e o app mostra isso enquanto você digita:
             <em>“2 pessoas · R$ 50,00 de R$ 100,00 — sobra R$ 50,00, essa é a sua parte”</em>.</li>
@@ -514,7 +511,11 @@
       É o caso do bar: a conta deu R$ 100, um comeu R$ 30 e o outro R$ 20. Forçar a média cobraria
       errado dos dois.
       <br><br>Funciona com <strong>uma pessoa só</strong> também — “paguei R$ 100 e ele me deve
-      R$ 30”. Sem isso, uma pessoa sozinha sempre devia o valor inteiro.
+      R$ 30”. Pra meio a meio exato, é mais rápido marcar a caixinha em <em>Partes iguais</em>.
+      <br><br><strong>O valor dá pra digitar ali mesmo.</strong> A janela do empréstimo tem o campo
+      <em>Valor</em> no topo, ligado ao do formulário: o que você digita num aparece no outro. Dá
+      pra abrir o empréstimo antes de pôr o valor, ver a divisão, tocar em OK e só terminar o
+      resto do lançamento.
       <br><br>Se as partes somarem mais que o total, o resumo avisa em vermelho. E numa
       <strong>compra parcelada</strong> as partes acompanham: R$ 60 de uma conta de R$ 120 em 3x
       vira R$ 20 devidos em cada parcela.
@@ -883,9 +884,10 @@
     <div class="nota">
       <strong>O card do topo não fecha — e responde “quanto eu coloquei, e em quê”.</strong>
       Igual ao <em>Resumo</em> da aba de Faturas, ele é o retrato da aba: fica sempre aberto,
-      no lugar. À esquerda, o <strong>total aportado</strong>; à direita, quanto entrou em
-      <strong>cada ativo</strong> — Tesouro, CDB, fundo imobiliário. Tocando num deles você desce
-      direto pro card daquele ativo (e ele abre, se estiver fechado).
+      no lugar. À esquerda, o <strong>total investido</strong> — tudo que você colocou: aportes
+      mais as parcelas de consórcio já pagas; à direita, quanto foi pra <strong>cada ativo</strong>
+      e pro <strong>consórcio</strong>. Tocando num deles você desce direto pro card dele (e ele
+      abre, se estiver fechado).
       <br><br>Antes esse card recolhia, e recolhido a aba abria sem nenhum número à vista.
     </div>
     <div class="nota">
@@ -943,12 +945,11 @@
       tenha aporte volta sozinho pra lista de Ajustes, e aí dá pra excluir direito.
     </div>
     <div class="nota">
-      <strong>Consórcio não entra no “Total aportado”.</strong> É compra parcelada de uma carta de
-      crédito, não dinheiro rendendo — somar os dois no mesmo número misturaria coisas diferentes.
-      O card tem os totais dele: quanto já foi pago e quanto tem em cartas.
-      <br><br>Ele <em>aparece</em> na lista de ativos do card do topo, com a borda pontilhada, porque
-      também é dinheiro que você colocou pra dentro e faz falta na resposta de “quanto eu já pus”.
-      Mas continua fora do número grande à esquerda.
+      <strong>Consórcio soma no “Total investido”, mas não no ganho.</strong> O que você já pagou
+      de parcela é dinheiro que você colocou, então entra no número grande do topo e aparece na
+      lista ao lado. Só não entra no <em>ganho/perda</em>, porque consórcio não rende.
+      <br><br>Quanto já foi pago, quanto falta e o valor da carta ficam no card do próprio
+      consórcio — não tem mais um quadro repetindo isso no alto da lista.
     </div>
     <div class="nota">
       <strong>Encerrar antes do fim.</strong> Vendeu a cota, desistiu, saiu do grupo? O botão
