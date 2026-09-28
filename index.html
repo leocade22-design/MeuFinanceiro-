@@ -1222,7 +1222,7 @@
           <div class="escondido" id="blocoGruposEncerrados" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borda-fraca);">
             <button type="button" class="card-header-toggle" style="width:100%;" onclick="alternarSecao('gruposEncerrados')">
               <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-                <h4 style="color:var(--texto-medio);">Grupos encerrados</h4>
+                <h3>Grupos encerrados</h3>
                 <span id="qtdGruposEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
               </div>
               <span class="chevron-sec" id="chevron-gruposEncerrados">▾</span>
@@ -1827,17 +1827,17 @@
   <div id="modalAtualizarValor" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAtualizarValor')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Atualizar valor</h3>
+        <h3 id="tituloAtualizarValor">Atualizar valor</h3>
         <button class="btn-fechar" onclick="fecharModal('modalAtualizarValor')">&times;</button>
       </div>
-      <input type="hidden" id="idAporteAtualizando" value="">
+      <input type="hidden" id="grupoAtualizando" value="">
       <p id="infoAporteAtualizando" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
       <div class="form-group">
         <label for="valorAtualizadoAporte">Valor atual</label>
         <input type="text" id="valorAtualizadoAporte" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric"
                onkeydown="if(event.key==='Enter'){event.preventDefault();salvarValorAtualizado();}">
       </div>
-      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">Digite quanto essa aplicação vale hoje. A diferença pro que você aportou aparece como ganho ou perda.</p>
+      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">Digite quanto o grupo inteiro vale hoje no banco. A diferença pro que você aportou aparece como ganho ou perda do grupo.</p>
       <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarValorAtualizado()">Salvar valor</button>
     </div>
   </div>
@@ -1854,11 +1854,43 @@
         <button class="btn-fechar" onclick="fecharModal('modalRevisarAportes')">&times;</button>
       </div>
       <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">
-        Abra o app do banco e copie quanto cada aplicação vale hoje. O que você não mexer
+        Abra o app do banco e copie quanto cada grupo vale hoje. O que você não mexer
         fica como está — e mesmo assim sai da lista de pendentes, porque você já conferiu.
       </p>
       <div id="listaRevisaoAportes"></div>
       <button type="button" class="btn-salvar" style="margin-top:4px;" onclick="salvarRevisaoAportes()">Salvar revisão</button>
+    </div>
+  </div>
+
+  <!-- UM APORTE: corrigir ou apagar o que foi aportado (o rendimento é do grupo) -->
+  <div id="modalEditarAporte" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalEditarAporte')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Aporte</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalEditarAporte')">&times;</button>
+      </div>
+      <input type="hidden" id="idAporteEditando" value="">
+      <p id="infoAporteEditando" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
+      <div class="form-group">
+        <label for="valorAporteEditando">Valor aportado</label>
+        <input type="text" id="valorAporteEditando" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dataAporteEditando">Data</label>
+          <input type="date" id="dataAporteEditando">
+        </div>
+        <div class="form-group">
+          <label for="origemAporteEditando">Saiu de</label>
+          <select id="origemAporteEditando"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="grupoAporteEditando">Grupo</label>
+        <select id="grupoAporteEditando"></select>
+      </div>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarEdicaoAporte()">Salvar</button>
+      <button type="button" class="btn-cancelar" style="color:var(--vermelho);" onclick="excluirAporte()">Excluir aporte</button>
     </div>
   </div>
 
@@ -2171,6 +2203,36 @@
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalReceberEmprestimo')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarRecebimentoEmprestimo()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGAMENTO PICADO: um valor que não bate com nenhuma dívida -->
+  <div id="modalAbaterValor" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalAbaterValor')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloAbaterValor">Recebi um valor</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalAbaterValor')">&times;</button>
+      </div>
+      <p id="textoAbaterValor" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:10px;line-height:1.45;"></p>
+      <div class="form-group">
+        <label for="valorAbater">Valor</label>
+        <input type="text" id="valorAbater" placeholder="R$ 0,00" inputmode="numeric" oninput="mascaraMoeda(this); atualizarPreviaAbatimento();">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="contaAbater" id="labelContaAbater">Caiu em qual conta?</label>
+          <select id="contaAbater"></select>
+        </div>
+        <div class="form-group">
+          <label for="dataAbater">Data</label>
+          <input type="date" id="dataAbater">
+        </div>
+      </div>
+      <div class="box-resumo-modal" id="previaAbatimento" style="margin-bottom:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalAbaterValor')">Cancelar</button>
+        <button type="button" class="btn-salvar" id="btnConfirmarAbater" style="flex:1;margin:0;" onclick="confirmarAbatimento()">Confirmar</button>
       </div>
     </div>
   </div>
@@ -5167,6 +5229,7 @@
           migrarFormaPadraoDasContas();
           migrarPrazosDeFixos();
           migrarInvestimentos();
+          vincularAportesAntigos();
 
           salvarLocalStorage();
           salvarCorrecoes();
@@ -7029,6 +7092,7 @@
       const destinoInvestimento = (!idEditando && grupoDestino && !grupoDestino.classList.contains('escondido'))
         ? document.getElementById('destinoInvestimento').value : '';
       limparDestinoInvestimento();   // o próximo lançamento começa sem destino marcado
+      const idsAntesDoAporte = destinoInvestimento.startsWith('ativo:') ? new Set(lancamentos.map(l => l.id)) : null;
 
       if (idEditando) {
         const idx = lancamentos.findIndex(l => l.id === parseInt(idEditando, 10));
@@ -7060,9 +7124,14 @@
             grupoViagemId, grupoViagemNome,
             emprestimoPara, emprestimoVence, emprestimoTipo, rateioIncluiVoce,
             rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined, dividirComigo: dividirComigo || undefined,
-            emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
+            emprestimoRateio: rateioOuPreservado(itemOriginal, montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio), nomesEmpr, valorParcela),
             emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
+
+          if (itemOriginal.aporteId) {
+            sincronizarAporteDoLancamento(lancamentos[idx], valorTotal);
+            renderizarInvestimentos();
+          }
 
           if (ehParcelada) {
             // O valor sempre se redistribui — o campo é o total da compra, não dá pra
@@ -7096,7 +7165,7 @@
                 emprestimoPara, rateioIncluiVoce, emprestimoTipo,
                 emprestimoVence: emprestimoPara ? somarMeses(emprestimoVence, passos) : '',
                 rateioFracoes: Object.keys(fracoesRateio).length ? fracoesRateio : undefined, dividirComigo: dividirComigo || undefined,
-                emprestimoRateio: montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio),
+                emprestimoRateio: rateioOuPreservado(irma, montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio), nomesEmpr, valorParcela),
                 emprestimoQuitado: emprestimoPara ? (irma.emprestimoQuitado || false) : false,
                 valor: valorParcelaStr
                 // data e numParcelas de cada irmã não são tocados: cada parcela mantém seu próprio vencimento
@@ -7160,7 +7229,11 @@
       // jeito de sempre — aqui só carimba o aporte, com o mesmo valor, conta
       // e data que o usuário já preencheu.
       if (destinoInvestimento.startsWith('ativo:')) {
-        registrarAporte(valorTotal, conta, destinoInvestimento.slice('ativo:'.length), dataBase);
+        const criados = lancamentos.filter(l => !idsAntesDoAporte.has(l.id));
+        const inv = registrarAporte(valorTotal, conta, destinoInvestimento.slice('ativo:'.length), dataBase,
+          criados.length ? criados[0].id : undefined);
+        criados.forEach(l => { l.aporteId = inv.id; });
+        salvarLocalStorage();
         renderizarInvestimentos();
       }
       if (!idEditando && tipoAtual === 'receita' && somLigado()) tocarSomReceita();
@@ -7310,9 +7383,12 @@
       // Excluir um reembolso deixava a cobrança marcada como quitada e o dinheiro
       // sumia — a dívida some da lista sem ninguém ter pagado. Avisar e reabrir é
       // o único desfecho que não mente sobre o que aconteceu.
-      const avisoReembolso = item.reembolsoDe
+      const avisoReembolso = (item.reembolsoDe
         ? '\n\nEste lançamento é o recebimento de um empréstimo. Ao excluir, a cobrança volta a aparecer em aberto.'
-        : '';
+        : '')
+        + (item.aporteId && investimentos.some(i => i.id === item.aporteId)
+          ? '\n\nO aporte ligado a ele sai junto da aba Investimentos.'
+          : '');
 
       let removidos = [];
       if (irmas.length > 0) {
@@ -7335,7 +7411,17 @@
         lancamentos = lancamentos.filter(l => l.id !== id);
       }
 
-      removidos.forEach(l => { reabrirCobrancaDoReembolso(l); mandarPraLixeira(l, 'lancamento'); });
+      let tirouAporte = false;
+      removidos.forEach(l => {
+        reabrirCobrancaDoReembolso(l);
+        const orfao = aporteQueFicaOrfao(l, lancamentos);
+        if (orfao) {
+          investimentos = investimentos.filter(i => i.id !== orfao.id);
+          tirouAporte = true;
+        }
+        mandarPraLixeira(orfao ? Object.assign({}, l, { __aporte: orfao }) : l, 'lancamento');
+      });
+      if (tirouAporte) { salvarInvest(); renderizarInvestimentos(); }
       salvarLocalStorage();
       atualizarTudo();
     }
@@ -7371,6 +7457,7 @@
       if (!l.reembolsoDe) return;
       const original = lancamentos.find(x => x.id === l.reembolsoDe);
       if (!original) return;
+      if (desfazerQuitacaoPor(original, l.id)) return;
       if (Array.isArray(original.emprestimoRateio) && original.emprestimoRateio.length) {
         const quem = dadosDoReembolso(l).quem;
         const alvo = original.emprestimoRateio.find(d => d.nome === quem);
@@ -7392,11 +7479,24 @@
         salvarTransferencias();
       } else {
         if (lancamentos.some(l => l.id === limpo.id)) { avisar('jaExisteNaLista'); return; }
+        const aporteJunto = limpo.__aporte;
+        delete limpo.__aporte;
         lancamentos.unshift(limpo);
-        // devolver um reembolso volta a quitar a cobrança que ele pagava
+        if (aporteJunto && !investimentos.some(i => i.id === aporteJunto.id)) {
+          investimentos.push(aporteJunto);
+          salvarInvest();
+          renderizarInvestimentos();
+        }
+        // devolver um reembolso volta a quitar o que ele pagava — o mesmo
+        // valor, nas cobranças daquela pessoa naquela compra
         if (limpo.reembolsoDe) {
           const original = lancamentos.find(x => x.id === limpo.reembolsoDe);
-          if (original) original.emprestimoQuitado = true;
+          const quem = limpo.reembolsoPessoa || (original && dadosDoReembolso(limpo).quem);
+          if (original) {
+            const abertas = cobrancasDoLancamento(original).filter(c => !c.quitado && (!quem || c.nome === quem));
+            aplicarAbatimento(ordenarParaAbater(abertas), parseVal(limpo.valor),
+              { em: limpo.data, como: limpo.tipo === 'despesa' ? 'pago' : 'recebido', conta: limpo.conta, por: limpo.id });
+          }
         }
         salvarLocalStorage();
       }
@@ -7548,6 +7648,19 @@
       if (btnGraficos) mudarAba('abaGraficos', btnGraficos);
       // A fileira de períodos fica sempre à vista — basta levar o olho até ela
       document.getElementById('filtrosPeriodoGraficos').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+
+    /* Tocar numa barra do gráfico abre a mesma Consulta, já filtrada no que
+       você tocou — e na conta que o gráfico está mostrando, se houver uma. */
+    function abrirConsultaFocada(tipo, grupo, conta) {
+      abrirModalConsulta(tipo);
+      if (conta && contas.some(c => c.nome === conta)) {
+        consultaConta = conta;
+        renderizarChipsContasConsulta();
+        renderizarChipsFormasConsulta();
+      }
+      consultaGrupo = grupo || '';
+      atualizarModalConsulta();
     }
 
     function abrirModalConsulta(tipo) {
@@ -7966,7 +8079,15 @@
       return 'Reembolso';
     }
 
-    function renderizarBarras(container, dados, corBase, metas) {
+    // `aoTocar(nome)`, quando vem, deixa cada item clicável
+    function tornarTocavel(el, nome, aoTocar) {
+      if (!aoTocar) return;
+      el.style.cursor = 'pointer';
+      el.title = 'Ver os lançamentos de ' + nome;
+      el.onclick = () => aoTocar(nome);
+    }
+
+    function renderizarBarras(container, dados, corBase, metas, aoTocar) {
       container.innerHTML = '';
       const total = Object.values(dados).reduce((a, b) => a + b, 0);
       if (total === 0) {
@@ -7993,6 +8114,7 @@
             ${meta > 0 ? `<div class="marca-meta-barra" style="left:${pctMeta}%;"></div>` : ''}
           </div>
         `;
+        tornarTocavel(div, nome, aoTocar);
         container.appendChild(div);
       });
     }
@@ -8055,7 +8177,7 @@
     // cansa a vista. O texto continua no tom forte, onde é rápido de ler.
     const COR_DESPESA_GRAFICO = 'var(--vermelho-escuro)';
 
-    function renderizarColunas(container, dados, corBase, metas) {
+    function renderizarColunas(container, dados, corBase, metas, aoTocar) {
       container.innerHTML = '';
       const entradas = Object.entries(dados).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
       if (!entradas.length) {
@@ -8082,6 +8204,7 @@
           </div>
           <span class="coluna-rotulo">${nome}</span>
         `;
+        tornarTocavel(item, nome, aoTocar);
         box.appendChild(item);
       });
       container.appendChild(box);
@@ -8093,7 +8216,7 @@
       }
     }
 
-    function renderizarPizza(container, dados, paleta) {
+    function renderizarPizza(container, dados, paleta, aoTocar) {
       const cores = paleta || PALETA;
       container.innerHTML = '';
       const entradas = Object.entries(dados).sort((a, b) => b[1] - a[1]);
@@ -8123,6 +8246,7 @@
         const linha = document.createElement('div');
         linha.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;';
         linha.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${cores[i % cores.length]};display:inline-block;"></span> ${nome} · ${pct}%`;
+        tornarTocavel(linha, nome, aoTocar);
         legenda.appendChild(linha);
       });
 
@@ -8198,13 +8322,14 @@
         }
       }
 
-      const desenhar = (tipo, idContainer, dados, cor, paleta, metas) => {
+      const desenhar = (tipo, idContainer, dados, cor, paleta, metas, aoTocar) => {
         const el = document.getElementById(idContainer);
-        if (tipo === 'pizza') renderizarPizza(el, dados, paleta);
-        else if (tipo === 'colunas') renderizarColunas(el, dados, cor, metas);
-        else renderizarBarras(el, dados, cor, metas);
+        if (tipo === 'pizza') renderizarPizza(el, dados, paleta, aoTocar);
+        else if (tipo === 'colunas') renderizarColunas(el, dados, cor, metas, aoTocar);
+        else renderizarBarras(el, dados, cor, metas, aoTocar);
       };
-      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, 'var(--verde-escuro)', PALETA_RECEITAS);
+      desenhar(tipoGraficoReceita, 'containerGraficoReceitas', porFonte, 'var(--verde-escuro)', PALETA_RECEITAS, null,
+               nome => abrirConsultaFocada('receita', nome, contaFiltroGraficos));
       /* Só o gráfico de categorias recebe as metas — é onde o teto faz sentido.
          Com uma conta filtrada a linha de meta sai: o teto que você definiu é do
          gasto TOTAL da categoria, e desenhá-lo em cima das barras de uma conta só
@@ -8212,8 +8337,10 @@
          Filtrar a própria meta seria pior, mudaria o que você combinou consigo
          mesmo. O card "Metas por categoria" segue mostrando o total, como sempre. */
       desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, COR_DESPESA_GRAFICO, null,
-               contaFiltroGraficos ? null : metasDoPeriodo());
-      desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, 'var(--azul)');
+               contaFiltroGraficos ? null : metasDoPeriodo(),
+               nome => abrirConsultaFocada('despesa', nome, contaFiltroGraficos));
+      desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, 'var(--azul)', null, null,
+               nome => abrirConsultaFocada('despesa', '', nome));
       renderizarMetasCategorias();
       renderizarMetasCategorias();
       renderizarRankingGastos(itensPeriodo);
@@ -9799,7 +9926,8 @@
       const itens = cobrancasPorChave(chaves);
       if (!itens.length) { fecharModal('modalAcertoFeito'); return; }
 
-      itens.forEach(c => marcarCobrancaQuitada(c));
+      itens.forEach(c => marcarCobrancaQuitada(c, {
+        em: document.getElementById('dataAcerto').value || obterDataBrasilia(), como: 'acerto' }));
 
       if (!empate) {
         const conta = document.getElementById('contaAcerto').value || primeiraConta();
@@ -10459,6 +10587,7 @@
           chave: l.id + ':' + i, lanc: l, idx: i, devo,
           nome: d.nome, valor: parseVal(d.valor), quitado: !!d.quitado,
           vence: d.vence || l.emprestimoVence, rotulo: d.rotulo,
+          quitadoEm: d.quitadoEm, quitadoComo: d.quitadoComo, quitadoConta: d.quitadoConta, pagoPor: d.pagoPor,
           adiamentos: l.adiamentos || 0,
           ultimaCobranca: cobrancaDe(l, d.nome).ultima,
           alinhadoEm: cobrancaDe(l, d.nome).alinhado
@@ -10469,6 +10598,8 @@
           chave: l.id + ':-1', lanc: l, idx: -1, devo,
           nome: l.emprestimoPara, valor: parseVal(l.valor), quitado: !!l.emprestimoQuitado,
           vence: l.emprestimoVence,
+          quitadoEm: (l.emprestimoQuitadoInfo || {}).em, quitadoComo: (l.emprestimoQuitadoInfo || {}).como,
+          quitadoConta: (l.emprestimoQuitadoInfo || {}).conta, pagoPor: (l.emprestimoQuitadoInfo || {}).por,
           adiamentos: l.adiamentos || 0,
           ultimaCobranca: cobrancaDe(l, l.emprestimoPara).ultima,
           alinhadoEm: cobrancaDe(l, l.emprestimoPara).alinhado
@@ -10525,11 +10656,87 @@
         .filter(c => !c.quitado);
     }
 
-    function marcarCobrancaQuitada(c) {
-      if (c.idx === -1) { c.lanc.emprestimoQuitado = true; return; }
-      c.lanc.emprestimoRateio[c.idx].quitado = true;
+    /* `info` carimba QUANDO e COMO a dívida foi embora ({em, como, conta, por}),
+       pro histórico de quitadas. `por` é o id do lançamento de reembolso que
+       pagou — é ele que permite desfazer exatamente o que aquele recebimento
+       fez, se ele for apagado. */
+    function marcarCobrancaQuitada(c, info) {
+      const i = info || {};
+      if (c.idx === -1) {
+        c.lanc.emprestimoQuitado = true;
+        if (info) c.lanc.emprestimoQuitadoInfo = { em: i.em, como: i.como, conta: i.conta, por: i.por };
+        return;
+      }
+      const d = c.lanc.emprestimoRateio[c.idx];
+      d.quitado = true;
+      if (i.em) d.quitadoEm = i.em;
+      if (i.como) d.quitadoComo = i.como;
+      if (i.conta) d.quitadoConta = i.conta;
+      if (i.por != null) d.pagoPor = i.por;
       // espelha o flag geral quando todo mundo do rateio já pagou
-      c.lanc.emprestimoQuitado = c.lanc.emprestimoRateio.every(d => d.quitado);
+      c.lanc.emprestimoQuitado = c.lanc.emprestimoRateio.every(x => x.quitado);
+    }
+
+    /* PAGAMENTO PICADO: a cobrança vira duas — a parte paga (quitada) e o que
+       falta (em aberto, mesma pessoa, mesmo prazo). Assim o total por pessoa,
+       o líquido por categoria e o saldo do grupo continuam somando certo, sem
+       campo novo de "saldo parcial" pra cada lugar do app aprender a ler. */
+    function abaterParteDaCobranca(c, parte, info) {
+      const fmt = v => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+      const resto = c.valor - parte;
+      const paga = { nome: c.nome, valor: fmt(parte), quitado: true, vence: c.vence || undefined, rotulo: c.rotulo,
+        quitadoEm: info.em, quitadoComo: info.como, quitadoConta: info.conta, pagoPor: info.por };
+      const aberta = { nome: c.nome, valor: fmt(resto), quitado: false, vence: c.vence || undefined, rotulo: c.rotulo };
+      if (c.idx === -1) {
+        c.lanc.emprestimoRateio = [paga, aberta];
+      } else {
+        const d = c.lanc.emprestimoRateio[c.idx];
+        c.lanc.emprestimoRateio.splice(c.idx, 1, Object.assign({}, d, paga), Object.assign({}, d, aberta,
+          { quitadoEm: undefined, quitadoComo: undefined, quitadoConta: undefined, pagoPor: undefined }));
+      }
+      c.lanc.emprestimoQuitado = false;
+    }
+
+    // Abre o que o recebimento `idReembolso` quitou; parte dividida volta a
+    // somar com o que ficou em aberto dela.
+    function desfazerQuitacaoPor(original, idReembolso) {
+      let achou = false;
+      if (original.emprestimoQuitadoInfo && original.emprestimoQuitadoInfo.por === idReembolso) {
+        original.emprestimoQuitado = false;
+        delete original.emprestimoQuitadoInfo;
+        return true;
+      }
+      const arr = Array.isArray(original.emprestimoRateio) ? original.emprestimoRateio : [];
+      for (let k = arr.length - 1; k >= 0; k--) {
+        const d = arr[k];
+        if (d.pagoPor !== idReembolso) continue;
+        achou = true;
+        const irma = arr.find((x, j) => j !== k && !x.quitado && x.nome === d.nome
+          && (x.vence || '') === (d.vence || '') && (x.rotulo || '') === (d.rotulo || ''));
+        if (irma) {
+          irma.valor = (parseVal(irma.valor) + parseVal(d.valor)).toFixed(2).replace('.', ',');
+          arr.splice(k, 1);
+        } else {
+          d.quitado = false;
+          delete d.quitadoEm; delete d.quitadoComo; delete d.quitadoConta; delete d.pagoPor;
+        }
+      }
+      if (achou) original.emprestimoQuitado = arr.length > 0 && arr.every(x => x.quitado);
+      return achou;
+    }
+
+    /* Editar o lançamento recalcula o rateio do zero, e isso apagava quem já
+       tinha pago (e as partes de um pagamento picado). Se as pessoas e os
+       valores de cada uma continuam os mesmos, o rateio antigo fica. */
+    function rateioOuPreservado(original, novo, nomes, valor) {
+      const velho = original && Array.isArray(original.emprestimoRateio) ? original.emprestimoRateio : null;
+      if (!velho || !velho.some(d => d.quitado)) return novo;
+      const somaPorNome = arr => arr.reduce((o, d) => { o[d.nome] = (o[d.nome] || 0) + parseVal(d.valor); return o; }, {});
+      const esperado = novo ? somaPorNome(novo) : (nomes.length === 1 ? { [nomes[0]]: valor } : {});
+      const antes = somaPorNome(velho);
+      const todos = new Set(Object.keys(esperado).concat(Object.keys(antes)));
+      for (const k of todos) if (Math.abs((esperado[k] || 0) - (antes[k] || 0)) >= 0.01) return novo;
+      return velho;
     }
 
     // Chave de agrupamento: parcelas da mesma compra e meses do mesmo gasto fixo
@@ -10611,6 +10818,7 @@
 
       if (abertas.length === 0) {
         container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum empréstimo em aberto.</p>';
+        renderizarQuitadas(container);
         atualizarBotaoLembretes();
         limparBadgeApp();
         return;
@@ -10622,9 +10830,115 @@
 
       if (aReceber.length) renderizarSecaoEmprestimos(container, aReceber, false);
       if (aPagar.length) renderizarSecaoEmprestimos(container, aPagar, true);
+      renderizarQuitadas(container);
 
       atualizarBotaoLembretes();
       atualizarBadgeApp();
+    }
+
+    /* JÁ QUITADAS
+       O que já foi pago some da lista de cima — e procurar depois uma dívida
+       antiga era caçar reembolso na lista de lançamentos. Aqui fica o
+       histórico, fechado por padrão, uma linha por pessoa: inclusive quem já
+       não te deve mais nada e por isso nem aparece lá em cima. */
+    let quitadasAberto = false;
+    const quitadasPessoasAbertas = new Set();
+
+    function historicoDeQuitadas() {
+      const itens = [];
+      lancamentos.forEach(l => {
+        cobrancasDoLancamento(l).filter(c => c.quitado).forEach(c => {
+          let quando = c.quitadoEm || '', como = c.quitadoComo || '', conta = c.quitadoConta || '';
+          // dívida quitada antes de o app guardar como: o reembolso ainda conta a história
+          if (!como) {
+            const reemb = lancamentos.find(x => x.reembolsoDe === l.id && (!x.reembolsoPessoa || x.reembolsoPessoa === c.nome));
+            if (reemb) { quando = reemb.data; como = c.devo ? 'pago' : 'recebido'; conta = reemb.conta; }
+          }
+          itens.push({ c, quando, como, conta });
+        });
+      });
+      return itens;
+    }
+
+    function textoDaQuitacao(q) {
+      const dia = q.quando ? ' ' + q.quando.split('-').reverse().join('/') : '';
+      if (q.como === 'recebido') return 'recebido' + dia + (q.conta ? ' · ' + q.conta : '');
+      if (q.como === 'pago') return 'você pagou' + dia + (q.conta ? ' · ' + q.conta : '');
+      if (q.como === 'acerto') return 'abatido num acerto' + dia;
+      if (q.como === 'sem movimentação') return 'quitada sem movimentação' + dia;
+      return 'quitada' + dia;
+    }
+
+    function renderizarQuitadas(container) {
+      const hist = historicoDeQuitadas();
+      if (!hist.length) return;
+      const bloco = document.createElement('div');
+      bloco.id = 'blocoQuitadas';
+      bloco.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--borda-fraca);';
+      const cab = document.createElement('button');
+      cab.type = 'button';
+      cab.className = 'card-header-toggle';
+      cab.innerHTML = `
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:13px;color:var(--texto-medio);font-weight:700;">✓ Já quitadas</span>
+          <span style="font-size:11px;color:var(--texto-tenue);">${hist.length}</span>
+        </div>
+        <span class="chevron-sec">${quitadasAberto ? '▾' : '▸'}</span>`;
+      cab.onclick = () => { quitadasAberto = !quitadasAberto; renderizarEmprestimos(); };
+      bloco.appendChild(cab);
+
+      if (quitadasAberto) {
+        const porPessoa = {};
+        hist.forEach(q => { (porPessoa[q.c.nome] = porPessoa[q.c.nome] || []).push(q); });
+        Object.keys(porPessoa).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })).forEach(nome => {
+          const lista = porPessoa[nome];
+          const recebeu = lista.filter(q => !q.c.devo).reduce((s, q) => s + q.c.valor, 0);
+          const pagou = lista.filter(q => q.c.devo).reduce((s, q) => s + q.c.valor, 0);
+          const aberta = quitadasPessoasAbertas.has(nome);
+          const linhaPessoa = document.createElement('button');
+          linhaPessoa.type = 'button';
+          linhaPessoa.className = 'card-header-toggle';
+          linhaPessoa.dataset.quitadasPessoa = nome;
+          linhaPessoa.style.cssText = 'padding:7px 0 7px 6px;border-bottom:1px solid var(--borda-fraca);';
+          const partes = [];
+          if (recebeu > 0) partes.push('te pagou ' + fmtOculto(recebeu));
+          if (pagou > 0) partes.push('você pagou ' + fmtOculto(pagou));
+          linhaPessoa.innerHTML = `
+            <div class="item-info">
+              <strong style="font-size:13px;">${nome}</strong>
+              <div style="font-size:11px;color:var(--texto-fraco);">${lista.length} ${lista.length === 1 ? 'quitada' : 'quitadas'} · ${partes.join(' · ')}</div>
+            </div>
+            <span class="chevron-sec">${aberta ? '▾' : '▸'}</span>`;
+          linhaPessoa.onclick = () => {
+            if (quitadasPessoasAbertas.has(nome)) quitadasPessoasAbertas.delete(nome); else quitadasPessoasAbertas.add(nome);
+            renderizarEmprestimos();
+          };
+          bloco.appendChild(linhaPessoa);
+
+          if (aberta) {
+            const box = document.createElement('div');
+            box.style.cssText = 'margin:4px 0 8px 8px;padding-left:8px;border-left:2px solid var(--borda);';
+            lista.slice().sort((a, b) => ((b.quando || b.c.lanc.data || '') < (a.quando || a.c.lanc.data || '') ? -1 : 1)).forEach(q => {
+              const l = q.c.lanc;
+              const rot = q.c.rotulo || rotuloParcela(l);
+              const item = document.createElement('div');
+              item.className = 'item-lancamento';
+              item.style.cssText = 'padding:5px 0;cursor:pointer;';
+              item.title = 'Ver o lançamento';
+              item.innerHTML = `
+                <div class="item-info">
+                  <strong style="font-size:12.5px;">${descricaoBaseCompra(l.descricao)}${rot ? ' <span style="color:var(--texto-tenue);font-weight:400;">' + rot + '</span>' : ''}</strong>
+                  <div style="font-size:10.5px;color:var(--texto-tenue);">${textoDaQuitacao(q)}</div>
+                </div>
+                <span style="font-size:12.5px;color:var(--texto-medio);">${fmtOculto(q.c.valor)}</span>`;
+              item.onclick = () => abrirDetalheLancamentoPorId(l.id);
+              box.appendChild(item);
+            });
+            bloco.appendChild(box);
+          }
+        });
+      }
+      container.appendChild(bloco);
     }
 
     // Uma direção por vez: o que te devem e o que você deve seguem a mesma
@@ -10822,15 +11136,25 @@
               }
             });
 
+            const linhaTudo = document.createElement('div');
+            linhaTudo.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;';
             if (lista.length > 1 && Object.keys(porCompra).length > 1) {
               const btnTudo = document.createElement('button');
               btnTudo.type = 'button';
               btnTudo.className = 'btn-mini';
-              btnTudo.style.cssText = 'margin-top:8px;';
               btnTudo.textContent = (devo ? 'Paguei tudo de ' : 'Recebi tudo de ') + nome;
               btnTudo.onclick = () => abrirReceberEmprestimo(lista.map(c => c.chave));
-              listaEl.appendChild(btnTudo);
+              linhaTudo.appendChild(btnTudo);
             }
+            // valor que não bate com nenhuma dívida: abate das mais antigas
+            const btnValor = document.createElement('button');
+            btnValor.type = 'button';
+            btnValor.className = 'btn-mini';
+            btnValor.textContent = devo ? 'Paguei um valor' : 'Recebi um valor';
+            btnValor.title = 'Pagamento picado: abate das dívidas mais antigas primeiro';
+            btnValor.onclick = () => abrirAbaterValor(nome, devo);
+            linhaTudo.appendChild(btnValor);
+            listaEl.appendChild(linhaTudo);
 
             // A ação mora só aqui dentro. O rótulo acompanha o status, pra você já
             // saber o tom da mensagem que vai sair antes de tocar.
@@ -10993,6 +11317,10 @@
       const somaMes = (m, a) => comCredito.reduce((s, c) => s + totalFaturaConta(c.nome, m, a), 0);
       const pagoMes = (m, a) => comCredito.every(c => totalFaturaConta(c.nome, m, a) <= 0
         || faturasPagas[chaveFatura(c.nome, m, a)]);
+      const pagoNoMes = (m, a) => comCredito.reduce((s, c) => {
+        const pg = faturasPagas[chaveFatura(c.nome, m, a)];
+        return s + (pg ? parseVal(pg.valorPago) : totalFaturaConta(c.nome, m, a));
+      }, 0);
       const hojeRef = getMesReferencia(0);
       const mesCorrente = hojeRef.getMonth(), anoCorrente = hojeRef.getFullYear();
       const ordinal = (m, a) => a * 12 + m;
@@ -11010,8 +11338,10 @@
            recebendo compra. Marcar de vermelho um mês que nem fechou seria
            cobrar uma dívida que ainda não existe. */
         const futura = ordinal(m, a) > ordinal(mesCorrente, anoCorrente);
-        const total = somaMes(m, a);
         const pago = futura ? false : pagoMes(m, a);
+        /* Mês pago mostra o que você PAGOU — é o número que saiu da conta. A
+           soma do app continua à vista na linha de cada cartão, embaixo. */
+        const total = pago ? pagoNoMes(m, a) : somaMes(m, a);
         const cor = (total <= 0 || futura) ? 'var(--texto-fraco)' : (pago ? 'var(--verde)' : 'var(--vermelho)');
         const nota = futura ? 'em formação' : (total <= 0 ? 'sem fatura' : (pago ? 'paga' : 'em aberto'));
         // O ano só aparece quando o trilho cruza a virada — dentro do mesmo ano
@@ -11041,6 +11371,24 @@
 
         const aberto = faturasExpandidas.has(c.nome);
 
+        /* Fatura paga: o valor PAGO é o número principal, e embaixo fica a
+           soma do app, com a diferença quando os dois não batem. O ajuste que
+           cobre a diferença continua existindo — esta linha só deixa à vista,
+           mês a mês, quanto fugiu do que você tinha lançado. */
+        let linhaApp = '';
+        if (pago) {
+          const valorPago = parseVal(pago.valorPago);
+          const ajustes = compras.filter(l => l.ajusteFatura).reduce((s, l) => s + parseVal(l.valor), 0);
+          const semAjuste = total - ajustes;
+          const dif = Math.round((valorPago - semAjuste) * 100) / 100;
+          linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">`
+            + `lançado no app ${fmtOculto(semAjuste)}`
+            + (Math.abs(dif) >= 0.01
+              ? ` · <span style="color:var(--amarelo);">banco cobrou ${fmtOculto(Math.abs(dif))} a ${dif > 0 ? 'mais' : 'menos'}</span>`
+              : ' · <span style="color:var(--verde);">bateu</span>')
+            + `</div>`;
+        }
+
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
         linha.innerHTML = `
@@ -11048,12 +11396,13 @@
             <strong>${c.nome} ${compras.length ? `<span class="chevron-sec" style="font-size:11px;color:var(--texto-tenue);">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
             <div style="font-size:11px;color:${pago ? 'var(--verde)' : 'var(--texto-fraco)'};">
               ${pago
-                ? '✓ paga em ' + pago.data.split('-').reverse().join('/') + ' · ' + fmtOculto(parseVal(pago.valorPago))
+                ? '✓ paga em ' + pago.data.split('-').reverse().join('/')
                 : 'vence dia ' + diasDoCartao(c.nome).vence + textoMesDoVencimento(c.nome, mes, ano) + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')}
             </div>
+            ${linhaApp}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <span class="${pago ? '' : 'valor-despesa'}" style="${pago ? 'color:var(--texto-tenue);' : ''}">${fmtOculto(total)}</span>
+            <span class="${pago ? '' : 'valor-despesa'}" style="${pago ? 'color:var(--verde);font-weight:700;' : ''}">${fmtOculto(pago ? parseVal(pago.valorPago) : total)}</span>
             <button type="button" class="btn-mini">${pago ? 'desfazer' : 'pagar'}</button>
           </div>
         `;
@@ -11629,12 +11978,158 @@
        Importante: isto NÃO desfaz um empréstimo direto. O dinheiro que já entrou
        de verdade continua na conta, porque entrou mesmo — o que se encerra aqui é
        a pendência, não o histórico. */
+    /* ABATER UM VALOR SOLTO
+       A pessoa paga R$ 100 que não batem com nenhuma dívida. O valor come as
+       dívidas pela ordem do prazo — a vencida mais antiga primeiro, que é a que
+       mais incomoda — até acabar; a última, se não couber inteira, fica só com
+       o que falta. */
+    function ordenarParaAbater(cobrancas) {
+      const quando = c => c.vence || (c.lanc && c.lanc.data) || '';
+      return cobrancas.slice().sort((a, b) => quando(a) < quando(b) ? -1 : quando(a) > quando(b) ? 1
+        : ((a.lanc.data || '') < (b.lanc.data || '') ? -1 : (a.lanc.data || '') > (b.lanc.data || '') ? 1 : 0));
+    }
+
+    function planejarAbatimento(ordenadas, valor) {
+      let resta = Math.round(valor * 100) / 100;
+      const plano = [];
+      for (const c of ordenadas) {
+        if (resta < 0.005) break;
+        const usa = Math.round(Math.min(resta, c.valor) * 100) / 100;
+        plano.push({ c, usa, inteira: usa >= c.valor - 0.005 });
+        resta = Math.round((resta - usa) * 100) / 100;
+      }
+      return { plano, sobra: resta };
+    }
+
+    // `info` pode ser um objeto ou uma função (cobrança → objeto)
+    function aplicarAbatimento(ordenadas, valor, info) {
+      const { plano } = planejarAbatimento(ordenadas, valor);
+      // a parcial é sempre a última: as inteiras só trocam o flag, então os
+      // índices do rateio não andam antes de a parcial ser dividida
+      plano.forEach(p => {
+        const i = typeof info === 'function' ? info(p.c) : info;
+        if (p.inteira) marcarCobrancaQuitada(p.c, i);
+        else abaterParteDaCobranca(p.c, p.usa, i);
+      });
+      return plano;
+    }
+
+    let abatimentoEmCurso = null;
+
+    function cobrancasDaPessoa(nome, devo) {
+      return cobrancasAbertas().filter(c => !!c.devo === !!devo && textoSeguro(c.nome) === textoSeguro(nome));
+    }
+
+    function abrirAbaterValor(nome, devo) {
+      abatimentoEmCurso = { nome, devo: !!devo };
+      document.getElementById('tituloAbaterValor').textContent = (devo ? 'Paguei um valor · ' : 'Recebi um valor · ') + nome;
+      document.getElementById('textoAbaterValor').textContent = devo
+        ? 'Pagou um valor que não bate com nenhuma dívida? O app abate das mais antigas primeiro.'
+        : nome + ' pagou um valor que não bate com nenhuma dívida? O app abate das mais antigas primeiro.';
+      document.getElementById('labelContaAbater').textContent = devo ? 'Saiu de qual conta?' : 'Caiu em qual conta?';
+      document.getElementById('valorAbater').value = '';
+      const sel = document.getElementById('contaAbater');
+      sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      sel.value = contaPadraoReembolso();
+      document.getElementById('dataAbater').value = obterDataBrasilia();
+      atualizarPreviaAbatimento();
+      document.getElementById('modalAbaterValor').classList.remove('escondido');
+    }
+
+    function atualizarPreviaAbatimento() {
+      if (!abatimentoEmCurso) return;
+      const { nome, devo } = abatimentoEmCurso;
+      const box = document.getElementById('previaAbatimento');
+      const btn = document.getElementById('btnConfirmarAbater');
+      const valor = parseVal((document.getElementById('valorAbater').value || '').replace('R$', '').trim()) || 0;
+      const abertas = ordenarParaAbater(cobrancasDaPessoa(nome, devo));
+      const totalDevido = abertas.reduce((s, c) => s + c.valor, 0);
+      if (valor <= 0) {
+        box.innerHTML = `<div style="font-size:12px;color:var(--texto-fraco);">${devo ? 'Você deve' : nome + ' deve'} ${fmtOculto(totalDevido)} no total. Digite o valor ${devo ? 'que você pagou' : 'que entrou'}.</div>`;
+        btn.disabled = true;
+        return;
+      }
+      const { plano, sobra } = planejarAbatimento(abertas, valor);
+      const linhas = plano.map(p => {
+        const nomeDivida = descricaoBaseCompra(p.c.lanc.descricao) + (p.c.rotulo ? ' ' + p.c.rotulo : (rotuloParcela(p.c.lanc) ? ' ' + rotuloParcela(p.c.lanc) : ''));
+        return `<div class="linha-subtotal" style="cursor:default;align-items:flex-start;">
+          <span>${p.inteira ? '✓' : '◐'} ${nomeDivida}${p.inteira ? '' : `<br><span style="font-size:10.5px;color:var(--texto-tenue);">de ${fmtOculto(p.c.valor)} · falta ${fmtOculto(p.c.valor - p.usa)}</span>`}</span>
+          <strong style="color:${p.inteira ? 'var(--verde)' : 'var(--amarelo)'};">${fmtOculto(p.usa)}</strong>
+        </div>`;
+      }).join('');
+      const restante = Math.max(0, totalDevido - valor);
+      box.innerHTML = `
+        <div style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;margin-bottom:4px;">Vai abater assim</div>
+        ${linhas}
+        <div style="font-size:11px;margin-top:6px;color:${sobra >= 0.005 ? 'var(--vermelho)' : 'var(--texto-fraco)'};">
+          ${sobra >= 0.005
+            ? `Passou ${fmtOculto(sobra)} do que ${devo ? 'você deve' : nome + ' deve'} (${fmtOculto(totalDevido)}). Confira o valor.`
+            : restante >= 0.005 ? `Depois disso ${devo ? 'você ainda deve' : nome + ' ainda deve'} ${fmtOculto(restante)}.` : 'Com isso fica tudo quitado.'}
+        </div>`;
+      btn.disabled = sobra >= 0.005 || !plano.length;
+    }
+
+    function confirmarAbatimento() {
+      if (!abatimentoEmCurso) return;
+      const { nome, devo } = abatimentoEmCurso;
+      const valor = parseVal((document.getElementById('valorAbater').value || '').replace('R$', '').trim()) || 0;
+      const abertas = ordenarParaAbater(cobrancasDaPessoa(nome, devo));
+      const { plano, sobra } = planejarAbatimento(abertas, valor);
+      if (!plano.length || sobra >= 0.005) return;
+      const conta = document.getElementById('contaAbater').value || primeiraConta();
+      const data = document.getElementById('dataAbater').value || obterDataBrasilia();
+      localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
+
+      /* Um lançamento por compra original, não um só com o total: é o
+         reembolso ligado à compra que faz o grupo dela descontar o que voltou,
+         e que permite reabrir só aquela parte se ele for apagado. */
+      const porCompra = new Map();
+      plano.forEach(p => {
+        if (!porCompra.has(p.c.lanc.id)) porCompra.set(p.c.lanc.id, { lanc: p.c.lanc, soma: 0, id: novoIdLancamento(), parcial: false });
+        const g = porCompra.get(p.c.lanc.id);
+        g.soma += p.usa;
+        if (!p.inteira) g.parcial = true;
+      });
+      aplicarAbatimento(abertas, valor, c => ({ em: data, como: devo ? 'pago' : 'recebido', conta, por: porCompra.get(c.lanc.id).id }));
+
+      porCompra.forEach(g => {
+        const deQue = descricaoBaseCompra(g.lanc.descricao);
+        lancamentos.unshift({
+          id: g.id,
+          tipo: devo ? 'despesa' : 'receita',
+          descricao: devo ? ('Paguei ' + nome + ' — ' + deQue) : 'Reembolso',
+          conta,
+          formaModo: 'À Vista / Débito',
+          numParcelas: '1',
+          categoria: devo ? categoriaPadrao() : '',
+          observacao: (devo ? 'Pagamento de empréstimo' : nome + ' — ' + deQue)
+            + ` · parte de um pagamento de ${fmtVal(valor)}${g.parcial ? ' (abateu uma parte)' : ''}`,
+          data,
+          valor: (Math.round(g.soma * 100) / 100).toFixed(2).replace('.', ','),
+          grupoViagemId: g.lanc.grupoViagemId || '',
+          grupoViagemNome: g.lanc.grupoViagemNome || '',
+          emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+          reembolsoDe: g.lanc.id,
+          reembolsoPessoa: nome,
+          reembolsoDoQue: deQue,
+          reembolsoAvulso: true
+        });
+      });
+
+      salvarLocalStorage();
+      if (!devo && somLigado()) tocarSomReceita();
+      vibrar(devo ? 'despesa' : 'receita');
+      fecharModal('modalAbaterValor');
+      abatimentoEmCurso = null;
+      atualizarTudo();
+    }
+
     function quitarSemMovimentacao(chaves) {
       const itens = cobrancasPorChave(chaves);
       if (!itens.length) return;
       const total = itens.reduce((sm, c) => sm + c.valor, 0);
       if (!confirm(`Marcar ${itens.length > 1 ? 'as ' + itens.length + ' cobranças' : 'esta cobrança'} (${fmtVal(total)}) como quitada sem lançar nenhuma movimentação nas contas?\n\nUse quando a dívida foi resolvida de outra forma — compensação, troca, favor.`)) return;
-      itens.forEach(c => marcarCobrancaQuitada(c));
+      itens.forEach(c => marcarCobrancaQuitada(c, { em: obterDataBrasilia(), como: 'sem movimentação' }));
       salvarLocalStorage();
       renderizarEmprestimos();
       atualizarFaturas();
@@ -11682,7 +12177,8 @@
 
       const devo = itens[0].devo;
       itens.forEach(c => {
-        marcarCobrancaQuitada(c);
+        const idReembolso = novoIdLancamento();
+        marcarCobrancaQuitada(c, { em: data, como: devo ? 'pago' : 'recebido', conta, por: idReembolso });
         const deQue = descricaoBaseCompra(c.lanc.descricao);
         /* A descrição de um reembolso costumava carregar o nome e a compra
            ("Reembolso Borges — Airbnb Ubatuba"), e como cada compra gera um
@@ -11694,7 +12190,7 @@
            reabertura da cobrança se um reembolso é excluído, e a lista "Lançamentos
            do mês" dentro de um grupo) não depender de reler a descrição. */
         lancamentos.unshift({
-          id: novoIdLancamento(),
+          id: idReembolso,
           tipo: devo ? 'despesa' : 'receita',
           descricao: devo ? ('Paguei ' + c.nome + ' — ' + deQue) : 'Reembolso',
           conta,
@@ -13410,56 +13906,71 @@
        envelhecer demais. */
     const DIAS_PARA_REVISAR = 45;
 
-    function diasSemRevisar(inv) {
-      const base = inv.atualizadoEm || inv.data;
-      if (!base) return 0;
+    function diasDesde(dataIso) {
+      if (!dataIso) return 0;
       const hoje = new Date(obterDataBrasilia() + 'T12:00:00');
-      const d = new Date(base + 'T12:00:00');
-      return Math.floor((hoje - d) / 86400000);
+      return Math.floor((hoje - new Date(dataIso + 'T12:00:00')) / 86400000);
     }
 
-    function aportesParaRevisar() {
-      return investimentos.filter(i => diasSemRevisar(i) >= DIAS_PARA_REVISAR);
+    /* A revisão também é do grupo: vale a última vez que o grupo foi conferido
+       (o aporte revisado mais recente); nunca conferido, conta do aporte mais
+       antigo. Aporte novo não "zera" a revisão de quem já rendia antes dele. */
+    function diasSemRevisarGrupo(tipo) {
+      const itens = aportesDoGrupo(tipo);
+      if (!itens.length) return 0;
+      const revisoes = itens.map(i => i.atualizadoEm).filter(Boolean).sort();
+      const base = revisoes.length ? revisoes[revisoes.length - 1] : itens.map(i => i.data).filter(Boolean).sort()[0];
+      return diasDesde(base);
+    }
+
+    function gruposParaRevisar() {
+      const tipos = [...new Set(investimentos.map(i => i.tipoAtivo || 'Outros'))];
+      return tipos.filter(t => diasSemRevisarGrupo(t) >= DIAS_PARA_REVISAR);
     }
 
     function atualizarAvisoRevisao() {
       const aviso = document.getElementById('avisoRevisarAportes');
       if (!aviso) return;
-      const pendentes = aportesParaRevisar();
+      const pendentes = gruposParaRevisar();
       aviso.classList.toggle('escondido', !pendentes.length);
       if (!pendentes.length) return;
       const n = pendentes.length;
       // O mais antigo é quem dá a régua do atraso: é o que mais mente hoje.
-      const maior = Math.max(...pendentes.map(diasSemRevisar));
+      const maior = Math.max(...pendentes.map(diasSemRevisarGrupo));
       // "mais de N meses" com N arredondado pra baixo mentiria justo nos
       // múltiplos exatos (60 dias não é "mais de 2 meses", é 2 meses).
       const quanto = maior >= 365 ? 'mais de um ano'
         : maior >= 60 ? Math.floor(maior / 30) + ' meses'
         : 'mais de um mês';
       document.getElementById('textoAvisoRevisar').textContent =
-        `${n} ${n === 1 ? 'aporte sem revisar há' : 'aportes sem revisar há'} ${quanto} ·`;
+        `${n} ${n === 1 ? 'grupo sem revisar há' : 'grupos sem revisar há'} ${quanto} ·`;
     }
 
     function abrirRevisaoAportes() {
       const box = document.getElementById('listaRevisaoAportes');
       if (!box) return;
       box.innerHTML = '';
-      const pendentes = aportesParaRevisar()
-        .sort((a, b) => diasSemRevisar(b) - diasSemRevisar(a));
+      const pendentes = gruposParaRevisar()
+        .sort((a, b) => diasSemRevisarGrupo(b) - diasSemRevisarGrupo(a));
       if (!pendentes.length) {
-        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum aporte pendente de revisão.</p>';
+        box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum grupo pendente de revisão.</p>';
       }
-      pendentes.forEach(inv => {
-        const dias = diasSemRevisar(inv);
+      pendentes.forEach((tipo, k) => {
+        const itens = aportesDoGrupo(tipo);
+        const aportado = itens.reduce((s, i) => s + parseVal(i.valor), 0);
+        const atual = itens.reduce((s, i) => s + valorAtualDoAporte(i), 0);
+        const revisoes = itens.map(i => i.atualizadoEm).filter(Boolean).sort();
+        const ultima = revisoes[revisoes.length - 1];
         const linha = document.createElement('div');
         linha.className = 'form-group';
         linha.innerHTML = `
-          <label for="rev-${inv.id}">${inv.tipoAtivo || 'Outros'} · aportado ${fmtVal(parseVal(inv.valor))} em ${inv.data.split('-').reverse().join('/')}</label>
-          <input type="text" id="rev-${inv.id}" data-revisar="${inv.id}" placeholder="R$ 0,00"
-                 oninput="mascaraMoeda(this)" inputmode="numeric" value="${fmtVal(valorAtualDoAporte(inv))}">
+          <label for="rev-g${k}">${tipo} · ${fmtVal(aportado)} aportado</label>
+          <input type="text" id="rev-g${k}" data-revisar-grupo="" placeholder="R$ 0,00"
+                 oninput="mascaraMoeda(this)" inputmode="numeric" value="${fmtVal(atual)}">
           <div style="font-size:10.5px;color:var(--texto-tenue);margin-top:4px;">
-            ${inv.atualizadoEm ? 'revisado pela última vez em ' + inv.atualizadoEm.split('-').reverse().join('/') : 'nunca revisado'} · ${dias} dias
+            ${ultima ? 'revisado pela última vez em ' + ultima.split('-').reverse().join('/') : 'nunca revisado'} · ${diasSemRevisarGrupo(tipo)} dias
           </div>`;
+        linha.querySelector('input').dataset.revisarGrupo = tipo;
         box.appendChild(linha);
       });
       // os campos de dinheiro do app todo ganham calculadora no mesmo lugar
@@ -13470,25 +13981,28 @@
     function salvarRevisaoAportes() {
       const hoje = obterDataBrasilia();
       let mexidos = 0;
-      document.querySelectorAll('#listaRevisaoAportes [data-revisar]').forEach(campo => {
-        const inv = investimentos.find(i => String(i.id) === campo.dataset.revisar);
-        if (!inv) return;
+      document.querySelectorAll('#listaRevisaoAportes [data-revisar-grupo]').forEach(campo => {
+        const tipo = campo.dataset.revisarGrupo;
+        const itens = aportesDoGrupo(tipo);
+        if (!itens.length) return;
+        const atual = itens.reduce((s, i) => s + valorAtualDoAporte(i), 0);
         const txt = (campo.value || '').replace('R$', '').trim();
         const valor = txt ? parseVal(txt) : NaN;
         // Campo vazio ou negativo: não inventa número, só carimba a conferência
         if (!isNaN(valor) && valor >= 0) {
-          if (valor !== valorAtualDoAporte(inv)) mexidos++;
-          inv.valorAtual = valor.toFixed(2).replace('.', ',');
+          if (Math.abs(valor - atual) >= 0.005) mexidos++;
+          aplicarValorDoGrupo(tipo, valor, hoje);
+        } else {
+          // A data entra mesmo sem mudança de valor: você conferiu e estava
+          // certo, então o grupo sai da lista — senão o aviso nunca sumiria.
+          itens.forEach(i => { i.atualizadoEm = hoje; });
         }
-        // A data entra mesmo sem mudança de valor: você conferiu e estava certo,
-        // então o aporte sai da lista de pendentes — senão o aviso nunca sumiria.
-        inv.atualizadoEm = hoje;
       });
       salvarInvest();
       fecharModal('modalRevisarAportes');
       renderizarInvestimentos();
       avisar('revisaoSalva', mexidos
-        ? (mexidos === 1 ? '1 aporte atualizado.' : mexidos + ' aportes atualizados.')
+        ? (mexidos === 1 ? '1 grupo atualizado.' : mexidos + ' grupos atualizados.')
         : 'Revisão registrada — nada mudou de valor.');
     }
 
@@ -13624,8 +14138,10 @@
       if (g.diff !== 0) {
         const sinal = g.diff >= 0 ? '+' : '−';
         const cor = g.diff >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-        diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%) desde o aporte</div>`;
+        diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%) no total</div>`;
       }
+      const revisoes = g.itens.map(i => i.atualizadoEm).filter(Boolean).sort();
+      const ultimaRevisaoTxt = revisoes.length ? ' · atualizado ' + revisoes[revisoes.length - 1].split('-').reverse().join('/') : '';
 
       const card = document.createElement('div');
       card.className = 'card';
@@ -13647,11 +14163,13 @@
                   style="flex-shrink:0;font-size:18px;line-height:1;padding:4px 8px;">⋯</button>
         </div>
         <div id="corpo-${chave}" style="margin-top:10px;">
-          <div style="text-align:center;padding:6px 0 10px;">
-            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">vale hoje</span>
+          <button type="button" data-vale-hoje title="Atualizar quanto o grupo vale hoje"
+                  style="display:block;width:100%;background:transparent;border:none;text-align:center;padding:6px 0 10px;cursor:pointer;color:inherit;font:inherit;">
+            <span style="font-size:10px;color:var(--texto-medio);text-transform:uppercase;letter-spacing:.5px;">vale hoje <span style="color:var(--texto-tenue);">· tocar pra atualizar</span></span>
             <div style="font-size:20px;font-weight:bold;color:var(--azul);margin-top:2px;">${fmtOculto(g.atual)}</div>
             ${diffTxt}
-          </div>
+            <div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">${fmtOculto(g.aportado)} aportado${ultimaRevisaoTxt}</div>
+          </button>
           <div data-itens></div>
           <button type="button" class="btn-adicionar" data-novo-aporte>+ Novo aporte em ${tipo}</button>
         </div>
@@ -13660,23 +14178,19 @@
       card.querySelector('[data-toggle-secao]').onclick = () => alternarSecao(chave);
       card.querySelector('[data-opcoes-grupo]').onclick = (ev) => { ev.stopPropagation(); abrirAcoesGrupoInvestimento(tipo); };
       card.querySelector('[data-novo-aporte]').onclick = () => abrirFormAporte(tipo);
+      card.querySelector('[data-vale-hoje]').onclick = () => abrirModalAtualizarValor(tipo);
 
       const box = card.querySelector('[data-itens]');
+      /* Cada linha é o que ENTROU, não o rendimento: o ganho é do grupo e fica
+         lá em cima, no "vale hoje". Tocar abre pra corrigir ou apagar. */
       g.itens.slice().sort((a, b) => (a.data < b.data ? 1 : -1)).forEach(inv => {
         const dataFmt = inv.data.split('-').reverse().join('/');
-        const atual = valorAtualDoAporte(inv);
-        const diffInv = atual - parseVal(inv.valor);
         const div = document.createElement('div');
         div.className = 'item-lancamento';
-        div.onclick = () => abrirModalAtualizarValor(inv.id);
-        let subLinha = inv.atualizadoEm ? `atualizado ${inv.atualizadoEm.split('-').reverse().join('/')}` : 'nunca atualizado';
-        if (diffInv !== 0) {
-          const sinal = diffInv >= 0 ? '+' : '−';
-          const cor = diffInv >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-          subLinha += ` · <span style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffInv))}</span>`;
-        }
-        const classeValor = diffInv < 0 ? 'valor-despesa' : 'valor-receita';
-        div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div><div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">${subLinha}</div></div><span class="${classeValor}">${fmtOculto(atual)}</span>`;
+        div.style.cursor = 'pointer';
+        div.title = 'Editar ou excluir este aporte';
+        div.onclick = () => abrirEditarAporte(inv.id);
+        div.innerHTML = `<div class="item-info"><strong>Aporte</strong><div style="font-size:11px;color:var(--texto-fraco);">${dataFmt} • de ${inv.origem}</div></div><span class="valor-receita">${fmtOculto(parseVal(inv.valor))}</span>`;
         box.appendChild(div);
       });
 
@@ -13766,30 +14280,135 @@
       if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    function abrirModalAtualizarValor(id) {
-      const inv = investimentos.find(i => i.id === id);
-      if (!inv) return;
-      document.getElementById('idAporteAtualizando').value = inv.id;
-      const dataFmt = inv.data.split('-').reverse().join('/');
+    /* O RENDIMENTO É DO GRUPO
+       O banco mostra quanto vale o fundo inteiro, não cada aporte separado.
+       Então a correção se faz no total do grupo, e o app reparte o valor novo
+       entre os aportes na proporção do que cada um valia — o total do grupo
+       fica exatamente o número digitado, e aporte que chegar depois entra pelo
+       valor cheio, sem herdar rendimento que não teve. */
+    function aportesDoGrupo(tipo) {
+      return investimentos.filter(i => (i.tipoAtivo || 'Outros') === tipo);
+    }
+
+    function aplicarValorDoGrupo(tipo, novoTotal, hoje) {
+      const itens = aportesDoGrupo(tipo);
+      if (!itens.length) return;
+      const atuais = itens.map(valorAtualDoAporte);
+      const somaAtual = atuais.reduce((a, b) => a + b, 0);
+      // sem valor atual nenhum (tudo zerado), reparte pelo que foi aportado
+      const pesos = somaAtual > 0 ? atuais : itens.map(i => parseVal(i.valor));
+      const somaPesos = pesos.reduce((a, b) => a + b, 0) || itens.length;
+      let distribuido = 0;
+      itens.forEach((inv, k) => {
+        const ultimo = k === itens.length - 1;
+        const parte = ultimo
+          ? Math.round((novoTotal - distribuido) * 100) / 100
+          : Math.round((novoTotal * (somaPesos ? pesos[k] / somaPesos : 1 / itens.length)) * 100) / 100;
+        distribuido += parte;
+        inv.valorAtual = parte.toFixed(2).replace('.', ',');
+        inv.atualizadoEm = hoje;
+      });
+    }
+
+    function abrirModalAtualizarValor(tipo) {
+      const itens = aportesDoGrupo(tipo);
+      if (!itens.length) return;
+      const aportado = itens.reduce((s, i) => s + parseVal(i.valor), 0);
+      const atual = itens.reduce((s, i) => s + valorAtualDoAporte(i), 0);
+      document.getElementById('grupoAtualizando').value = tipo;
+      document.getElementById('tituloAtualizarValor').textContent = 'Quanto vale ' + tipo;
       document.getElementById('infoAporteAtualizando').textContent =
-        `${inv.tipoAtivo || 'Outros'} · aportado ${fmtVal(parseVal(inv.valor))} em ${dataFmt}, de ${inv.origem}.`;
-      document.getElementById('valorAtualizadoAporte').value = fmtVal(valorAtualDoAporte(inv));
+        `${itens.length} ${itens.length === 1 ? 'aporte' : 'aportes'} · ${fmtVal(aportado)} aportado no total.`;
+      document.getElementById('valorAtualizadoAporte').value = fmtVal(atual);
       document.getElementById('modalAtualizarValor').classList.remove('escondido');
     }
 
     function salvarValorAtualizado() {
-      const id = document.getElementById('idAporteAtualizando').value;
-      const inv = investimentos.find(i => i.id === id);
-      if (!inv) return;
+      const tipo = document.getElementById('grupoAtualizando').value;
+      if (!aportesDoGrupo(tipo).length) return;
       const valorStr = document.getElementById('valorAtualizadoAporte').value.replace('R$', '').trim();
       if (!valorStr) { avisar('valorInvalido'); return; }
       const valor = parseVal(valorStr);
       if (valor < 0) { avisar('valorInvalido'); return; }
-      inv.valorAtual = valor.toFixed(2).replace('.', ',');
-      inv.atualizadoEm = obterDataBrasilia();
+      aplicarValorDoGrupo(tipo, valor, obterDataBrasilia());
       salvarInvest();
       fecharModal('modalAtualizarValor');
       renderizarInvestimentos();
+    }
+
+    /* UM APORTE: aqui só se corrige o que foi aportado (valor, data, conta,
+       grupo) ou se apaga. Se ele nasceu de um lançamento, o lançamento anda
+       junto — são a mesma saída de dinheiro vista de dois lugares. */
+    function abrirEditarAporte(id) {
+      const inv = investimentos.find(i => i.id === id);
+      if (!inv) return;
+      document.getElementById('idAporteEditando').value = inv.id;
+      const lanc = lancamentoDoAporte(inv);
+      document.getElementById('infoAporteEditando').textContent = lanc
+        ? 'Ligado ao lançamento "' + lanc.descricao + '" — o que mudar aqui muda lá também.'
+        : 'Corrija o que foi aportado. O rendimento se atualiza no total do grupo, em "vale hoje".';
+      document.getElementById('valorAporteEditando').value = fmtVal(parseVal(inv.valor));
+      document.getElementById('dataAporteEditando').value = inv.data || obterDataBrasilia();
+      const selOrigem = document.getElementById('origemAporteEditando');
+      selOrigem.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+      if (inv.origem && !contas.some(c => c.nome === inv.origem)) {
+        selOrigem.insertAdjacentHTML('beforeend', `<option value="${inv.origem}">${inv.origem}</option>`);
+      }
+      selOrigem.value = inv.origem || primeiraConta();
+      const selGrupo = document.getElementById('grupoAporteEditando');
+      const grupos = tiposAtivo.includes(inv.tipoAtivo || 'Outros') ? tiposAtivo : tiposAtivo.concat(inv.tipoAtivo || 'Outros');
+      selGrupo.innerHTML = grupos.map(t => `<option value="${t}">${t}</option>`).join('');
+      selGrupo.value = inv.tipoAtivo || 'Outros';
+      document.getElementById('modalEditarAporte').classList.remove('escondido');
+    }
+
+    function salvarEdicaoAporte() {
+      const inv = investimentos.find(i => i.id === document.getElementById('idAporteEditando').value);
+      if (!inv) return;
+      const valor = parseVal(document.getElementById('valorAporteEditando').value.replace('R$', '').trim());
+      if (!valor || valor <= 0) { avisar('valorInvalido'); return; }
+      const antigo = parseVal(inv.valor);
+      // o rendimento que esse aporte já tinha acompanha a correção, na mesma proporção
+      if (inv.valorAtual != null && inv.valorAtual !== '' && antigo > 0) {
+        inv.valorAtual = (parseVal(inv.valorAtual) * valor / antigo).toFixed(2).replace('.', ',');
+      }
+      inv.valor = valor.toFixed(2).replace('.', ',');
+      inv.data = document.getElementById('dataAporteEditando').value || inv.data;
+      inv.origem = document.getElementById('origemAporteEditando').value || inv.origem;
+      inv.tipoAtivo = document.getElementById('grupoAporteEditando').value || inv.tipoAtivo;
+      const lanc = lancamentoDoAporte(inv);
+      if (lanc) {
+        lanc.valor = inv.valor;
+        lanc.data = inv.data;
+        if (lanc.conta) lanc.conta = inv.origem;
+        salvarLocalStorage();
+      }
+      salvarInvest();
+      fecharModal('modalEditarAporte');
+      renderizarInvestimentos();
+      if (lanc) atualizarTudo();
+    }
+
+    function excluirAporte() {
+      const inv = investimentos.find(i => i.id === document.getElementById('idAporteEditando').value);
+      if (!inv) return;
+      const lanc = lancamentoDoAporte(inv);
+      const pergunta = lanc
+        ? `Excluir este aporte de ${fmtVal(parseVal(inv.valor))}?\n\nO lançamento "${lanc.descricao}" que ele gerou vai junto pra lixeira.`
+        : `Excluir este aporte de ${fmtVal(parseVal(inv.valor))}?`;
+      if (!confirm(pergunta)) return;
+      investimentos = investimentos.filter(i => i.id !== inv.id);
+      salvarInvest();
+      if (lanc) {
+        // a lixeira guarda o aporte junto do primeiro: restaurar traz os dois
+        const ligados = lancamentos.filter(l => l.aporteId === inv.id || l.id === lanc.id);
+        lancamentos = lancamentos.filter(l => !ligados.includes(l));
+        ligados.forEach((l, k) => mandarPraLixeira(k === 0 ? Object.assign({}, l, { __aporte: inv }) : l, 'lancamento'));
+        salvarLocalStorage();
+      }
+      fecharModal('modalEditarAporte');
+      renderizarInvestimentos();
+      atualizarTudo();
     }
 
     /* REQUISIÇÃO 7: TECLADO NUMÉRICO E FORMATAÇÃO DE CENTAVOS NO MODAL DE INVESTIMENTO */
@@ -13811,17 +14430,75 @@
        lançamento comum, quando a categoria é "Investimento" e o destino
        escolhido é um tipo de ativo — ali quem cria o lançamento é o
        formulário principal; aqui só se carimba o aporte em si. */
-    function registrarAporte(valor, origem, tipoAtivo, data) {
-      investimentos.push({
-        id: 'i' + Date.now(),
+    function registrarAporte(valor, origem, tipoAtivo, data, lancamentoId) {
+      const inv = {
+        id: 'i' + Date.now() + Math.floor(Math.random() * 1000),
         valor: valor.toFixed(2).replace('.', ','),
         origem: origem || primeiraConta(),
         tipoAtivo,
         valorAtual: null,
         atualizadoEm: null,
         data
-      });
+      };
+      if (lancamentoId != null) inv.lancamentoId = lancamentoId;
+      investimentos.push(inv);
       salvarInvest();
+      return inv;
+    }
+
+    /* APORTE ⇄ LANÇAMENTO
+       O mesmo dinheiro aparece em dois lugares: como despesa de categoria
+       Investimento na conta, e como aporte na carteira. Antes os dois nasciam
+       soltos — apagar o lançamento deixava o aporte vivo na aba Investimentos.
+       Agora cada um sabe do outro (lancamentoId / aporteId). */
+    function lancamentoDoAporte(inv) {
+      if (!inv) return null;
+      return lancamentos.find(l => l.aporteId === inv.id)
+        || (inv.lancamentoId != null ? lancamentos.find(l => l.id === inv.lancamentoId) : null)
+        || null;
+    }
+
+    // Aporte cujo último lançamento ligado está saindo — fica órfão e sai junto
+    function aporteQueFicaOrfao(l, restantes) {
+      if (!l || !l.aporteId) return null;
+      if (restantes.some(x => x.aporteId === l.aporteId)) return null;
+      return investimentos.find(i => i.id === l.aporteId) || null;
+    }
+
+    // Editou o lançamento: valor, data e conta do aporte acompanham
+    function sincronizarAporteDoLancamento(l, valorTotal) {
+      const inv = l && l.aporteId ? investimentos.find(i => i.id === l.aporteId) : null;
+      if (!inv) return;
+      const antigo = parseVal(inv.valor);
+      if (inv.valorAtual != null && inv.valorAtual !== '' && antigo > 0) {
+        inv.valorAtual = (parseVal(inv.valorAtual) * valorTotal / antigo).toFixed(2).replace('.', ',');
+      }
+      inv.valor = valorTotal.toFixed(2).replace('.', ',');
+      inv.data = l.data || inv.data;
+      if (l.conta) inv.origem = l.conta;
+      salvarInvest();
+    }
+
+    /* Aportes de antes do vínculo: liga cada um ao lançamento que é
+       inequivocamente dele (categoria Investimento, mesmo dia, mesmo valor,
+       mesma conta, e só um candidato). Na dúvida não liga — melhor um aporte
+       solto, que dá pra apagar à mão, do que ligar ao lançamento errado. */
+    function vincularAportesAntigos() {
+      let mexeu = false;
+      const usados = new Set(lancamentos.filter(l => l.aporteId).map(l => l.id));
+      investimentos.forEach(inv => {
+        if (lancamentoDoAporte(inv)) return;
+        const candidatos = lancamentos.filter(l =>
+          l.tipo === 'despesa' && l.categoria === 'Investimento' && !l.aporteId && !usados.has(l.id)
+          && l.data === inv.data && Math.abs(parseVal(l.valor) - parseVal(inv.valor)) < 0.005
+          && (l.conta || '') === (inv.origem || ''));
+        if (candidatos.length !== 1) return;
+        candidatos[0].aporteId = inv.id;
+        inv.lancamentoId = candidatos[0].id;
+        usados.add(candidatos[0].id);
+        mexeu = true;
+      });
+      if (mexeu) { salvarLocalStorage(); salvarInvest(); }
     }
 
     function salvarAporteModal(e) {
@@ -13834,10 +14511,12 @@
       const tipoAtivo = document.getElementById('tipoAtivoAporte').value || tipoAtivoPadrao();
       const data = obterDataBrasilia();
 
-      registrarAporte(valor, origem, tipoAtivo, data);
+      const idLanc = novoIdLancamento();
+      const inv = registrarAporte(valor, origem, tipoAtivo, data, idLanc);
 
       lancamentos.unshift({
-        id: Date.now(),
+        id: idLanc,
+        aporteId: inv.id,
         tipo: 'despesa',
         descricao: 'Aporte - poupança/investimento',
         conta: origem || primeiraConta(),
@@ -14859,7 +15538,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.26-1';
+    const APP_VERSION = '2026.09.28-1';
 
     // Inicialização
     carregarLocalStorage();
@@ -14870,6 +15549,7 @@ function confirmarLancamentoVoz() {
     carregarInvest();
     carregarTiposAtivo();
     migrarInvestimentos();   // depois de carregarInvest e carregarTiposAtivo
+    vincularAportesAntigos();
     popularSelectsTiposAtivo();
     carregarConsorcios();    // antes de gerarLancamentosFixos: é ele que sabe onde o consórcio acaba
     carregarGrupos();
