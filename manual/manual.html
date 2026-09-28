@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.26-1 · Leia em 23 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.09.28-1 · Leia em 24 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -353,6 +353,13 @@
       qual compra faltou registrar, em vez de ficar caçando centavos.
     </div>
     <p>Depois de marcada como paga, aquele valor entra em <strong>Saiu da conta</strong> e o saldo do mês se acerta.</p>
+    <div class="nota">
+      <strong>Fatura paga mostra o que você pagou.</strong> Na linha do cartão, o número grande em
+      verde é o <strong>valor pago</strong>, e o trilho de meses mostra esse mesmo valor no mês pago.
+      Logo embaixo fica a conta do app: <em>“lançado no app R$ 4.529,45 · banco cobrou R$ 21,95 a
+      menos”</em> — ou <em>“bateu”</em>, quando os dois coincidem. Assim, navegando pelos meses
+      passados, dá pra ver de relance quanto fugiu do que você tinha lançado, sem abrir nada.
+    </div>
     <h3>O trilho de meses</h3>
     <p>No topo do card corre um trilho com <strong>treze meses</strong> — seis pra trás, o que você
        está vendo no meio, e seis pra frente. Arraste pros lados como quem rola uma lista: ele anda
@@ -592,6 +599,26 @@
     <div class="tela metade"><img src="img/detalhe_cobranca.png" alt="Ficha de uma cobrança"></div>
     <div class="legenda">A ficha do lançamento por trás da cobrança, sem sair da aba.</div>
     <div class="nota">
+      <strong>Pagamento picado: “Recebi um valor”.</strong> Quando a pessoa paga um valor que não
+      bate com nenhuma dívida — R$ 100 de uma vez, com várias compras em aberto —, abra o bloco dela
+      e toque em <strong>Recebi um valor</strong> (do seu lado, <strong>Paguei um valor</strong>).
+      Digite o valor e a conta, e o app mostra antes como vai abater: <strong>das dívidas mais
+      antigas primeiro</strong>. As que couberem inteiras saem da lista; a última, se não couber,
+      fica só com o que falta (<em>“Supermercado · R$ 17,24 de R$ 63,35 · falta R$ 46,11”</em>).
+      Se o valor passar do que a pessoa deve, o app avisa e não deixa confirmar.
+      <br><br>Na conta entra um reembolso por compra abatida, todos com a mesma data — é o que faz
+      cada grupo de gastos descontar o que voltou. Apagar um desses reembolsos devolve exatamente
+      aquela parte à dívida.
+    </div>
+    <div class="nota">
+      <strong>Já quitadas.</strong> No fim do card <em>Empréstimos</em> tem uma linha fechada,
+      <strong>✓ Já quitadas</strong>, com o histórico de tudo que já foi resolvido. Abrindo, aparece
+      uma linha por pessoa — inclusive quem já não te deve mais nada e por isso some da lista de
+      cima — com quantas foram e o total. Tocando na pessoa, cada dívida aparece com quando e como
+      acabou: <em>recebido 12/09 · Itaú</em>, <em>quitada sem movimentação</em>, <em>abatido num
+      acerto</em> ou <em>você pagou</em>. Tocar numa delas abre a ficha do lançamento.
+    </div>
+    <div class="nota">
       <strong>Quitar sem movimentar nada.</strong> Ao lado de <em>Recebi</em> / <em>Paguei</em>
       tem o botão <strong>Quitar</strong>. Os primeiros criam um lançamento de verdade (o dinheiro
       entrou ou saiu); o <em>Quitar</em> só encerra a dívida, sem mexer em conta nenhuma. É pra
@@ -724,6 +751,12 @@
       diferente do saldo da aba Faturas — senão o gráfico por categoria ficaria cego para o que você gastou no cartão.
     </div>
     <div class="tela metade"><img src="img/graficos_barras.png" alt="Gráfico de despesas por categoria"></div>
+    <div class="nota">
+      <strong>Toque numa categoria pra ver os lançamentos dela.</strong> Em barras, colunas ou pizza
+      (na legenda), tocar numa categoria abre a Consulta já filtrada nela, no mesmo período — e na
+      mesma conta, se o gráfico estiver mostrando uma só. Vale também pras visões de Receitas e de
+      Contas.
+    </div>
     <div class="tela metade"><img src="img/consulta_filtros.png" alt="Consulta com filtro de conta e de forma de pagamento"></div>
     <div class="legenda">As duas réguas da Consulta: a de cima escolhe a conta, a de baixo a forma de pagamento.</div>
     <div class="nota">
@@ -913,20 +946,29 @@
       <strong>Revisar os rendimentos.</strong> O app é offline: não tem como buscar a cotação do
       Tesouro nem a taxa do seu CDB. Então ele faz aqui o mesmo que faz com o saldo das contas —
       <strong>lembra você de conferir</strong>. Passados 45 dias sem revisão, uma linha discreta
-      aparece no card do topo: <em>● 2 aportes sem revisar há mais de um mês · revisar</em>.
-      <br><br>Tocando nela, todos os atrasados entram na <strong>mesma tela</strong>, cada um com
-      o valor de hoje já preenchido. Você abre o app do banco, corrige o que mudou e salva de uma
+      aparece no card do topo: <em>● 2 grupos sem revisar há mais de um mês · revisar</em>.
+      <br><br>Tocando nela, todos os grupos atrasados entram na <strong>mesma tela</strong>, cada
+      um com o valor de hoje do grupo inteiro já preenchido. Você abre o app do banco, corrige o que mudou e salva de uma
       vez. O que você não mexer <strong>também sai da lista</strong> — você conferiu e estava
       certo, e sem isso o aviso nunca iria embora.
       <br><br>Consórcio fica de fora: ali o valor é de contrato, não de mercado. Quando você é
       contemplado e a parcela muda, quem registra isso é o botão <em>Fui contemplado</em>.
     </div>
     <div class="tela metade"><img src="img/revisar_aportes.png" alt="Janela de revisão dos rendimentos"></div>
-    <div class="legenda">Os aportes atrasados na mesma tela, com o valor de hoje já preenchido.</div>
+    <div class="legenda">Os grupos atrasados na mesma tela, com o valor de hoje já preenchido.</div>
     <div class="nota">
       <strong>Cada tipo de investimento é um card.</strong> Tesouro, poupança, fundos — cada grupo
-      tem o seu, com quanto vale hoje, o rendimento desde o aporte, a lista dos aportes e um botão
-      <strong>+ Novo aporte</strong> que já entra com o grupo escolhido. Criar, renomear, excluir e
+      tem o seu, com quanto vale hoje, o rendimento do grupo, a lista dos aportes e um botão
+      <strong>+ Novo aporte</strong> que já entra com o grupo escolhido.
+      <br><br><strong>O rendimento é do grupo inteiro.</strong> O banco mostra quanto vale o fundo, não
+      cada aporte separado — então é assim que se atualiza: toque em <strong>vale hoje</strong> no card
+      e digite quanto o grupo vale no banco. O ganho ou perda e a porcentagem aparecem no total, e o
+      app reparte o valor novo entre os aportes na proporção de cada um (quem aportar depois entra
+      pelo valor cheio).
+      <br><br><strong>Tocar num aporte</strong> abre ele pra <strong>corrigir</strong> (valor, data,
+      conta, grupo) ou <strong>excluir</strong>. Aporte e lançamento andam juntos: o aporte feito
+      pelo formulário de lançamento ou pelo <em>+ Novo aporte</em> fica ligado à despesa que ele
+      gerou — apagar ou editar um apaga ou edita o outro, e restaurar da lixeira traz os dois de volta. Criar, renomear, excluir e
       <strong>ordenar</strong> esses grupos fica em <strong>Ajustes → Grupos de investimento</strong>:
       a ordem que você definir lá é a ordem dos cards aqui.
       <br><br>Renomear e excluir também dá pra fazer <strong>daqui mesmo</strong>: o
