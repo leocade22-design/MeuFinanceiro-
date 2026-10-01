@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.09.28-1 · Leia em 24 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.10.01-1 · Leia em 25 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -360,6 +360,34 @@
       menos”</em> — ou <em>“bateu”</em>, quando os dois coincidem. Assim, navegando pelos meses
       passados, dá pra ver de relance quanto fugiu do que você tinha lançado, sem abrir nada.
     </div>
+    <h3>Pagou só uma parte, ou parcelou</h3>
+    <p>Na janela de pagar, o app pergunta <strong>Como você pagou?</strong> — <em>Tudo</em>,
+       <em>Uma parte</em> ou <em>Parcelei</em>. <em>Tudo</em> é o de sempre: a diferença pro banco
+       vira ajuste.</p>
+    <div class="nota">
+      <strong>Uma parte.</strong> Digite quanto pagou e, se souber, os <strong>juros do rotativo</strong>.
+      O que sobrou vai pra fatura do mês seguinte como <em>🔁 Saldo da fatura de outubro</em>, e os
+      juros entram como gasto em <em>Juros e encargos</em>. O saldo levado <strong>não conta de novo
+      como gasto</strong> nos gráficos — as compras já contaram quando você fez. Se não souber os juros
+      agora, deixe em branco: quando pagar a fatura seguinte, a diferença que o banco cobrar aparece
+      como o ajuste de sempre.
+    </div>
+    <div class="nota">
+      <strong>Parcelei.</strong> Copie da simulação do banco a <strong>entrada</strong>, o
+      <strong>número de parcelas</strong> e o <strong>valor de cada parcela</strong>. O app faz a conta
+      antes de confirmar: <em>“Parcelado: R$ 3.361,32. Vai pagar 10 × R$ 410,00 = R$ 4.100,00. Juros:
+      R$ 738,68 (R$ 73,87 por mês)”</em>. A entrada é o que sai da conta agora; cada fatura seguinte
+      ganha uma parcela (<em>🔁 Parcelamento da fatura de outubro 1/10</em>), e os juros entram um
+      pouco em cada mês, em <em>Juros e encargos</em>. Se as parcelas somarem menos que o valor
+      parcelado, o app avisa e não deixa confirmar.
+    </div>
+    <div class="tela metade"><img src="img/fatura_parcelada.png" alt="Janela de pagar fatura com a opção Parcelei"></div>
+    <div class="legenda">Parcelei: a entrada, as parcelas e o valor de cada uma, copiados do banco. O app mostra os juros antes de confirmar.</div>
+    <div class="nota">
+      As compras continuam caindo na fatura pela data e pelo fechamento de sempre — o que
+      veio de antes só se soma. O <em>Comprometido nos próximos meses</em>, nos Gráficos, já enxerga as
+      parcelas. E <strong>desfazer</strong> o pagamento tira junto o saldo levado, as parcelas e os juros.
+    </div>
     <h3>O trilho de meses</h3>
     <p>No topo do card corre um trilho com <strong>treze meses</strong> — seis pra trás, o que você
        está vendo no meio, e seis pra frente. Arraste pros lados como quem rola uma lista: ele anda
@@ -609,6 +637,14 @@
       <br><br>Na conta entra um reembolso por compra abatida, todos com a mesma data — é o que faz
       cada grupo de gastos descontar o que voltou. Apagar um desses reembolsos devolve exatamente
       aquela parte à dívida.
+    </div>
+    <div class="nota">
+      <strong>Quando é você que paga, diga como.</strong> No <em>Paguei</em>, no <em>Paguei um
+      valor</em> e no <em>Já acertamos</em> (quando a diferença é sua), além da conta aparece
+      <strong>Como pagou?</strong>: Pix, Débito, Dinheiro, Crédito ou Crédito parcelado. No crédito —
+      o Pix no crédito, por exemplo — o valor <strong>não sai do saldo agora</strong>: vai pra fatura do
+      cartão daquela conta, e no parcelado vira as parcelas, igual a uma compra parcelada. Conta sem
+      cartão não mostra as opções de crédito, e o app lembra a última forma que você usou.
     </div>
     <div class="nota">
       <strong>Já quitadas.</strong> No fim do card <em>Empréstimos</em> tem uma linha fechada,

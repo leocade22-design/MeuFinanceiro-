@@ -1567,6 +1567,16 @@
             <input type="date" id="dataAcerto">
           </div>
         </div>
+        <div class="form-row escondido" id="formaSaidaAcerto">
+          <div class="form-group">
+            <label for="formaAcerto">Como pagou?</label>
+            <select id="formaAcerto" onchange="atualizarParcelasSaida('Acerto')"></select>
+          </div>
+          <div class="form-group escondido" id="wrapParcelasAcerto">
+            <label for="parcelasAcerto">Em quantas vezes?</label>
+            <select id="parcelasAcerto"></select>
+          </div>
+        </div>
       </div>
       <p id="avisoAcertoFeito" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:14px;line-height:1.45;"></p>
       <div style="display:flex;gap:10px;">
@@ -2163,14 +2173,39 @@
       <div class="box-resumo-modal" style="margin-bottom:14px;">
         <div class="linha-subtotal" style="cursor:default;"><span>Somado aqui no app</span><strong id="faturaCalculada">R$ 0,00</strong></div>
       </div>
+      <!-- Tudo = como sempre foi (a diferença pro banco vira ajuste). Uma parte =
+           o que sobrou vai pra fatura seguinte. Parcelei = entrada agora e uma
+           parcela em cada fatura seguinte, com os juros do banco. -->
+      <div class="form-group">
+        <label>Como você pagou?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;" id="modosPagamentoFatura">
+          <button type="button" class="btn-periodo ativo" data-modo="total" onclick="setModoPagamentoFatura('total')">Tudo</button>
+          <button type="button" class="btn-periodo" data-modo="parcial" onclick="setModoPagamentoFatura('parcial')">Uma parte</button>
+          <button type="button" class="btn-periodo" data-modo="parcelado" onclick="setModoPagamentoFatura('parcelado')">Parcelei</button>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="faturaValorPago">Valor que o banco cobrou</label>
+          <label for="faturaValorPago" id="labelFaturaValorPago">Valor que o banco cobrou</label>
           <input type="text" id="faturaValorPago" inputmode="numeric" oninput="mascaraMoeda(this); previewAjusteFatura();">
         </div>
         <div class="form-group">
           <label for="faturaDataPagamento">Pago em</label>
           <input type="date" id="faturaDataPagamento">
+        </div>
+      </div>
+      <div class="form-group escondido" id="wrapJurosParcial">
+        <label for="faturaJurosParcial">Juros do rotativo <span style="color:var(--texto-tenue);">(opcional)</span></label>
+        <input type="text" id="faturaJurosParcial" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); previewAjusteFatura();">
+      </div>
+      <div class="form-row escondido" id="wrapParceladoFatura">
+        <div class="form-group">
+          <label for="faturaNumParcelas">Parcelas</label>
+          <select id="faturaNumParcelas" onchange="previewAjusteFatura()"></select>
+        </div>
+        <div class="form-group">
+          <label for="faturaValorParcela">Valor de cada parcela</label>
+          <input type="text" id="faturaValorParcela" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); previewAjusteFatura();">
         </div>
       </div>
       <p id="previaAjusteFatura" style="font-size:11.5px;line-height:1.45;margin-bottom:12px;"></p>
@@ -2197,6 +2232,16 @@
         <div class="form-group">
           <label for="dataRecebimento">Data</label>
           <input type="date" id="dataRecebimento">
+        </div>
+      </div>
+      <div class="form-row escondido" id="formaSaidaRecebimento">
+        <div class="form-group">
+          <label for="formaRecebimento">Como pagou?</label>
+          <select id="formaRecebimento" onchange="atualizarParcelasSaida('Recebimento')"></select>
+        </div>
+        <div class="form-group escondido" id="wrapParcelasRecebimento">
+          <label for="parcelasRecebimento">Em quantas vezes?</label>
+          <select id="parcelasRecebimento"></select>
         </div>
       </div>
       <p id="avisoReceberEmprestimo" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;"></p>
@@ -2227,6 +2272,16 @@
         <div class="form-group">
           <label for="dataAbater">Data</label>
           <input type="date" id="dataAbater">
+        </div>
+      </div>
+      <div class="form-row escondido" id="formaSaidaAbater">
+        <div class="form-group">
+          <label for="formaAbater">Como pagou?</label>
+          <select id="formaAbater" onchange="atualizarParcelasSaida('Abater')"></select>
+        </div>
+        <div class="form-group escondido" id="wrapParcelasAbater">
+          <label for="parcelasAbater">Em quantas vezes?</label>
+          <select id="parcelasAbater"></select>
         </div>
       </div>
       <div class="box-resumo-modal" id="previaAbatimento" style="margin-bottom:12px;"></div>
@@ -8517,7 +8572,10 @@
           .filter(l => !contaFiltroGraficos || l.conta === contaFiltroGraficos)
           .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === ref.getMonth() && f.ano === ref.getFullYear(); })
           .reduce((s, l) => s + parseVal(l.valor), 0);
-        dados[label] = parcelasFuturas + totalFixos;
+        // o que faturas parceladas ou pagas em parte já empurraram pra esse mês
+        const trazido = contas.filter(c => c.temCredito && (!contaFiltroGraficos || c.nome === contaFiltroGraficos))
+          .reduce((s, c) => s + itensTrazidosParaFatura(c.nome, ref.getMonth(), ref.getFullYear()).reduce((a, i) => a + i.valor, 0), 0);
+        dados[label] = parcelasFuturas + trazido + totalFixos;
       }
       if (tipoComprometido === 'colunas') {
         renderizarColunasOrdem(container, dados, 'var(--laranja)', { altura: 150 });
@@ -9873,6 +9931,79 @@
       return linhas.join('\n');
     }
 
+    /* COMO O DINHEIRO SAIU
+       Pagar alguém não é só "saiu da conta": dá pra mandar Pix, passar no
+       débito, pagar em dinheiro — ou pagar no crédito (o Pix no crédito, por
+       exemplo), e aí o valor não sai do saldo agora: vai pra fatura do cartão
+       daquela conta. As três janelas em que VOCÊ paga usam esta escolha. */
+    const CHAVE_FORMA_SAIDA = 'meu_financeiro_forma_saida';
+    const CONTA_DA_SAIDA = { Acerto: 'contaAcerto', Recebimento: 'contaRecebimento', Abater: 'contaAbater' };
+
+    function popularFormaSaida(suf, mostrar) {
+      const bloco = document.getElementById('formaSaida' + suf);
+      if (!bloco) return;
+      bloco.classList.toggle('escondido', !mostrar);
+      const selConta = document.getElementById(CONTA_DA_SAIDA[suf]);
+      selConta.onchange = mostrar ? () => popularFormaSaida(suf, true) : null;
+      if (!mostrar) return;
+      const sel = document.getElementById('forma' + suf);
+      const preferida = sel.value || localStorage.getItem(CHAVE_FORMA_SAIDA) || 'À Vista / Débito';
+      const formas = formasDaConta(selConta.value);
+      sel.innerHTML = formas.map(v => `<option value="${v}">${(FORMAS_PAGAMENTO.find(f => f.valor === v) || { rotulo: v }).rotulo}</option>`).join('');
+      sel.value = formas.includes(preferida) ? preferida : formas[0];
+      const selP = document.getElementById('parcelas' + suf);
+      if (!selP.options.length) {
+        for (let n = 2; n <= 12; n++) selP.insertAdjacentHTML('beforeend', `<option value="${n}">${n}x</option>`);
+      }
+      atualizarParcelasSaida(suf);
+    }
+
+    function atualizarParcelasSaida(suf) {
+      const forma = document.getElementById('forma' + suf).value;
+      document.getElementById('wrapParcelas' + suf).classList.toggle('escondido', forma !== 'Crédito Parcelado');
+    }
+
+    function formaSaidaEscolhida(suf) {
+      const bloco = document.getElementById('formaSaida' + suf);
+      if (!bloco || bloco.classList.contains('escondido')) return { forma: 'À Vista / Débito', parcelas: 1 };
+      const forma = document.getElementById('forma' + suf).value || 'À Vista / Débito';
+      localStorage.setItem(CHAVE_FORMA_SAIDA, forma);
+      return { forma, parcelas: forma === 'Crédito Parcelado' ? (parseInt(document.getElementById('parcelas' + suf).value, 10) || 2) : 1 };
+    }
+
+    /* Cria a despesa com a forma escolhida. Parcelado vira N parcelas no
+       cartão, igual a uma compra parcelada do formulário — e só a primeira
+       carrega os campos de ligação (reembolso, etc.), pra apagar uma parcela
+       solta não reabrir a dívida inteira. */
+    function lancarSaida(base, forma, parcelas) {
+      const fmt = v => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+      const n = forma === 'Crédito Parcelado' ? Math.max(2, parcelas || 2) : 1;
+      const idPrimeiro = base.id != null ? base.id : novoIdLancamento();
+      if (n === 1) {
+        const l = Object.assign({}, base, { id: idPrimeiro, tipo: 'despesa', formaModo: forma, numParcelas: '1', valor: fmt(base.valor) });
+        lancamentos.unshift(l);
+        return [l];
+      }
+      const grupoId = 'g' + Date.now() + Math.floor(Math.random() * 1000);
+      const cada = Math.round(base.valor / n * 100) / 100;
+      const criados = [];
+      for (let k = 0; k < n; k++) {
+        const valor = k === n - 1 ? base.valor - cada * (n - 1) : cada;
+        const comum = {
+          tipo: 'despesa', descricao: base.descricao + ' (' + (k + 1) + '/' + n + ')',
+          conta: base.conta, categoria: base.categoria, observacao: base.observacao,
+          formaModo: 'Crédito Parcelado', numParcelas: String(n), grupoId,
+          data: somarMesesFiel(base.data, k), valor: fmt(valor),
+          grupoViagemId: base.grupoViagemId || '', grupoViagemNome: base.grupoViagemNome || '',
+          emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false
+        };
+        const l = k === 0 ? Object.assign({}, base, comum, { id: idPrimeiro }) : Object.assign(comum, { id: novoIdLancamento() });
+        lancamentos.push(l);
+        criados.push(l);
+      }
+      return criados;
+    }
+
     /* DAR BAIXA NUM ACERTO
        Num abatimento, as duas dívidas se encerram mas só a DIFERENÇA muda de
        mãos. Fazendo à mão são três passos, e o passo do meio é uma armadilha:
@@ -9907,11 +10038,14 @@
       sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
       sel.value = contaPadraoReembolso();
       document.getElementById('dataAcerto').value = obterDataBrasilia();
+      document.getElementById('formaAcerto').value = '';
+      popularFormaSaida('Acerto', !empate && !euRecebo);
 
       document.getElementById('avisoAcertoFeito').innerHTML = empate
         ? 'As duas dívidas se encerram e <strong>nenhum lançamento é criado</strong> — nada mudou de mãos.'
         : `As duas dívidas se encerram, e só a diferença de <strong>${fmtVal(sobra)}</strong> entra como `
-          + `<strong>${euRecebo ? 'receita' : 'despesa'} à vista</strong> nessa conta. `
+          + `<strong>${euRecebo ? 'receita' : 'despesa'}</strong> nessa conta`
+          + (euRecebo ? '' : ' (no crédito, vai pra fatura do cartão)') + '. '
           + 'O resto foi abatido, então não vira movimentação.';
       document.getElementById('modalAcertoFeito').classList.remove('escondido');
     }
@@ -9933,19 +10067,20 @@
         const conta = document.getElementById('contaAcerto').value || primeiraConta();
         const data = document.getElementById('dataAcerto').value || obterDataBrasilia();
         localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
-        lancamentos.unshift({
-          id: novoIdLancamento(),
-          tipo: euRecebo ? 'receita' : 'despesa',
+        const base = {
           descricao: 'Acerto com ' + nome,
-          // à vista de propósito: acertar dívida sai por pix/dinheiro/débito e
-          // não pode ir parar na fatura do cartão
-          conta, formaModo: 'À Vista / Débito', numParcelas: '1',
-          categoria: euRecebo ? '' : categoriaPadrao(),
+          conta, categoria: euRecebo ? '' : categoriaPadrao(),
           data,
           emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
-          valor: sobra.toFixed(2).replace('.', ','),
           observacao: 'Diferença do abatimento entre o que vocês se deviam'
-        });
+        };
+        if (euRecebo) {
+          lancamentos.unshift(Object.assign(base, { id: novoIdLancamento(), tipo: 'receita', formaModo: 'À Vista / Débito',
+            numParcelas: '1', valor: sobra.toFixed(2).replace('.', ',') }));
+        } else {
+          const { forma, parcelas } = formaSaidaEscolhida('Acerto');
+          lancarSaida(Object.assign(base, { valor: sobra }), forma, parcelas);
+        }
       }
 
       salvarLocalStorage();
@@ -11260,7 +11395,72 @@
       return lancamentos
         .filter(l => l.tipo === 'despesa' && l.conta === conta && eCredito(l.formaModo))
         .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === mes && f.ano === ano; })
-        .reduce((sm, l) => sm + parseVal(l.valor), 0);
+        .reduce((sm, l) => sm + parseVal(l.valor), 0)
+        + itensTrazidosParaFatura(conta, mes, ano).reduce((sm, i) => sm + i.valor, 0);
+    }
+
+    /* FATURA PAGA EM PARTE OU PARCELADA
+       O que não foi pago não some: vai pras faturas seguintes. Mas não como
+       lançamento — as compras já contaram como gasto quando foram feitas, e um
+       "saldo de outubro" de verdade dobraria tudo nos gráficos. Fica guardado
+       no próprio registro do pagamento, e só a soma da fatura (esta função de
+       cima, por onde passa todo total de fatura do app) enxerga. Os juros são
+       a única coisa nova, e esses sim viram lançamento: gasto de verdade, em
+       "Juros e encargos", na fatura em que o banco cobra. As compras continuam
+       caindo na fatura pela data e pelo fechamento de sempre. */
+    function partesChaveFatura(chave) {
+      const i = chave.lastIndexOf('|');
+      const [a, m] = chave.slice(i + 1).split('-').map(Number);
+      return { conta: chave.slice(0, i), mes: m - 1, ano: a };
+    }
+
+    function itensTrazidosParaFatura(conta, mes, ano) {
+      const itens = [];
+      Object.entries(faturasPagas).forEach(([chave, pg]) => {
+        if (!pg || !pg.modo || pg.modo === 'total') return;
+        const o = partesChaveFatura(chave);
+        if (o.conta !== conta) return;
+        const k = (ano * 12 + mes) - (o.ano * 12 + o.mes);
+        const deQual = NOMES_MESES[o.mes].toLowerCase();
+        if (pg.modo === 'parcial' && k === 1) {
+          itens.push({ chave, rotulo: 'Saldo da fatura de ' + deQual, valor: parseVal(pg.saldo) });
+        } else if (pg.modo === 'parcelado' && pg.parcelamento && k >= 1 && k <= pg.parcelamento.n) {
+          const principal = (pg.parcelamento.principais || [])[k - 1];
+          itens.push({ chave, rotulo: `Parcelamento da fatura de ${deQual} ${k}/${pg.parcelamento.n}`, valor: parseVal(principal) });
+        }
+      });
+      return itens;
+    }
+
+    function categoriaDeJuros() {
+      const nome = 'Juros e encargos';
+      if (categorias.includes(nome)) return nome;
+      if (categoriasExcluidas.includes(nome)) return categoriaPadrao();
+      categorias.push(nome);
+      salvarCategorias();
+      popularSelectsCategorias();
+      return nome;
+    }
+
+    // Dia 1 cai sempre na fatura daquele mês: só compra DEPOIS do fechamento pula pra seguinte
+    function lancarJurosNaFatura(conta, mes, ano, valor, descricao, chave) {
+      lancamentos.unshift({
+        id: novoIdLancamento(),
+        tipo: 'despesa', descricao, conta,
+        formaModo: 'Crédito à Vista', numParcelas: '1',
+        categoria: categoriaDeJuros(),
+        observacao: 'Juros cobrados pelo banco sobre a fatura que não foi paga inteira',
+        data: ano + '-' + String(mes + 1).padStart(2, '0') + '-01',
+        valor: (Math.round(valor * 100) / 100).toFixed(2).replace('.', ','),
+        grupoViagemId: '', grupoViagemNome: '',
+        emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+        encargoFatura: chave
+      });
+    }
+
+    function mesAdiante(mes, ano, k) {
+      const d = new Date(ano, mes + k, 1);
+      return { mes: d.getMonth(), ano: d.getFullYear() };
     }
 
     // Total dos gastos fixos e movimento das últimas 24h: números pequenos, de
@@ -11343,7 +11543,9 @@
            soma do app continua à vista na linha de cada cartão, embaixo. */
         const total = pago ? pagoNoMes(m, a) : somaMes(m, a);
         const cor = (total <= 0 || futura) ? 'var(--texto-fraco)' : (pago ? 'var(--verde)' : 'var(--vermelho)');
-        const nota = futura ? 'em formação' : (total <= 0 ? 'sem fatura' : (pago ? 'paga' : 'em aberto'));
+        const modos = comCredito.map(c => (faturasPagas[chaveFatura(c.nome, m, a)] || {}).modo).filter(Boolean);
+        const notaPaga = modos.includes('parcelado') ? 'parcelada' : (modos.includes('parcial') ? 'paga em parte' : 'paga');
+        const nota = futura ? 'em formação' : (total <= 0 ? 'sem fatura' : (pago ? notaPaga : 'em aberto'));
         // O ano só aparece quando o trilho cruza a virada — dentro do mesmo ano
         // ele seria a mesma informação repetida treze vezes.
         const rotulo = a === anoCorrente ? NOMES_MESES[m].slice(0, 3) : NOMES_MESES[m].slice(0, 3) + '/' + String(a).slice(2);
@@ -11375,8 +11577,18 @@
            soma do app, com a diferença quando os dois não batem. O ajuste que
            cobre a diferença continua existindo — esta linha só deixa à vista,
            mês a mês, quanto fugiu do que você tinha lançado. */
+        const trazidos = itensTrazidosParaFatura(c.nome, mes, ano);
         let linhaApp = '';
-        if (pago) {
+        if (pago && pago.modo === 'parcial') {
+          const prox = NOMES_MESES[mesAdiante(mes, ano, 1).mes].toLowerCase();
+          linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">lançado no app ${fmtOculto(total)} · `
+            + `<span style="color:var(--amarelo);">${fmtOculto(parseVal(pago.saldo))} foi pra fatura de ${prox}</span>`
+            + (parseVal(pago.juros) > 0 ? ` + ${fmtOculto(parseVal(pago.juros))} de juros` : '') + `</div>`;
+        } else if (pago && pago.modo === 'parcelado') {
+          const pc = pago.parcelamento;
+          linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">lançado no app ${fmtOculto(total)} · `
+            + `<span style="color:var(--amarelo);">${pc.n}x de ${fmtOculto(parseVal(pc.valorParcela))}</span> · juros ${fmtOculto(parseVal(pc.juros))}</div>`;
+        } else if (pago) {
           const valorPago = parseVal(pago.valorPago);
           const ajustes = compras.filter(l => l.ajusteFatura).reduce((s, l) => s + parseVal(l.valor), 0);
           const semAjuste = total - ajustes;
@@ -11393,11 +11605,12 @@
         linha.className = 'item-lancamento';
         linha.innerHTML = `
           <div class="item-info">
-            <strong>${c.nome} ${compras.length ? `<span class="chevron-sec" style="font-size:11px;color:var(--texto-tenue);">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
+            <strong>${c.nome} ${(compras.length || trazidos.length) ? `<span class="chevron-sec" style="font-size:11px;color:var(--texto-tenue);">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
             <div style="font-size:11px;color:${pago ? 'var(--verde)' : 'var(--texto-fraco)'};">
               ${pago
-                ? '✓ paga em ' + pago.data.split('-').reverse().join('/')
-                : 'vence dia ' + diasDoCartao(c.nome).vence + textoMesDoVencimento(c.nome, mes, ano) + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')}
+                ? (pago.modo === 'parcelado' ? '✓ parcelada · entrada em ' : pago.modo === 'parcial' ? '✓ paga em parte em ' : '✓ paga em ') + pago.data.split('-').reverse().join('/')
+                : 'vence dia ' + diasDoCartao(c.nome).vence + textoMesDoVencimento(c.nome, mes, ano) + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')
+                  + (trazidos.length ? ' · ' + (trazidos.length === 1 ? 'inclui ' + trazidos[0].rotulo.toLowerCase() : 'inclui ' + trazidos.length + ' saldos anteriores') : '')}
             </div>
             ${linhaApp}
           </div>
@@ -11410,14 +11623,22 @@
           ev.stopPropagation();
           pago ? desfazerPagamentoFatura(c.nome, mes, ano) : abrirPagarFatura(c.nome, mes, ano);
         };
-        if (compras.length) linha.onclick = () => alternarFaturaExpandida(c.nome);
+        if (compras.length || trazidos.length) linha.onclick = () => alternarFaturaExpandida(c.nome);
         box.appendChild(linha);
 
         // O extrato: sem isto o card mostrava um total sem dizer do que era feito.
-        if (aberto && compras.length) {
+        if (aberto && (compras.length || trazidos.length)) {
           const det = document.createElement('div');
           det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid var(--borda);';
-          det.innerHTML = compras.map(l => `
+          // o que veio das faturas anteriores primeiro: é dívida, não compra deste mês
+          det.innerHTML = trazidos.map(t => `
+            <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);">
+              <div class="item-info">
+                <strong style="font-size:13px;">🔁 ${t.rotulo}</strong>
+                <div style="font-size:10.5px;color:var(--texto-fraco);">veio da fatura anterior · não conta de novo como gasto</div>
+              </div>
+              <span class="valor-despesa" style="font-size:13px;">${fmtOculto(t.valor)}</span>
+            </div>`).join('') + compras.map(l => `
             <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:pointer;"
                  data-detalhe="${l.id}" title="Ver os detalhes deste lançamento">
               <div class="item-info">
@@ -11454,26 +11675,97 @@
     }
 
     let faturaEmPagamento = null;
+    let modoPagamentoFatura = 'total';
 
     function abrirPagarFatura(conta, mes, ano) {
       const total = totalFaturaConta(conta, mes, ano);
       faturaEmPagamento = { conta, mes, ano, total };
       document.getElementById('tituloPagarFatura').textContent = conta + ' · ' + NOMES_MESES[mes];
       document.getElementById('faturaCalculada').textContent = fmtVal(total);
-      document.getElementById('faturaValorPago').value = 'R$ ' + total.toFixed(2).replace('.', ',');
+      const selN = document.getElementById('faturaNumParcelas');
+      if (!selN.options.length) {
+        for (let n = 2; n <= 24; n++) selN.insertAdjacentHTML('beforeend', `<option value="${n}">${n}x</option>`);
+        selN.value = '10';
+      }
+      document.getElementById('faturaJurosParcial').value = '';
+      document.getElementById('faturaValorParcela').value = '';
       document.getElementById('faturaDataPagamento').value = obterDataBrasilia();
-      previewAjusteFatura();
+      setModoPagamentoFatura('total');
       document.getElementById('modalPagarFatura').classList.remove('escondido');
+    }
+
+    function setModoPagamentoFatura(modo) {
+      modoPagamentoFatura = ['parcial', 'parcelado'].includes(modo) ? modo : 'total';
+      document.querySelectorAll('#modosPagamentoFatura .btn-periodo').forEach(b => {
+        b.classList.toggle('ativo', b.dataset.modo === modoPagamentoFatura);
+      });
+      document.getElementById('labelFaturaValorPago').textContent =
+        modoPagamentoFatura === 'parcial' ? 'Quanto você pagou'
+        : modoPagamentoFatura === 'parcelado' ? 'Entrada paga' : 'Valor que o banco cobrou';
+      document.getElementById('faturaValorPago').value = (modoPagamentoFatura === 'total' && faturaEmPagamento)
+        ? 'R$ ' + faturaEmPagamento.total.toFixed(2).replace('.', ',') : '';
+      document.getElementById('wrapJurosParcial').classList.toggle('escondido', modoPagamentoFatura !== 'parcial');
+      document.getElementById('wrapParceladoFatura').classList.toggle('escondido', modoPagamentoFatura !== 'parcelado');
+      previewAjusteFatura();
+    }
+
+    function lerDinheiro(id) {
+      return parseVal((document.getElementById(id).value || '').replace('R$', '').trim()) || 0;
     }
 
     function diferencaFatura() {
       if (!faturaEmPagamento) return 0;
-      const pago = parseVal(document.getElementById('faturaValorPago').value.replace('R$', '').trim());
-      return Math.round((pago - faturaEmPagamento.total) * 100) / 100;
+      return Math.round((lerDinheiro('faturaValorPago') - faturaEmPagamento.total) * 100) / 100;
+    }
+
+    /* Toda a conta do pagamento num lugar só: a prévia mostra, o confirmar
+       grava. `erro` preenchido = não deixa confirmar. */
+    function calcularPagamentoFatura() {
+      const f = faturaEmPagamento;
+      const T = f.total;
+      const valor = lerDinheiro('faturaValorPago');
+      const prox = n => NOMES_MESES[mesAdiante(f.mes, f.ano, n).mes].toLowerCase();
+      if (modoPagamentoFatura === 'parcial') {
+        const juros = lerDinheiro('faturaJurosParcial');
+        if (!(valor > 0)) return { erro: 'Digite quanto você pagou desta fatura.' };
+        if (valor >= T - 0.005) return { erro: 'Isso cobre a fatura inteira — use "Tudo".' };
+        const saldo = Math.round((T - valor) * 100) / 100;
+        return { modo: 'parcial', valor, saldo, juros,
+          texto: `Sobram <strong>${fmtVal(saldo)}</strong>, que vão pra fatura de ${prox(1)}`
+            + (juros > 0
+              ? `, junto com <strong>${fmtVal(juros)}</strong> de juros (entram como gasto em "Juros e encargos").`
+              : `. Se o banco cobrar juros e você não souber o valor agora, a diferença aparece como ajuste quando pagar ${prox(1)}.`) };
+      }
+      if (modoPagamentoFatura === 'parcelado') {
+        const n = parseInt(document.getElementById('faturaNumParcelas').value, 10) || 2;
+        const V = lerDinheiro('faturaValorParcela');
+        if (valor > T + 0.005) return { erro: 'A entrada passou do total da fatura.' };
+        const P = Math.round((T - valor) * 100) / 100;
+        if (!(V > 0)) return { erro: `Parcelado: ${fmtVal(P)}. Digite o valor de cada parcela, como aparece na simulação do banco.` };
+        const totalParc = Math.round(n * V * 100) / 100;
+        const J = Math.round((totalParc - P) * 100) / 100;
+        if (J < -0.005) return { erro: `As ${n} parcelas somam ${fmtVal(totalParc)}, menos que os ${fmtVal(P)} parcelados. Confira o valor da parcela.` };
+        // juros divididos igual entre as parcelas; o centavo que sobra vai na última
+        const jCada = Math.round(J / n * 100) / 100;
+        const juros = Array.from({ length: n }, (_, k) => k === n - 1 ? Math.round((J - jCada * (n - 1)) * 100) / 100 : jCada);
+        const principais = juros.map(j => Math.round((V - j) * 100) / 100);
+        return { modo: 'parcelado', valor, n, V, P, J, juros, principais,
+          texto: `Parcelado: <strong>${fmtVal(P)}</strong>. Vai pagar ${n} × ${fmtVal(V)} = ${fmtVal(totalParc)}.<br>`
+            + `Juros: <strong>${fmtVal(J)}</strong>${J > 0 ? ` (${fmtVal(jCada)} por mês, em "Juros e encargos")` : ''}.<br>`
+            + `De ${prox(1)} a ${prox(n)}: + ${fmtVal(V)} em cada fatura.` };
+      }
+      return { modo: 'total', valor };
     }
 
     function previewAjusteFatura() {
       const el = document.getElementById('previaAjusteFatura');
+      if (!faturaEmPagamento) return;
+      if (modoPagamentoFatura !== 'total') {
+        const c = calcularPagamentoFatura();
+        el.style.color = c.erro ? 'var(--amarelo)' : 'var(--texto-fraco)';
+        el.innerHTML = c.erro || c.texto;
+        return;
+      }
       const dif = diferencaFatura();
       if (Math.abs(dif) < 0.01) {
         el.style.color = 'var(--verde)';
@@ -11489,36 +11781,55 @@
     function confirmarPagarFatura() {
       if (!faturaEmPagamento) return;
       const { conta, mes, ano } = faturaEmPagamento;
-      const valorPago = parseVal(document.getElementById('faturaValorPago').value.replace('R$', '').trim());
       const dataPag = document.getElementById('faturaDataPagamento').value || obterDataBrasilia();
-      const dif = diferencaFatura();
+      const chave = chaveFatura(conta, mes, ano);
+      const c = calcularPagamentoFatura();
+      if (c.erro) { previewAjusteFatura(); return; }
+      const fmt = v => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
 
-      if (Math.abs(dif) >= 0.01) {
-        // dia 1 de propósito: antes do fechamento, então o ajuste cai na fatura
-        // deste mês e não na do mês seguinte
-        const dataAjuste = ano + '-' + String(mes + 1).padStart(2, '0') + '-01';
-        lancamentos.unshift({
-          id: novoIdLancamento(),
-          tipo: dif > 0 ? 'despesa' : 'receita',
-          descricao: dif > 0 ? 'Ajuste de fatura — não identificado' : 'Ajuste de fatura — estorno',
-          conta,
-          formaModo: 'Crédito à Vista',
-          numParcelas: '1',
-          categoria: dif > 0 ? categoriaPadrao() : '',
-          observacao: 'Diferença entre o valor somado no app e o cobrado pelo banco',
-          data: dataAjuste,
-          valor: Math.abs(dif).toFixed(2).replace('.', ','),
-          grupoViagemId: '', grupoViagemNome: '',
-          emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
-          ajusteFatura: true
+      if (c.modo === 'parcial') {
+        faturasPagas[chave] = { valorPago: fmt(c.valor), data: dataPag, modo: 'parcial', saldo: fmt(c.saldo), juros: fmt(c.juros) };
+        if (c.juros > 0) {
+          const p = mesAdiante(mes, ano, 1);
+          lancarJurosNaFatura(conta, p.mes, p.ano, c.juros, 'Juros do rotativo — fatura de ' + NOMES_MESES[mes].toLowerCase(), chave);
+        }
+      } else if (c.modo === 'parcelado') {
+        faturasPagas[chave] = {
+          valorPago: fmt(c.valor), data: dataPag, modo: 'parcelado',
+          parcelamento: { n: c.n, valorParcela: fmt(c.V), principal: fmt(c.P), juros: fmt(c.J), principais: c.principais.map(fmt) }
+        };
+        c.juros.forEach((j, k) => {
+          if (j < 0.005) return;
+          const p = mesAdiante(mes, ano, k + 1);
+          lancarJurosNaFatura(conta, p.mes, p.ano, j,
+            `Juros do parcelamento da fatura de ${NOMES_MESES[mes].toLowerCase()} (${k + 1}/${c.n})`, chave);
         });
-        salvarLocalStorage();
+      } else {
+        const valorPago = c.valor;
+        const dif = diferencaFatura();
+        if (Math.abs(dif) >= 0.01) {
+          // dia 1 de propósito: antes do fechamento, então o ajuste cai na fatura
+          // deste mês e não na do mês seguinte
+          const dataAjuste = ano + '-' + String(mes + 1).padStart(2, '0') + '-01';
+          lancamentos.unshift({
+            id: novoIdLancamento(),
+            tipo: dif > 0 ? 'despesa' : 'receita',
+            descricao: dif > 0 ? 'Ajuste de fatura — não identificado' : 'Ajuste de fatura — estorno',
+            conta,
+            formaModo: 'Crédito à Vista',
+            numParcelas: '1',
+            categoria: dif > 0 ? categoriaPadrao() : '',
+            observacao: 'Diferença entre o valor somado no app e o cobrado pelo banco',
+            data: dataAjuste,
+            valor: Math.abs(dif).toFixed(2).replace('.', ','),
+            grupoViagemId: '', grupoViagemNome: '',
+            emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+            ajusteFatura: true
+          });
+        }
+        faturasPagas[chave] = { valorPago: fmt(valorPago), data: dataPag };
       }
-
-      faturasPagas[chaveFatura(conta, mes, ano)] = {
-        valorPago: valorPago.toFixed(2).replace('.', ','),
-        data: dataPag
-      };
+      salvarLocalStorage();
       salvarFaturasPagas();
       fecharModal('modalPagarFatura');
       faturaEmPagamento = null;
@@ -11526,8 +11837,17 @@
     }
 
     function desfazerPagamentoFatura(conta, mes, ano) {
-      if (!confirm('Desmarcar esta fatura como paga? O lançamento de ajuste, se houver, continua — apague pela lista se não quiser mais.')) return;
-      delete faturasPagas[chaveFatura(conta, mes, ano)];
+      const chave = chaveFatura(conta, mes, ano);
+      const pg = faturasPagas[chave];
+      const levou = pg && (pg.modo === 'parcial' || pg.modo === 'parcelado');
+      if (!confirm(levou
+        ? 'Desmarcar este pagamento? O que foi levado pras próximas faturas (saldo ou parcelas) e os juros lançados saem junto.'
+        : 'Desmarcar esta fatura como paga? O lançamento de ajuste, se houver, continua — apague pela lista se não quiser mais.')) return;
+      delete faturasPagas[chave];
+      if (levou) {
+        lancamentos = lancamentos.filter(l => l.encargoFatura !== chave);
+        salvarLocalStorage();
+      }
       salvarFaturasPagas();
       atualizarTudo();
     }
@@ -12032,6 +12352,8 @@
       sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
       sel.value = contaPadraoReembolso();
       document.getElementById('dataAbater').value = obterDataBrasilia();
+      document.getElementById('formaAbater').value = '';
+      popularFormaSaida('Abater', !!devo);
       atualizarPreviaAbatimento();
       document.getElementById('modalAbaterValor').classList.remove('escondido');
     }
@@ -12092,9 +12414,10 @@
       });
       aplicarAbatimento(abertas, valor, c => ({ em: data, como: devo ? 'pago' : 'recebido', conta, por: porCompra.get(c.lanc.id).id }));
 
+      const saida = devo ? formaSaidaEscolhida('Abater') : null;
       porCompra.forEach(g => {
         const deQue = descricaoBaseCompra(g.lanc.descricao);
-        lancamentos.unshift({
+        const registro = {
           id: g.id,
           tipo: devo ? 'despesa' : 'receita',
           descricao: devo ? ('Paguei ' + nome + ' — ' + deQue) : 'Reembolso',
@@ -12113,7 +12436,9 @@
           reembolsoPessoa: nome,
           reembolsoDoQue: deQue,
           reembolsoAvulso: true
-        });
+        };
+        if (devo) lancarSaida(Object.assign(registro, { valor: Math.round(g.soma * 100) / 100 }), saida.forma, saida.parcelas);
+        else lancamentos.unshift(registro);
       });
 
       salvarLocalStorage();
@@ -12147,7 +12472,7 @@
       document.getElementById('tituloReceberEmprestimo').textContent = devo ? 'Registrar pagamento' : 'Registrar recebimento';
       document.getElementById('labelContaRecebimento').textContent = devo ? 'Saiu de qual conta?' : 'Caiu em qual conta?';
       document.getElementById('avisoReceberEmprestimo').innerHTML = devo
-        ? 'Ao confirmar, o valor sai como <strong>despesa à vista</strong> nessa conta — não entra em fatura de cartão.'
+        ? 'Ao confirmar, o valor sai como <strong>despesa</strong> nessa conta, na forma escolhida — no crédito, vai pra fatura do cartão.'
         : 'Ao confirmar, o valor entra como <strong>receita</strong> nessa conta e a cobrança sai daqui.';
       const detalhes = itens.map(c =>
         `<div class="linha-subtotal" style="cursor:default;"><span>${c.nome} · ${descricaoBaseCompra(c.lanc.descricao)}${rotuloParcela(c.lanc) ? ' (' + rotuloParcela(c.lanc) + ')' : ''}</span><strong>${fmtOculto(c.valor)}</strong></div>`
@@ -12164,6 +12489,8 @@
       sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
       sel.value = contaPadraoReembolso();
       document.getElementById('dataRecebimento').value = obterDataBrasilia();
+      document.getElementById('formaRecebimento').value = '';
+      popularFormaSaida('Recebimento', devo);
       document.getElementById('modalReceberEmprestimo').classList.remove('escondido');
     }
 
@@ -12176,6 +12503,7 @@
       localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
 
       const devo = itens[0].devo;
+      const saida = devo ? formaSaidaEscolhida('Recebimento') : null;
       itens.forEach(c => {
         const idReembolso = novoIdLancamento();
         marcarCobrancaQuitada(c, { em: data, como: devo ? 'pago' : 'recebido', conta, por: idReembolso });
@@ -12189,13 +12517,13 @@
            informação em campos próprios, pra quem precisa achar de novo (a
            reabertura da cobrança se um reembolso é excluído, e a lista "Lançamentos
            do mês" dentro de um grupo) não depender de reler a descrição. */
-        lancamentos.unshift({
+        const registro = {
           id: idReembolso,
           tipo: devo ? 'despesa' : 'receita',
           descricao: devo ? ('Paguei ' + c.nome + ' — ' + deQue) : 'Reembolso',
           conta,
-          // à vista de propósito: quitar dívida sai por pix/dinheiro/débito e não
-          // pode ir parar na fatura do cartão
+          // à vista de propósito: quitar dívida sai por pix/dinheiro/débito e
+          // não pode ir parar na fatura do cartão
           formaModo: 'À Vista / Débito',
           numParcelas: '1',
           categoria: devo ? categoriaPadrao() : '',
@@ -12210,7 +12538,9 @@
           reembolsoDe: c.lanc.id,
           reembolsoPessoa: c.nome,
           reembolsoDoQue: deQue
-        });
+        };
+        if (devo) lancarSaida(Object.assign(registro, { valor: c.valor }), saida.forma, saida.parcelas);
+        else lancamentos.unshift(registro);
       });
 
       salvarLocalStorage();
@@ -12274,6 +12604,15 @@
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
           return l.tipo === 'despesa' && eCredito(l.formaModo) && m === mes && a === ano;
         });
+        const trazidos = contas.filter(c => c.temCredito)
+          .reduce((acc, c) => acc.concat(itensTrazidosParaFatura(c.nome, mes, ano).map(t => Object.assign({ conta: c.nome }, t))), []);
+        if (trazidos.length) {
+          extrasHTML = trazidos.map(t => `
+            <div class="linha-subtotal" style="cursor:default;">
+              <span>🔁 ${t.conta} · ${t.rotulo}</span>
+              <strong style="color:var(--vermelho);">${fmtOculto(t.valor)}</strong>
+            </div>`).join('');
+        }
       } else if (tipoFiltro === 'conta') {
         // Mesma régua do saldo por conta: o que passou pela conta no mês. Compra
         // no crédito fica de fora aqui — ela só chega via pagamento da fatura.
@@ -15538,7 +15877,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.09.28-1';
+    const APP_VERSION = '2026.10.01-1';
 
     // Inicialização
     carregarLocalStorage();
