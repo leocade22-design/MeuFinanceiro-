@@ -832,16 +832,18 @@
           </div>
         </button>
         <div id="corpo-lancamentosMes" class="escondido" style="margin-top:12px;">
-          <!-- Separa o que passou pela conta do que está no cartão, sem tirar nada
-               da lista: "Tudo" continua sendo a visão cronológica do dia a dia. -->
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <div class="chips-periodo">
-              <button type="button" class="btn-periodo ativo" data-forma="tudo" onclick="setFiltroFormaLanc('tudo')">Tudo</button>
-              <button type="button" class="btn-periodo" data-forma="conta" onclick="setFiltroFormaLanc('conta')">Conta</button>
-              <button type="button" class="btn-periodo" data-forma="cartao" onclick="setFiltroFormaLanc('cartao')">Cartão</button>
-            </div>
+          <!-- Um botão discreto no lugar da fileira de chips: os filtros moram numa
+               janela, e só o que está ligado aparece aqui, cada um com o seu ✕. -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <button type="button" id="btnFiltrosLanc" class="btn-mini" onclick="abrirFiltrosLanc()"
+                    style="display:inline-flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span id="rotuloFiltrosLanc">Filtrar</span>
+            </button>
+            <span style="flex:1;"></span>
             <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
+          <div id="chipsFiltrosAtivos" class="escondido" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
           <div id="subtotalFormaLanc" style="font-size:11px;color:var(--texto-fraco);margin-bottom:10px;line-height:1.7;"></div>
           <div class="busca-box">
             <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
@@ -2164,6 +2166,21 @@
   </div>
 
   <!-- MODAL DE PAGAMENTO DE FATURA -->
+  <!-- FILTROS DA LISTA DE LANÇAMENTOS (aba Faturas) -->
+  <div id="modalFiltrosLanc" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalFiltrosLanc')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Filtrar lançamentos</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalFiltrosLanc')">&times;</button>
+      </div>
+      <div id="corpoFiltrosLanc"></div>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="limparRascunhoFiltros()">Limpar</button>
+        <button type="button" class="btn-salvar" id="btnAplicarFiltros" style="flex:1;margin:0;" onclick="aplicarFiltrosLanc()">Mostrar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalPagarFatura" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalPagarFatura')">
     <div class="modal-content">
       <div class="modal-header">
@@ -6689,18 +6706,182 @@
        do saldo do mês, aplicada à lista. */
     let filtroFormaLanc = 'tudo';
 
+    /* FILTROS DA LISTA
+       "Onde" é a régua de sempre (conta x cartão). Os outros são listas: vazio
+       = não filtra; com itens = só o que bate com algum deles. */
+    const FILTROS_VAZIOS = () => ({ onde: 'tudo', tipos: [], contas: [], formas: [], cats: [] });
+    let filtrosLanc = FILTROS_VAZIOS();
+    let rascunhoFiltros = null;
+
     function setFiltroFormaLanc(forma) {
-      filtroFormaLanc = forma;
-      document.querySelectorAll('#corpo-lancamentosMes .btn-periodo').forEach(b => {
-        b.classList.toggle('ativo', b.dataset.forma === forma);
-      });
+      filtrosLanc.onde = ['conta', 'cartao'].includes(forma) ? forma : 'tudo';
+      filtroFormaLanc = filtrosLanc.onde;
+      atualizarResumoFiltros();
       renderizarLancamentos();
     }
 
+    function tipoDoItem(item) {
+      return item.__transf ? 'transferencia' : (item.tipo === 'receita' ? 'receita' : 'despesa');
+    }
+
     function passaNoFiltroForma(item) {
-      if (filtroFormaLanc === 'tudo') return true;
-      const noCartao = !item.__transf && item.tipo === 'despesa' && eCredito(item.formaModo);
-      return filtroFormaLanc === 'cartao' ? noCartao : !noCartao;
+      const f = filtrosLanc;
+      if (f.onde !== 'tudo') {
+        const noCartao = !item.__transf && item.tipo === 'despesa' && eCredito(item.formaModo);
+        if ((f.onde === 'cartao') !== noCartao) return false;
+      }
+      if (f.tipos.length && !f.tipos.includes(tipoDoItem(item))) return false;
+      if (f.contas.length && !f.contas.includes(item.conta) && !f.contas.includes(item.contaDestino)) return false;
+      if (f.formas.length && (item.__transf || !f.formas.includes(rotuloDaForma(item.formaModo)))) return false;
+      if (f.cats.length && (item.__transf || item.tipo !== 'despesa' || !f.cats.includes(item.categoria || 'Outros'))) return false;
+      return true;
+    }
+
+    function qtdFiltrosAtivos(f) {
+      return (f.onde !== 'tudo' ? 1 : 0) + f.tipos.length + f.contas.length + f.formas.length + f.cats.length;
+    }
+
+    const ROTULO_ONDE = { conta: 'Pela conta', cartao: 'No cartão' };
+    const ROTULO_TIPO = { despesa: 'Despesas', receita: 'Receitas', transferencia: 'Transferências' };
+
+    // O botão diz quantos filtros estão ligados, e cada um vira uma etiqueta com ✕
+    function atualizarResumoFiltros() {
+      const f = filtrosLanc;
+      const n = qtdFiltrosAtivos(f);
+      const rot = document.getElementById('rotuloFiltrosLanc');
+      const btn = document.getElementById('btnFiltrosLanc');
+      if (rot) rot.textContent = n ? 'Filtros · ' + n : 'Filtrar';
+      if (btn) btn.classList.toggle('ativo', n > 0);
+      const box = document.getElementById('chipsFiltrosAtivos');
+      if (!box) return;
+      const etiquetas = [];
+      if (f.onde !== 'tudo') etiquetas.push({ txt: ROTULO_ONDE[f.onde], tirar: () => { f.onde = 'tudo'; } });
+      f.tipos.forEach(t => etiquetas.push({ txt: ROTULO_TIPO[t], tirar: () => { f.tipos = f.tipos.filter(x => x !== t); } }));
+      f.contas.forEach(c => etiquetas.push({ txt: c, tirar: () => { f.contas = f.contas.filter(x => x !== c); } }));
+      f.formas.forEach(c => etiquetas.push({ txt: c, tirar: () => { f.formas = f.formas.filter(x => x !== c); } }));
+      f.cats.forEach(c => etiquetas.push({ txt: c, tirar: () => { f.cats = f.cats.filter(x => x !== c); } }));
+      box.innerHTML = '';
+      box.classList.toggle('escondido', !etiquetas.length);
+      etiquetas.forEach(e => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip-destino on';
+        b.style.cssText = 'padding:4px 10px;font-size:11.5px;';
+        b.innerHTML = `${e.txt} <span style="opacity:.7;">✕</span>`;
+        b.onclick = () => { e.tirar(); filtroFormaLanc = f.onde; atualizarResumoFiltros(); renderizarLancamentos(); };
+        box.appendChild(b);
+      });
+      if (etiquetas.length > 1) {
+        const limpar = document.createElement('button');
+        limpar.type = 'button';
+        limpar.className = 'link-obs';
+        limpar.textContent = 'limpar';
+        limpar.onclick = () => { filtrosLanc = FILTROS_VAZIOS(); filtroFormaLanc = 'tudo'; atualizarResumoFiltros(); renderizarLancamentos(); };
+        box.appendChild(limpar);
+      }
+    }
+
+    function abrirFiltrosLanc() {
+      rascunhoFiltros = JSON.parse(JSON.stringify(filtrosLanc));
+      renderizarJanelaFiltros();
+      document.getElementById('modalFiltrosLanc').classList.remove('escondido');
+    }
+
+    // Só oferece o que existe: conta, forma e categoria que aparecem nos lançamentos
+    function opcoesDosFiltros() {
+      const formas = new Set(), cats = new Set();
+      lancamentos.forEach(l => {
+        if (l.formaModo) formas.add(rotuloDaForma(l.formaModo));
+        if (l.tipo === 'despesa') cats.add(l.categoria || 'Outros');
+      });
+      const ordemForma = ['Crédito', 'Débito', 'Pix', 'Dinheiro'];
+      return {
+        contas: contas.map(c => c.nome),
+        formas: [...formas].sort((a, b) => ((ordemForma.indexOf(a) + 1) || 99) - ((ordemForma.indexOf(b) + 1) || 99)),
+        cats: categoriasEmOrdem().filter(c => cats.has(c)).concat([...cats].filter(c => !categorias.includes(c)))
+      };
+    }
+
+    function renderizarJanelaFiltros() {
+      const r = rascunhoFiltros;
+      const op = opcoesDosFiltros();
+      const corpo = document.getElementById('corpoFiltrosLanc');
+      corpo.innerHTML = '';
+      const secao = (titulo, itens, marcado, alternar) => {
+        if (!itens.length) return;
+        const g = document.createElement('div');
+        g.className = 'form-group';
+        g.innerHTML = `<label>${titulo}</label><div class="chips-destino"></div>`;
+        const box = g.querySelector('.chips-destino');
+        itens.forEach(([valor, rotulo]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'chip-destino' + (marcado(valor) ? ' on' : '');
+          b.dataset.filtro = titulo + ':' + valor;
+          b.textContent = rotulo;
+          b.onclick = () => { alternar(valor); renderizarJanelaFiltros(); };
+          box.appendChild(b);
+        });
+        corpo.appendChild(g);
+      };
+      const alternarEm = lista => v => { const i = r[lista].indexOf(v); if (i >= 0) r[lista].splice(i, 1); else r[lista].push(v); };
+      secao('Onde', [['tudo', 'Tudo'], ['conta', 'Pela conta'], ['cartao', 'No cartão']], v => r.onde === v, v => { r.onde = v; });
+      secao('Tipo', Object.entries(ROTULO_TIPO), v => r.tipos.includes(v), alternarEm('tipos'));
+      secao('Conta', op.contas.map(c => [c, c]), v => r.contas.includes(v), alternarEm('contas'));
+      secao('Forma de pagamento', op.formas.map(c => [c, c]), v => r.formas.includes(v), alternarEm('formas'));
+      secao('Categoria', op.cats.map(c => [c, c]), v => r.cats.includes(v), alternarEm('cats'));
+      // o botão já diz quantos vão aparecer, antes de fechar a janela
+      const guardado = filtrosLanc;
+      filtrosLanc = r;
+      const n = contarItensVisiveis();
+      filtrosLanc = guardado;
+      document.getElementById('btnAplicarFiltros').textContent = n === 1 ? 'Mostrar 1 lançamento' : 'Mostrar ' + n + ' lançamentos';
+    }
+
+    function limparRascunhoFiltros() {
+      rascunhoFiltros = FILTROS_VAZIOS();
+      renderizarJanelaFiltros();
+    }
+
+    function aplicarFiltrosLanc() {
+      filtrosLanc = rascunhoFiltros || FILTROS_VAZIOS();
+      filtroFormaLanc = filtrosLanc.onde;
+      rascunhoFiltros = null;
+      fecharModal('modalFiltrosLanc');
+      atualizarResumoFiltros();
+      renderizarLancamentos();
+    }
+
+    /* O que a lista mostra: filtros + busca + recorte de mês. Separado pra
+       janela de filtros contar quantos vão aparecer antes de aplicar. */
+    function itensVisiveisDaLista(termo, escopoMes, chaveMesSel) {
+      const hoje = obterDataBrasilia();
+      // As transferências entram na mesma lista, com o mesmo filtro de mês e busca.
+      // Elas continuam fora de qualquer soma de receita/despesa — aqui é só registro.
+      const universo = lancamentos.concat(transferencias.map(transferenciaComoItem));
+      return universo.filter(item => {
+        if (!passaNoFiltroForma(item)) return false;
+        if (termo) {
+          const desc = textoSeguro(item.descricao || '');
+          const conta = textoSeguro(item.conta || '');
+          const cat = textoSeguro(item.categoria || '');
+          const obs = textoSeguro(item.observacao || '');
+          const grupo = textoSeguro(item.grupoViagemNome || '');
+          const destino = textoSeguro(item.contaDestino || '');
+          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo)
+            || obs.includes(termo) || grupo.includes(termo) || destino.includes(termo)
+            || dataBateComTermo(item.data, termo);
+        }
+        if (escopoMes) return (item.data || '').slice(0, 7) === chaveMesSel;
+        // "ver todos": parcelas futuras não aparecem — efetivam conforme o vencimento
+        return item.data <= hoje;
+      });
+    }
+
+    function contarItensVisiveis() {
+      const termo = (document.getElementById('inputBusca')?.value || '').toLowerCase().trim();
+      const ref = getMesReferencia(faturaMesOffset);
+      return itensVisiveisDaLista(termo, !mostrarTodosLancamentos && !termo, chaveMesAno(ref.getFullYear(), ref.getMonth())).length;
     }
 
     function renderizarLancamentos() {
@@ -6724,26 +6905,7 @@
       }
 
       const hoje = obterDataBrasilia();
-      // As transferências entram na mesma lista, com o mesmo filtro de mês e busca.
-      // Elas continuam fora de qualquer soma de receita/despesa — aqui é só registro.
-      const universo = lancamentos.concat(transferencias.map(transferenciaComoItem));
-      const filtrados = universo.filter(item => {
-        if (!passaNoFiltroForma(item)) return false;
-        if (termo) {
-          const desc = textoSeguro(item.descricao || '');
-          const conta = textoSeguro(item.conta || '');
-          const cat = textoSeguro(item.categoria || '');
-          const obs = textoSeguro(item.observacao || '');
-          const grupo = textoSeguro(item.grupoViagemNome || '');
-          const destino = textoSeguro(item.contaDestino || '');
-          return desc.includes(termo) || conta.includes(termo) || cat.includes(termo)
-            || obs.includes(termo) || grupo.includes(termo) || destino.includes(termo)
-            || dataBateComTermo(item.data, termo);
-        }
-        if (escopoMes) return (item.data || '').slice(0, 7) === chaveMesSel;
-        // "ver todos": parcelas futuras não aparecem — efetivam conforme o vencimento
-        return item.data <= hoje;
-      });
+      const filtrados = itensVisiveisDaLista(termo, escopoMes, chaveMesSel);
 
       // O subtotal fala do que está na tela agora — inclusive quando o filtro está
       // em "Tudo", onde ele separa as duas réguas em vez de somar uma coisa só.
@@ -6769,8 +6931,10 @@
       }
 
       if (filtrados.length === 0) {
-        const vazio = filtroFormaLanc === 'cartao' ? 'Nenhuma compra no cartão neste período.'
+        const vazio = qtdFiltrosAtivos(filtrosLanc) > 1 ? 'Nenhum lançamento com esses filtros neste período.'
+          : filtroFormaLanc === 'cartao' ? 'Nenhuma compra no cartão neste período.'
           : filtroFormaLanc === 'conta' ? 'Nada passou pela conta neste período.'
+          : qtdFiltrosAtivos(filtrosLanc) ? 'Nenhum lançamento com esse filtro neste período.'
           : 'Nenhum lançamento neste mês.';
         container.innerHTML = `<p style="color:var(--texto-medio); font-size:13px; padding:10px 0;">${termo ? 'Nenhum lançamento encontrado para a pesquisa.' : vazio}</p>`;
         return;
@@ -15877,7 +16041,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.10.01-1';
+    const APP_VERSION = '2026.10.03-1';
 
     // Inicialização
     carregarLocalStorage();

@@ -143,10 +143,14 @@ fs.mkdirSync(OUT, { recursive: true });
   await secao('lancamentosMes', true);
   await tiro('lista', '[data-card="lancamentosMes"]', { });
   // a mesma lista com o filtro "Cartão" ligado, pra mostrar a separação
-  await page.click('#corpo-lancamentosMes .btn-periodo[data-forma="cartao"]');
+  await page.evaluate(()=>setFiltroFormaLanc('cartao'));
   await page.waitForTimeout(400);
   await tiro('lista_cartao', '[data-card="lancamentosMes"]');
-  await page.click('#corpo-lancamentosMes .btn-periodo[data-forma="tudo"]');
+  // a janela de filtros aberta
+  await page.evaluate(()=>abrirFiltrosLanc());
+  await page.waitForTimeout(300);
+  await tiro('filtros_lanc', '#modalFiltrosLanc .modal-content');
+  await page.evaluate(()=>{ fecharModal('modalFiltrosLanc'); setFiltroFormaLanc('tudo'); });
   await page.waitForTimeout(300);
   await secao('lancamentosMes', false);
 
