@@ -1,7 +1,8 @@
 /* EMPRÉSTIMOS E COBRANÇAS — quem me deve, quanto e como a dívida vai embora:
    meio a meio, rateio entre várias pessoas, valor cheio, receber, desfazer o
    recebimento, quitar sem movimentação, "Recebi um valor" (abate das mais
-   antigas), empréstimo indireto e o grupo de gastos. */
+   antigas, e o valor a mais que fica com quem recebeu), empréstimo indireto e
+   o grupo de gastos. */
 const { iniciar } = require('./ajuda');
 
 iniciar('05 · empréstimos', async t => {
@@ -89,6 +90,36 @@ iniciar('05 · empréstimos', async t => {
     return { previa: __texto('#previaAbatimento'), bloqueado: document.getElementById('btnConfirmarAbater').disabled };
   });
   t.ok(/Passou R\$ 40,00/.test(passou.previa) && passou.bloqueado, 'valor maior que a dívida: avisa e não deixa confirmar');
+  const ficou = await p.evaluate(() => {
+    // o Borges deve só os R$ 10 do Uber e manda R$ 10,01: a diferença fica comigo
+    document.getElementById('valorAbater').value = 'R$ 10,01';
+    atualizarPreviaAbatimento();
+    const caixinha = !document.getElementById('wrapDiferencaAbater').classList.contains('escondido');
+    const rotulo = __texto('#rotuloDiferencaAbater');
+    const travado = document.getElementById('btnConfirmarAbater').disabled;
+    document.getElementById('chkDiferencaAbater').checked = true;
+    atualizarPreviaAbatimento();
+    const previa = __texto('#previaAbatimento');
+    const liberado = !document.getElementById('btnConfirmarAbater').disabled;
+    confirmarAbatimento();
+    const r = lancamentos.find(l => l.reembolsoAvulso && l.valorAMais);
+    return { caixinha, rotulo, travado, previa, liberado, valor: r && r.valor, aMais: r && r.valorAMais, obs: r && r.observacao,
+      deveAinda: cobrancasAbertas().filter(c => c.nome === 'Borges').length };
+  });
+  console.log('   prévia:', ficou.previa);
+  t.ok(ficou.caixinha && /Ficar com os R\$ 0,01 a mais, sem dever nada a Borges/.test(ficou.rotulo) && ficou.travado,
+    'passou R$ 0,01: aparece "Ficar com os R$ 0,01 a mais", e o Confirmar só libera marcando');
+  t.ok(ficou.liberado && /fica tudo quitado/.test(ficou.previa) && /entram junto no reembolso/.test(ficou.previa), 'marcada: a prévia diz que fica tudo quitado e a diferença entra junto no reembolso');
+  t.ok(ficou.valor === '10,01' && ficou.aMais === '0,01' && /R\$ 0,01 a mais ficou com você/.test(ficou.obs), 'o reembolso é de R$ 10,01, o que caiu de verdade, e anota a diferença');
+  t.ok(ficou.deveAinda === 0, 'o Borges não deve mais nada, e a diferença não vira dívida sua com ele');
+  const lixo = await p.evaluate(() => {
+    const r = lancamentos.find(l => l.reembolsoAvulso && l.valorAMais);
+    excluirLancamento(r.id);
+    const reabriu = cobrancasAbertas().filter(c => c.nome === 'Borges').map(c => c.valor.toFixed(2));
+    restaurarDaLixeira(lixeira.findIndex(x => x.id === r.id));
+    return { reabriu, depois: cobrancasAbertas().filter(c => c.nome === 'Borges').length, voltou: lancamentos.some(l => l.id === r.id) };
+  });
+  t.ok(lixo.reabriu.join() === '10.00' && lixo.voltou && lixo.depois === 0, 'apagar esse reembolso reabre só os R$ 10 da dívida; devolver da lixeira quita de novo');
   await p.evaluate(() => fecharModal('modalAbaterValor'));
 
   t.secao('EMPRÉSTIMO INDIRETO (PAGARAM POR MIM)');
@@ -100,7 +131,22 @@ iniciar('05 · empréstimos', async t => {
     return { devo: c && c.devo, valor: c && c.valor, recebido: resumoFaturaAtual.totalRecebimentos };
   });
   t.ok(indireto.devo && indireto.valor === 250, 'vira uma dívida minha com a Mãe, de R$ 250');
-  t.ok(indireto.recebido === 100 + 10, 'e não entra como receita: o "recebido" do mês são só os reembolsos (R$ 110)');
+  t.ok(Math.abs(indireto.recebido - 120.01) < 0.001, 'e não entra como receita: o "recebido" do mês são só os reembolsos (R$ 100 + R$ 10 + R$ 10,01)');
+
+  t.secao('PAGUEI UM VALOR A MAIS');
+  const paguei = await p.evaluate(() => {
+    abrirAbaterValor('Mãe', true);
+    document.getElementById('valorAbater').value = 'R$ 250,50';
+    atualizarPreviaAbatimento();
+    const rotulo = __texto('#rotuloDiferencaAbater');
+    document.getElementById('chkDiferencaAbater').checked = true;
+    atualizarPreviaAbatimento();
+    confirmarAbatimento();
+    const d = lancamentos.find(l => l.tipo === 'despesa' && l.valorAMais);
+    return { rotulo, valor: d && d.valor, aMais: d && d.valorAMais, deve: cobrancasAbertas().filter(c => c.nome === 'Mãe').length };
+  });
+  t.ok(/Mãe fica com os R\$ 0,50 a mais, sem te dever nada/.test(paguei.rotulo) && paguei.valor === '250,50' && paguei.aMais === '0,50' && paguei.deve === 0,
+    'do outro lado também: paguei R$ 250,50 de uma dívida de R$ 250, a Mãe fica com a diferença e ninguém deve nada');
 
   t.secao('GRUPO DE GASTOS');
   await lancarEmprestado({ descricao: 'Pousada', valor: '900,00' }, { emprestimoPara: 'Borges, Ana', emprestimoRateioIncluiVoce: '1' });

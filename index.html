@@ -280,6 +280,8 @@
     select, input { background-color: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; color: var(--texto); font-size: 16px; outline: none; width: 100%; }
     select:focus, input:focus { border-color: var(--borda-forte); }
     .btn-salvar { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: var(--bege); color: var(--fundo); font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 8px; }
+    /* travado tem que parecer travado: senão o toque não faz nada e parece defeito */
+    .btn-salvar:disabled { opacity: .45; cursor: not-allowed; }
     .btn-cancelar { width: 100%; padding: 10px; border: 1px solid var(--borda-forte); border-radius: 8px; background-color: transparent; color: var(--texto-medio); font-size: 13px; cursor: pointer; margin-top: 6px; }
     .escondido { display: none !important; }
     .item-lancamento { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--borda); cursor: pointer; }
@@ -2316,6 +2318,12 @@
         </div>
       </div>
       <div class="box-resumo-modal" id="previaAbatimento" style="margin-bottom:12px;"></div>
+      <!-- valor acima do que se deve (a pessoa arredondou pra cima): a diferença
+           fica com quem recebeu, sem virar dívida de ninguém -->
+      <label class="check-credito escondido" id="wrapDiferencaAbater">
+        <input type="checkbox" id="chkDiferencaAbater" onchange="atualizarPreviaAbatimento()">
+        <span id="rotuloDiferencaAbater"></span>
+      </label>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalAbaterValor')">Cancelar</button>
         <button type="button" class="btn-salvar" id="btnConfirmarAbater" style="flex:1;margin:0;" onclick="confirmarAbatimento()">Confirmar</button>
@@ -8163,7 +8171,8 @@
           const quem = limpo.reembolsoPessoa || (original && dadosDoReembolso(limpo).quem);
           if (original) {
             const abertas = cobrancasDoLancamento(original).filter(c => !c.quitado && (!quem || c.nome === quem));
-            aplicarAbatimento(ordenarParaAbater(abertas), parseVal(limpo.valor),
+            // o que veio a mais (e ficou com quem recebeu) nunca foi dívida
+            aplicarAbatimento(ordenarParaAbater(abertas), parseVal(limpo.valor) - parseVal(limpo.valorAMais),
               { em: limpo.data, como: limpo.tipo === 'despesa' ? 'pago' : 'recebido', conta: limpo.conta, por: limpo.id });
           }
         }
@@ -13137,6 +13146,7 @@
         : nome + ' pagou um valor que não bate com nenhuma dívida? O app abate das mais antigas primeiro.';
       document.getElementById('labelContaAbater').textContent = devo ? 'Saiu de qual conta?' : 'Caiu em qual conta?';
       document.getElementById('valorAbater').value = '';
+      document.getElementById('chkDiferencaAbater').checked = false;
       const sel = document.getElementById('contaAbater');
       sel.innerHTML = contas.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
       sel.value = contaPadraoReembolso();
@@ -13155,12 +13165,26 @@
       const valor = parseVal((document.getElementById('valorAbater').value || '').replace('R$', '').trim()) || 0;
       const abertas = ordenarParaAbater(cobrancasDaPessoa(nome, devo));
       const totalDevido = abertas.reduce((s, c) => s + c.valor, 0);
+      const wrapDif = document.getElementById('wrapDiferencaAbater');
+      const chkDif = document.getElementById('chkDiferencaAbater');
       if (valor <= 0) {
         box.innerHTML = `<div style="font-size:12px;color:var(--texto-fraco);">${devo ? 'Você deve' : nome + ' deve'} ${fmtOculto(totalDevido)} no total. Digite o valor ${devo ? 'que você pagou' : 'que entrou'}.</div>`;
+        wrapDif.classList.add('escondido');
+        chkDif.checked = false;
         btn.disabled = true;
         return;
       }
       const { plano, sobra } = planejarAbatimento(abertas, valor);
+      /* Passou do que se deve: a pessoa mandou o valor cheio (R$ 150 por uma
+         dívida de R$ 149,99). Só com a caixinha marcada a diferença fica com
+         quem recebeu — sem ela, continua parecendo engano de digitação. */
+      const passou = sobra >= 0.005 && plano.length > 0;
+      wrapDif.classList.toggle('escondido', !passou);
+      if (!passou) chkDif.checked = false;
+      document.getElementById('rotuloDiferencaAbater').textContent = devo
+        ? `${nome} fica com os ${fmtOculto(sobra)} a mais, sem te dever nada`
+        : `Ficar com os ${fmtOculto(sobra)} a mais, sem dever nada a ${nome}`;
+      const ficaDiferenca = passou && chkDif.checked;
       const linhas = plano.map(p => {
         const nomeDivida = descricaoBaseCompra(p.c.lanc.descricao) + (p.c.rotulo ? ' ' + p.c.rotulo : (rotuloParcela(p.c.lanc) ? ' ' + rotuloParcela(p.c.lanc) : ''));
         return `<div class="linha-subtotal" style="cursor:default;align-items:flex-start;">
@@ -13172,12 +13196,14 @@
       box.innerHTML = `
         <div style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;margin-bottom:4px;">Vai abater assim</div>
         ${linhas}
-        <div style="font-size:11px;margin-top:6px;color:${sobra >= 0.005 ? 'var(--vermelho)' : 'var(--texto-fraco)'};">
-          ${sobra >= 0.005
-            ? `Passou ${fmtOculto(sobra)} do que ${devo ? 'você deve' : nome + ' deve'} (${fmtOculto(totalDevido)}). Confira o valor.`
+        <div style="font-size:11px;margin-top:6px;color:${sobra >= 0.005 && !ficaDiferenca ? 'var(--vermelho)' : 'var(--texto-fraco)'};">
+          ${ficaDiferenca
+            ? `Com isso fica tudo quitado. Os ${fmtOculto(sobra)} a mais ${devo ? 'saem junto no pagamento' : 'entram junto no reembolso'}.`
+            : sobra >= 0.005
+            ? `Passou ${fmtOculto(sobra)} do que ${devo ? 'você deve' : nome + ' deve'} (${fmtOculto(totalDevido)}). Confira o valor${passou ? (devo ? ', ou marque abaixo se a diferença fica com ' + nome : ', ou marque abaixo pra ficar com a diferença') : ''}.`
             : restante >= 0.005 ? `Depois disso ${devo ? 'você ainda deve' : nome + ' ainda deve'} ${fmtOculto(restante)}.` : 'Com isso fica tudo quitado.'}
         </div>`;
-      btn.disabled = sobra >= 0.005 || !plano.length;
+      btn.disabled = !plano.length || (sobra >= 0.005 && !ficaDiferenca);
     }
 
     function confirmarAbatimento() {
@@ -13186,7 +13212,12 @@
       const valor = parseVal((document.getElementById('valorAbater').value || '').replace('R$', '').trim()) || 0;
       const abertas = ordenarParaAbater(cobrancasDaPessoa(nome, devo));
       const { plano, sobra } = planejarAbatimento(abertas, valor);
-      if (!plano.length || sobra >= 0.005) return;
+      const ficaDiferenca = document.getElementById('chkDiferencaAbater').checked;
+      if (!plano.length || (sobra >= 0.005 && !ficaDiferenca)) return;
+      // o que passou da dívida vai junto no lançamento da última compra abatida,
+      // pra o valor lançado ser o que de fato entrou (ou saiu) da conta
+      const aMais = sobra >= 0.005 ? sobra : 0;
+      const compraDaDiferenca = plano[plano.length - 1].c.lanc.id;
       const conta = document.getElementById('contaAbater').value || primeiraConta();
       const data = document.getElementById('dataAbater').value || obterDataBrasilia();
       localStorage.setItem(CHAVE_CONTA_REEMBOLSO, conta);
@@ -13206,6 +13237,8 @@
       const saida = devo ? formaSaidaEscolhida('Abater') : null;
       porCompra.forEach(g => {
         const deQue = descricaoBaseCompra(g.lanc.descricao);
+        const extra = g.lanc.id === compraDaDiferenca ? aMais : 0;
+        const total = Math.round((g.soma + extra) * 100) / 100;
         const registro = {
           id: g.id,
           tipo: devo ? 'despesa' : 'receita',
@@ -13215,9 +13248,10 @@
           numParcelas: '1',
           categoria: devo ? categoriaPadrao() : '',
           observacao: (devo ? 'Pagamento de empréstimo' : nome + ' — ' + deQue)
-            + ` · parte de um pagamento de ${fmtVal(valor)}${g.parcial ? ' (abateu uma parte)' : ''}`,
+            + ` · parte de um pagamento de ${fmtVal(valor)}${g.parcial ? ' (abateu uma parte)' : ''}`
+            + (extra ? ` · ${fmtVal(extra)} a mais ficou com ${devo ? nome : 'você'}` : ''),
           data,
-          valor: (Math.round(g.soma * 100) / 100).toFixed(2).replace('.', ','),
+          valor: total.toFixed(2).replace('.', ','),
           grupoViagemId: g.lanc.grupoViagemId || '',
           grupoViagemNome: g.lanc.grupoViagemNome || '',
           emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
@@ -13226,7 +13260,9 @@
           reembolsoDoQue: deQue,
           reembolsoAvulso: true
         };
-        if (devo) lancarSaida(Object.assign(registro, { valor: Math.round(g.soma * 100) / 100 }), saida.forma, saida.parcelas);
+        // guardado à parte: devolver da lixeira abate só o que era dívida
+        if (extra) registro.valorAMais = extra.toFixed(2).replace('.', ',');
+        if (devo) lancarSaida(Object.assign(registro, { valor: total }), saida.forma, saida.parcelas);
         else lancamentos.unshift(registro);
       });
 
@@ -16708,7 +16744,7 @@ function confirmarLancamentoVoz() {
     }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.10.11-2';
+    const APP_VERSION = '2026.10.11-3';
 
     // Inicialização
     carregarLocalStorage();
