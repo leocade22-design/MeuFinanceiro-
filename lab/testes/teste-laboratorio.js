@@ -13,7 +13,13 @@
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const { chromium } = require(process.env.PLAYWRIGHT || 'playwright');
+const { spawnSync } = require('child_process');
+const { chromium } = (() => {
+  for (const c of [process.env.PLAYWRIGHT, 'playwright', '/opt/node22/lib/node_modules/playwright'].filter(Boolean)) {
+    try { return require(c); } catch (e) { /* tenta o próximo */ }
+  }
+  throw new Error('Playwright não encontrado: rode "npm i playwright" ou aponte a variável PLAYWRIGHT para a pasta dele.');
+})();
 
 const RAIZ = path.join(__dirname, '..', '..');
 const FOTOS = path.join(__dirname, 'fotos');
@@ -143,6 +149,8 @@ function servir() {
   ok(escritas.length > 0 && escritas.every(k => k.startsWith('meu_financeiro_lab_')), 'tudo o que o laboratório grava tem o prefixo meu_financeiro_lab_');
   ok(iguaisAoAntes(await gavetasPrincipais(lab)), 'o app de verdade continua com os mesmos dados e o mesmo tema');
   const fonte = fs.readFileSync(path.join(RAIZ, 'lab', 'index.html'), 'utf8');
+  const emDia = spawnSync(process.execPath, [path.join(RAIZ, 'lab', 'gerar-lab.js'), '--verificar'], { encoding: 'utf8' });
+  ok(emDia.status === 0, 'lab/index.html em dia com o app principal (senão: node lab/gerar-lab.js)');
   ok(!/meu_financeiro_(?!lab_)/.test(fonte) && !/'valoresOcultos'/.test(fonte), 'lab/index.html não tem nenhum nome de gaveta do app de verdade');
 
   /* ═══ 4) SERVICE WORKER E CACHE SEPARADOS ═══ */
