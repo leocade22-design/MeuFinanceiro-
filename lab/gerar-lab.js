@@ -6,6 +6,7 @@
    app principal mudar, e o laboratório acompanha:
 
        node lab/gerar-lab.js
+       node lab/gerar-lab.js --verificar   (só confere, sem gravar)
 
    O que muda na cópia:
    - GAVETAS: todo nome de gaveta do localStorage ganha o prefixo
@@ -92,6 +93,14 @@ html = html.replace('<!DOCTYPE html>', `<!DOCTYPE html>
 <!-- LABORATÓRIO — gerado por lab/gerar-lab.js a partir do index.html principal
      (versão ${versaoBase}). Não edite este arquivo à mão: mude o gerador, o
      lab.js ou o código das fases e rode o gerador de novo. -->`);
+
+// --verificar: não grava nada, só diz se o lab/index.html está em dia com o app
+if (process.argv.includes('--verificar')) {
+  const atual = fs.existsSync(DESTINO) ? fs.readFileSync(DESTINO, 'utf8') : '';
+  if (atual === html) { console.log(`lab/index.html em dia com a versão ${versaoBase} do app.`); process.exit(0); }
+  console.log(`lab/index.html desatualizado: o app principal mudou (versão ${versaoBase}). Rode node lab/gerar-lab.js.`);
+  process.exit(1);
+}
 
 fs.writeFileSync(DESTINO, html);
 console.log(`lab/index.html gerado a partir da versão ${versaoBase}: ` +

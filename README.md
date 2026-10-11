@@ -69,6 +69,41 @@ Vale lembrar que esse servidor não manda `Cache-Control`, então ele não
 reproduz o cenário de cache que o Pages cria. Pra testar atualização do app
 instalado, é preciso um servidor que envie `Cache-Control: max-age=600`.
 
+## Testes automáticos
+
+```
+node testes/rodar-todos.js          # tudo (uns 40 segundos)
+node testes/rodar-todos.js 03 lab   # só as suítes que começam com 03 e o laboratório
+```
+
+Os testes abrem o app de verdade num Chromium sem janela (Playwright), num
+servidor local que imita o caminho do GitHub Pages, e mexem nele como a
+pessoa mexeria. Cada suíte começa com o armazenamento limpo, e as datas são
+relativas a hoje, então dá pra rodar em qualquer dia do mês. Erro de
+JavaScript na página conta como falha. Rode antes de abrir um PR. Numa
+máquina nova, instale o Playwright antes: `npm i playwright` e
+`npx playwright install chromium`.
+
+| Suíte | O que confere |
+|-------|---------------|
+| `01-sanidade` | Cenário cheio, as seis abas, o backup indo e voltando, os oito temas |
+| `02-lancamentos` | Formulário e confirmação, parcelado, edição, lixeira, transferência, filtros da lista |
+| `03-faturas` | Em que fatura a compra cai, pagar tudo com ajuste, em partes, levar o resto, parcelar |
+| `04-saldo` | A régua do caixa: débito, crédito, boleto a pagar, transferência, saldo inicial e correção |
+| `05-emprestimos` | Meio a meio, rateio, receber e desfazer, quitar, "Recebi um valor", indireto, grupo |
+| `06-fixos-e-consorcios` | Projeção de 12 meses, "Paguei", editar e excluir fixo, parcelas e encerramento do consórcio |
+| `07-investimentos` | Aporte pelo lançamento, os dois andando juntos, valor do grupo, total com consórcio |
+| `08-graficos-e-consulta` | A régua do consumo, metas, descontar reembolsos, ranking, respostas da Consulta rápida |
+| `09-categorias-e-contatos` | Criar, renomear, excluir (e não voltar sozinha), nome canônico, renomear contato |
+| `10-telas` | Em 360 e 412 px, nada rola pro lado; fotos de cada aba |
+| `lab` | Isolamento do laboratório, a cópia de dados, a Fase 1, e se ele está em dia com o app |
+
+O resultado aparece na tela, e a saída completa fica em
+`testes/fotos/ultima-rodada.txt`, junto com as fotos. A pasta `fotos/` não
+vai pro repositório. Uma função nova pede uma verificação nova, na suíte da
+área dela. A base comum está em `testes/ajuda.js`: abrir o app, preencher
+dados, lançar pelo formulário, datas relativas.
+
 ## Laboratório
 
 **No ar em:** https://leocade22-design.github.io/MeuFinanceiro-/lab/
