@@ -69,6 +69,28 @@ Vale lembrar que esse servidor não manda `Cache-Control`, então ele não
 reproduz o cenário de cache que o Pages cria. Pra testar atualização do app
 instalado, é preciso um servidor que envie `Cache-Control: max-age=600`.
 
+## Laboratório
+
+**No ar em:** https://leocade22-design.github.io/MeuFinanceiro-/lab/
+
+Uma cópia do app, à parte, onde as ideias novas (o projeto de planejamento:
+orçamento, limites, metas) são testadas antes de entrar no app de verdade. Tem
+nome, ícone e uma faixa roxa próprios, e guarda tudo em gavetas com o prefixo
+`meu_financeiro_lab_`. Isso é obrigatório: os dois ficam no mesmo endereço e
+dividem o armazenamento do navegador.
+
+- **Dados:** na primeira visita ele oferece copiar os dados do app de verdade,
+  sempre só de lá pra cá. O botão "copiar dados" da faixa repete a cópia.
+- **Gerado, não editado:** `lab/index.html` sai do `index.html` principal pelo
+  `node lab/gerar-lab.js`. Rode de novo sempre que o app mudar, e o
+  laboratório acompanha. O que é só do laboratório fica em `lab/lab.js`, e
+  cada fase do projeto num arquivo próprio (`lab/fase1-planejamento.js`).
+- **Service worker e cache próprios:** `lab/sw.js` só apaga caches que começam
+  com `meu-financeiro-lab-`. Mude `VERSAO` ali e `LAB_VERSAO` em `lab/lab.js`
+  juntos.
+- **Teste:** `node lab/testes/teste-laboratorio.js` (precisa do Playwright).
+  Ele confere que o laboratório nunca grava nas gavetas do app de verdade.
+
 ## Estrutura
 
 Tudo em `index.html`: estilos no `<style>` do topo, marcação das cinco abas
