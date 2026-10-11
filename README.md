@@ -73,7 +73,7 @@ instalado, é preciso um servidor que envie `Cache-Control: max-age=600`.
 
 ```
 node testes/rodar-todos.js          # tudo (uns 40 segundos)
-node testes/rodar-todos.js 03 lab   # só as suítes que começam com 03 e o laboratório
+node testes/rodar-todos.js 03 11    # só as suítes que começam com 03 e 11
 ```
 
 Os testes abrem o app de verdade num Chromium sem janela (Playwright), num
@@ -93,38 +93,16 @@ máquina nova, instale o Playwright antes: `npm i playwright` e
 | `05-emprestimos` | Meio a meio, rateio, receber e desfazer, quitar, "Recebi um valor", indireto, grupo |
 | `06-fixos-e-consorcios` | Projeção de 12 meses, "Paguei", editar e excluir fixo, parcelas e encerramento do consórcio |
 | `07-investimentos` | Aporte pelo lançamento, os dois andando juntos, valor do grupo, total com consórcio |
-| `08-graficos-e-consulta` | A régua do consumo, metas, descontar reembolsos, ranking, respostas da Consulta rápida |
+| `08-graficos-e-consulta` | A régua do consumo, a linha de meta, descontar reembolsos, ranking, respostas da Consulta rápida |
 | `09-categorias-e-contatos` | Criar, renomear, excluir (e não voltar sozinha), nome canônico, renomear contato |
 | `10-telas` | Em 360 e 412 px, nada rola pro lado; fotos de cada aba |
-| `lab` | Isolamento do laboratório, a cópia de dados, a Fase 1, e se ele está em dia com o app |
+| `11-planejamento` | Metas do mês: o plano que nasce das metas, cores, orçamento, renda, o que conta como gasto, histórico mês a mês, backup; e a limpeza das sobras do antigo laboratório |
 
 O resultado aparece na tela, e a saída completa fica em
 `testes/fotos/ultima-rodada.txt`, junto com as fotos. A pasta `fotos/` não
 vai pro repositório. Uma função nova pede uma verificação nova, na suíte da
 área dela. A base comum está em `testes/ajuda.js`: abrir o app, preencher
 dados, lançar pelo formulário, datas relativas.
-
-## Laboratório
-
-**No ar em:** https://leocade22-design.github.io/MeuFinanceiro-/lab/
-
-Uma cópia do app, à parte, onde as ideias novas (o projeto de planejamento:
-orçamento, limites, metas) são testadas antes de entrar no app de verdade. Tem
-nome, ícone e uma faixa roxa próprios, e guarda tudo em gavetas com o prefixo
-`meu_financeiro_lab_`. Isso é obrigatório: os dois ficam no mesmo endereço e
-dividem o armazenamento do navegador.
-
-- **Dados:** na primeira visita ele oferece copiar os dados do app de verdade,
-  sempre só de lá pra cá. O botão "copiar dados" da faixa repete a cópia.
-- **Gerado, não editado:** `lab/index.html` sai do `index.html` principal pelo
-  `node lab/gerar-lab.js`. Rode de novo sempre que o app mudar, e o
-  laboratório acompanha. O que é só do laboratório fica em `lab/lab.js`, e
-  cada fase do projeto num arquivo próprio (`lab/fase1-planejamento.js`).
-- **Service worker e cache próprios:** `lab/sw.js` só apaga caches que começam
-  com `meu-financeiro-lab-`. Mude `VERSAO` ali e `LAB_VERSAO` em `lab/lab.js`
-  juntos.
-- **Teste:** `node lab/testes/teste-laboratorio.js` (precisa do Playwright).
-  Ele confere que o laboratório nunca grava nas gavetas do app de verdade.
 
 ## Estrutura
 
@@ -140,3 +118,9 @@ Dois conceitos que aparecem no código inteiro e valem conhecer antes de mexer:
 - **`getMesFatura(data, formaModo)`** — em que mês a despesa aparece. Compra no
   crédito depois do fechamento (dia 3) cai na fatura do mês seguinte. É por isso
   que as abas Faturas e Gráficos batem: as duas contam pelo mesmo critério.
+
+O planejamento do mês (card *Metas do mês*, nos Gráficos) fica na gaveta
+`meu_financeiro_planejamento_v1`: uma lista de vigências, cada uma valendo do
+mês em que foi salva até a próxima, e `planoDoMes('AAAA-MM')` diz o plano de
+qualquer mês. As metas antigas (`orcamentosCategoria`) viraram só um espelho
+dos limites do mês atual, pra quem ainda lê de lá.

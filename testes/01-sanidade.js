@@ -93,7 +93,7 @@ iniciar('01 · sanidade', async t => {
   const [download] = await Promise.all([p.waitForEvent('download'), p.evaluate(() => exportarBackup())]);
   const texto = fs.readFileSync(await download.path(), 'utf8');
   const backup = JSON.parse(texto);
-  const chaves = ['lancamentos', 'fixos', 'investimentos', 'consorcios', 'grupos', 'orcamentosCategoria', 'faturasPagas', 'contas', 'categorias', 'transferencias', 'contatos', 'lixeira'];
+  const chaves = ['lancamentos', 'fixos', 'investimentos', 'consorcios', 'grupos', 'orcamentosCategoria', 'planejamento', 'faturasPagas', 'contas', 'categorias', 'transferencias', 'contatos', 'lixeira'];
   t.ok(backup.versao === 3 && chaves.every(k => k in backup), 'backup versão 3 com todas as gavetas');
   t.ok(/^backup-meu-financeiro-\d{4}-\d\d-\d\d\.json$/.test(download.suggestedFilename()), 'nome do arquivo: ' + download.suggestedFilename());
   const antes = await p.evaluate(() => ({ lanc: lancamentos.length, inv: investimentos.length, fixos: fixos.length, cons: consorcios.length, transf: transferencias.length, contas: contas.length }));

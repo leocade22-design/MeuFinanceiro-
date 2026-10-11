@@ -62,9 +62,9 @@ fs.mkdirSync(OUT, { recursive: true });
     fixos.push({id:'f2',descricao:'Netflix',valor:'55,90',conta:'Itaú',diaVencimento:'15',categoria:'Lazer',forma:'Crédito Parcelado'});
     fixos.push({id:'f3',descricao:'Academia',valor:'129,90',conta:'Itaú',diaVencimento:'10',categoria:'Saúde',forma:'Crédito Parcelado'});
 
-    orcamentosCategoria['Alimentação'] = '800,00';
-    orcamentosCategoria['Transporte'] = '400,00';
-    orcamentosCategoria['Lazer'] = '300,00';
+    // o planejamento do mês: orçamento, renda somada das receitas e três limites
+    gravarPlanoDoMes(chaveDoMesAtual(), { renda: { modo: 'receitas' }, gastoTotal: 6000, aviso: 80,
+      limites: { 'Alimentação': 600, 'Transporte': 400, 'Lazer': 300 } });
 
     transferencias.unshift({id:Date.now(),data:dia(8),origem:'PicPay',destino:'Itaú',valor:'400,00'});
     contatos['Bernardo'] = { tel:'5511987654321', tom:'neutro' };
@@ -183,6 +183,9 @@ fs.mkdirSync(OUT, { recursive: true });
   if (cardGrafico[1]) { await cardGrafico[1].screenshot({path:OUT+'/graficos_barras.png'}); console.log('✓ graficos_barras'); }
   await secao('metas', true);
   await tiro('metas', '[data-card="metas"]');
+  await page.evaluate(()=>abrirPlanejarMes()); await page.waitForTimeout(350);
+  await tiro('planejar_mes', '#modalPlanejarMes .modal-content');
+  await page.evaluate(()=>fecharModal('modalPlanejarMes')); await page.waitForTimeout(300);
   await secao('metas', false);
 
   // 11) grupos

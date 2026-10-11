@@ -1,6 +1,7 @@
 /* GRÁFICOS E CONSULTA RÁPIDA — a régua do consumo: a compra conta na data em
-   que foi feita, no débito ou no crédito. Categorias, metas, "descontar
-   reembolsos", ranking, comprometido futuro, e as respostas da Consulta. */
+   que foi feita, no débito ou no crédito. Categorias, a linha de meta,
+   "descontar reembolsos", ranking, comprometido futuro, e as respostas da
+   Consulta. O card Metas do mês em si fica na suíte 11. */
 const { iniciar } = require('./ajuda');
 
 iniciar('08 · gráficos e consulta rápida', async t => {
@@ -30,8 +31,11 @@ iniciar('08 · gráficos e consulta rápida', async t => {
   const g = await p.evaluate(() => {
     __aba('abaGraficos');
     setFiltroPeriodoGraficos('mesAtual', 'Este mês');
+    // a soma de uma categoria com o mesmo filtro de período que os gráficos usam
+    const noPeriodo = filtroPeriodoGraficos();
+    const cat = c => lancamentos.filter(l => l.tipo === 'despesa' && (l.categoria || 'Outros') === c && noPeriodo(l)).reduce((s, l) => s + parseVal(l.valor), 0);
     return { desp: __texto('#graficoDespesa'), rec: __texto('#graficoReceita'), saldo: __texto('#graficoSaldo'),
-      alim: obterGastoCategoriaPeriodo('Alimentação'), lazer: obterGastoCategoriaPeriodo('Lazer'), outros: obterGastoCategoriaPeriodo('Outros'),
+      alim: cat('Alimentação'), lazer: cat('Lazer'), outros: cat('Outros'),
       barras: __texto('#containerGraficoCategorias') };
   });
   console.log('   ', JSON.stringify({ desp: g.desp, rec: g.rec, saldo: g.saldo, alim: g.alim, lazer: g.lazer, outros: g.outros }));
@@ -52,7 +56,7 @@ iniciar('08 · gráficos e consulta rápida', async t => {
   t.ok(/180,00/.test(desc.barras) && !/280,00/.test(desc.barras), 'ligado: Lazer cai pra R$ 180 (o Borges já devolveu R$ 100 do jantar)');
   t.ok(desc.topo === 'R$ 1.190,00', 'o "gastei" do topo continua bruto: foi o que saiu na hora');
 
-  t.secao('METAS POR CATEGORIA');
+  t.secao('METAS DO MÊS (a linha de meta no gráfico)');
   const metas = await p.evaluate(() => {
     const resumo = __texto('#resumoMetas');
     setFiltroPeriodoGraficos('anoAtual', 'Este ano');
@@ -60,8 +64,8 @@ iniciar('08 · gráficos e consulta rápida', async t => {
     setFiltroPeriodoGraficos('mesAtual', 'Este mês');
     return { resumo, anual };
   });
-  t.ok(/1 estourou/.test(metas.resumo), 'Alimentação passou dos R$ 500: "1 estourou"');
-  t.ok(metas.anual === 6000, 'no ano, o teto vira 12 metas mensais (R$ 6.000)');
+  t.ok(/1 estourou/.test(metas.resumo), 'Alimentação passou dos R$ 500: "1 estourou" (' + metas.resumo + ')');
+  t.ok(metas.anual === 6000, 'no ano, a linha de meta vira 12 limites mensais (R$ 6.000)');
 
   t.secao('RANKING E COMPROMETIDO FUTURO');
   const outros = await p.evaluate(() => ({ ranking: __texto('#containerRankingGastos'), futuro: __texto('#containerComprometidoFuturo') }));
@@ -80,7 +84,9 @@ iniciar('08 · gráficos e consulta rápida', async t => {
   Object.entries(consulta).forEach(([k, v]) => console.log('   ' + k + ': ' + v.slice(0, 140)));
   t.ok(/Alimentação/.test(consulta.ondeGastei) && consulta.ondeGastei.indexOf('Alimentação') < consulta.ondeGastei.indexOf('Outros'), '"onde gastei mais": Alimentação na frente');
   t.ok(/Mercado/.test(consulta.maior) && /400,00/.test(consulta.maior), '"maior gasto": o Mercado de R$ 400');
-  t.ok(/Estourou em R\$ 30,00/.test(consulta.podeGastar), '"quanto posso gastar": metas somam R$ 800, gastou R$ 830 nelas → estourou R$ 30');
+  t.ok(/Gastou R\$ 730,00 de R\$ 800,00 \(seus limites de 2 categorias somam isso\)/.test(consulta.podeGastar) && /Sobram R\$ 70,00/.test(consulta.podeGastar),
+    '"quanto posso gastar": limites somam R$ 800; nelas foram R$ 730 (o Borges já devolveu R$ 100 do jantar) → sobram R$ 70');
+  t.ok(/Fora dessas categorias você gastou mais R\$ 360,00/.test(consulta.podeGastar), 'e cita à parte os R$ 360 fora das categorias com limite');
   t.ok(/Alimentação/.test(consulta.mudou) && /250,00/.test(consulta.mudou), '"o que mudou": Alimentação +R$ 250 em relação ao mês passado');
   t.ok(/Ana/.test(consulta.deve) && /30,00/.test(consulta.deve) && !/Borges/.test(consulta.deve), '"quem me deve": a Ana, R$ 30 (o Borges já pagou)');
   t.ok(/700,00/.test(consulta.fatura) && /2 compras/.test(consulta.fatura), '"fatura": R$ 700 em 2 compras no crédito');

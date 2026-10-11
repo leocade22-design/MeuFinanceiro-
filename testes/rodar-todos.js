@@ -2,7 +2,6 @@
 /* RODA A SUÍTE INTEIRA
        node testes/rodar-todos.js            todas as suítes
        node testes/rodar-todos.js 03 05      só as que começam com 03 e 05
-       node testes/rodar-todos.js lab        só o laboratório
 
    Cada suíte roda num processo próprio (armazenamento limpo, sem herdar nada
    da anterior). No fim sai um resumo, e o código de saída é 1 se alguma
@@ -19,7 +18,6 @@ const suites = fs.readdirSync(__dirname)
   .filter(f => /^\d\d-.*\.js$/.test(f))
   .sort()
   .map(f => ({ nome: f.replace(/\.js$/, ''), arquivo: path.join(__dirname, f) }));
-suites.push({ nome: 'lab', arquivo: path.join(RAIZ, 'lab', 'testes', 'teste-laboratorio.js') });
 
 const escolhidas = filtros.length ? suites.filter(s => filtros.some(f => s.nome.startsWith(f))) : suites;
 if (!escolhidas.length) { console.log('Nenhuma suíte bate com', filtros.join(' ')); process.exit(1); }
