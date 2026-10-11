@@ -23,6 +23,7 @@ iniciar('04 · saldo e resumo', async t => {
   }));
   await t.recarregar(p);
   const mesAtual = () => p.evaluate(() => { irParaFatura(...(() => { const [a, m] = __chaveMes(0).split('-').map(Number); return [m - 1, a]; })(), true); return JSON.parse(JSON.stringify(resumoFaturaAtual)); });
+  const consulta = tx => p.evaluate(tx => { const s = semAcento(tx); return montarRespostaPergunta(s, periodoDaPergunta(s)).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '); }, tx);
 
   t.secao('O MÊS ATUAL');
   let r = await mesAtual();
@@ -38,6 +39,7 @@ iniciar('04 · saldo e resumo', async t => {
   });
   t.ok(/5\.700,00/.test(tela.saldo), 'o card mostra o saldo somado das contas: ' + tela.saldo);
   t.ok(/fatura em aberto: R\$ 300,00/.test(tela.aviso) && /boletos a pagar: R\$ 150,00/.test(tela.aviso), 'e avisa da fatura em aberto e do boleto a pagar');
+  t.ok(/R\$ 300,00 foi no crédito e ainda não saiu da conta/.test(await consulta('saldo deste mes')), 'a Consulta rápida lembra dos R$ 300 no crédito que ainda não saíram');
 
   t.secao('MÊS PASSADO');
   const passado = await p.evaluate(() => {
@@ -54,14 +56,21 @@ iniciar('04 · saldo e resumo', async t => {
   t.ok(antesDoInicio === 0, 'antes do mês do saldo inicial, ele não aparece (não inventa passado)');
 
   t.secao('PAGAR A FATURA TIRA DA CONTA');
-  await p.evaluate(() => {
+  const pagar = (modo, valor, dia) => p.evaluate(([modo, valor, dia]) => {
     const [a, m] = __chaveMes(0).split('-').map(Number);
     abrirPagarFatura('Itaú', m - 1, a);
-    document.getElementById('faturaDataPagamento').value = __mes(0, 6);
+    setModoPagamentoFatura(modo);
+    if (valor) document.getElementById('faturaValorPago').value = valor;
+    document.getElementById('faturaDataPagamento').value = __mes(0, dia);
     confirmarPagarFatura();
-  });
+  }, [modo, valor, dia]);
+  await pagar('parcial', 'R$ 100,00', 5);
+  const emParte = await consulta('saldo deste mes');
+  t.ok(/R\$ 200,00 foi no crédito e ainda não saiu da conta/.test(emParte) && /sendo R\$ 100,00 de fatura paga/.test(emParte),
+    'paga em parte (R$ 100): a Consulta rápida passa a dizer que só R$ 200 ainda não saíram');
+  await pagar('total', null, 6);
   r = await mesAtual();
-  t.ok(r.saiuDaConta === 500 && r.faturasPagasNoMes === 300 && r.faturaEmAberto === 0, 'fatura paga: saiu da conta passa a R$ 500 e não há mais fatura em aberto');
+  t.ok(r.saiuDaConta === 500 && r.faturasPagasNoMes === 300 && r.faturaEmAberto === 0, 'paga o resto: saiu da conta passa a R$ 500 e não há mais fatura em aberto');
   t.ok(r.porContaAcumulado['Itaú'] === 5350, 'Itaú: R$ 5.350');
 
   t.secao('CORRIGIR O SALDO');
@@ -84,8 +93,9 @@ iniciar('04 · saldo e resumo', async t => {
   t.ok(corr.historico.join() === 'Itaú:5350→5400', 'e guarda a correção no histórico');
 
   t.secao('CONSULTA RÁPIDA FALA A MESMA LÍNGUA');
-  const resposta = await p.evaluate(() => { const tx = semAcento('saldo deste mes'); return montarRespostaPergunta(tx, periodoDaPergunta(tx)).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '); });
+  const resposta = await consulta('saldo deste mes');
   console.log('   ', resposta);
   t.ok(/entrou R\$ 5\.000,00, saiu da conta R\$ 500,00 \(sendo R\$ 300,00 de fatura paga\)/.test(resposta), '"saldo" na Consulta rápida: entrou 5.000, saiu 500, sendo 300 de fatura');
+  t.ok(!/foi no crédito/.test(resposta), 'com a fatura paga, não fala mais em crédito que "ainda não saiu da conta"');
   t.ok(/R\$ 150,00 são boletos que ainda estão na sua mão/.test(resposta), 'e lembra do boleto a pagar');
 });

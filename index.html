@@ -1095,18 +1095,20 @@
         </div>
       </div>
 
-      <!-- METAS POR CATEGORIA (retrátil) -->
-      <div class="card" data-card="metas" data-card-titulo="Metas por categoria">
+      <!-- METAS DO MÊS (retrátil): o plano de cada mês, com orçamento, renda e
+           limite por categoria. Tudo opcional (ver PLANEJAMENTO DO MÊS no script) -->
+      <div class="card" data-card="metas" data-card-titulo="Metas do mês">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('metas')">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="color:var(--amarelo);">Metas por categoria</h3>
+            <h3 style="color:var(--amarelo);">Metas do mês</h3>
             <span id="resumoMetas" style="font-size:11px;color:var(--texto-medio);"></span>
           </div>
           <span class="chevron-sec" id="chevron-metas">▸</span>
         </button>
         <div id="corpo-metas" class="escondido" style="margin-top:10px;">
-          <p style="font-size:11px;color:var(--texto-tenue);margin-bottom:10px;">Vale pro período escolhido acima. A meta aparece como uma linha no gráfico de categorias.</p>
+          <div id="planoDoMesBox"></div>
           <div id="listaMetasCategoria" class="meta-lista"></div>
+          <button type="button" class="btn-backup" id="btnPlanejarMes" style="margin-top:12px;" onclick="abrirPlanejarMes()">Planejar o mês</button>
         </div>
       </div>
 
@@ -2539,21 +2541,57 @@
     </div>
   </div>
 
-  <!-- EDIÇÃO DE META DE CATEGORIA (toque na linha em Metas por categoria) -->
+  <!-- LIMITE DE UMA CATEGORIA NO MÊS (toque na linha em Metas do mês) -->
   <div id="modalEdicaoMeta" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalEdicaoMeta')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="tituloEdicaoMeta">Meta</h3>
+        <h3 id="tituloEdicaoMeta">Limite</h3>
         <button class="btn-fechar" onclick="fecharModal('modalEdicaoMeta')">&times;</button>
       </div>
       <div class="form-group">
-        <label for="inputEdicaoMeta">Meta mensal</label>
+        <label for="inputEdicaoMeta">Limite no mês</label>
         <input type="number" id="inputEdicaoMeta" min="0" step="0.01" placeholder="R$ 0,00" inputmode="decimal"
                onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarEdicaoMeta();}">
       </div>
-      <p style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;">O valor é por mês. Em períodos maiores, o teto do gráfico é ajustado na mesma proporção.</p>
-      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarEdicaoMeta()">Salvar meta</button>
-      <button type="button" id="btnRemoverMeta" class="btn-cancelar escondido" onclick="removerMetaEditando()">Remover meta</button>
+      <p id="dicaEdicaoMeta" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarEdicaoMeta()">Salvar limite</button>
+      <button type="button" id="btnRemoverMeta" class="btn-cancelar escondido" onclick="removerMetaEditando()">Tirar o limite</button>
+    </div>
+  </div>
+
+  <!-- PLANEJAR O MÊS (botão no fim do card Metas do mês) -->
+  <div id="modalPlanejarMes" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalPlanejarMes')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloPlanejarMes">Planejar o mês</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalPlanejarMes')">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Renda do mês</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;" id="modosRendaPlano">
+          <button type="button" class="btn-periodo" data-modo="nenhuma" onclick="setModoRendaPlano('nenhuma')">Não usar</button>
+          <button type="button" class="btn-periodo" data-modo="digitada" onclick="setModoRendaPlano('digitada')">Digitar</button>
+          <button type="button" class="btn-periodo" data-modo="receitas" onclick="setModoRendaPlano('receitas')">Somar receitas</button>
+        </div>
+      </div>
+      <div class="form-group escondido" id="wrapRendaDigitada">
+        <label for="planoRendaValor">Quanto entra no mês</label>
+        <input type="text" id="planoRendaValor" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); previaPlanoMes();">
+      </div>
+      <p id="dicaRendaReceitas" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);line-height:1.45;margin:-4px 0 14px;"></p>
+      <div class="form-group">
+        <label for="planoGastoTotal">Quanto quero gastar no mês <span style="color:var(--texto-tenue);">(opcional)</span></label>
+        <input type="text" id="planoGastoTotal" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); previaPlanoMes();">
+      </div>
+      <div class="form-group">
+        <label for="planoAviso">Avisar quando chegar em</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="planoAviso" min="1" max="100" step="1" inputmode="numeric" style="width:90px;" oninput="previaPlanoMes()">
+          <span style="font-size:13px;color:var(--texto-medio);">% do limite</span>
+        </div>
+      </div>
+      <p id="previaPlanoMes" style="font-size:11.5px;line-height:1.45;color:var(--texto-fraco);margin-bottom:12px;"></p>
+      <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarPlanoMes()">Salvar</button>
     </div>
   </div>
 
@@ -2685,7 +2723,9 @@
     let tipoGraficoCategoria = 'barras';
     let lancamentoSelecionadoId = null;
     let grupoModalAtualId = null;
+    // espelho dos limites do mês atual; quem manda é o planejamento (ver PLANEJAMENTO DO MÊS)
     let orcamentosCategoria = {};
+    let planejamento = { vigencias: [] };
     // pagamento de fatura: chave "Conta|AAAA-MM" -> { valorPago, data, pagamentos:[{valor, data}],
     // cobrado, modo }. valorPago é a soma das partes e data a da última; registro antigo
     // tem só { valorPago, data } e vale como um pagamento só (ver pagamentosDaFatura)
@@ -2747,6 +2787,7 @@
     const STORAGE_KEY_GRUPOS = "meu_financeiro_grupos_v1";
     const STORAGE_KEY_TRANSFERENCIAS = "meu_financeiro_transferencias_v1";
     const STORAGE_KEY_ORCAMENTOS = "meu_financeiro_orcamentos_categoria_v1";
+    const STORAGE_KEY_PLANEJAMENTO = "meu_financeiro_planejamento_v1";
     const STORAGE_KEY_FATURAS_PAGAS = "meu_financeiro_faturas_pagas_v1";
     const STORAGE_KEY_CONTAS = "meu_financeiro_contas_v1";
     const STORAGE_KEY_CATEGORIAS = "meu_financeiro_categorias_v1";
@@ -4595,6 +4636,7 @@
             fixos.forEach(f => { if (f.categoria === nomeAntigo) f.categoria = nome; });
             salvarLocalStorage(); salvarFixos();
           }
+          renomearCategoriaNoPlanejamento(nomeAntigo, nome);
           if (orcamentosCategoria[nomeAntigo] !== undefined) {
             orcamentosCategoria[nome] = orcamentosCategoria[nomeAntigo];
             delete orcamentosCategoria[nomeAntigo];
@@ -4684,6 +4726,7 @@
       }
       if (!categoriasExcluidas.includes(nome)) { categoriasExcluidas.push(nome); salvarCategoriasExcluidas(); }
       categorias.splice(idx, 1);
+      tirarCategoriaDoPlanejamento(nome);
       delete orcamentosCategoria[nome];
       salvarOrcamentos();
       const iFav = categoriasFavoritas.indexOf(nome);
@@ -5207,6 +5250,7 @@
         grupos,
         valoresOcultos,
         orcamentosCategoria,
+        planejamento,
         faturasPagas,
         contas,
         categorias,
@@ -5306,6 +5350,8 @@
           lixeira = Array.isArray(data.lixeira) ? data.lixeira : [];
           // backup antigo não tem o histórico de ajustes: fica vazio, sem quebrar
           correcoesSaldo = Array.isArray(data.correcoesSaldo) ? data.correcoesSaldo : [];
+          // nem o planejamento: aí ele nasce das metas por categoria do backup
+          planejamento = normalizarPlanejamento(data.planejamento) || planejamentoInicial(orcamentosCategoria);
 
           // um backup gerado antes da correção traz de volta as parcelas com o
           // mesmo prazo; por isso a correção roda de novo aqui, forçada
@@ -5325,6 +5371,8 @@
           salvarConsorcios();
           salvarGrupos();
           salvarOrcamentos();
+          salvarPlanejamento();
+          espelharLimitesDoMesAtual();
           salvarFaturasPagas();
           salvarContas();
           salvarTransferencias();
@@ -5361,27 +5409,10 @@
       return Array.from(base);
     }
 
-    function obterGastoCategoriaPeriodo(categoria) {
-      const noPeriodo = filtroPeriodoGraficos();
-      return lancamentos.filter(l =>
-        l.tipo === 'despesa' && (l.categoria || 'Outros') === categoria && noPeriodo(l)
-      ).reduce((s, l) => s + parseVal(l.valor), 0);
-    }
-
-    function salvarMetaCategoria(categoria, valor) {
-      if (!valor || valor <= 0) {
-        delete orcamentosCategoria[categoria];
-      } else {
-        orcamentosCategoria[categoria] = valor;
-      }
-      salvarOrcamentos();
-      atualizarResumoEGraficos();   // redesenha o gráfico com a linha nova (e a lista junto)
-    }
-
-    /* META × PERÍODO
-       A meta é cadastrada sempre por MÊS. Comparar o gasto de um ano inteiro com
-       o teto de um mês não diz nada — qualquer meta estoura. Então o teto é
-       convertido pro tamanho do período que está na tela: meta mensal × quantos
+    /* META × PERÍODO (a linha de meta no gráfico de categorias)
+       O limite é sempre por MÊS. Comparar o gasto de um ano inteiro com o teto
+       de um mês não diz nada — qualquer meta estoura. Então o teto é
+       convertido pro tamanho do período que está na tela: limite mensal × quantos
        meses o período cobre (30,44 = média de dias por mês). Num período de um
        mês o fator é ~1 e nada muda. */
     function fatorPeriodoMeta() {
@@ -5406,119 +5437,524 @@
       }
     }
 
+    /* O limite que vira linha no gráfico vem do plano do mês que está na tela
+       ("Mês passado" usa o plano daquele mês), vezes o tamanho do período. */
+    function chaveDoMesDoGrafico() {
+      return periodoGraficosAtual === 'mesPassado' ? deslocarChaveMes(chaveDoMesAtual(), -1) : chaveDoMesAtual();
+    }
+
     function metaDoPeriodo(categoria) {
-      const mensal = parseVal(orcamentosCategoria[categoria]);
+      const mensal = parseVal(planoDoMes(chaveDoMesDoGrafico()).limites[categoria]);
       return mensal > 0 ? mensal * fatorPeriodoMeta() : 0;
     }
 
-    // mesmo mapa de metas, já convertido — é o que o gráfico usa pra desenhar a linha
+    // mesmo mapa de limites, já convertido — é o que o gráfico usa pra desenhar a linha
     function metasDoPeriodo() {
       const out = {};
-      Object.keys(orcamentosCategoria).forEach(c => {
+      Object.keys(planoDoMes(chaveDoMesDoGrafico()).limites).forEach(c => {
         const m = metaDoPeriodo(c);
         if (m > 0) out[c] = m;
       });
       return out;
     }
 
-    // "1 mês", "12 meses", "meio mês" — texto curto pra explicar de onde veio o teto
-    function textoFatorPeriodo() {
-      const f = fatorPeriodoMeta();
-      if (Math.abs(f - 1) < 0.08) return '';
-      if (f < 1) return ' · ' + Math.round(f * 30) + ' dias';
-      return ' · ' + (f >= 2 ? Math.round(f) + ' meses' : f.toFixed(1).replace('.', ',') + ' mês');
+    /* ============ PLANEJAMENTO DO MÊS (card "Metas do mês") ============
+       Tudo opcional: sem nada planejado, o card mostra só as categorias e quanto
+       foi em cada uma. As regras combinadas em 11/10/2026:
+       - RENDA DO MÊS: digitada, ou somada das receitas do mês (sem reembolso,
+         empréstimo recebido, empréstimo indireto nem estorno de fatura).
+       - GASTO DO ORÇAMENTO: as despesas do mês pela data da compra (a régua dos
+         gráficos), já descontados os reembolsos, e SEM aportes nem parcelas de
+         consórcio: isso é dinheiro guardado, não gasto.
+       - AVISO: amarelo a partir de 80% do limite (cada um muda o seu),
+         vermelho a partir de 100%.
+       - HISTÓRICO: o plano vale a partir do mês em que foi salvo. Mudar um mês
+         que já passou não mexe nos seguintes. Tirar um limite nunca apaga
+         lançamento.
+
+       planejamento = { vigencias: [{ desde: 'AAAA-MM', renda, gastoTotal, aviso, limites }] }
+       renda: null | { modo: 'digitada', valor } | { modo: 'receitas' }
+       Cada vigência vale do mês `desde` até a próxima. */
+    const AVISO_PADRAO = 80;
+    const MESES_A_FRENTE_NAS_METAS = 1;   // dá pra planejar o mês que vem
+    const MESES_PRA_TRAS_NAS_METAS = 24;
+    let mesMetasOffset = 0;   // mês mostrado no card: 0 = o atual
+
+    /* ---------- meses ---------- */
+    function chaveDoMes(mes, ano) { return ano + '-' + String(mes + 1).padStart(2, '0'); }
+    function chaveDoMesAtual() { return obterDataBrasilia().slice(0, 7); }
+    function deslocarChaveMes(chave, n) {
+      const [a, m] = chave.split('-').map(Number);
+      const d = new Date(a, m - 1 + n, 1);
+      return chaveDoMes(d.getMonth(), d.getFullYear());
+    }
+    // "outubro", ou "outubro/2025" quando é de outro ano
+    function nomeDoMesPlano(chave) {
+      const [a, m] = chave.split('-').map(Number);
+      const nome = NOMES_MESES[m - 1].toLowerCase();
+      return a === Number(chaveDoMesAtual().slice(0, 4)) ? nome : nome + '/' + a;
+    }
+    function chaveMesDasMetas() { return deslocarChaveMes(chaveDoMesAtual(), mesMetasOffset); }
+
+    /* ---------- gaveta ---------- */
+    function salvarPlanejamento() { localStorage.setItem(STORAGE_KEY_PLANEJAMENTO, JSON.stringify(planejamento)); }
+
+    // só limite de verdade: categoria com nome e valor acima de zero
+    function limitesValidos(obj) {
+      const out = {};
+      Object.keys(obj || {}).forEach(c => {
+        const v = Number(typeof obj[c] === 'string' ? parseVal(obj[c]) : obj[c]);
+        if (c && v > 0) out[c] = Math.round(v * 100) / 100;
+      });
+      return out;
+    }
+
+    // O que vem da gaveta ou de um backup passa por aqui: vigência sem um mês
+    // válido cai fora (quebraria a ordem), e o resto volta no formato esperado.
+    function normalizarPlanejamento(p) {
+      if (!p || !Array.isArray(p.vigencias)) return null;
+      const vigencias = p.vigencias
+        .filter(v => v && typeof v.desde === 'string' && /^\d{4}-\d\d$/.test(v.desde))
+        .map(v => {
+          const r = v.renda || null;
+          return {
+            desde: v.desde,
+            renda: r && r.modo === 'receitas' ? { modo: 'receitas' }
+              : r && r.modo === 'digitada' && Number(r.valor) > 0 ? { modo: 'digitada', valor: Number(r.valor) } : null,
+            gastoTotal: Number(v.gastoTotal) > 0 ? Number(v.gastoTotal) : null,
+            aviso: Number(v.aviso) > 0 ? Math.min(100, Math.round(Number(v.aviso))) : AVISO_PADRAO,
+            limites: limitesValidos(v.limites)
+          };
+        });
+      vigencias.sort((a, b) => a.desde.localeCompare(b.desde));
+      return { vigencias };
+    }
+
+    /* Primeira vez: as metas por categoria de antes viram o plano inicial,
+       valendo desde o lançamento mais antigo — o passado continua comparado
+       com elas, como já era. Sem metas, nada é criado. */
+    function planejamentoInicial(orcamentos) {
+      const limites = limitesValidos(orcamentos);
+      if (!Object.keys(limites).length) return { vigencias: [] };
+      const datas = lancamentos.map(l => l.data).filter(Boolean).sort();
+      const desde = (datas[0] || obterDataBrasilia()).slice(0, 7);
+      return { vigencias: [{ desde, renda: null, gastoTotal: null, aviso: AVISO_PADRAO, limites }] };
+    }
+
+    // Roda depois de carregar as metas e os lançamentos: na primeira vez, o plano
+    // nasce deles. Plano vazio não é gravado — enquanto não houver nada
+    // planejado, as metas antigas continuam sendo a origem.
+    function carregarPlanejamento() {
+      let lido = null;
+      try { lido = JSON.parse(localStorage.getItem(STORAGE_KEY_PLANEJAMENTO)); } catch (e) { lido = null; }
+      planejamento = normalizarPlanejamento(lido);
+      if (!planejamento) {
+        planejamento = planejamentoInicial(orcamentosCategoria);
+        if (planejamento.vigencias.length) salvarPlanejamento();
+      }
+      espelharLimitesDoMesAtual();   // o mês pode ter virado desde a última vez
+    }
+
+    /* O resto do app (o reparo de categorias, um backup lido por uma versão
+       antiga do app) continua lendo orcamentosCategoria. Ela é um espelho dos
+       limites do mês atual, regravado a cada mudança no plano. */
+    function espelharLimitesDoMesAtual() {
+      if (!planejamento.vigencias.length) return;
+      orcamentosCategoria = Object.assign({}, planoDoMes(chaveDoMesAtual()).limites);
+      salvarOrcamentos();
+    }
+
+    /* ---------- o plano de cada mês ---------- */
+    function planoVazio() { return { renda: null, gastoTotal: null, aviso: AVISO_PADRAO, limites: {}, desde: null }; }
+
+    // A vigência mais recente que começa no mês ou antes dele (uma cópia: pode mexer)
+    function planoDoMes(chave) {
+      let v = null;
+      planejamento.vigencias.forEach(x => { if (x.desde <= chave) v = x; });
+      if (!v) return planoVazio();
+      return {
+        renda: v.renda ? Object.assign({}, v.renda) : null,
+        gastoTotal: v.gastoTotal > 0 ? v.gastoTotal : null,
+        aviso: v.aviso > 0 ? v.aviso : AVISO_PADRAO,
+        limites: Object.assign({}, v.limites || {}),
+        desde: v.desde
+      };
+    }
+
+    function planoTemAlgo(plano) {
+      return !!(plano.renda || plano.gastoTotal > 0 || Object.keys(plano.limites).length);
+    }
+
+    /* Grava o plano de um mês. Do mês atual pra frente, vale dali em diante (até
+       a próxima vigência que já existir). Num mês que já passou, o mês seguinte
+       é congelado antes com o plano que tinha — a mudança vale só naquele mês. */
+    function gravarPlanoDoMes(chave, plano) {
+      if (chave < chaveDoMesAtual()) {
+        const seguinte = deslocarChaveMes(chave, 1);
+        if (!planejamento.vigencias.some(v => v.desde === seguinte)) {
+          const antes = planoDoMes(seguinte);
+          planejamento.vigencias.push({ desde: seguinte, renda: antes.renda, gastoTotal: antes.gastoTotal, aviso: antes.aviso, limites: antes.limites });
+        }
+      }
+      const nova = {
+        desde: chave,
+        renda: plano.renda || null,
+        gastoTotal: plano.gastoTotal > 0 ? Math.round(plano.gastoTotal * 100) / 100 : null,
+        aviso: plano.aviso > 0 ? Math.min(100, Math.max(1, Math.round(plano.aviso))) : AVISO_PADRAO,
+        limites: limitesValidos(plano.limites)
+      };
+      const i = planejamento.vigencias.findIndex(v => v.desde === chave);
+      if (i >= 0) planejamento.vigencias[i] = nova; else planejamento.vigencias.push(nova);
+      planejamento.vigencias.sort((a, b) => a.desde.localeCompare(b.desde));
+      salvarPlanejamento();
+      espelharLimitesDoMesAtual();
+    }
+
+    // Renomear a categoria leva o limite junto, em todos os meses
+    function renomearCategoriaNoPlanejamento(antigo, novo) {
+      let mudou = false;
+      planejamento.vigencias.forEach(v => {
+        if (v.limites && v.limites[antigo] !== undefined) {
+          v.limites[novo] = v.limites[antigo];
+          delete v.limites[antigo];
+          mudou = true;
+        }
+      });
+      if (mudou) { salvarPlanejamento(); espelharLimitesDoMesAtual(); }
+    }
+
+    // Categoria apagada: o limite dela sai deste mês em diante. Os meses que já
+    // passaram guardam o plano como era, e nenhum lançamento é tocado.
+    function tirarCategoriaDoPlanejamento(nome) {
+      const atual = chaveDoMesAtual();
+      const plano = planoDoMes(atual);
+      if (plano.limites[nome] !== undefined) {
+        delete plano.limites[nome];
+        gravarPlanoDoMes(atual, plano);
+      }
+      let mudou = false;
+      planejamento.vigencias.forEach(v => {
+        if (v.desde > atual && v.limites && v.limites[nome] !== undefined) { delete v.limites[nome]; mudou = true; }
+      });
+      if (mudou) { salvarPlanejamento(); espelharLimitesDoMesAtual(); }
+    }
+
+    /* ---------- as contas ---------- */
+    // Aporte e parcela de consórcio são dinheiro guardado, não gasto: ficam fora do orçamento
+    function ehInvestimentoNoOrcamento(l) {
+      if (l.aporteId) return true;
+      if ((l.categoria || '') === 'Investimento') return true;
+      if (investimentos.some(i => i.lancamentoId != null && i.lancamentoId === l.id)) return true;
+      return !!l.fixoId && consorcios.some(c => c.fixoId && c.fixoId === l.fixoId);
+    }
+
+    function despesasDoOrcamento(chave) {
+      const [a, m] = chave.split('-').map(Number);
+      return despesasDoMes(m - 1, a).filter(l => !ehInvestimentoNoOrcamento(l));
+    }
+
+    // valorLiquidoDespesa = a régua do "descontar reembolsos" dos gráficos
+    function gastoPorCategoriaNoOrcamento(chave) {
+      const out = {};
+      despesasDoOrcamento(chave).forEach(l => {
+        const c = l.categoria || 'Outros';
+        out[c] = (out[c] || 0) + valorLiquidoDespesa(l);
+      });
+      return out;
+    }
+
+    function gastoDoOrcamento(chave) {
+      return despesasDoOrcamento(chave).reduce((s, l) => s + valorLiquidoDespesa(l), 0);
+    }
+
+    function receitaContaComoRenda(l) {
+      return l.tipo === 'receita' && !l.reembolsoDe && !l.emprestimoPara && !ehEmprestimoIndireto(l) && !l.ajusteFatura;
+    }
+
+    function rendaSomadaDasReceitas(chave) {
+      return lancamentos.filter(l => receitaContaComoRenda(l) && (l.data || '').slice(0, 7) === chave)
+        .reduce((s, l) => s + parseVal(l.valor), 0);
+    }
+
+    function rendaDoMes(chave, plano) {
+      const r = (plano || planoDoMes(chave)).renda;
+      if (!r) return null;
+      if (r.modo === 'receitas') return { valor: rendaSomadaDasReceitas(chave), modo: 'receitas' };
+      return r.valor > 0 ? { valor: r.valor, modo: 'digitada' } : null;
+    }
+
+    /* O teto do mês: o "quanto quero gastar" digitado; sem ele, a soma dos
+       limites. Com a soma dos limites, o gasto comparado é só o dessas
+       categorias — somar o mês inteiro contra limites parciais acusaria um
+       estouro que não existe. */
+    function tetoDoMes(chave, plano, porCat) {
+      if (plano.gastoTotal > 0) {
+        return { valor: plano.gastoTotal, origem: 'digitado', gasto: Object.values(porCat).reduce((s, v) => s + v, 0) };
+      }
+      const cats = Object.keys(plano.limites);
+      if (!cats.length) return null;
+      return {
+        valor: cats.reduce((s, c) => s + plano.limites[c], 0),
+        origem: 'limites',
+        gasto: cats.reduce((s, c) => s + (porCat[c] || 0), 0),
+        qtd: cats.length
+      };
+    }
+
+    function corDoUso(pct, aviso) {
+      return pct >= 100 ? 'var(--vermelho)' : pct >= aviso ? 'var(--amarelo)' : 'var(--verde)';
+    }
+
+    // A mesma frase nas duas janelas: até onde vale a mudança
+    function textoVigencia(chave) {
+      return chave < chaveDoMesAtual()
+        ? `Vale só para ${nomeDoMesPlano(chave)}: os meses seguintes continuam como estão.`
+        : `Vale para ${nomeDoMesPlano(chave)} e os próximos meses. Os meses que já passaram não mudam.`;
+    }
+
+    /* ---------- o card ---------- */
+    function mudarMesMetas(delta) {
+      mesMetasOffset = Math.max(-MESES_PRA_TRAS_NAS_METAS, Math.min(MESES_A_FRENTE_NAS_METAS, mesMetasOffset + delta));
+      renderizarMetasCategorias();
     }
 
     function renderizarMetasCategorias() {
+      const box = document.getElementById('planoDoMesBox');
       const lista = document.getElementById('listaMetasCategoria');
-      if (!lista) return;
-      const cats = obterCategoriasDespesas();
+      if (!box || !lista) return;
+      const chave = chaveMesDasMetas();
+      const atual = chaveDoMesAtual();
+      const plano = planoDoMes(chave);
+      const porCat = gastoPorCategoriaNoOrcamento(chave);
+      const teto = tetoDoMes(chave, plano, porCat);
+      const renda = rendaDoMes(chave, plano);
+      const aviso = plano.aviso;
+      const tempo = chave === atual ? 'atual' : (chave < atual ? 'passado' : 'futuro');
 
+      const navegar = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+          <button type="button" class="btn-mini" onclick="mudarMesMetas(-1)" aria-label="Mês anterior"${mesMetasOffset <= -MESES_PRA_TRAS_NAS_METAS ? ' disabled' : ''}>‹</button>
+          <div style="text-align:center;line-height:1.2;">
+            <strong style="font-size:13.5px;">${nomeDoMesPlano(chave).replace(/^./, s => s.toUpperCase())}</strong>
+            <div style="font-size:10.5px;color:var(--texto-tenue);">${tempo === 'atual' ? 'mês atual' : tempo === 'passado' ? 'já fechou' : 'planejando à frente'}</div>
+          </div>
+          <button type="button" class="btn-mini" onclick="mudarMesMetas(1)" aria-label="Próximo mês"${mesMetasOffset >= MESES_A_FRENTE_NAS_METAS ? ' disabled' : ''}>›</button>
+        </div>`;
+
+      let orcamento = '';
+      if (teto) {
+        const pct = teto.valor > 0 ? (teto.gasto / teto.valor) * 100 : 0;
+        const cor = corDoUso(pct, aviso);
+        const sobra = teto.valor - teto.gasto;
+        let rodape;
+        if (tempo === 'atual') {
+          const { dia, diasNoMes } = fracaoDoMes();
+          const faltam = Math.max(1, diasNoMes - dia + 1);
+          rodape = sobra >= 0
+            ? `sobram <strong>${fmtOculto(sobra)}</strong> · ${fmtOculto(sobra / faltam)} por dia nos ${faltam === 1 ? 'último dia' : faltam + ' dias que faltam'}`
+            : `<span style="color:var(--vermelho);">passou ${fmtOculto(-sobra)} do orçamento</span>`;
+        } else if (tempo === 'passado') {
+          rodape = sobra >= 0 ? `fechou ${fmtOculto(sobra)} abaixo do orçamento` : `<span style="color:var(--vermelho);">fechou ${fmtOculto(-sobra)} acima do orçamento</span>`;
+        } else {
+          rodape = 'o mês ainda não começou';
+        }
+        orcamento = `
+          <div class="meta-item" style="cursor:pointer;" onclick="abrirPlanejarMes()">
+            <div class="meta-item-topo">
+              <div><strong>Orçamento</strong> <span> ${fmtOculto(teto.gasto)} de ${fmtOculto(teto.valor)}</span></div>
+              <span style="color:${cor};font-weight:700;">${Math.round(pct)}%</span>
+            </div>
+            <div class="meta-barra"><div class="meta-barra-fill" style="width:${Math.min(100, pct)}%;background:${cor};"></div></div>
+            <div style="font-size:11px;color:var(--texto-fraco);margin-top:6px;">${rodape}</div>
+            ${teto.origem === 'limites' ? `<div style="font-size:10.5px;color:var(--texto-tenue);margin-top:2px;">teto = soma dos limites de ${teto.qtd} ${teto.qtd === 1 ? 'categoria' : 'categorias'}</div>` : ''}
+          </div>`;
+      }
+
+      const linhaRenda = renda
+        ? `<div class="linha-subtotal" style="cursor:pointer;margin:8px 2px 0;" onclick="abrirPlanejarMes()"><span>Renda do mês <span style="color:var(--texto-tenue);font-size:11px;">${renda.modo === 'receitas' ? '(somada das receitas)' : '(digitada)'}</span></span>`
+          + `<strong style="color:var(--verde);">${renda.valor > 0 ? fmtOculto(renda.valor) : '<span style="color:var(--texto-tenue);font-weight:400;">aguardando</span>'}</strong></div>`
+        : '';
+
+      const vazio = !planoTemAlgo(plano)
+        ? `<p style="font-size:12px;color:var(--texto-medio);line-height:1.5;margin-bottom:8px;">Nada planejado ${tempo === 'passado' ? 'para' : 'ainda para'} ${nomeDoMesPlano(chave)}. `
+          + `Defina quanto quer gastar no mês e, se quiser, um limite por categoria. Tudo é opcional.</p>`
+        : '';
+
+      box.innerHTML = navegar + vazio + orcamento + linhaRenda
+        + `<p style="font-size:10.5px;color:var(--texto-tenue);margin:8px 2px 0;line-height:1.45;">Gasto pela data da compra, já descontados os reembolsos. Aportes e consórcio ficam fora: contam como investimento.</p>`
+        + `<div class="titulo-sem-meta" style="margin-top:14px;">limites por categoria</div>`;
+
+      // Resumo de uma linha do card fechado
       const resumo = document.getElementById('resumoMetas');
       if (resumo) {
-        const comMeta = cats.filter(c => parseVal(orcamentosCategoria[c]) > 0);
-        const estouradas = comMeta.filter(c => obterGastoCategoriaPeriodo(c) > metaDoPeriodo(c));
-        if (!comMeta.length) { resumo.textContent = 'nenhuma meta definida'; resumo.style.color = 'var(--texto-medio)'; }
-        else if (estouradas.length) {
-          resumo.textContent = estouradas.length + (estouradas.length === 1 ? ' estourou' : ' estouraram');
-          resumo.style.color = 'var(--vermelho)';
-        } else { resumo.textContent = comMeta.length + ' dentro do teto'; resumo.style.color = 'var(--verde)'; }
+        const comLimite = Object.keys(plano.limites);
+        const estouradas = comLimite.filter(c => (porCat[c] || 0) > plano.limites[c]);
+        if (teto) {
+          const pct = Math.round(teto.valor > 0 ? teto.gasto / teto.valor * 100 : 0);
+          resumo.textContent = pct + '% do orçamento' + (estouradas.length ? ' · ' + estouradas.length + (estouradas.length === 1 ? ' estourou' : ' estouraram') : '');
+          // uma categoria estourada pesa mais que o orçamento ainda folgado
+          resumo.style.color = estouradas.length ? 'var(--vermelho)' : corDoUso(pct, aviso);
+        } else {
+          // sem orçamento nem limite, mas com a renda planejada: é ela que aparece
+          resumo.textContent = renda ? 'renda ' + (renda.valor > 0 ? fmtOculto(renda.valor) : 'aguardando') : 'nada planejado';
+          resumo.style.color = 'var(--texto-medio)';
+        }
       }
+
+      // Lista: com limite primeiro, inteiros; sem limite no fim, apagados
       lista.innerHTML = '';
+      const categoriasDoCard = obterCategoriasDespesas().filter(c => c !== 'Investimento');
+      Object.keys(plano.limites).forEach(c => { if (!categoriasDoCard.includes(c)) categoriasDoCard.push(c); });
+      const comLimite = categoriasDoCard.filter(c => plano.limites[c] > 0)
+        .sort((a, b) => ((porCat[b] || 0) / plano.limites[b]) - ((porCat[a] || 0) / plano.limites[a]));
+      const semLimite = categoriasDoCard.filter(c => !(plano.limites[c] > 0))
+        .sort((a, b) => (porCat[b] || 0) - (porCat[a] || 0));
 
-      // Quem tem teto aparece primeiro e por inteiro; o resto vai pro fim, apagado
-      const comMeta = cats.filter(c => parseVal(orcamentosCategoria[c]) > 0);
-      const semMeta = cats.filter(c => !(parseVal(orcamentosCategoria[c]) > 0));
-      const sufixo = textoFatorPeriodo();
-
-      comMeta.forEach(cat => {
-        const gasto = obterGastoCategoriaPeriodo(cat);
-        const meta = metaDoPeriodo(cat);
-        const mensal = parseVal(orcamentosCategoria[cat]);
-        const pct = meta > 0 ? Math.min(100, (gasto / meta) * 100) : 0;
+      comLimite.forEach(cat => {
+        const gasto = porCat[cat] || 0;
+        const limite = plano.limites[cat];
+        const pct = (gasto / limite) * 100;
+        const cor = corDoUso(pct, aviso);
+        const resto = limite - gasto;
         const div = document.createElement('div');
         div.className = 'meta-item';
+        div.dataset.categoria = cat;
         div.onclick = () => abrirEdicaoMeta(cat);
         div.innerHTML = `
           <div class="meta-item-topo">
-            <div>
-              <strong>${cat}</strong>
-              <span> ${fmtOculto(gasto)} de ${fmtOculto(meta)}</span>
-            </div>
-            <span style="color:${pct >= 100 ? 'var(--vermelho)' : 'var(--texto-fraco)'};">${Math.round(pct)}%${sufixo}</span>
+            <div><strong>${cat}</strong><span> ${fmtOculto(gasto)} de ${fmtOculto(limite)}</span></div>
+            <span style="color:${cor};font-weight:700;">${Math.round(pct)}%</span>
           </div>
-          <div class="meta-barra"><div class="meta-barra-fill" style="width:${pct}%;background:${pct >= 100 ? 'var(--vermelho)' : 'var(--verde)'};"></div></div>
-        `;
+          <div class="meta-barra"><div class="meta-barra-fill" style="width:${Math.min(100, pct)}%;background:${cor};"></div></div>
+          <div style="font-size:10.5px;color:${resto >= 0 ? 'var(--texto-tenue)' : 'var(--vermelho)'};margin-top:4px;">${resto >= 0 ? 'faltam ' + fmtOculto(resto) : 'passou ' + fmtOculto(-resto)}</div>`;
         lista.appendChild(div);
       });
 
-      if (semMeta.length) {
-        const cab = document.createElement('div');
-        cab.className = 'titulo-sem-meta';
-        cab.textContent = 'sem meta definida';
-        lista.appendChild(cab);
-        semMeta.forEach(cat => {
+      if (semLimite.length) {
+        if (comLimite.length) {
+          const cab = document.createElement('div');
+          cab.className = 'titulo-sem-meta';
+          cab.textContent = 'sem limite';
+          lista.appendChild(cab);
+        }
+        semLimite.forEach(cat => {
           const div = document.createElement('div');
           div.className = 'meta-item sem-meta';
+          div.dataset.categoria = cat;
           div.onclick = () => abrirEdicaoMeta(cat);
           div.innerHTML = `
             <div class="meta-item-topo">
-              <div><strong>${cat}</strong> <span>${fmtOculto(obterGastoCategoriaPeriodo(cat))} no período</span></div>
+              <div><strong>${cat}</strong> <span>${fmtOculto(porCat[cat] || 0)} no mês</span></div>
               <span>definir</span>
-            </div>
-          `;
+            </div>`;
           lista.appendChild(div);
         });
       }
     }
 
-    // Toque na linha abre um balão pra digitar (ou tirar) o teto daquela categoria
+    /* ---------- limite de uma categoria (toque na linha) ---------- */
     let metaEditandoCategoria = null;
 
     function abrirEdicaoMeta(categoria) {
       metaEditandoCategoria = categoria;
-      const mensal = parseVal(orcamentosCategoria[categoria]);
-      document.getElementById('tituloEdicaoMeta').textContent = categoria;
+      const chave = chaveMesDasMetas();
+      const atual = planoDoMes(chave).limites[categoria] || 0;
+      document.getElementById('tituloEdicaoMeta').textContent = categoria + ' · ' + nomeDoMesPlano(chave);
       const inp = document.getElementById('inputEdicaoMeta');
-      inp.value = mensal > 0 ? mensal : '';
-      document.getElementById('btnRemoverMeta').classList.toggle('escondido', !(mensal > 0));
+      inp.value = atual > 0 ? atual : '';
+      document.getElementById('dicaEdicaoMeta').textContent = textoVigencia(chave);
+      document.getElementById('btnRemoverMeta').classList.toggle('escondido', !(atual > 0));
       document.getElementById('modalEdicaoMeta').classList.remove('escondido');
       setTimeout(() => inp.focus(), 120);
     }
 
+    function gravarLimite(categoria, valor) {
+      const chave = chaveMesDasMetas();
+      const plano = planoDoMes(chave);
+      if (valor > 0) plano.limites[categoria] = valor; else delete plano.limites[categoria];
+      gravarPlanoDoMes(chave, plano);
+      atualizarResumoEGraficos();   // redesenha o gráfico com a linha nova (e o card junto)
+    }
+
     function confirmarEdicaoMeta() {
       if (!metaEditandoCategoria) return;
-      const v = Number(document.getElementById('inputEdicaoMeta').value) || 0;
-      salvarMetaCategoria(metaEditandoCategoria, v);
+      gravarLimite(metaEditandoCategoria, Number(document.getElementById('inputEdicaoMeta').value) || 0);
       fecharModal('modalEdicaoMeta');
       metaEditandoCategoria = null;
     }
 
+    // Tira o limite daquele mês em diante; os lançamentos da categoria ficam onde estão
     function removerMetaEditando() {
       if (!metaEditandoCategoria) return;
-      salvarMetaCategoria(metaEditandoCategoria, 0);
+      gravarLimite(metaEditandoCategoria, 0);
       fecharModal('modalEdicaoMeta');
       metaEditandoCategoria = null;
+    }
+
+    /* ---------- janela "Planejar o mês" ---------- */
+    let modoRendaPlano = 'nenhuma';
+
+    function abrirPlanejarMes() {
+      const chave = chaveMesDasMetas();
+      const plano = planoDoMes(chave);
+      document.getElementById('tituloPlanejarMes').textContent = 'Planejar ' + nomeDoMesPlano(chave);
+      const r = plano.renda;
+      document.getElementById('planoRendaValor').value = r && r.modo === 'digitada' && r.valor > 0 ? fmtVal(r.valor) : '';
+      document.getElementById('planoGastoTotal').value = plano.gastoTotal > 0 ? fmtVal(plano.gastoTotal) : '';
+      document.getElementById('planoAviso').value = plano.aviso;
+      setModoRendaPlano(r ? r.modo : 'nenhuma');
+      document.getElementById('modalPlanejarMes').classList.remove('escondido');
+    }
+
+    function setModoRendaPlano(modo) {
+      modoRendaPlano = ['digitada', 'receitas'].includes(modo) ? modo : 'nenhuma';
+      document.querySelectorAll('#modosRendaPlano .btn-periodo').forEach(b => b.classList.toggle('ativo', b.dataset.modo === modoRendaPlano));
+      document.getElementById('wrapRendaDigitada').classList.toggle('escondido', modoRendaPlano !== 'digitada');
+      const dica = document.getElementById('dicaRendaReceitas');
+      dica.classList.toggle('escondido', modoRendaPlano !== 'receitas');
+      if (modoRendaPlano === 'receitas') {
+        const chave = chaveMesDasMetas();
+        dica.innerHTML = `Soma as receitas de ${nomeDoMesPlano(chave)}, menos reembolsos, empréstimos e estornos. `
+          + `Até agora: <strong>${fmtVal(rendaSomadaDasReceitas(chave))}</strong>.`;
+      }
+      previaPlanoMes();
+    }
+
+    function lerPlanoDaJanela() {
+      const chave = chaveMesDasMetas();
+      const plano = planoDoMes(chave);
+      const valorRenda = lerDinheiro('planoRendaValor');
+      if (modoRendaPlano === 'digitada' && !(valorRenda > 0)) return { erro: 'Digite quanto entra no mês, ou escolha outra opção de renda.' };
+      plano.renda = modoRendaPlano === 'digitada' ? { modo: 'digitada', valor: valorRenda }
+        : modoRendaPlano === 'receitas' ? { modo: 'receitas' } : null;
+      plano.gastoTotal = lerDinheiro('planoGastoTotal') || null;
+      const aviso = parseInt(document.getElementById('planoAviso').value, 10);
+      if (!(aviso >= 1 && aviso <= 100)) return { erro: 'O aviso vai de 1% a 100%.' };
+      plano.aviso = aviso;
+      return { chave, plano };
+    }
+
+    function previaPlanoMes() {
+      const el = document.getElementById('previaPlanoMes');
+      const r = lerPlanoDaJanela();
+      if (r.erro) { el.style.color = 'var(--amarelo)'; el.textContent = r.erro; return; }
+      el.style.color = 'var(--texto-fraco)';
+      const somaLimites = Object.values(r.plano.limites).reduce((s, v) => s + v, 0);
+      const partes = [textoVigencia(r.chave)];
+      if (!r.plano.gastoTotal) {
+        partes.push(somaLimites > 0
+          ? `Sem valor aqui, o teto do mês é a soma dos limites por categoria (${fmtVal(somaLimites)}).`
+          : 'Sem valor aqui e sem limites por categoria, o card não mostra orçamento.');
+      }
+      el.innerHTML = partes.join('<br>');
+    }
+
+    function salvarPlanoMes() {
+      const r = lerPlanoDaJanela();
+      if (r.erro) { previaPlanoMes(); return; }
+      gravarPlanoDoMes(r.chave, r.plano);
+      fecharModal('modalPlanejarMes');
+      atualizarResumoEGraficos();
     }
 
     function abrirEdicaoGrupoSearch() {
@@ -8568,13 +9004,12 @@
          gasto TOTAL da categoria, e desenhá-lo em cima das barras de uma conta só
          daria uma folga que não existe (ou acusaria estouro no lugar errado).
          Filtrar a própria meta seria pior, mudaria o que você combinou consigo
-         mesmo. O card "Metas por categoria" segue mostrando o total, como sempre. */
+         mesmo. O card "Metas do mês" segue mostrando o total, como sempre. */
       desenhar(tipoGraficoCategoria, 'containerGraficoCategorias', porCategoria, COR_DESPESA_GRAFICO, null,
                contaFiltroGraficos ? null : metasDoPeriodo(),
                nome => abrirConsultaFocada('despesa', nome, contaFiltroGraficos));
       desenhar(tipoGraficoConta, 'containerGraficoContas', porContaGrafico, 'var(--azul)', null, null,
                nome => abrirConsultaFocada('despesa', '', nome));
-      renderizarMetasCategorias();
       renderizarMetasCategorias();
       renderizarRankingGastos(itensPeriodo);
       renderizarGastoPorDiaSemana(itensPeriodo);
@@ -9118,43 +9553,45 @@
         `<b style="color:${total > 0 ? 'var(--vermelho)' : 'var(--verde)'};">${total > 0 ? '+' : '−'}${fmtOculto(Math.abs(total))}</b> no total.<br>${linhas}${aviso}`;
     }
 
-    /* QUANTO POSSO GASTAR — o que sobra do teto do mês, dividido pelos dias que
-       faltam. Usa as metas por categoria quando existem; senão, a própria média. */
+    /* QUANTO POSSO GASTAR — o que sobra do orçamento do mês (card Metas do
+       mês), dividido pelos dias que faltam. Sem nada planejado, a régua é a
+       própria média dos meses anteriores. */
     function quantoPossoGastar() {
-      const { mes, ano } = chaveMesDeslocada(0);
-      const gasto = somar(despesasDoMes(mes, ano));
       const { dia, diasNoMes } = fracaoDoMes();
       const faltam = Math.max(1, diasNoMes - dia + 1);
+      const chave = chaveDoMesAtual();
+      const porCat = gastoPorCategoriaNoOrcamento(chave);
+      const doPlano = tetoDoMes(chave, planoDoMes(chave), porCat);
 
-      /* Comparação justa: as metas cobrem só algumas categorias, então o teto
-         delas tem que ser confrontado com o gasto NESSAS categorias. Somar o mês
-         inteiro contra metas parciais acusaria estouro que não existe. */
-      const comMeta = Object.keys(orcamentosCategoria).filter(c => parseVal(orcamentosCategoria[c]) > 0);
-      const metas = comMeta.reduce((sm, c) => sm + parseVal(orcamentosCategoria[c]), 0);
-      const ref = mediaMensal(null, 3);
-
-      const usaMetas = metas > 0;
-      const teto = usaMetas ? metas : (ref && ref.media);
-      if (!teto) return 'Ainda não dá pra dizer: sem metas cadastradas e sem meses anteriores, não tenho régua nenhuma. Cadastra as metas por categoria aqui nos Gráficos que eu passo a responder isso.';
-
-      const gastoComparavel = usaMetas
-        ? somar(despesasDoMes(mes, ano).filter(l => comMeta.includes(l.categoria || 'Outros')))
-        : gasto;
-      const fonte = usaMetas
-        ? `suas metas de ${comMeta.length} ${comMeta.length === 1 ? 'categoria' : 'categorias'} somam`
-        : 'sua média mensal é';
-      const foraDaMeta = usaMetas && gasto > gastoComparavel
-        ? `<br><span style="color:var(--texto-fraco);">Fora dessas categorias você gastou mais ${fmtOculto(gasto - gastoComparavel)}, que não tem meta pra comparar.</span>`
-        : '';
+      let teto, gastoComparavel, fonte, nota = '';
+      if (doPlano) {
+        teto = doPlano.valor;
+        gastoComparavel = doPlano.gasto;
+        fonte = doPlano.origem === 'digitado'
+          ? 'seu orçamento do mês é'
+          : `seus limites de ${doPlano.qtd} ${doPlano.qtd === 1 ? 'categoria' : 'categorias'} somam`;
+        /* Comparação justa: com a soma dos limites, o teto cobre só algumas
+           categorias e o gasto confrontado é o delas. O resto vai citado à parte. */
+        const fora = doPlano.origem === 'limites' ? Object.values(porCat).reduce((s, v) => s + v, 0) - doPlano.gasto : 0;
+        if (fora > 0.005) nota += `<br><span style="color:var(--texto-fraco);">Fora dessas categorias você gastou mais ${fmtOculto(fora)}, que não tem limite pra comparar.</span>`;
+        nota += '<br><span style="color:var(--texto-fraco);">Aportes e consórcio ficam fora; reembolsos já descontados.</span>';
+      } else {
+        const ref = mediaMensal(null, 3);
+        if (!ref || !ref.media) return 'Ainda não dá pra dizer: sem nada planejado e sem meses anteriores, não tenho régua nenhuma. Planeje o mês em Gráficos → Metas do mês que eu passo a responder isso.';
+        const { mes, ano } = chaveMesDeslocada(0);
+        teto = ref.media;
+        gastoComparavel = somar(despesasDoMes(mes, ano));
+        fonte = 'sua média mensal é';
+      }
 
       const sobra = teto - gastoComparavel;
       if (sobra <= 0) {
         return `Gastou ${fmtOculto(gastoComparavel)} e ${fonte} ${fmtOculto(teto)}.<br>` +
-          `<span style="color:var(--vermelho);">Estourou em ${fmtOculto(-sobra)}</span>, e ainda ${faltam === 1 ? 'falta 1 dia' : 'faltam ' + faltam + ' dias'} de mês.${foraDaMeta}`;
+          `<span style="color:var(--vermelho);">Estourou em ${fmtOculto(-sobra)}</span>, e ainda ${faltam === 1 ? 'falta 1 dia' : 'faltam ' + faltam + ' dias'} de mês.${nota}`;
       }
       return `Gastou ${fmtOculto(gastoComparavel)} de ${fmtOculto(teto)} (${fonte} isso).<br>` +
         `Sobram <b>${fmtOculto(sobra)}</b> pra ${faltam === 1 ? 'o último dia' : faltam + ' dias'} — ` +
-        `dá <b>${fmtOculto(sobra / faltam)}</b> por dia.${foraDaMeta}`;
+        `dá <b>${fmtOculto(sobra / faltam)}</b> por dia.${nota}`;
     }
 
     /* SUGESTÕES PRONTAS
@@ -9223,7 +9660,7 @@
       if (/o que mudou|mudou.*(mes|mês)|comparar.*(mes|mês)|subiu|caiu|aumentou|diminuiu/.test(texto)) {
         return oQueMudou();
       }
-      if (/quanto posso|posso gastar|quanto ainda|quanto falta.*(meta|teto)|sobra por dia|por dia.*(sobra|posso)/.test(texto)) {
+      if (/quanto posso|posso gastar|quanto ainda|quanto falta.*(meta|teto|limite|orcamento)|meu orcamento|orcamento do mes|sobra por dia|por dia.*(sobra|posso)/.test(texto)) {
         return quantoPossoGastar();
       }
       if (/proje|vou fechar|fech[ao] o mes|no fim do mes|ritmo/.test(texto)) {
@@ -9314,7 +9751,16 @@
         const rec = somar(receitasDaPergunta(p));
         const desps = despesasDaPergunta(p);
         const emDebito = somar(desps.filter(saiuDaConta));
-        const noCredito = somar(desps.filter(l => eCredito(l.formaModo)));
+        // Do crédito, só o que a fatura ainda deve: some quando ela é paga (ou o
+        // resto vai pra fatura seguinte), e paga em parte conta no máximo o que falta
+        const porFatura = {};
+        desps.filter(l => eCredito(l.formaModo)).forEach(l => {
+          const f = getMesFatura(l.data, l.formaModo, l.conta);
+          const k = chaveFatura(l.conta, f.mes, f.ano);
+          if (!porFatura[k]) porFatura[k] = { compras: 0, deve: aPagarDaFatura(l.conta, f.mes, f.ano) };
+          porFatura[k].compras += parseVal(l.valor);
+        });
+        const noCredito = Object.values(porFatura).reduce((s, x) => s + Math.min(x.compras, x.deve), 0);
         const aPagar = somar(desps.filter(aguardandoPagamento));
         // cada parte de uma fatura paga aos poucos conta na data em que saiu
         const pagas = Object.values(faturasPagas)
@@ -13723,8 +14169,8 @@
          volta sem depender de backup:
          · lançamentos e gastos fixos, que carregam a categoria em cada item;
          · a lixeira, pra não perder o que só existia em lançamento apagado;
-         · as metas por categoria e as favoritas, que guardam o NOME da
-           categoria e por isso resgatam até as que não têm nenhum gasto. */
+         · os limites do mês (Metas do mês) e as favoritas, que guardam o NOME
+           da categoria e por isso resgatam até as que não têm nenhum gasto. */
       const usadas = new Set();
       lancamentos.forEach(l => { if (l.categoria) usadas.add(l.categoria); });
       fixos.forEach(f => { if (f.categoria) usadas.add(f.categoria); });
@@ -14744,7 +15190,7 @@
           const pct = totalTudo > 0 ? (diffTotal / totalTudo * 100) : 0;
           const sinal = diffTotal >= 0 ? '+' : '−';
           const cor = diffTotal >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-          ganhoPerdaEl.innerHTML = `vale ${fmtOculto(totalAtual)} hoje<br><strong style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1)}%)</strong>`;
+          ganhoPerdaEl.innerHTML = `vale ${fmtOculto(totalAtual)} hoje<br><strong style="color:${cor};">${sinal}${fmtOculto(Math.abs(diffTotal))} (${sinal}${Math.abs(pct).toFixed(1).replace('.', ',')}%)</strong>`;
         } else {
           ganhoPerdaEl.innerHTML = '';
         }
@@ -14834,7 +15280,7 @@
       if (g.diff !== 0) {
         const sinal = g.diff >= 0 ? '+' : '−';
         const cor = g.diff >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-        diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1)}%) no total</div>`;
+        diffTxt = `<div style="font-size:11.5px;margin-top:2px;color:${cor};">${sinal}${fmtOculto(Math.abs(g.diff))} (${sinal}${Math.abs(g.pct).toFixed(1).replace('.', ',')}%) no total</div>`;
       }
       const revisoes = g.itens.map(i => i.atualizadoEm).filter(Boolean).sort();
       const ultimaRevisaoTxt = revisoes.length ? ' · atualizado ' + revisoes[revisoes.length - 1].split('-').reverse().join('/') : '';
@@ -16233,8 +16679,36 @@ function confirmarLancamentoVoz() {
   lancamentoVozPendente = null;
 }
 
+    /* O LABORATÓRIO SAIU — a cópia de testes que ficava em /lab/ foi apagada do
+       site (outubro de 2026) e o planejamento do mês veio pra cá. Quem chegou a
+       abrir o laboratório guarda no aparelho as gavetas dele (uma cópia inteira
+       dos dados, que come o mesmo espaço do armazenamento), o service worker e
+       o cache. Aqui some tudo isso; os dados do app não são tocados. */
+    function limparSobrasDoLaboratorio() {
+      try {
+        const sobras = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('meu_financeiro_lab_')) sobras.push(k);
+        }
+        sobras.forEach(k => localStorage.removeItem(k));
+      } catch (e) { /* sem acesso ao armazenamento: nada a limpar */ }
+      // só o do laboratório deste app: o endereço é dividido com outros sites
+      const escopoLab = new URL('lab/', location.href).href;
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations()
+          .then(regs => regs.filter(r => r.scope === escopoLab).forEach(r => r.unregister()))
+          .catch(() => {});
+      }
+      if (window.caches) {
+        caches.keys()
+          .then(nomes => nomes.filter(n => n.startsWith('meu-financeiro-lab-')).forEach(n => caches.delete(n)))
+          .catch(() => {});
+      }
+    }
+
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.10.11-1';
+    const APP_VERSION = '2026.10.11-2';
 
     // Inicialização
     carregarLocalStorage();
@@ -16254,6 +16728,7 @@ function confirmarLancamentoVoz() {
     carregarLixeira();
     carregarCorrecoes();
     carregarOrcamentos();
+    carregarPlanejamento();   // depois das metas e dos lançamentos: na primeira vez, o plano nasce deles
     carregarFaturasPagas();
     carregarContas();
     migrarFormaPadraoDasContas();   // depois de carregarContas: antes o array está vazio
@@ -16326,6 +16801,7 @@ function confirmarLancamentoVoz() {
     if (elVersao) elVersao.textContent = 'versão ' + APP_VERSION;
     atualizarBotaoLembretes();
     avisarCobrancasVencidas(false);
+    limparSobrasDoLaboratorio();
 
     // Botão de emergência: limpa o cache do app e recarrega da rede. Os dados ficam
     // no localStorage, que não é tocado aqui — só o cache de arquivos some.

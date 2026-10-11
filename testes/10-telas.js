@@ -56,6 +56,8 @@ iniciar('10 · telas no celular', async t => {
       abrirFormFixo(); r.push(medir('modalFixo')); fecharModal('modalFixo');
       abrirModalTransferencia(); r.push(medir('modalTransferencia')); fecharModal('modalTransferencia');
       abrirModalAtualizarValor('Tesouro Direto'); r.push(medir('modalAtualizarValor')); fecharModal('modalAtualizarValor');
+      abrirPlanejarMes(); setModoRendaPlano('receitas'); r.push(medir('modalPlanejarMes')); fecharModal('modalPlanejarMes');
+      abrirEdicaoMeta('Alimentação'); r.push(medir('modalEdicaoMeta')); fecharModal('modalEdicaoMeta');
       return r;
     });
     const ruins = janelas.filter(j => !j.cabe).map(j => j.id);

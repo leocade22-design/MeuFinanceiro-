@@ -74,7 +74,8 @@ function ajudasDaPagina() {
     if (d.grupos) { grupos = d.grupos; salvarGrupos(); }
     if (d.transferencias) { transferencias = d.transferencias; salvarTransferencias(); }
     if (d.contatos) { contatos = d.contatos; salvarContatos(); }
-    if (d.metas) { orcamentosCategoria = d.metas; salvarOrcamentos(); }
+    if (d.metas) { orcamentosCategoria = d.metas; salvarOrcamentos(); }   // metas do jeito antigo: viram o plano ao recarregar
+    if (d.planejamento) { planejamento = d.planejamento; salvarPlanejamento(); }
     if (d.faturasPagas) { faturasPagas = d.faturasPagas; salvarFaturasPagas(); }
   };
 

@@ -58,7 +58,7 @@ iniciar('07 · investimentos', async t => {
   console.log('   ', JSON.stringify(valor));
   t.ok(/2 aportes · R\$ 2\.000,00 aportado/.test(valor.info), 'a janela mostra 2 aportes e R$ 2.000 aportados');
   t.ok(valor.itens.sort().join() === '1150,00,1150,00', 'R$ 2.300 no total: repartidos na proporção (R$ 1.150 cada)');
-  t.ok(/2\.000,00/.test(valor.total) && /vale R\$ 2\.300,00 hoje/.test(valor.ganho) && /\+R\$ 300,00 \(\+15\.0%\)/.test(valor.ganho), 'topo: R$ 2.000 investidos, valem R$ 2.300 (+R$ 300, +15%)');
+  t.ok(/2\.000,00/.test(valor.total) && /vale R\$ 2\.300,00 hoje/.test(valor.ganho) && /\+R\$ 300,00 \(\+15,0%\)/.test(valor.ganho), 'topo: R$ 2.000 investidos, valem R$ 2.300 (+R$ 300, +15,0%, com vírgula)');
 
   t.secao('TOTAL INVESTIDO SOMA O CONSÓRCIO');
   const total = await p.evaluate(() => {

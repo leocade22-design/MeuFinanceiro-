@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.10.11-1 · Leia em 25 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.10.11-2 · Leia em 25 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -115,7 +115,7 @@
       <tr><th style="width:26%;">Aba</th><th>Para que serve</th></tr>
       <tr><td><strong>Lançamentos</strong></td><td>Registrar o que entrou e o que saiu. É onde você passa 90% do tempo.</td></tr>
       <tr><td><strong>Faturas</strong></td><td>O painel do mês: saldo, cartão, gastos fixos, empréstimos.</td></tr>
-      <tr><td><strong>Gráficos</strong></td><td>Para onde o dinheiro foi, por categoria, com metas.</td></tr>
+      <tr><td><strong>Gráficos</strong></td><td>Para onde o dinheiro foi, por categoria, e o planejamento do mês.</td></tr>
       <tr><td><strong>Grupos</strong></td><td>Juntar gastos de uma viagem ou evento e ver o total fechado.</td></tr>
       <tr><td><strong>Investim.</strong></td><td>Anotar aplicações, acompanhar o patrimônio e controlar consórcios.</td></tr>
       <tr><td><strong>Ajustes</strong></td><td>Contas, categorias, ordem dos cards, sons e backup.</td></tr>
@@ -218,7 +218,7 @@
     <ul>
       <li><strong>Ler o mês</strong> — quanto você gastou até agora, quanto o mês deve fechar nesse ritmo, e qual categoria está fora da sua média.</li>
       <li><strong>O que mudou</strong> — categoria por categoria contra o mês passado, quem subiu e quem desceu.</li>
-      <li><strong>Quanto posso gastar</strong> — o que sobra das suas metas, dividido pelos dias que faltam.</li>
+      <li><strong>Quanto posso gastar</strong> — o que sobra do orçamento do mês (o card <em>Metas do mês</em>, nos Gráficos), dividido pelos dias que faltam. Sem nada planejado, a régua é a sua média dos últimos meses.</li>
     </ul>
     <div class="nota">
       <strong>Ele compara com você mesmo.</strong> As respostas do mês corrente vêm com uma linha
@@ -832,7 +832,7 @@
       volta ao escolher <em>Todas as contas</em>.
       <br><br>A linha de <strong>meta</strong> também some do gráfico nesse modo: o teto que
       você definiu é do gasto total da categoria, e desenhá-lo sobre as barras de uma conta só
-      mostraria uma folga que não existe. O card <em>Metas por categoria</em> continua somando
+      mostraria uma folga que não existe. O card <em>Metas do mês</em> continua somando
       todas as contas, como sempre.
     </div>
     <div class="nota">
@@ -876,9 +876,33 @@
     <div class="tela metade"><img src="img/evolucao_colunas.png" alt="Evolução mensal em colunas"></div>
     <div class="tela metade"><img src="img/futuro_colunas.png" alt="Próximos meses em colunas"></div>
     <div class="legenda">Os mesmos dois botões, no mesmo lugar, nos três cards de gráfico.</div>
-    <p>Em <strong>Metas</strong> você define um teto mensal por categoria. A meta acompanha o período escolhido:
-       R$ 100 por mês vira R$ 1.200 quando você olha o ano inteiro.</p>
-    <div class="tela metade"><img src="img/metas.png" alt="Card de metas"></div>
+    <p>No card <strong>Metas do mês</strong> você planeja o mês, e tudo é opcional. Toque em
+       <strong>Planejar o mês</strong> para dizer quanto quer gastar, se quer acompanhar a renda e a partir
+       de quanto quer ser avisado. Toque numa categoria para dar um limite só a ela.</p>
+    <div class="tela metade"><img src="img/metas.png" alt="Card Metas do mês"></div>
+    <div class="tela metade"><img src="img/planejar_mes.png" alt="Janela Planejar o mês"></div>
+    <div class="legenda">O card, com o orçamento no topo e um limite por categoria, e a janela de planejar.</div>
+    <div class="nota">
+      <strong>O orçamento.</strong> É o “quanto quero gastar no mês”. Sem ele, o teto vira a soma dos
+      limites das categorias, e aí o gasto comparado é só o dessas categorias. Durante o mês o card
+      diz quanto sobra e quanto dá por dia até o fim.
+      <br><br><strong>As cores.</strong> Verde enquanto está tranquilo, amarelo a partir do aviso (80% do
+      limite, se você não mudar) e vermelho quando passa de 100%.
+      <br><br><strong>O que conta como gasto.</strong> As despesas do mês pela data da compra, como nos
+      gráficos, já descontado o que te devolveram: a janta dividida conta só a sua parte. Aportes e
+      parcelas de consórcio ficam de fora, porque são dinheiro guardado, não gasto.
+      <br><br><strong>A renda.</strong> Você digita quanto entra no mês, ou deixa o app somar as receitas
+      do mês, sem contar reembolso, empréstimo recebido nem estorno de fatura.
+    </div>
+    <div class="nota">
+      <strong>Cada mês tem o seu plano.</strong> As setas no topo do card mostram os meses que passaram e
+      o mês que vem. O plano vale a partir do mês em que você salvou e segue valendo nos seguintes, até
+      você mudar. Corrigir um mês que já passou muda só aquele mês. Tirar um limite nunca apaga
+      lançamento nenhum.
+      <br><br>As metas por categoria que você já tinha viraram o plano inicial, valendo desde o seu
+      primeiro lançamento. A linha de meta no gráfico de categorias continua lá e acompanha o período
+      escolhido: R$ 100 por mês vira R$ 1.200 quando você olha o ano inteiro.
+    </div>
   </div>
 </section>
 
