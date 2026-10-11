@@ -2189,10 +2189,14 @@
       </div>
       <div class="box-resumo-modal" style="margin-bottom:14px;">
         <div class="linha-subtotal" style="cursor:default;"><span>Somado aqui no app</span><strong id="faturaCalculada">R$ 0,00</strong></div>
+        <!-- fatura sendo paga aos poucos: o que o banco cobrou, cada parte já
+             paga (com ✕ pra tirar uma lançada errado) e o que ainda falta -->
+        <div id="faturaJaPago"></div>
       </div>
       <!-- Tudo = como sempre foi (a diferença pro banco vira ajuste). Uma parte =
-           o que sobrou vai pra fatura seguinte. Parcelei = entrada agora e uma
-           parcela em cada fatura seguinte, com os juros do banco. -->
+           a fatura continua em aberto até você terminar de pagar, ou o resto vai
+           pra fatura seguinte, se marcar. Parcelei = entrada agora e uma parcela
+           em cada fatura seguinte, com os juros do banco. -->
       <div class="form-group">
         <label>Como você pagou?</label>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;" id="modosPagamentoFatura">
@@ -2201,16 +2205,24 @@
           <button type="button" class="btn-periodo" data-modo="parcelado" onclick="setModoPagamentoFatura('parcelado')">Parcelei</button>
         </div>
       </div>
+      <div class="form-group">
+        <label for="faturaValorCobrado">Valor que o banco cobrou</label>
+        <input type="text" id="faturaValorCobrado" inputmode="numeric" oninput="mascaraMoeda(this); previewAjusteFatura();">
+      </div>
       <div class="form-row">
-        <div class="form-group">
-          <label for="faturaValorPago" id="labelFaturaValorPago">Valor que o banco cobrou</label>
-          <input type="text" id="faturaValorPago" inputmode="numeric" oninput="mascaraMoeda(this); previewAjusteFatura();">
+        <div class="form-group escondido" id="wrapFaturaValorPago">
+          <label for="faturaValorPago" id="labelFaturaValorPago">Quanto você pagou agora</label>
+          <input type="text" id="faturaValorPago" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); previewAjusteFatura();">
         </div>
         <div class="form-group">
           <label for="faturaDataPagamento">Pago em</label>
           <input type="date" id="faturaDataPagamento">
         </div>
       </div>
+      <label class="check-credito escondido" id="wrapLevarResto">
+        <input type="checkbox" id="faturaLevarResto" onchange="setModoPagamentoFatura('parcial', true)">
+        <span id="rotuloLevarResto">Levar o que faltar pra fatura seguinte</span>
+      </label>
       <div class="form-group escondido" id="wrapJurosParcial">
         <label for="faturaJurosParcial">Juros do rotativo <span style="color:var(--texto-tenue);">(opcional)</span></label>
         <input type="text" id="faturaJurosParcial" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); previewAjusteFatura();">
@@ -2674,7 +2686,9 @@
     let lancamentoSelecionadoId = null;
     let grupoModalAtualId = null;
     let orcamentosCategoria = {};
-    // fatura quitada: chave "Conta|AAAA-MM" -> { valorPago, data }
+    // pagamento de fatura: chave "Conta|AAAA-MM" -> { valorPago, data, pagamentos:[{valor, data}],
+    // cobrado, modo }. valorPago é a soma das partes e data a da última; registro antigo
+    // tem só { valorPago, data } e vale como um pagamento só (ver pagamentosDaFatura)
     let faturasPagas = {};
     let contas = [];
     let categorias = [];
@@ -9302,9 +9316,9 @@
         const emDebito = somar(desps.filter(saiuDaConta));
         const noCredito = somar(desps.filter(l => eCredito(l.formaModo)));
         const aPagar = somar(desps.filter(aguardandoPagamento));
+        // cada parte de uma fatura paga aos poucos conta na data em que saiu
         const pagas = Object.values(faturasPagas)
-          .filter(pg => pg && pg.data && p.teste(pg.data))
-          .reduce((s, pg) => s + parseVal(pg.valorPago), 0);
+          .reduce((s, pg) => s + pagamentosDaFatura(pg).filter(x => p.teste(x.data)).reduce((a, x) => a + x.valor, 0), 0);
         const saiu = emDebito + pagas;
         const saldo = rec - saiu;
         return `${R.charAt(0).toUpperCase() + R.slice(1)}: entrou ${fmtOculto(rec)}, saiu da conta ${fmtOculto(saiu)}` +
@@ -9727,24 +9741,25 @@
         porContaNet[t.destino] = (porContaNet[t.destino] || 0) + v;
       });
 
-      // faturas efetivamente pagas neste mês, pelo valor real informado
+      // faturas efetivamente pagas neste mês, pelo valor real informado. Fatura
+      // paga em partes: cada parte sai da conta no mês da própria data.
       let faturasPagasNoMes = 0;
       const chaveMes = String(ano) + '-' + String(mes + 1).padStart(2, '0');
       Object.entries(faturasPagas).forEach(([chave, pg]) => {
-        if (!pg || !pg.data) return;
-        const v = parseVal(pg.valorPago);
-        const conta = chave.split('|')[0];
-        if (pg.data.slice(0, 7) <= chaveMes) porContaAcumulado[conta] = (porContaAcumulado[conta] || 0) - v;
-        if (pg.data.slice(0, 7) !== chaveMes) return;
-        faturasPagasNoMes += v;
-        porContaNet[conta] = (porContaNet[conta] || 0) - v;
+        const conta = partesChaveFatura(chave).conta;
+        pagamentosDaFatura(pg).forEach(x => {
+          if (x.data.slice(0, 7) <= chaveMes) porContaAcumulado[conta] = (porContaAcumulado[conta] || 0) - x.valor;
+          if (x.data.slice(0, 7) !== chaveMes) return;
+          faturasPagasNoMes += x.valor;
+          porContaNet[conta] = (porContaNet[conta] || 0) - x.valor;
+        });
       });
 
-      // fatura ainda em aberto do mês (compromisso, não despesa realizada)
+      // fatura ainda em aberto do mês (compromisso, não despesa realizada);
+      // a que já foi paga em parte entra só com o que falta
       let faturaEmAberto = 0;
       contas.filter(c => c.temCredito).forEach(c => {
-        if (faturasPagas[chaveFatura(c.nome, mes, ano)]) return;
-        faturaEmAberto += totalFaturaConta(c.nome, mes, ano);
+        faturaEmAberto += aPagarDaFatura(c.nome, mes, ano);
       });
 
       const saiuDaConta = saiuEmDebito + faturasPagasNoMes;
@@ -9971,10 +9986,7 @@
         const d = new Date(anoBase, mesBase + i, 1);
         const m = d.getMonth(), a = d.getFullYear();
         let total = 0;
-        contas.filter(c => c.temCredito).forEach(c => {
-          if (faturasPagas[chaveFatura(c.nome, m, a)]) return;
-          total += totalFaturaConta(c.nome, m, a);
-        });
+        contas.filter(c => c.temCredito).forEach(c => { total += aPagarDaFatura(c.nome, m, a); });
         if (total > 0) return { mes: m, ano: a, total };
       }
       return null;
@@ -11586,7 +11598,8 @@
         if (o.conta !== conta) return;
         const k = (ano * 12 + mes) - (o.ano * 12 + o.mes);
         const deQual = NOMES_MESES[o.mes].toLowerCase();
-        if (pg.modo === 'parcial' && k === 1) {
+        // parcial sem saldo = ainda sendo paga aos poucos: nada foi levado
+        if (pg.modo === 'parcial' && parseVal(pg.saldo) > 0 && k === 1) {
           itens.push({ chave, rotulo: 'Saldo da fatura de ' + deQual, valor: parseVal(pg.saldo) });
         } else if (pg.modo === 'parcelado' && pg.parcelamento && k >= 1 && k <= pg.parcelamento.n) {
           const principal = (pg.parcelamento.principais || [])[k - 1];
@@ -11625,6 +11638,64 @@
     function mesAdiante(mes, ano, k) {
       const d = new Date(ano, mes + k, 1);
       return { mes: d.getMonth(), ano: d.getFullYear() };
+    }
+
+    /* FATURA PAGA AOS POUCOS
+       Paga R$ 1.000 hoje, mais uma parte dia 13, o resto dia 20: cada parte sai
+       da conta na própria data, e a fatura só fecha quando a soma chega no que o
+       banco cobrou. Registro antigo (um pagamento só, sem lista) vale como uma
+       parte, então nada do que já estava gravado muda de sentido. */
+    function pagamentosDaFatura(pg) {
+      if (!pg) return [];
+      if (Array.isArray(pg.pagamentos)) {
+        return pg.pagamentos.filter(p => p && p.data).map(p => ({ valor: parseVal(p.valor), data: p.data }));
+      }
+      return pg.data ? [{ valor: parseVal(pg.valorPago), data: pg.data }] : [];
+    }
+
+    /* aberta: ninguém pagou nada · emParte: tem parte paga e ainda falta ·
+       paga · levada (o resto foi pra fatura seguinte) · parcelada · sem: não
+       houve fatura. `falta` só existe enquanto ela estiver em parte. */
+    function estadoFatura(conta, mes, ano) {
+      const total = totalFaturaConta(conta, mes, ano);
+      const pg = faturasPagas[chaveFatura(conta, mes, ano)] || null;
+      if (!pg) return { situacao: total > 0 ? 'aberta' : 'sem', total, pago: 0, cobrado: total, falta: total > 0 ? total : 0, pagamentos: [], pg };
+      const pagamentos = pagamentosDaFatura(pg);
+      const pago = Math.round(pagamentos.reduce((s, p) => s + p.valor, 0) * 100) / 100;
+      const cobrado = pg.cobrado !== undefined ? parseVal(pg.cobrado) : total;
+      const situacao = pg.modo === 'parcelado' ? 'parcelada'
+        : pg.modo === 'parcial' ? (parseVal(pg.saldo) > 0 ? 'levada' : 'emParte')
+        : 'paga';
+      const falta = situacao === 'emParte' ? Math.max(0, Math.round((cobrado - pago) * 100) / 100) : 0;
+      return { situacao, total, pago, cobrado, falta, pagamentos, pg };
+    }
+
+    // O que ainda está por pagar da fatura: inteira se ninguém pagou nada, só o
+    // que falta se já foi paga em parte, e zero se fechou (paga, levada, parcelada)
+    function aPagarDaFatura(conta, mes, ano) {
+      const e = estadoFatura(conta, mes, ano);
+      return e.situacao === 'aberta' || e.situacao === 'emParte' ? e.falta : 0;
+    }
+
+    // dia 1 de propósito: antes do fechamento, então o ajuste cai na fatura
+    // deste mês e não na do mês seguinte
+    function lancarAjusteDaFatura(conta, mes, ano, dif) {
+      if (Math.abs(dif) < 0.01) return;
+      lancamentos.unshift({
+        id: novoIdLancamento(),
+        tipo: dif > 0 ? 'despesa' : 'receita',
+        descricao: dif > 0 ? 'Ajuste de fatura — não identificado' : 'Ajuste de fatura — estorno',
+        conta,
+        formaModo: 'Crédito à Vista',
+        numParcelas: '1',
+        categoria: dif > 0 ? categoriaPadrao() : '',
+        observacao: 'Diferença entre o valor somado no app e o cobrado pelo banco',
+        data: ano + '-' + String(mes + 1).padStart(2, '0') + '-01',
+        valor: Math.abs(dif).toFixed(2).replace('.', ','),
+        grupoViagemId: '', grupoViagemNome: '',
+        emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
+        ajusteFatura: true
+      });
     }
 
     // Total dos gastos fixos e movimento das últimas 24h: números pequenos, de
@@ -11678,13 +11749,9 @@
         box.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;">Nenhum cartão de crédito cadastrado.</p>';
         return;
       }
-      const somaMes = (m, a) => comCredito.reduce((s, c) => s + totalFaturaConta(c.nome, m, a), 0);
-      const pagoMes = (m, a) => comCredito.every(c => totalFaturaConta(c.nome, m, a) <= 0
-        || faturasPagas[chaveFatura(c.nome, m, a)]);
-      const pagoNoMes = (m, a) => comCredito.reduce((s, c) => {
-        const pg = faturasPagas[chaveFatura(c.nome, m, a)];
-        return s + (pg ? parseVal(pg.valorPago) : totalFaturaConta(c.nome, m, a));
-      }, 0);
+      const estadosMes = (m, a) => comCredito.map(c => estadoFatura(c.nome, m, a));
+      // fechada = paga, levada ou parcelada; a que está sendo paga aos poucos ainda não
+      const fechadaOuVazia = e => e.situacao === 'sem' || (e.pg && e.situacao !== 'emParte');
       const hojeRef = getMesReferencia(0);
       const mesCorrente = hojeRef.getMonth(), anoCorrente = hojeRef.getFullYear();
       const ordinal = (m, a) => a * 12 + m;
@@ -11702,14 +11769,21 @@
            recebendo compra. Marcar de vermelho um mês que nem fechou seria
            cobrar uma dívida que ainda não existe. */
         const futura = ordinal(m, a) > ordinal(mesCorrente, anoCorrente);
-        const pago = futura ? false : pagoMes(m, a);
+        const estados = estadosMes(m, a);
+        const pago = futura ? false : estados.every(fechadaOuVazia);
+        /* Fatura sendo paga aos poucos: o número do mês vira o que ainda falta,
+           em amarelo — nem o vermelho de quem não pagou nada, nem o verde de
+           quem fechou. */
+        const emParte = !futura && !pago && estados.some(e => e.situacao === 'emParte');
         /* Mês pago mostra o que você PAGOU — é o número que saiu da conta. A
            soma do app continua à vista na linha de cada cartão, embaixo. */
-        const total = pago ? pagoNoMes(m, a) : somaMes(m, a);
-        const cor = (total <= 0 || futura) ? 'var(--texto-fraco)' : (pago ? 'var(--verde)' : 'var(--vermelho)');
-        const modos = comCredito.map(c => (faturasPagas[chaveFatura(c.nome, m, a)] || {}).modo).filter(Boolean);
-        const notaPaga = modos.includes('parcelado') ? 'parcelada' : (modos.includes('parcial') ? 'paga em parte' : 'paga');
-        const nota = futura ? 'em formação' : (total <= 0 ? 'sem fatura' : (pago ? notaPaga : 'em aberto'));
+        const total = pago ? estados.reduce((s, e) => s + (e.pg ? e.pago : e.total), 0)
+          : emParte ? estados.reduce((s, e) => s + (e.situacao === 'aberta' || e.situacao === 'emParte' ? e.falta : 0), 0)
+          : estados.reduce((s, e) => s + e.total, 0);
+        const cor = (total <= 0 || futura) ? 'var(--texto-fraco)' : (pago ? 'var(--verde)' : emParte ? 'var(--amarelo)' : 'var(--vermelho)');
+        const situacoes = estados.map(e => e.situacao);
+        const notaPaga = situacoes.includes('parcelada') ? 'parcelada' : (situacoes.includes('levada') ? 'paga em parte' : 'paga');
+        const nota = futura ? 'em formação' : (total <= 0 ? 'sem fatura' : (pago ? notaPaga : emParte ? 'falta pagar' : 'em aberto'));
         // O ano só aparece quando o trilho cruza a virada — dentro do mesmo ano
         // ele seria a mesma informação repetida treze vezes.
         const rotulo = a === anoCorrente ? NOMES_MESES[m].slice(0, 3) : NOMES_MESES[m].slice(0, 3) + '/' + String(a).slice(2);
@@ -11725,9 +11799,12 @@
       centralizarFaixaMeses(box);
 
       comCredito.forEach(c => {
-        const total = totalFaturaConta(c.nome, mes, ano);
-        const pago = faturasPagas[chaveFatura(c.nome, mes, ano)];
-        if (total <= 0 && !pago) return;
+        const est = estadoFatura(c.nome, mes, ano);
+        const total = est.total;
+        const emParte = est.situacao === 'emParte';
+        // fechada = paga, levada ou parcelada; a que está em parte ainda aceita pagamento
+        const pago = est.pg && !emParte ? est.pg : null;
+        if (total <= 0 && !est.pg) return;
 
         const compras = lancamentos.filter(l => {
           if (l.tipo !== 'despesa' || l.conta !== c.nome || !eCredito(l.formaModo)) return false;
@@ -11742,8 +11819,17 @@
            cobre a diferença continua existindo — esta linha só deixa à vista,
            mês a mês, quanto fugiu do que você tinha lançado. */
         const trazidos = itensTrazidosParaFatura(c.nome, mes, ano);
+        const ajustes = compras.filter(l => l.ajusteFatura).reduce((s, l) => s + parseVal(l.valor), 0);
+        const semAjuste = total - ajustes;
         let linhaApp = '';
-        if (pago && pago.modo === 'parcial') {
+        if (emParte) {
+          // só aparece quando o banco cobrou diferente: o "pago X de Y" já diz o resto
+          const dif = Math.round((est.cobrado - semAjuste) * 100) / 100;
+          if (Math.abs(dif) >= 0.01) {
+            linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">lançado no app ${fmtOculto(semAjuste)} · `
+              + `<span style="color:var(--amarelo);">banco cobrou ${fmtOculto(Math.abs(dif))} a ${dif > 0 ? 'mais' : 'menos'}</span></div>`;
+          }
+        } else if (pago && pago.modo === 'parcial') {
           const prox = NOMES_MESES[mesAdiante(mes, ano, 1).mes].toLowerCase();
           linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">lançado no app ${fmtOculto(total)} · `
             + `<span style="color:var(--amarelo);">${fmtOculto(parseVal(pago.saldo))} foi pra fatura de ${prox}</span>`
@@ -11753,10 +11839,7 @@
           linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">lançado no app ${fmtOculto(total)} · `
             + `<span style="color:var(--amarelo);">${pc.n}x de ${fmtOculto(parseVal(pc.valorParcela))}</span> · juros ${fmtOculto(parseVal(pc.juros))}</div>`;
         } else if (pago) {
-          const valorPago = parseVal(pago.valorPago);
-          const ajustes = compras.filter(l => l.ajusteFatura).reduce((s, l) => s + parseVal(l.valor), 0);
-          const semAjuste = total - ajustes;
-          const dif = Math.round((valorPago - semAjuste) * 100) / 100;
+          const dif = Math.round((est.pago - semAjuste) * 100) / 100;
           linhaApp = `<div style="font-size:10.5px;color:var(--texto-fraco);margin-top:1px;">`
             + `lançado no app ${fmtOculto(semAjuste)}`
             + (Math.abs(dif) >= 0.01
@@ -11770,16 +11853,23 @@
         linha.innerHTML = `
           <div class="item-info">
             <strong>${c.nome} ${(compras.length || trazidos.length) ? `<span class="chevron-sec" style="font-size:11px;color:var(--texto-tenue);">${aberto ? '▾' : '▸'}</span>` : ''}</strong>
-            <div style="font-size:11px;color:${pago ? 'var(--verde)' : 'var(--texto-fraco)'};">
+            <div style="font-size:11px;color:${pago ? 'var(--verde)' : emParte ? 'var(--amarelo)' : 'var(--texto-fraco)'};">
               ${pago
                 ? (pago.modo === 'parcelado' ? '✓ parcelada · entrada em ' : pago.modo === 'parcial' ? '✓ paga em parte em ' : '✓ paga em ') + pago.data.split('-').reverse().join('/')
-                : 'vence dia ' + diasDoCartao(c.nome).vence + textoMesDoVencimento(c.nome, mes, ano) + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')
-                  + (trazidos.length ? ' · ' + (trazidos.length === 1 ? 'inclui ' + trazidos[0].rotulo.toLowerCase() : 'inclui ' + trazidos.length + ' saldos anteriores') : '')}
+                  + (est.pagamentos.length > 1 ? ' · ' + est.pagamentos.length + ' pagamentos' : '')
+                : emParte
+                  ? `pago ${fmtOculto(est.pago)} de ${fmtOculto(est.cobrado)} · vence dia ${diasDoCartao(c.nome).vence}${textoMesDoVencimento(c.nome, mes, ano)}`
+                  : 'vence dia ' + diasDoCartao(c.nome).vence + textoMesDoVencimento(c.nome, mes, ano) + (compras.length ? ' · ' + compras.length + (compras.length === 1 ? ' compra' : ' compras') : '')
+                    + (trazidos.length ? ' · ' + (trazidos.length === 1 ? 'inclui ' + trazidos[0].rotulo.toLowerCase() : 'inclui ' + trazidos.length + ' saldos anteriores') : '')}
             </div>
             ${linhaApp}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <span class="${pago ? '' : 'valor-despesa'}" style="${pago ? 'color:var(--verde);font-weight:700;' : ''}">${fmtOculto(pago ? parseVal(pago.valorPago) : total)}</span>
+            ${pago
+              ? `<span style="color:var(--verde);font-weight:700;">${fmtOculto(est.pago)}</span>`
+              : emParte
+                ? `<span style="color:var(--amarelo);font-weight:700;text-align:right;line-height:1.15;">${fmtOculto(est.falta)}<br><span style="font-size:9.5px;font-weight:400;color:var(--texto-tenue);">falta</span></span>`
+                : `<span class="valor-despesa">${fmtOculto(total)}</span>`}
             <button type="button" class="btn-mini">${pago ? 'desfazer' : 'pagar'}</button>
           </div>
         `;
@@ -11841,16 +11931,33 @@
     let faturaEmPagamento = null;
     let modoPagamentoFatura = 'total';
 
+    const textoCentavos = v => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+
+    /* A mesma janela começa e continua o pagamento. Fatura já paga em parte
+       abre mostrando o que o banco cobrou, cada parte paga e o que falta — e os
+       botões passam a falar de terminar ou de pagar mais uma parte. */
     function abrirPagarFatura(conta, mes, ano) {
-      const total = totalFaturaConta(conta, mes, ano);
-      faturaEmPagamento = { conta, mes, ano, total };
+      const est = estadoFatura(conta, mes, ano);
+      const continuacao = est.situacao === 'emParte';
+      faturaEmPagamento = { conta, mes, ano, total: est.total,
+        pagoAntes: continuacao ? est.pago : 0, qtdAntes: continuacao ? est.pagamentos.length : 0 };
       document.getElementById('tituloPagarFatura').textContent = conta + ' · ' + NOMES_MESES[mes];
-      document.getElementById('faturaCalculada').textContent = fmtVal(total);
+      document.getElementById('faturaCalculada').textContent = fmtVal(est.total);
+      renderizarPagamentosFeitos(est, continuacao);
+      const rotulos = continuacao
+        ? { total: 'O que falta', parcial: 'Mais uma parte', parcelado: 'Parcelei' }
+        : { total: 'Tudo', parcial: 'Uma parte', parcelado: 'Parcelei' };
+      document.querySelectorAll('#modosPagamentoFatura .btn-periodo').forEach(b => { b.textContent = rotulos[b.dataset.modo]; });
       const selN = document.getElementById('faturaNumParcelas');
       if (!selN.options.length) {
         for (let n = 2; n <= 24; n++) selN.insertAdjacentHTML('beforeend', `<option value="${n}">${n}x</option>`);
         selN.value = '10';
       }
+      // o banco já cobrou um valor numa parte anterior: ele volta preenchido
+      document.getElementById('faturaValorCobrado').value = fmtVal(continuacao ? est.cobrado : est.total);
+      document.getElementById('faturaLevarResto').checked = false;
+      document.getElementById('rotuloLevarResto').textContent =
+        'Levar o que faltar pra fatura de ' + NOMES_MESES[mesAdiante(mes, ano, 1).mes].toLowerCase();
       document.getElementById('faturaJurosParcial').value = '';
       document.getElementById('faturaValorParcela').value = '';
       document.getElementById('faturaDataPagamento').value = obterDataBrasilia();
@@ -11858,17 +11965,36 @@
       document.getElementById('modalPagarFatura').classList.remove('escondido');
     }
 
-    function setModoPagamentoFatura(modo) {
+    // Caixa do topo de uma fatura em parte: cada pagamento ganha um ✕ pra tirar
+    // o que foi lançado errado, sem precisar desfazer a fatura inteira.
+    function renderizarPagamentosFeitos(est, continuacao) {
+      const box = document.getElementById('faturaJaPago');
+      if (!continuacao) { box.innerHTML = ''; return; }
+      const ordem = est.pagamentos.map((p, i) => ({ p, i })).sort((a, b) => a.p.data.localeCompare(b.p.data));
+      box.innerHTML = `<div class="linha-subtotal" style="cursor:default;"><span>Banco cobrou</span><strong>${fmtVal(est.cobrado)}</strong></div>`
+        + ordem.map(({ p, i }) => `
+          <div class="linha-subtotal" style="cursor:default;align-items:center;">
+            <span style="color:var(--verde);">✓ Pago em ${p.data.split('-').reverse().join('/')}
+              <button type="button" class="btn-mini" style="margin-left:6px;padding:1px 7px;" title="Tirar este pagamento" data-tirar-pagamento="${i}" onclick="tirarPagamentoFatura(${i})">✕</button></span>
+            <strong style="color:var(--verde);">${fmtVal(p.valor)}</strong>
+          </div>`).join('')
+        + `<div class="linha-subtotal" style="cursor:default;margin-bottom:0;"><span>Falta</span><strong style="color:var(--amarelo);">${fmtVal(est.falta)}</strong></div>`;
+    }
+
+    // soLevar: veio da caixinha "levar o resto" — troca o que aparece sem
+    // apagar o valor que você já digitou
+    function setModoPagamentoFatura(modo, soLevar) {
       modoPagamentoFatura = ['parcial', 'parcelado'].includes(modo) ? modo : 'total';
       document.querySelectorAll('#modosPagamentoFatura .btn-periodo').forEach(b => {
         b.classList.toggle('ativo', b.dataset.modo === modoPagamentoFatura);
       });
       document.getElementById('labelFaturaValorPago').textContent =
-        modoPagamentoFatura === 'parcial' ? 'Quanto você pagou'
-        : modoPagamentoFatura === 'parcelado' ? 'Entrada paga' : 'Valor que o banco cobrou';
-      document.getElementById('faturaValorPago').value = (modoPagamentoFatura === 'total' && faturaEmPagamento)
-        ? 'R$ ' + faturaEmPagamento.total.toFixed(2).replace('.', ',') : '';
-      document.getElementById('wrapJurosParcial').classList.toggle('escondido', modoPagamentoFatura !== 'parcial');
+        modoPagamentoFatura === 'parcelado' ? 'Entrada paga' : 'Quanto você pagou agora';
+      if (!soLevar) document.getElementById('faturaValorPago').value = '';
+      const levar = document.getElementById('faturaLevarResto').checked;
+      document.getElementById('wrapFaturaValorPago').classList.toggle('escondido', modoPagamentoFatura === 'total');
+      document.getElementById('wrapLevarResto').classList.toggle('escondido', modoPagamentoFatura !== 'parcial');
+      document.getElementById('wrapJurosParcial').classList.toggle('escondido', !(modoPagamentoFatura === 'parcial' && levar));
       document.getElementById('wrapParceladoFatura').classList.toggle('escondido', modoPagamentoFatura !== 'parcelado');
       previewAjusteFatura();
     }
@@ -11877,34 +12003,57 @@
       return parseVal((document.getElementById(id).value || '').replace('R$', '').trim()) || 0;
     }
 
-    function diferencaFatura() {
-      if (!faturaEmPagamento) return 0;
-      return Math.round((lerDinheiro('faturaValorPago') - faturaEmPagamento.total) * 100) / 100;
+    function textoAjusteFatura(dif) {
+      if (Math.abs(dif) < 0.01) return '';
+      return dif > 0
+        ? `O banco cobrou <strong>${fmtVal(dif)}</strong> a mais. Vai entrar como "Ajuste de fatura — não identificado", pra você descobrir depois o que foi.`
+        : `O banco cobrou <strong>${fmtVal(-dif)}</strong> a menos. Vai entrar como estorno, pra o mês fechar com o valor real.`;
     }
 
     /* Toda a conta do pagamento num lugar só: a prévia mostra, o confirmar
-       grava. `erro` preenchido = não deixa confirmar. */
+       grava. `erro` preenchido = não deixa confirmar. `agora` é o que sai da
+       conta neste pagamento; a fatura fecha (modo total) quando ele cobre o que
+       falta. Enquanto ela não fecha, o ajuste com o banco espera: é só no
+       fechamento que dá pra saber a diferença de verdade. */
     function calcularPagamentoFatura() {
       const f = faturaEmPagamento;
       const T = f.total;
+      const A = f.pagoAntes || 0;
+      const C = lerDinheiro('faturaValorCobrado');
       const valor = lerDinheiro('faturaValorPago');
       const prox = n => NOMES_MESES[mesAdiante(f.mes, f.ano, n).mes].toLowerCase();
+      if (!(C > 0)) return { erro: 'Digite o valor que o banco cobrou.' };
+      const R = Math.round((C - A) * 100) / 100;          // o que ainda falta pagar
+      if (R < 0.005) return { erro: `Você já pagou ${fmtVal(A)}, o que cobre esse valor. Confira o valor que o banco cobrou.` };
+      const dif = Math.round((C - T) * 100) / 100;
+      const ajuste = textoAjusteFatura(dif);
+      const comAjuste = t => ajuste ? t + '<br>' + ajuste : t;
+      const base = { cobrado: C, dif };
+      const quitar = (agora, texto) => Object.assign({ modo: 'total', agora, texto, cor: ajuste ? 'var(--amarelo)' : 'var(--verde)' }, base);
+
       if (modoPagamentoFatura === 'parcial') {
-        const juros = lerDinheiro('faturaJurosParcial');
-        if (!(valor > 0)) return { erro: 'Digite quanto você pagou desta fatura.' };
-        if (valor >= T - 0.005) return { erro: 'Isso cobre a fatura inteira — use "Tudo".' };
-        const saldo = Math.round((T - valor) * 100) / 100;
-        return { modo: 'parcial', valor, saldo, juros,
-          texto: `Sobram <strong>${fmtVal(saldo)}</strong>, que vão pra fatura de ${prox(1)}`
-            + (juros > 0
-              ? `, junto com <strong>${fmtVal(juros)}</strong> de juros (entram como gasto em "Juros e encargos").`
-              : `. Se o banco cobrar juros e você não souber o valor agora, a diferença aparece como ajuste quando pagar ${prox(1)}.`) };
+        if (!(valor > 0)) return { erro: 'Digite quanto você pagou agora.' };
+        if (valor > R + 0.005) return { erro: A > 0 ? `Passou do que falta pagar (${fmtVal(R)}).` : `Passou do valor que o banco cobrou (${fmtVal(C)}).` };
+        if (valor >= R - 0.005) return quitar(R, comAjuste('Com isso a fatura fica quitada.'));
+        const falta = Math.round((R - valor) * 100) / 100;
+        if (document.getElementById('faturaLevarResto').checked) {
+          const juros = lerDinheiro('faturaJurosParcial');
+          return Object.assign({ modo: 'parcial', levar: true, agora: valor, saldo: falta, juros,
+            texto: comAjuste(`Sobram <strong>${fmtVal(falta)}</strong>, que vão pra fatura de ${prox(1)}`
+              + (juros > 0
+                ? `, junto com <strong>${fmtVal(juros)}</strong> de juros (entram como gasto em "Juros e encargos").`
+                : `. Se o banco cobrar juros e você não souber o valor agora, a diferença aparece como ajuste quando pagar ${prox(1)}.`)) }, base);
+        }
+        return Object.assign({ modo: 'parcial', levar: false, agora: valor, falta,
+          texto: `Falta <strong>${fmtVal(falta)}</strong>. A fatura continua em aberto: quando pagar mais uma parte, é só tocar em <em>pagar</em> de novo.`
+            + (ajuste ? `<br>A diferença de ${fmtVal(Math.abs(dif))} entre o banco e o app vira ajuste quando a fatura fechar.` : '') }, base);
       }
       if (modoPagamentoFatura === 'parcelado') {
         const n = parseInt(document.getElementById('faturaNumParcelas').value, 10) || 2;
         const V = lerDinheiro('faturaValorParcela');
-        if (valor > T + 0.005) return { erro: 'A entrada passou do total da fatura.' };
-        const P = Math.round((T - valor) * 100) / 100;
+        if (valor > R + 0.005) return { erro: A > 0 ? 'A entrada passou do que falta pagar.' : 'A entrada passou do valor que o banco cobrou.' };
+        const P = Math.round((R - valor) * 100) / 100;
+        if (P < 0.005) return { erro: 'Não sobrou nada pra parcelar: isso quita a fatura.' };
         if (!(V > 0)) return { erro: `Parcelado: ${fmtVal(P)}. Digite o valor de cada parcela, como aparece na simulação do banco.` };
         const totalParc = Math.round(n * V * 100) / 100;
         const J = Math.round((totalParc - P) * 100) / 100;
@@ -11913,33 +12062,25 @@
         const jCada = Math.round(J / n * 100) / 100;
         const juros = Array.from({ length: n }, (_, k) => k === n - 1 ? Math.round((J - jCada * (n - 1)) * 100) / 100 : jCada);
         const principais = juros.map(j => Math.round((V - j) * 100) / 100);
-        return { modo: 'parcelado', valor, n, V, P, J, juros, principais,
-          texto: `Parcelado: <strong>${fmtVal(P)}</strong>. Vai pagar ${n} × ${fmtVal(V)} = ${fmtVal(totalParc)}.<br>`
+        return Object.assign({ modo: 'parcelado', agora: valor, n, V, P, J, juros, principais,
+          texto: comAjuste(`Parcelado: <strong>${fmtVal(P)}</strong>. Vai pagar ${n} × ${fmtVal(V)} = ${fmtVal(totalParc)}.<br>`
             + `Juros: <strong>${fmtVal(J)}</strong>${J > 0 ? ` (${fmtVal(jCada)} por mês, em "Juros e encargos")` : ''}.<br>`
-            + `De ${prox(1)} a ${prox(n)}: + ${fmtVal(V)} em cada fatura.` };
+            + `De ${prox(1)} a ${prox(n)}: + ${fmtVal(V)} em cada fatura.`) }, base);
       }
-      return { modo: 'total', valor };
+      // "Tudo" na primeira vez, "O que falta" depois de alguma parte
+      if (A > 0) {
+        return quitar(R, comAjuste(`Você paga agora <strong>${fmtVal(R)}</strong>, o que faltava. `
+          + `A fatura fica quitada: ${fmtVal(C)} em ${f.qtdAntes + 1} pagamentos.`));
+      }
+      return quitar(C, ajuste || 'Bateu certinho com o que está lançado aqui.');
     }
 
     function previewAjusteFatura() {
       const el = document.getElementById('previaAjusteFatura');
       if (!faturaEmPagamento) return;
-      if (modoPagamentoFatura !== 'total') {
-        const c = calcularPagamentoFatura();
-        el.style.color = c.erro ? 'var(--amarelo)' : 'var(--texto-fraco)';
-        el.innerHTML = c.erro || c.texto;
-        return;
-      }
-      const dif = diferencaFatura();
-      if (Math.abs(dif) < 0.01) {
-        el.style.color = 'var(--verde)';
-        el.textContent = 'Bateu certinho com o que está lançado aqui.';
-        return;
-      }
-      el.style.color = 'var(--amarelo)';
-      el.innerHTML = dif > 0
-        ? `O banco cobrou <strong>${fmtVal(dif)}</strong> a mais. Vai entrar como "Ajuste de fatura — não identificado", pra você descobrir depois o que foi.`
-        : `O banco cobrou <strong>${fmtVal(-dif)}</strong> a menos. Vai entrar como estorno, pra o mês fechar com o valor real.`;
+      const c = calcularPagamentoFatura();
+      el.style.color = c.erro ? 'var(--amarelo)' : (c.cor || 'var(--texto-fraco)');
+      el.innerHTML = c.erro || c.texto;
     }
 
     function confirmarPagarFatura() {
@@ -11949,50 +12090,45 @@
       const chave = chaveFatura(conta, mes, ano);
       const c = calcularPagamentoFatura();
       if (c.erro) { previewAjusteFatura(); return; }
-      const fmt = v => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
 
-      if (c.modo === 'parcial') {
-        faturasPagas[chave] = { valorPago: fmt(c.valor), data: dataPag, modo: 'parcial', saldo: fmt(c.saldo), juros: fmt(c.juros) };
-        if (c.juros > 0) {
-          const p = mesAdiante(mes, ano, 1);
-          lancarJurosNaFatura(conta, p.mes, p.ano, c.juros, 'Juros do rotativo — fatura de ' + NOMES_MESES[mes].toLowerCase(), chave);
-        }
-      } else if (c.modo === 'parcelado') {
-        faturasPagas[chave] = {
-          valorPago: fmt(c.valor), data: dataPag, modo: 'parcelado',
-          parcelamento: { n: c.n, valorParcela: fmt(c.V), principal: fmt(c.P), juros: fmt(c.J), principais: c.principais.map(fmt) }
-        };
-        c.juros.forEach((j, k) => {
-          if (j < 0.005) return;
-          const p = mesAdiante(mes, ano, k + 1);
-          lancarJurosNaFatura(conta, p.mes, p.ano, j,
-            `Juros do parcelamento da fatura de ${NOMES_MESES[mes].toLowerCase()} (${k + 1}/${c.n})`, chave);
-        });
+      // as partes já pagas continuam; a de agora entra no fim da lista
+      const pagamentos = pagamentosDaFatura(faturasPagas[chave]).map(p => ({ valor: textoCentavos(p.valor), data: p.data }));
+      const qtdAntes = pagamentos.length;
+      if (c.agora > 0.005) pagamentos.push({ valor: textoCentavos(c.agora), data: dataPag });
+      const reg = {
+        pagamentos,
+        valorPago: textoCentavos(pagamentos.reduce((s, p) => s + parseVal(p.valor), 0)),
+        data: pagamentos.length ? pagamentos.map(p => p.data).sort().pop() : dataPag,
+        cobrado: textoCentavos(c.cobrado)
+      };
+
+      if (c.modo === 'parcial' && !c.levar) {
+        // continua em aberto: nada de ajuste, juros ou saldo levado até ela fechar
+        reg.modo = 'parcial';
       } else {
-        const valorPago = c.valor;
-        const dif = diferencaFatura();
-        if (Math.abs(dif) >= 0.01) {
-          // dia 1 de propósito: antes do fechamento, então o ajuste cai na fatura
-          // deste mês e não na do mês seguinte
-          const dataAjuste = ano + '-' + String(mes + 1).padStart(2, '0') + '-01';
-          lancamentos.unshift({
-            id: novoIdLancamento(),
-            tipo: dif > 0 ? 'despesa' : 'receita',
-            descricao: dif > 0 ? 'Ajuste de fatura — não identificado' : 'Ajuste de fatura — estorno',
-            conta,
-            formaModo: 'Crédito à Vista',
-            numParcelas: '1',
-            categoria: dif > 0 ? categoriaPadrao() : '',
-            observacao: 'Diferença entre o valor somado no app e o cobrado pelo banco',
-            data: dataAjuste,
-            valor: Math.abs(dif).toFixed(2).replace('.', ','),
-            grupoViagemId: '', grupoViagemNome: '',
-            emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
-            ajusteFatura: true
+        lancarAjusteDaFatura(conta, mes, ano, c.dif);
+        // fechou depois de partes: o "desfazer" volta só até elas
+        if (qtdAntes) reg.pagamentosAntes = qtdAntes;
+        if (c.modo === 'parcial') {
+          Object.assign(reg, { modo: 'parcial', saldo: textoCentavos(c.saldo), juros: textoCentavos(c.juros) });
+          if (c.juros > 0) {
+            const p = mesAdiante(mes, ano, 1);
+            lancarJurosNaFatura(conta, p.mes, p.ano, c.juros, 'Juros do rotativo — fatura de ' + NOMES_MESES[mes].toLowerCase(), chave);
+          }
+        } else if (c.modo === 'parcelado') {
+          reg.modo = 'parcelado';
+          reg.parcelamento = { n: c.n, valorParcela: textoCentavos(c.V), principal: textoCentavos(c.P), juros: textoCentavos(c.J), principais: c.principais.map(textoCentavos) };
+          c.juros.forEach((j, k) => {
+            if (j < 0.005) return;
+            const p = mesAdiante(mes, ano, k + 1);
+            lancarJurosNaFatura(conta, p.mes, p.ano, j,
+              `Juros do parcelamento da fatura de ${NOMES_MESES[mes].toLowerCase()} (${k + 1}/${c.n})`, chave);
           });
+        } else {
+          reg.modo = 'total';
         }
-        faturasPagas[chave] = { valorPago: fmt(valorPago), data: dataPag };
       }
+      faturasPagas[chave] = reg;
       salvarLocalStorage();
       salvarFaturasPagas();
       fecharModal('modalPagarFatura');
@@ -12000,17 +12136,60 @@
       atualizarTudo();
     }
 
+    // ✕ numa parte já paga: tira só ela. Fatura em parte ainda não tem ajuste
+    // nem juros, então não sobra mais nada pra desfazer junto.
+    function tirarPagamentoFatura(i) {
+      const f = faturaEmPagamento;
+      if (!f) return;
+      const chave = chaveFatura(f.conta, f.mes, f.ano);
+      const pg = faturasPagas[chave];
+      const lista = pagamentosDaFatura(pg);
+      const p = lista[i];
+      if (!p) return;
+      if (!confirm(`Tirar o pagamento de ${fmtVal(p.valor)} feito em ${p.data.split('-').reverse().join('/')}?`)) return;
+      lista.splice(i, 1);
+      if (!lista.length) delete faturasPagas[chave];
+      else faturasPagas[chave] = Object.assign({}, pg, {
+        pagamentos: lista.map(x => ({ valor: textoCentavos(x.valor), data: x.data })),
+        valorPago: textoCentavos(lista.reduce((s, x) => s + x.valor, 0)),
+        data: lista.map(x => x.data).sort().pop()
+      });
+      salvarFaturasPagas();
+      atualizarTudo();
+      abrirPagarFatura(f.conta, f.mes, f.ano);   // reabre já com a conta refeita
+    }
+
     function desfazerPagamentoFatura(conta, mes, ano) {
       const chave = chaveFatura(conta, mes, ano);
       const pg = faturasPagas[chave];
-      const levou = pg && (pg.modo === 'parcial' || pg.modo === 'parcelado');
-      if (!confirm(levou
-        ? 'Desmarcar este pagamento? O que foi levado pras próximas faturas (saldo ou parcelas) e os juros lançados saem junto.'
-        : 'Desmarcar esta fatura como paga? O lançamento de ajuste, se houver, continua — apague pela lista se não quiser mais.')) return;
-      delete faturasPagas[chave];
+      if (!pg) return;
+      const levou = pg.modo === 'parcelado' || (pg.modo === 'parcial' && parseVal(pg.saldo) > 0);
+      /* Fechou depois de ter sido paga em partes: desfazer volta um passo só,
+         pra fatura em parte de antes. As partes já pagas não se perdem. */
+      const antes = (pg.pagamentosAntes || 0) > 0 ? pagamentosDaFatura(pg).slice(0, pg.pagamentosAntes) : null;
+      const pagoAntes = antes ? antes.reduce((s, p) => s + p.valor, 0) : 0;
+      if (!confirm(antes
+        ? `Desfazer o fechamento desta fatura? Ela volta a ficar em aberto, com ${fmtVal(pagoAntes)} já pagos `
+          + `(${antes.length === 1 ? '1 parte' : antes.length + ' partes'}).`
+          + (levou ? ' O que foi levado pras próximas faturas e os juros saem junto.' : '')
+          + ' O lançamento de ajuste, se houver, continua.'
+        : levou
+          ? 'Desmarcar este pagamento? O que foi levado pras próximas faturas (saldo ou parcelas) e os juros lançados saem junto.'
+          : 'Desmarcar esta fatura como paga? O lançamento de ajuste, se houver, continua — apague pela lista se não quiser mais.')) return;
       if (levou) {
         lancamentos = lancamentos.filter(l => l.encargoFatura !== chave);
         salvarLocalStorage();
+      }
+      if (antes) {
+        faturasPagas[chave] = {
+          pagamentos: antes.map(p => ({ valor: textoCentavos(p.valor), data: p.data })),
+          valorPago: textoCentavos(pagoAntes),
+          data: antes.map(p => p.data).sort().pop(),
+          cobrado: pg.cobrado,
+          modo: 'parcial'
+        };
+      } else {
+        delete faturasPagas[chave];
       }
       salvarFaturasPagas();
       atualizarTudo();
@@ -12752,13 +12931,17 @@
         // mas fazem parte do total do card. Vão como subtotal, no topo.
         if (tipoFiltro === 'saiu') {
           const chaveMes = String(ano) + '-' + String(mes + 1).padStart(2, '0');
-          const pagas = Object.entries(faturasPagas)
-            .filter(([, pg]) => pg && pg.data && pg.data.slice(0, 7) === chaveMes);
+          // uma linha por pagamento: fatura paga em partes aparece em cada data
+          const pagas = [];
+          Object.entries(faturasPagas).forEach(([chave, pg]) => {
+            const o = partesChaveFatura(chave);
+            pagamentosDaFatura(pg).forEach(x => { if (x.data.slice(0, 7) === chaveMes) pagas.push(Object.assign({ conta: o.conta, mesFatura: o.mes }, x)); });
+          });
           if (pagas.length) {
-            extrasHTML = pagas.map(([chave, pg]) => `
+            extrasHTML = pagas.sort((a, b) => a.data.localeCompare(b.data)).map(x => `
               <div class="linha-subtotal" style="cursor:default;">
-                <span>🧾 Fatura ${chave.split('|')[0]} paga em ${pg.data.split('-').reverse().join('/')}</span>
-                <strong style="color:var(--vermelho);">${fmtOculto(parseVal(pg.valorPago))}</strong>
+                <span>🧾 Fatura ${x.conta} de ${NOMES_MESES[x.mesFatura].toLowerCase()} paga em ${x.data.split('-').reverse().join('/')}</span>
+                <strong style="color:var(--vermelho);">${fmtOculto(x.valor)}</strong>
               </div>`).join('');
           }
         }
@@ -12791,11 +12974,21 @@
         });
         // Fatura paga e transferências não são lançamentos, mas mexem no saldo desta
         // conta — então precisam aparecer aqui, senão a lista não fecha com o número.
+        // Mesma régua do saldo: o pagamento entra no mês em que saiu da conta,
+        // seja de que fatura for — e cada parte de uma fatura paga aos poucos
+        // entra na própria data.
         const extras = [];
-        const pg = faturasPagas[chaveFatura(contaNome, mes, ano)];
-        if (pg && pg.data) extras.push({
-          rotulo: '🧾 Fatura paga em ' + pg.data.split('-').reverse().join('/'),
-          valor: -parseVal(pg.valorPago)
+        Object.entries(faturasPagas).forEach(([chave, pg]) => {
+          const o = partesChaveFatura(chave);
+          if (o.conta !== contaNome) return;
+          pagamentosDaFatura(pg).forEach(x => {
+            const d = new Date(x.data + 'T12:00:00');
+            if (d.getMonth() !== mes || d.getFullYear() !== ano) return;
+            extras.push({
+              rotulo: `🧾 Fatura de ${NOMES_MESES[o.mes].toLowerCase()} paga em ${x.data.split('-').reverse().join('/')}`,
+              valor: -x.valor
+            });
+          });
         });
         transferencias.forEach(t => {
           const d = new Date(t.data + 'T12:00:00');
@@ -16041,7 +16234,7 @@ function confirmarLancamentoVoz() {
 }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.10.03-1';
+    const APP_VERSION = '2026.10.11-1';
 
     // Inicialização
     carregarLocalStorage();
