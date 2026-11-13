@@ -184,7 +184,12 @@ iniciar('12 · conciliação da fatura', async t => {
   const base = { lancamentos: [], fixos: [], contas: CONTAS, faturasPagas: {} };
   const comConc = await restaurar(Object.assign({ conciliacoes: { 'Itaú|2026-10': { ok: ['l:1'], banco: '10,00' } } }, base));
   const semConc = await restaurar(base);
-  const exporta = await p.evaluate(() => /\bconciliacoes,/.test(exportarBackup.toString()));
+  // o arquivo que o Exportar grava leva a conferência junto
+  const exporta = await p.evaluate(async () => {
+    conciliacoes = { 'Itaú|2026-10': { ok: ['l:1'], banco: '10,00' } };
+    const dados = JSON.parse(await montarBackup().blob.text());
+    return JSON.stringify(dados.conciliacoes) === '{"Itaú|2026-10":{"ok":["l:1"],"banco":"10,00"}}';
+  });
   t.ok(exporta && comConc.aviso === 'backupOk' && comConc.conc === '{"Itaú|2026-10":{"ok":["l:1"],"banco":"10,00"}}'
     && semConc.conc === '{}', 'a conferência vai e volta no backup; backup antigo, sem ela, começa vazio');
 

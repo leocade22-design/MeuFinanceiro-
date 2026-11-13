@@ -1,7 +1,7 @@
 // IMPORTANTE: ao publicar uma versão nova do app, mude VERSAO aqui e a constante
 // APP_VERSION no index.html (as duas juntas). É a mudança neste arquivo que faz o
 // navegador perceber que existe versão nova e reinstalar o service worker.
-const VERSAO = '2026.11.13-1';
+const VERSAO = '2026.11.13-2';
 const CACHE_NAME = 'meu-financeiro-' + VERSAO;
 
 const ARQUIVOS_PARA_CACHE = [
@@ -46,6 +46,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  // O manual (o PDF de ~6 MB e as páginas com as telas) vem sempre da rede e
+  // não ocupa o cache do app: offline ele não faz falta, e o "?v=" da versão
+  // já impede o navegador de entregar um manual velho.
+  if (url.pathname.endsWith('.pdf') || url.pathname.includes('/manual/')) return;
 
   event.respondWith(
     fetch(new Request(event.request.url, {

@@ -644,6 +644,16 @@
     .faixa-aviso { display:flex; align-items:center; gap:12px; background:rgba(255,209,102,.07);
       border:1px solid rgba(255,209,102,.28); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
 
+    /* Faixa das novidades: o mesmo desenho da do backup, na cor de destaque do
+       app em vez do amarelo de alerta — é notícia, não pendência. */
+    .faixa-aviso.novidades { background:rgba(95,153,51,.08); border-color:rgba(95,153,51,.30); }
+    .novidades-versao { padding:12px 0; border-top:1px solid var(--borda-fraca); }
+    .novidades-versao:first-child { border-top:none; padding-top:2px; }
+    .novidades-titulo { font-size:13.5px; font-weight:700; color:var(--texto-forte); margin-bottom:6px; }
+    .novidades-titulo span { font-weight:500; color:var(--texto-medio); font-size:12px; }
+    .novidades-versao ul { margin:0; padding-left:18px; }
+    .novidades-versao li { font-size:12.5px; color:var(--texto-fraco); line-height:1.5; margin:4px 0; }
+
     .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .backup-actions .btn-cancelar { flex:1; margin-top:0; }
     .btn-backup { width:100%; padding:12px; border:1px solid var(--borda); border-radius:10px; background:var(--campo); color:var(--texto); font-weight:700; cursor:pointer; }
@@ -789,6 +799,17 @@
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
           <button type="button" class="btn-mini" style="color:var(--amarelo);border-color:rgba(255,209,102,.4);" onclick="irParaBackup()">exportar</button>
           <button type="button" class="btn-mini" onclick="adiarAvisoBackup()">depois</button>
+        </div>
+      </div>
+      <!-- Aparece uma vez depois de cada atualização do app (ver verificarNovidades). -->
+      <div id="avisoNovidades" class="escondido faixa-aviso novidades">
+        <div style="flex:1;min-width:0;">
+          <strong style="display:block;font-size:13px;margin-bottom:2px;">✨ O app foi atualizado</strong>
+          <span id="textoAvisoNovidades" style="font-size:11.5px;color:var(--texto-fraco);line-height:1.45;"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-mini" style="color:var(--acento-claro);border-color:rgba(95,153,51,.45);" onclick="abrirNovidades()">ver</button>
+          <button type="button" class="btn-mini" onclick="marcarNovidadesVistas()">ok</button>
         </div>
       </div>
 
@@ -1450,6 +1471,27 @@
         </div>
       </div>
 
+      <!-- MANUAL E NOVIDADES
+           O manual acompanha cada versão: o PDF publicado junto com o app é
+           sempre o da versão atual, e "O que mudou" lista os ajustes de cada uma. -->
+      <div class="card">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('manual')">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
+            <h3 style="font-size:16px;">Manual e novidades</h3>
+            <span id="versaoManual" style="font-size:11px;color:var(--texto-medio);"></span>
+          </div>
+          <span class="chevron-sec" id="chevron-manual">▸</span>
+        </button>
+        <div id="corpo-manual" class="escondido" style="margin-top:10px;">
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">O manual acompanha o app: a cada atualização, o arquivo daqui já é o da versão nova. Em <strong style="color:var(--texto-forte);font-weight:600;">O que mudou</strong> fica a lista do que foi ajustado em cada versão.</p>
+          <div class="backup-actions">
+            <button type="button" class="btn-backup primary" onclick="baixarManual(this)">Baixar o manual (PDF)</button>
+            <button type="button" class="btn-backup" onclick="abrirNovidades()">O que mudou</button>
+          </div>
+          <p style="font-size:11.5px;color:var(--texto-medio);margin-top:10px;">Ou <a href="manual/manual.html" target="_blank" rel="noopener" style="color:var(--acento-claro);">leia o manual online</a>, sem baixar.</p>
+        </div>
+      </div>
+
       <!-- BACKUP E RESTAURAÇÃO (retrátil, veio da aba Faturas) -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('backup')">
@@ -1457,11 +1499,12 @@
           <span class="chevron-sec" id="chevron-backup">▸</span>
         </button>
         <div id="corpo-backup" class="escondido" style="margin-top:10px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados. Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — <strong style="color:var(--texto-forte);font-weight:600;">Salvar no Drive</strong>, Arquivos, WhatsApp. No computador, abre o "salvar como" pra apontar a pasta.</p>
+          <p id="textoDestinoBackup" style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados. Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — <strong style="color:var(--texto-forte);font-weight:600;">Salvar no Drive</strong>, Arquivos, WhatsApp. No computador, abre o "salvar como" pra apontar a pasta.</p>
           <div class="backup-actions">
             <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
           </div>
+          <button type="button" id="btnEnviarBackup" class="btn-backup escondido" style="margin-top:8px;" onclick="enviarBackup()">Enviar backup (WhatsApp, e-mail, Drive)</button>
           <input type="file" id="importBackupInput" class="escondido" aria-label="Arquivo de backup para importar" accept="application/json" onchange="importarBackup(event)">
         </div>
         <!-- Versão e assinatura ficam FORA do corpo retrátil: são a identidade do
@@ -2343,6 +2386,19 @@
   </div>
 
   <!-- RELATÓRIO DO CONSULTOR: em tela, texto pra copiar/compartilhar e PDF -->
+  <div id="modalNovidades" class="modal-overlay escondido" onclick="if(event.target===this) fecharNovidades()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>O que mudou</h3>
+        <button class="btn-fechar" onclick="fecharNovidades()">&times;</button>
+      </div>
+      <div id="listaNovidades"></div>
+      <div class="backup-actions" style="margin-top:12px;">
+        <button type="button" class="btn-backup primary" onclick="baixarManual(this)">Baixar o manual (PDF)</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalRelatorio" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalRelatorio')">
     <div class="modal-content">
       <div class="modal-header">
@@ -5533,7 +5589,7 @@
         : `Último backup há ${dias} dias. Seus dados moram só neste aparelho.`;
     }
 
-    async function exportarBackup() {
+    function montarBackup() {
       const payload = {
         versao: 3,
         exportadoEm: new Date().toISOString(),
@@ -5556,68 +5612,163 @@
         lixeira,
         correcoesSaldo
       };
-      // Só conta como backup feito quando o arquivo REALMENTE sai — por isso a
-      // marca é gravada em cada caminho que conclui, não aqui no começo.
-      const marcarBackupFeito = () => {
-        localStorage.setItem(CHAVE_ULTIMO_BACKUP, obterDataBrasilia());
-        atualizarAvisoBackup();
-      };
       const nome = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
-      const texto = JSON.stringify(payload, null, 2);
-      const blob = new Blob([texto], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      return { nome, blob, arquivo: new File([blob], nome, { type: 'application/json' }) };
+    }
 
-      /* ESCOLHER ONDE SALVAR
-         O navegador não deixa um site gravar direto numa pasta sua nem mandar pro
-         Drive por conta própria — e ainda bem, senão qualquer site faria isso. O
-         que existe são dois caminhos, e o app usa o melhor disponível:
+    // Só conta como backup feito quando o arquivo REALMENTE sai — por isso a
+    // marca é gravada em cada caminho que conclui, e não no começo.
+    function marcarBackupFeito() {
+      localStorage.setItem(CHAVE_ULTIMO_BACKUP, obterDataBrasilia());
+      atualizarAvisoBackup();
+    }
 
-         1. A FOLHA DE COMPARTILHAMENTO do celular (Web Share). É ela que traz
-            "Salvar no Drive", "Salvar em Arquivos", WhatsApp, Gmail — quem escolhe
-            o destino e a pasta é você, na tela do próprio Android.
-         2. O SALVAR COMO do computador (File System Access), que abre o explorador
-            de arquivos pra você apontar a pasta. Só existe no desktop.
+    /* ESCOLHER A PASTA
+       O navegador não deixa um site gravar sozinho numa pasta sua (e ainda bem,
+       senão qualquer site faria isso). O que existe é o "Salvar como" do
+       aparelho (File System Access): no computador, o explorador de arquivos; no
+       Android, a tela de documentos do sistema, onde dá pra escolher a pasta e
+       também o Drive. Ele vem PRIMEIRO. Antes, a folha de compartilhamento vinha
+       antes e, como o Android sempre tem folha, o "Salvar como" nunca aparecia
+       no celular.
 
-         Sem nenhum dos dois, cai no download comum, como era antes. */
+       Onde não existe "Salvar como" (iPhone, Firefox), o arquivo vai pela folha
+       de compartilhamento e, sem ela, pro download comum.
+
+       Devolve true (gravou), false (você cancelou) ou null (não deu: segue pro
+       próximo caminho). O "Salvar como" precisa abrir no toque; o conteúdo pode
+       chegar depois (o manual vem da internet), por isso ele aceita promessa. */
+    function temSalvarComo() {
+      return typeof window.showSaveFilePicker === 'function';
+    }
+
+    function podeCompartilharArquivo(arquivo) {
+      try { return !!(navigator.canShare && navigator.canShare({ files: [arquivo] })); } catch (e) { return false; }
+    }
+
+    async function gravarComSalvarComo(nome, conteudo, tipo, pasta) {
+      if (!temSalvarComo()) return null;
+      let handle;
       try {
-        const arquivo = new File([blob], nome, { type: 'application/json' });
-        if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
-          await navigator.share({
-            files: [arquivo],
-            title: 'Backup do MeuFinanceiro',
-            text: 'Backup de ' + obterDataBrasilia().split('-').reverse().join('/')
-          });
-          marcarBackupFeito();
-          return;
-        }
+        // `id` faz o "Salvar como" abrir na última pasta usada pra esse tipo de arquivo
+        handle = await window.showSaveFilePicker({ suggestedName: nome, id: pasta, types: [tipo] });
       } catch (e) {
-        // cancelar a folha de compartilhamento não é erro: o usuário desistiu
-        if (e && e.name === 'AbortError') return;
+        if (e && e.name === 'AbortError') return false;
+        return null;
       }
+      const blob = await conteudo;
+      const escrever = await handle.createWritable();
+      await escrever.write(blob);
+      await escrever.close();
+      return true;
+    }
 
-      try {
-        if (window.showSaveFilePicker) {
-          const handle = await window.showSaveFilePicker({
-            suggestedName: nome,
-            types: [{ description: 'Backup do MeuFinanceiro', accept: { 'application/json': ['.json'] } }]
-          });
-          const escrever = await handle.createWritable();
-          await escrever.write(blob);
-          await escrever.close();
-          marcarBackupFeito();
-          avisar('backupSalvo');
-          return;
-        }
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;
-      }
-
+    function baixarArquivo(blob, nome) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = nome;
       a.click();
-      marcarBackupFeito();
       setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    async function exportarBackup() {
+      const { nome, blob, arquivo } = montarBackup();
+      const gravou = await gravarComSalvarComo(nome, blob,
+        { description: 'Backup do MeuFinanceiro', accept: { 'application/json': ['.json'] } }, 'backup');
+      if (gravou === false) return;               // fechou o "Salvar como" sem salvar
+      if (gravou) {
+        marcarBackupFeito();
+        avisar('backupSalvo');
+        return;
+      }
+      if (await compartilharBackup(arquivo)) return;
+      baixarArquivo(blob, nome);
+      marcarBackupFeito();
+    }
+
+    /* ENVIAR: a folha de compartilhamento (WhatsApp, e-mail, Drive). Era o
+       único caminho no celular; agora é o botão de quem quer mandar o arquivo
+       pra algum lugar em vez de guardar numa pasta. */
+    async function compartilharBackup(arquivo) {
+      if (!podeCompartilharArquivo(arquivo)) return false;
+      try {
+        await navigator.share({
+          files: [arquivo],
+          title: 'Backup do MeuFinanceiro',
+          text: 'Backup de ' + obterDataBrasilia().split('-').reverse().join('/')
+        });
+        marcarBackupFeito();
+      } catch (e) {
+        // fechar a folha não é erro: você desistiu
+        if (!(e && e.name === 'AbortError')) return false;
+      }
+      return true;
+    }
+
+    async function enviarBackup() {
+      const { nome, blob, arquivo } = montarBackup();
+      if (await compartilharBackup(arquivo)) return;
+      baixarArquivo(blob, nome);
+      marcarBackupFeito();
+    }
+
+    // O texto do card diz o que vai acontecer NESTE aparelho, e o Enviar só
+    // aparece quando o Exportar não é ele mesmo a folha de compartilhamento.
+    function ajustarTextoDoBackup() {
+      const comSalvarComo = temSalvarComo();
+      const comFolha = podeCompartilharArquivo(new File(['{}'], 'backup.json', { type: 'application/json' }));
+      const enviar = document.getElementById('btnEnviarBackup');
+      if (enviar) enviar.classList.toggle('escondido', !(comSalvarComo && comFolha));
+      const el = document.getElementById('textoDestinoBackup');
+      if (!el) return;
+      const forte = t => `<strong style="color:var(--texto-forte);font-weight:600;">${t}</strong>`;
+      const base = 'Exporte um arquivo com tudo ou restaure depois sem perder dados. ';
+      el.innerHTML = base + (comSalvarComo
+        ? `Ao exportar, abre o ${forte('Salvar como')} do aparelho pra você escolher a pasta (no Android, o Drive também aparece na lista).`
+          + (comFolha ? ` Pra mandar por WhatsApp ou e-mail, use ${forte('Enviar')}.` : '')
+        : comFolha
+          ? `Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — ${forte('Salvar no Drive')}, Arquivos, WhatsApp.`
+          : 'Ao exportar, o arquivo vai pra pasta de downloads.');
+    }
+
+    /* MANUAL
+       O PDF é publicado junto com o app, então o arquivo do servidor é sempre o
+       da versão atual. O "?v=" com a versão evita que o celular entregue uma
+       cópia velha guardada; o nome do arquivo baixado leva a versão, pra você
+       saber qual manual tem na pasta. */
+    const ARQUIVO_MANUAL = 'MeuFinanceiro-Manual.pdf';
+    function urlDoManual() { return ARQUIVO_MANUAL + '?v=' + encodeURIComponent(APP_VERSION); }
+    function nomeDoManual() { return 'MeuFinanceiro-Manual-' + APP_VERSION + '.pdf'; }
+
+    async function baixarManual(botao) {
+      const tipo = { description: 'Manual do MeuFinanceiro', accept: { 'application/pdf': ['.pdf'] } };
+      if (temSalvarComo()) {
+        // o download começa junto com o "Salvar como": enquanto você escolhe a pasta, o arquivo já vem
+        const pdf = fetch(urlDoManual()).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); });
+        pdf.catch(() => {});
+        const rotulo = botao ? botao.textContent : '';
+        try {
+          if (botao) { botao.disabled = true; botao.textContent = 'Baixando o manual…'; }
+          const gravou = await gravarComSalvarComo(nomeDoManual(), pdf, tipo, 'manual');
+          if (gravou === false) return;
+          if (gravou) { avisar('manualSalvo'); return; }
+        } catch (e) {
+          avisar('manualErro');
+          return;
+        } finally {
+          if (botao) { botao.disabled = false; botao.textContent = rotulo; }
+        }
+      }
+      // sem "Salvar como": download comum (Android: pasta Downloads; iPhone: abre o PDF pra salvar)
+      const a = document.createElement('a');
+      a.href = urlDoManual();
+      a.download = nomeDoManual();
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
 
     function importarBackup(e) {
@@ -6707,6 +6858,14 @@
       zoomTravado: { emoji: '🔒', detalhe: 'Se a tela já estava ampliada, feche e abra o app pra ela voltar ao normal.', frases: [
         'Zoom travado. A tela para de fugir agora.',
         'Pronto: nada de zoom sem querer.'
+      ] },
+      manualSalvo: { emoji: '📘', detalhe: 'O manual da versão atual foi gravado na pasta que você escolheu.', frases: [
+        'Manual salvo.',
+        'Pronto: o manual novo está na pasta.'
+      ] },
+      manualErro: { emoji: '📡', detalhe: 'Não deu pra baixar o manual agora. Confira a internet e tente de novo. Se um arquivo vazio ficou na pasta, pode apagar.', frases: [
+        'O manual não veio.',
+        'Sem manual desta vez.'
       ] },
       backupSalvo: { emoji: '💾', detalhe: 'O arquivo foi gravado na pasta que você escolheu.', frases: [
         'Backup salvo onde você mandou.',
@@ -12958,7 +13117,9 @@
         conta,
         formaModo: 'Crédito à Vista',
         numParcelas: '1',
-        categoria: dif > 0 ? categoriaPadrao() : '',
+        // sem a categoria Outros, fica sem categoria (os gráficos mostram como
+        // "Outros"); categoriaPadrao() cairia na primeira da lista, uma real
+        categoria: dif > 0 && categorias.includes('Outros') ? 'Outros' : '',
         observacao: 'Diferença entre o valor somado no app e o cobrado pelo banco',
         data: ano + '-' + String(mes + 1).padStart(2, '0') + '-01',
         valor: Math.abs(dif).toFixed(2).replace('.', ','),
@@ -18370,8 +18531,82 @@ function confirmarLancamentoVoz() {
       }
     }
 
-    // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.11.13-1';
+    // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js, e
+    // acrescente o que mudou no começo de NOVIDADES (o teste 15 confere).
+    const APP_VERSION = '2026.11.13-2';
+
+    /* NOVIDADES — o que mudou em cada versão, da mais nova pra mais velha. É o
+       que aparece em Ajustes → Manual e novidades → O que mudou, e na faixa que
+       surge uma vez depois de cada atualização. Escrito pra quem usa o app, sem
+       termo técnico. */
+    const NOVIDADES = [
+      { versao: '2026.11.13-2', data: '13/11/2026', itens: [
+        'Exportar backup abre o "Salvar como" do aparelho: você escolhe a pasta (no Android, o Drive também aparece na lista). Pra mandar o arquivo por WhatsApp ou e-mail, use o botão Enviar.',
+        'Ajustes ganhou "Manual e novidades": baixe o manual da versão atual em PDF, leia online ou veja o que mudou em cada atualização.',
+        'Depois de cada atualização, uma faixa na aba Lançamentos avisa uma vez e mostra as novidades.',
+        'Ajuste de fatura lançado pelo app fica sem categoria (aparece como "Outros" nos gráficos) quando você não tem a categoria Outros. Antes ele caía na primeira categoria da lista.'
+      ] },
+      { versao: '2026.11.13-1', data: '13/11/2026', itens: [
+        'Cobrança de gasto fixo com reembolso só entra na lista de quem te deve 10 dias antes do prazo, pra todo mundo igual.',
+        'Mês sem cobrança: em gastos fixos e consórcios, marque o mês que não teve cobrança. No consórcio, a numeração das parcelas não pula.',
+        'Fatura que não bate com o banco: ao pagar, o app pergunta o que fazer com a diferença (deixar a conciliar, levar pra próxima fatura ou lançar ajuste).',
+        'Conciliar com o banco: confira a fatura compra por compra, inclusive importando o arquivo CSV ou OFX do banco.',
+        'Estorno no cartão abate a fatura e a categoria da compra, sem mexer no saldo da conta.',
+        'Relatório do consultor, na aba Gráficos: o retrato das suas finanças pra copiar, compartilhar ou salvar em PDF.',
+        'Restaurar backup mostra o que tem no arquivo e pede confirmação; arquivo que não é backup é recusado sem apagar nada. Se a memória do aparelho encher, o app avisa.',
+        'Voz entende melhor os valores ("2 mil e 500", "45 reais e 90 centavos", "em 3 vezes"), a parcela de compra feita no fim do mês cai na fatura certa e o teclado não cobre mais o campo nas janelas.'
+      ] }
+    ];
+
+    function renderizarNovidades() {
+      const el = document.getElementById('listaNovidades');
+      if (!el) return;
+      el.innerHTML = NOVIDADES.map(v => `
+        <div class="novidades-versao">
+          <div class="novidades-titulo">Versão ${esc(v.versao)} <span>· ${esc(v.data)}${v.versao === APP_VERSION ? ' · esta versão' : ''}</span></div>
+          <ul>${v.itens.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        </div>`).join('');
+    }
+
+    function abrirNovidades() {
+      renderizarNovidades();
+      const m = document.getElementById('modalNovidades');
+      m.classList.remove('escondido');
+      m.querySelector('.modal-content').scrollTop = 0;
+    }
+
+    function fecharNovidades() {
+      fecharModal('modalNovidades');
+      marcarNovidadesVistas();
+    }
+
+    /* A FAIXA DE "ATUALIZADO"
+       O app instalado se atualiza sozinho e recarrega calado: sem a faixa, quem
+       usa nem fica sabendo que algo mudou. Ela aparece uma vez por versão e some
+       com "ok", ou quando você abre o que mudou. Numa instalação nova, sem nada
+       lançado, não há "novo" a contar, e ela não aparece. */
+    const CHAVE_VERSAO_VISTA = 'meu_financeiro_versao_vista_v1';
+
+    function verificarNovidades() {
+      let vista = null;
+      try { vista = localStorage.getItem(CHAVE_VERSAO_VISTA); } catch (e) { /* sem armazenamento: não mostra */ return; }
+      const faixa = document.getElementById('avisoNovidades');
+      if (vista === APP_VERSION) {
+        if (faixa) faixa.classList.add('escondido');
+        return;
+      }
+      if (!vista && !lancamentos.length) { marcarNovidadesVistas(); return; }
+      if (!faixa) return;
+      document.getElementById('textoAvisoNovidades').textContent =
+        'Versão ' + APP_VERSION + '. Veja o que mudou e baixe o manual novo em Ajustes.';
+      faixa.classList.remove('escondido');
+    }
+
+    function marcarNovidadesVistas() {
+      try { localStorage.setItem(CHAVE_VERSAO_VISTA, APP_VERSION); } catch (e) { /* segue */ }
+      const faixa = document.getElementById('avisoNovidades');
+      if (faixa) faixa.classList.add('escondido');
+    }
 
     // Inicialização
     carregarLocalStorage();
@@ -18417,6 +18652,7 @@ function confirmarLancamentoVoz() {
     aplicarSecao('metas');
     aplicarSecao('fixos');
     aplicarSecao('backup');
+    aplicarSecao('manual');
     aplicarSecao('contatos');
     aplicarSecao('lixeira');
     aplicarSecao('contasCategorias');
@@ -18464,6 +18700,10 @@ function confirmarLancamentoVoz() {
     renderizarGrupos();
     const elVersao = document.getElementById('versaoApp');
     if (elVersao) elVersao.textContent = 'versão ' + APP_VERSION;
+    const elVersaoManual = document.getElementById('versaoManual');
+    if (elVersaoManual) elVersaoManual.textContent = 'versão ' + APP_VERSION;
+    ajustarTextoDoBackup();
+    verificarNovidades();
     atualizarBotaoLembretes();
     avisarCobrancasVencidas(false);
     limparSobrasDoLaboratorio();

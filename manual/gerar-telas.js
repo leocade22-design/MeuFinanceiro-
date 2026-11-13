@@ -430,6 +430,28 @@ fs.mkdirSync(OUT, { recursive: true });
   await tiro('relatorio', '#modalRelatorio .modal-content');
   await page.evaluate(()=>fecharModal('modalRelatorio'));
 
+  // 26) manual e novidades em Ajustes (como num Android: "Salvar como" e folha de compartilhamento)
+  await abrir('Ajustes');
+  await page.evaluate(()=>{
+    if (typeof window.showSaveFilePicker !== 'function') window.showSaveFilePicker = async () => { throw new DOMException('', 'AbortError'); };
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true });
+    ajustarTextoDoBackup();
+  });
+  await secao('manual', true);
+  await page.evaluate(()=>{ document.getElementById('corpo-manual').closest('.card').id = 'cardManualTela'; });
+  await tiro('manual_novidades', '#cardManualTela');
+  await page.evaluate(()=>abrirNovidades());
+  await page.waitForTimeout(400);
+  await tiro('novidades', '#modalNovidades .modal-content');
+  await page.evaluate(()=>fecharModal('modalNovidades'));
+  await secao('manual', false);
+
+  // 27) a faixa que aparece uma vez depois de cada atualização
+  await page.evaluate(()=>{ localStorage.setItem(CHAVE_VERSAO_VISTA, '2026.11.13-1'); verificarNovidades(); });
+  await abrir('Lançamentos');
+  await tiro('faixa_novidades', '#avisoNovidades');
+  await page.evaluate(()=>marcarNovidadesVistas());
+
   console.log('\nerros:', erros.length?erros:'nenhum');
   await b.close();
 })();
