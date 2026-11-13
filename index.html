@@ -915,7 +915,7 @@
           <span class="chevron-sec" id="chevron-pagamentoFatura">▸</span>
         </button>
         <div id="corpo-pagamentoFatura" class="escondido" style="margin-top:10px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Marque o que já pagou. Se o valor do banco não bater com o daqui, a diferença vira um lançamento de ajuste pra você investigar depois.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Marque o que já pagou. Se o valor do banco não bater com o daqui, o app pergunta o que fazer com a diferença: deixar a conciliar, levar pra fatura seguinte ou lançar um ajuste.</p>
           <div id="listaPagamentoFatura"></div>
         </div>
       </div>
@@ -2278,7 +2278,8 @@
              paga (com ✕ pra tirar uma lançada errado) e o que ainda falta -->
         <div id="faturaJaPago"></div>
       </div>
-      <!-- Tudo = como sempre foi (a diferença pro banco vira ajuste). Uma parte =
+      <!-- Tudo = paga a fatura inteira (se o banco não bater, o app pergunta o que
+           fazer com a diferença: conciliar, levar pra seguinte ou ajuste). Uma parte =
            a fatura continua em aberto até você terminar de pagar, ou o resto vai
            pra fatura seguinte, se marcar. Parcelei = entrada agora e uma parcela
            em cada fatura seguinte, com os juros do banco. -->
@@ -10029,7 +10030,15 @@
       const media = campo => (fechados.length ? fechados.reduce((s, m) => s + m[campo], 0) / fechados.length : 0);
       const mRenda = media('renda'), mGasto = media('gasto'), mInvest = media('investido');
       const { dia, diasNoMes, fracao } = fracaoDoMes();
-      const projecao = fracao > 0.15 && mesAt.gasto > 0 ? mesAt.gasto / fracao : null;
+      /* A projeção só estica o que é variável. O aluguel do dia 5 e a parcela
+         3/10 já têm valor certo no mês: multiplicá-los pelo ritmo dobrava o
+         aluguel. Entram pelo valor do mês inteiro, já lançado. */
+      const jaCerto = l => !!l.fixoId || (() => { const m = (l.descricao || '').match(/\((\d+)\/(\d+)\)\s*$/); return !!m && parseInt(m[1], 10) > 1; })();
+      const certosDoMes = despesasDaChave(atual).filter(l => !ehInvestimentoNoOrcamento(l) && jaCerto(l));
+      const certoMesInteiro = certosDoMes.reduce((s, l) => s + valorLiquidoDespesa(l), 0);
+      const certoAteHoje = certosDoMes.filter(l => (l.data || '') <= hoje).reduce((s, l) => s + valorLiquidoDespesa(l), 0);
+      const variavelAteHoje = Math.max(0, mesAt.gasto - certoAteHoje);
+      const projecao = fracao > 0.15 && mesAt.gasto > 0 ? certoMesInteiro + variavelAteHoje / fracao : null;
       const periodoRef = fechados.length ? fechados.map(m => curto(m.ch)).join(', ') : '';
       const dicas = [];
 
@@ -10052,7 +10061,9 @@
           const d = pct(projecao - mGasto, mGasto);
           comp = Math.abs(d) < 10 ? ', em linha com a sua média' : `, ${Math.abs(d)}% ${d > 0 ? 'acima' : 'abaixo'} da média de ${fmt(mGasto)}`;
         }
-        B.push({ p: `No ritmo atual, os gastos do mês fecham perto de ${fmt(projecao)}${comp}.` });
+        const partes = certoMesInteiro > 0.004
+          ? ` (${fmt(certoMesInteiro)} já certos entre gastos fixos e parcelas, mais o variável no ritmo de até agora)` : '';
+        B.push({ p: `No ritmo atual, os gastos do mês fecham perto de ${fmt(projecao)}${partes}${comp}.` });
       }
       const [anoAt, mesAtN] = atual.split('-').map(Number);
       const caixa = resumoDoMes(mesAtN - 1, anoAt);
@@ -12794,8 +12805,9 @@
     /* PAGAMENTO DE FATURA
        O app soma o que VOCÊ lançou; o banco cobra o que passou de verdade. Quando
        os dois divergem — compra que você esqueceu, anuidade, juros, algo que nem
-       reconhece — a diferença vira um lançamento de ajuste, visível e editável.
-       Assim o total bate com o extrato e ainda fica a lista do que investigar.
+       reconhece — o app pergunta o que fazer com a diferença: deixar marcada pra
+       conciliar item por item, levar pra fatura seguinte (compra que o banco ainda
+       vai cobrar) ou lançar um ajuste, visível e editável.
 
        O pagamento em si NÃO vira despesa: a fatura já é a soma de despesas que
        você lançou, então lançá-lo de novo contaria duas vezes. */
@@ -18359,7 +18371,7 @@ function confirmarLancamentoVoz() {
     }
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js.
-    const APP_VERSION = '2026.10.11-3';
+    const APP_VERSION = '2026.11.13-1';
 
     // Inicialização
     carregarLocalStorage();

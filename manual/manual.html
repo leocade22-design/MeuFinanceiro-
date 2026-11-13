@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.10.11-3 · Leia em 25 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.11.13-1 · Leia em 30 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -184,6 +184,10 @@
       se você já lançou “Mercado” no débito do PicPay, da próxima vez ele já sugere igual.
       <br><br>Números falados em pedaços funcionam: <em>“dez e cinquenta no uber”</em> vira
       R$ 10,50, e <em>“mil duzentos e cinquenta e três e setenta e cinco”</em> vira R$ 1.253,75.
+      Também entram <em>“2 mil e 500 do aluguel”</em> (R$ 2.500), <em>“45 reais e 90 centavos no
+      mercado”</em> (R$ 45,90) e <em>“duzentos e cinquenta no cartão em 3 vezes”</em> (R$ 250 em
+      3x, e não R$ 3). A descrição e o nome de quem deve voltam com acento: <em>Pão</em>,
+      <em>João</em>.
     </div>
     <div class="nota">
       <strong>No iPhone o microfone abre uma caixa de ditado.</strong> Nem todo aparelho deixa
@@ -267,6 +271,13 @@
       <br><br>Pra arrumar: abra a compra, toque em <strong>Gerenciar parcelas</strong> e use
       <strong>Voltar 1 mês a compra toda</strong>. Ele mostra as datas novas e pergunta antes de
       mexer, e vale só pra aquela compra.
+    </div>
+    <div class="nota">
+      <strong>Parcelada no fim do mês.</strong> Uma compra de 31/01 em 4x, num cartão que fecha dia
+      28, cai uma parcela em cada fatura: fevereiro, março, abril e maio. Antes, a parcela de
+      fevereiro (que não tem dia 31) ia pro dia 28 e caía na mesma fatura da primeira, deixando março
+      sem parcela. Agora, quando a data da parcela cairia na fatura errada, ela vai pro dia seguinte
+      ao fechamento. Vale pras compras novas; as antigas ficam como estão.
     </div>
     <div class="tela"><img src="img/resumo.png" alt="Resumo do mês na aba Faturas"></div>
     <ul>
@@ -356,10 +367,28 @@
   <div class="conteudo">
     <div class="tela"><img src="img/fatura.png" alt="Card de pagamento da fatura"></div>
     <p>Quando o banco cobrar a fatura, toque em <em>pagar</em> e confira o <strong>valor que o banco cobrou</strong> — não o que o app calculou.</p>
+    <h3>E se não bater?</h3>
+    <p>Se o valor do banco for diferente do somado aqui, o app <strong>pergunta o que fazer com a
+       diferença</strong> antes de confirmar. Nenhuma opção vem marcada: a escolha é sua, porque
+       cada diferença tem uma causa.</p>
+    <div class="tela metade"><img src="img/fatura_diferenca.png" alt="Janela de pagar fatura com as três opções para a diferença"></div>
+    <div class="legenda">O banco cobrou R$ 76,00 a menos: o app mostra a diferença e as três saídas.</div>
     <div class="nota">
-      <strong>E se não bater?</strong> Se o valor do banco for diferente do somado aqui, o app cria sozinho um lançamento
-      <em>“Ajuste de fatura — não identificado”</em> com a diferença exata. Aí você investiga com calma
-      qual compra faltou registrar, em vez de ficar caçando centavos.
+      <ul>
+        <li><strong>Deixar a conciliar.</strong> Nada muda nos lançamentos. A fatura fica paga e a
+            diferença fica marcada no card (<em>⚠ R$ 76,00 a conciliar</em>) até você conferir item
+            por item. É a opção pra quando você ainda não sabe de onde veio a diferença.</li>
+        <li><strong>Levar pra fatura seguinte.</strong> Quando o banco cobrou <em>menos</em>, são
+            compras que ele ainda vai cobrar: a diferença entra na fatura seguinte, e o card mostra
+            <em>levados pra fatura de dezembro</em>. Quando cobrou <em>mais</em>, a opção vira
+            <em>Abater da fatura seguinte</em>: o banco cobrou antes uma compra que o app tem no mês
+            que vem.</li>
+        <li><strong>Lançar ajuste.</strong> O jeito antigo. Cria um lançamento com a diferença
+            exata (um gasto, se o banco cobrou mais; um estorno no cartão, se cobrou menos), e a
+            fatura do app fica igual à do banco.</li>
+      </ul>
+      Antes o app lançava o ajuste sozinho, sem perguntar. Com isso, uma compra que só seria
+      cobrada no mês seguinte virava ajuste e depois era cobrada de novo.
     </div>
     <p>Depois de marcada como paga, aquele valor entra em <strong>Saiu da conta</strong> e o saldo do mês se acerta.</p>
     <div class="nota">
@@ -371,8 +400,8 @@
     </div>
     <h3>Pagou só uma parte, ou parcelou</h3>
     <p>Na janela de pagar, o app pergunta <strong>Como você pagou?</strong> — <em>Tudo</em>,
-       <em>Uma parte</em> ou <em>Parcelei</em>. <em>Tudo</em> é o de sempre: a diferença pro banco
-       vira ajuste.</p>
+       <em>Uma parte</em> ou <em>Parcelei</em>. <em>Tudo</em> é o de sempre: se a diferença não
+       bater, o app pergunta o que fazer com ela.</p>
     <div class="nota">
       <strong>Uma parte.</strong> Digite o <strong>valor que o banco cobrou</strong> e
       <strong>quanto você pagou agora</strong>. A fatura <strong>continua em aberto</strong>: no card
@@ -386,7 +415,7 @@
       já foi pago e o que falta, e os botões viram <em>O que falta</em> (termina de pagar),
       <em>Mais uma parte</em> e <em>Parcelei</em>. Cada parte sai da conta <strong>na data em que
       foi paga</strong> — R$ 1.000 hoje, R$ 700 no dia 13 e o resto no dia 20 entram no saldo de cada
-      dia. A diferença entre o app e o banco só vira ajuste quando a fatura fecha.
+      dia. A pergunta sobre a diferença entre o app e o banco só aparece quando a fatura fecha.
     </div>
     <div class="nota">
       <strong>Levar o resto pra fatura seguinte.</strong> Se preferir, marque <em>Levar o que faltar
@@ -394,8 +423,8 @@
       pra fatura seguinte como <em>🔁 Saldo da fatura de setembro</em>, e os juros entram como gasto
       em <em>Juros e encargos</em>. O saldo levado <strong>não conta de novo como gasto</strong> nos
       gráficos — as compras já contaram quando você fez. Se não souber os juros agora, deixe em
-      branco: quando pagar a fatura seguinte, a diferença que o banco cobrar aparece como o ajuste
-      de sempre.
+      branco: quando pagar a fatura seguinte, o app pergunta o que fazer com a diferença que o
+      banco cobrar, como em qualquer fatura.
     </div>
     <div class="nota">
       <strong>Parcelei.</strong> Copie da simulação do banco a <strong>entrada</strong>, o
@@ -416,6 +445,47 @@
       Se a fatura fechou depois de ter sido paga em partes, o desfazer volta um passo só: ela fica
       em aberto de novo, com as partes que você já tinha pago.
     </div>
+    <h3>Conciliar com o banco</h3>
+    <p>Conciliar é conferir a fatura do app contra a do banco, compra por compra. Abra pelo
+       <em>conciliar</em> do card (ao lado da diferença marcada) ou pelo botão <em>Conciliar com
+       o banco</em> no extrato da fatura.</p>
+    <div class="tela metade"><img src="img/conciliacao.png" alt="Tela de conciliação com o arquivo do banco importado"></div>
+    <div class="legenda">Conciliação com o arquivo do banco: cinco compras batem, o cinema não veio do banco e uma assinatura só existe lá.</div>
+    <div class="nota">
+      <strong>No topo, a conta.</strong> O total do banco, o somado no app, o que já foi conferido
+      e o que falta. Embaixo, a frase diz pra que lado procurar: <em>“O app tem R$ 54,10 a mais que
+      o banco”</em>. Marque cada compra que você achar na fatura do banco. A marcação fica salva, então
+      dá pra parar e continuar depois.
+    </div>
+    <div class="nota">
+      <strong>Importar o arquivo do banco (CSV ou OFX).</strong> A maioria dos bancos exporta a
+      fatura nesses formatos, no internet banking. Com o arquivo, o app casa sozinho:
+      <ul>
+        <li>mesmo valor e data perto (até 3 dias) ou mesmo valor em qualquer data;</li>
+        <li>várias linhas do mesmo dia que somam uma compra só (os pedágios de uma viagem, por exemplo);</li>
+        <li>valor parecido (até 3%) aparece como <strong>sugestão</strong>, pra você aceitar ou não.</li>
+      </ul>
+      O que sobra aparece em duas listas. <strong>Só no banco</strong>: compras que você não
+      lançou, com um botão <em>lançar</em> que já preenche data e valor. <strong>Só no
+      app</strong>: ficam em destaque na lista, e são as candidatas a erro de valor, compra
+      duplicada ou compra que vai cair na fatura seguinte. As linhas de pagamento da fatura
+      anterior são ignoradas.
+    </div>
+    <div class="nota">
+      <strong>Sem arquivo também dá.</strong> Use <em>+ compra que faltou</em> pro que só está no
+      banco e <em>+ estorno do banco</em> pra um valor devolvido. Quando a diferença zera, o card
+      da fatura passa a mostrar <em>✓ conciliada</em>.
+    </div>
+    <div class="nota atencao">
+      <strong>Estorno no cartão.</strong> Um estorno entra como receita no cartão e é
+      <strong>abatido da fatura</strong>. Ele não é renda e não mexe no saldo da conta: o dinheiro
+      nunca saiu dela, só diminuiu o que você vai pagar. Nos gráficos, ele abate a categoria da
+      compra (um estorno de viagem diminui o gasto com viagem). Na lista da fatura aparece com
+      sinal de menos.
+      <br><br>Se o app encontrar estornos antigos que, pela regra anterior, tinham entrado no
+      saldo, ele mostra um aviso uma vez só: dá pra aceitar a correção ou manter o saldo como estava.
+    </div>
+
     <h3>O trilho de meses</h3>
     <p>No topo do card corre um trilho com <strong>treze meses</strong> — seis pra trás, o que você
        está vendo no meio, e seis pra frente. Arraste pros lados como quem rola uma lista: ele anda
@@ -516,6 +586,19 @@
       o mais provável é que você ainda não tenha dado baixa nela. O que já está registrado como
       pago não é tocado.
     </div>
+    <div class="nota">
+      <strong>Mês sem cobrança.</strong> Às vezes um gasto fixo pula um mês: a assinatura que veio
+      de graça, o consórcio que não cobrou a parcela, o aluguel combinado de outro jeito. Nas opções
+      do gasto fixo (ou no card do consórcio), toque em <em>Mês sem cobrança</em> e escolha o mês.
+      <br><br>A cobrança daquele mês some da projeção, da fatura e dos avisos, e no card aparece
+      <em>sem cobrança neste mês</em>. Os outros meses ficam como estão. No consórcio, a contagem de
+      parcelas não anda naquele mês, então o fim do plano vai um mês pra frente.
+      <br><br>Se o mês já tinha pagamento registrado, o app avisa e não marca: aí é caso de
+      desfazer o pagamento primeiro. Marcou errado? O mesmo botão mostra os meses marcados, com
+      um <em>desfazer</em> em cada um.
+    </div>
+    <div class="tela metade"><img src="img/mes_sem_cobranca.png" alt="Janela de mês sem cobrança"></div>
+    <div class="legenda">Mês sem cobrança: escolha o mês e o app mostra o que vai acontecer antes de marcar.</div>
     <div class="nota atencao">
       <strong>Lembrete pra não esquecer de pagar.</strong> Com os lembretes ligados (item 14), o
       app avisa dos boletos na mesma antecedência que você escolheu pras cobranças — inclusive a
@@ -786,10 +869,16 @@
       <strong>Cobrança que se repete todo mês.</strong> Num gasto fixo com reembolso (a
       mensalidade da academia dividida, por exemplo), o prazo acompanha de onde o dinheiro
       sai: no cartão de crédito, o dia da cobrança cai no mês em que a <em>fatura</em> vence
-      — porque é aí que o dinheiro realmente sai da sua conta. A cobrança ganha destaque
-      10 dias antes do prazo, tempo de avisar e o dinheiro cair.
+      — porque é aí que o dinheiro realmente sai da sua conta.
+      <br><br><strong>A cobrança só aparece 10 dias antes do prazo.</strong> A regra é a mesma pra
+      todo mundo: a cota de dezembro entra na lista de quem te deve no fim de novembro, com tempo
+      de avisar e o dinheiro cair. Antes, como o app projeta os gastos fixos com meses de
+      antecedência, as cotas dos meses seguintes já apareciam como dívida e o total da pessoa
+      ficava inflado. Empréstimo comum (que não vem de gasto fixo) continua aparecendo na hora.
       <br><br>O campo do nome aceita mais de uma pessoa: <em>“Bernardo, Emir”</em> divide a
-      cota e cria uma cobrança separada pra cada um.
+      cota e cria uma cobrança separada pra cada um. Mudou a divisão ou o valor no cadastro do
+      gasto fixo? A mudança vale do mês atual em diante, só nas cotas que ainda não foram
+      quitadas. O que já foi acertado não é tocado.
     </div>
 </div>
 </section>
@@ -907,6 +996,36 @@
       <br><br>As metas por categoria que você já tinha viraram o plano inicial, valendo desde o seu
       primeiro lançamento. A linha de meta no gráfico de categorias continua lá e acompanha o período
       escolhido: R$ 100 por mês vira R$ 1.200 quando você olha o ano inteiro.
+    </div>
+
+    <h3>Relatório do consultor</h3>
+    <p>No card do período, o botão <strong>📋 Relatório do consultor</strong> monta um retrato das
+       suas finanças pra levar a um consultor (ou pra você mesmo, uma vez por mês). Ele sai pronto em
+       três formatos: <em>Copiar texto</em> (pra colar numa conversa), <em>Compartilhar (.txt)</em> e
+       <em>Salvar em PDF</em>.</p>
+    <div class="tela metade"><img src="img/relatorio.png" alt="Relatório do consultor aberto"></div>
+    <div class="legenda">O começo do relatório: visão geral, os últimos meses e para onde vai o dinheiro.</div>
+    <div class="nota">
+      <strong>O que tem dentro.</strong>
+      <ul>
+        <li><strong>Visão geral</strong>: renda, gastos e investimentos do mês até hoje, o saldo de
+            cada conta, o que ainda falta pagar e uma tabela dos últimos seis meses.</li>
+        <li><strong>Para onde vai o dinheiro</strong>: média por categoria, por conta ou cartão, e os
+            grupos (viagens, eventos) dos últimos meses.</li>
+        <li><strong>Compromissos dos próximos meses</strong>: gastos fixos, parcelas e consórcios.</li>
+        <li><strong>Investimentos</strong> e <strong>empréstimos</strong>: quanto foi guardado e quem
+            te deve, há quanto tempo.</li>
+        <li><strong>Dicas</strong> tiradas dos seus números: categoria acima do limite, juros do
+            cartão, dívida parada.</li>
+      </ul>
+    </div>
+    <div class="nota">
+      <strong>O mês atual conta até hoje.</strong> O gasto fixo do dia 26 já está lançado, mas ainda
+      não aconteceu, então não entra no “até agora”. As médias usam só os meses fechados.
+      <br><br><strong>A projeção do mês</strong> separa o que já é certo do que varia: gastos fixos e
+      parcelas de compras antigas entram pelo valor do mês inteiro, e só o resto é esticado pelo
+      ritmo de até agora. Assim o aluguel pago no dia 5 não é contado duas vezes na conta.
+      <br><br>Com os valores ocultos (o olho), o relatório não mostra nem exporta número nenhum.
     </div>
   </div>
 </section>
@@ -1129,8 +1248,16 @@
       <br><br>Só alerta o que depende de você: parcela com baixa registrada fica verde, e consórcio
       no <strong>cartão</strong> nunca alerta — ali a cobrança acontece sozinha.
     </div>
+    <div class="nota">
+      <strong>Mês em que a administradora não cobrou.</strong> Toque em <em>Mês sem cobrança</em>
+      no card e escolha o mês (é a mesma janela do gasto fixo, no capítulo 8). A parcela daquele mês
+      sai da projeção e dos avisos, o card mostra <em>sem cobrança em outubro</em>, e a numeração não
+      pula: a parcela seguinte continua sendo a 2/80, e o fim do plano anda um mês pra frente.
+      <br><br>Mudou a data de uma parcela pro mês seguinte (pagou atrasado)? Ela continua sendo a
+      parcela do mês original, sem virar duas no mês novo.
+    </div>
     <p>Com o consórcio aberto, os botões <strong>Registrar pagamento</strong>, <strong>Editar</strong>,
-       <strong>Fui contemplado</strong> e
+       <strong>Mês sem cobrança</strong>, <strong>Fui contemplado</strong> e
        <strong>Encerrar grupo</strong> ficam no rodapé dele. Excluindo pelo Editar, as parcelas que já
        passaram continuam no histórico e os boletos futuros somem — sem deixar cobrança fantasma
        na fatura.</p>
@@ -1194,6 +1321,16 @@
       compartilhamento — a mesma de sempre, com <strong>Salvar no Drive</strong>, Salvar em Arquivos,
       WhatsApp. Você escolhe o destino e a pasta ali. É a única forma de levar seu histórico para outro
       celular. Uma vez por mês já resolve.
+    </div>
+    <div class="nota atencao">
+      <strong>Restaurar pede confirmação.</strong> Antes de trocar os dados, o app mostra o que tem
+      no arquivo (quantos lançamentos, gastos fixos e contas) e pergunta se pode substituir o que está
+      no aparelho. Um arquivo que não é backup do app é recusado sem apagar nada. Antes, um arquivo
+      errado podia zerar tudo. Depois de restaurar, os gastos fixos já são projetados na hora.
+      <br><br><strong>Memória do aparelho cheia.</strong> Se o navegador não conseguir gravar uma
+      mudança (falta de espaço), o app avisa na hora, em vez de perder a mudança em silêncio. O aviso
+      pede pra exportar um backup. Pra ter ideia: um ano de uso dá perto de 1 MB, e o limite costuma
+      ser de 5 MB ou mais.
     </div>
     <div class="tela metade"><img src="img/ajustes.png" alt="Aba de ajustes"></div>
     <div class="tela metade"><img src="img/saldo_inicial.png" alt="Saldo inicial no cadastro da conta"></div>

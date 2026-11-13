@@ -94,4 +94,35 @@ iniciar('13 · relatório do consultor', async t => {
     return r;
   });
   t.ok(oculto.acoes && /valores estão ocultos/.test(oculto.corpo), 'com os valores ocultos, o relatório não mostra nem exporta número');
+
+  t.secao('PROJEÇÃO DO MÊS');
+  await p.evaluate(() => {
+    const desp = (id, dia, descricao, valor, extra) => Object.assign({ id, tipo: 'despesa', descricao, valor, data: __mes(0, dia),
+      conta: 'PicPay', formaModo: 'Pix', numParcelas: '1', categoria: 'Casa' }, extra || {});
+    __semear({
+      contas: [{ id: 'c2', nome: 'PicPay', temCredito: false }],
+      lancamentos: [
+        desp(1, 8, 'TV (2/3)', '400,00'),
+        desp(2, 10, 'Mercado', '300,00', { categoria: 'Alimentação' }),
+        desp(3, 25, 'TV (3/3)', '400,00', { data: __mes(1, 8) })
+      ],
+      fixos: [{ id: 'fA', descricao: 'Aluguel', valor: '1.500,00', conta: 'PicPay', diaVencimento: 5, categoria: 'Casa', formaModo: 'Pix', dataInicio: __mes(0, 1) }]
+    });
+  });
+  await t.recarregar(p);
+  const proj = await p.evaluate(() => {
+    const dia15 = __mes(0, 15);
+    const real = window.obterDataBrasilia;
+    window.obterDataBrasilia = () => dia15;
+    try {
+      const { fracao } = fracaoDoMes();
+      const texto = relatorioEmTexto(blocosDoRelatorio());
+      return { texto, certo: fmtVal(1500 + 400 + 300 / fracao), ingenuo: fmtVal((1500 + 400 + 300) / fracao) };
+    } finally { window.obterDataBrasilia = real; }
+  });
+  const linha = (proj.texto.match(/No ritmo atual[^\n]*/) || [''])[0];
+  console.log('   ', linha);
+  t.ok(linha.includes(proj.certo) && !linha.includes(proj.ingenuo),
+    'no dia 15, aluguel e parcela entram pelo valor do mês; só o mercado é esticado pelo ritmo (antes, o aluguel dobrava)');
+  t.ok(/R\$ 1\.900,00 já certos/.test(linha), 'a frase diz quanto já é certo (fixos e parcelas)');
 });
