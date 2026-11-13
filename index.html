@@ -590,6 +590,22 @@
     .check-credito { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--texto-forte); margin-bottom:14px; cursor:pointer; }
     .check-credito input { width:auto; accent-color:var(--verde); }
 
+    /* Pagar fatura com diferença: as três saídas, uma por linha, sem nenhuma
+       vir marcada — quem decide é você. E as linhas da conciliação: o que
+       ainda não foi conferido ganha a borda amarela. */
+    .opcao-diferenca { display:flex; gap:8px; align-items:flex-start; padding:8px 10px; border:1px solid var(--borda);
+      border-radius:10px; margin-bottom:6px; cursor:pointer; font-size:11.5px; line-height:1.4; color:var(--texto-medio); }
+    .opcao-diferenca input { width:auto; margin-top:2px; accent-color:var(--amarelo); flex-shrink:0; }
+    .opcao-diferenca strong { color:var(--texto-forte); font-size:12.5px; }
+    .opcao-diferenca:has(input:checked) { border-color:var(--amarelo); }
+    .linha-conciliar { display:flex; align-items:center; gap:10px; padding:9px 6px 9px 8px; border-bottom:1px solid var(--borda-fraca);
+      border-left:3px solid transparent; cursor:pointer; }
+    .linha-conciliar input { width:18px; height:18px; accent-color:var(--verde); flex-shrink:0; }
+    .linha-conciliar.pendente { border-left-color:var(--amarelo); background:rgba(255,209,102,.05); }
+    .linha-conciliar .info { flex:1; min-width:0; }
+    .linha-conciliar .info strong { display:block; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .linha-conciliar .info div { font-size:10.5px; color:var(--texto-fraco); }
+
     /* Convite discreto pra cadastrar: verde apagado, sem peso de botão primário.
        O formulário só aparece quando pedido, numa janela centralizada. */
     .btn-adicionar { width:100%; margin-top:14px; padding:12px; border-radius:10px; cursor:pointer;
@@ -2277,10 +2293,62 @@
         </div>
       </div>
       <p id="previaAjusteFatura" style="font-size:11.5px;line-height:1.45;margin-bottom:12px;"></p>
+      <!-- O banco cobrou diferente do que está lançado: o app pergunta o que
+           fazer, sem escolher por você (ver tratarDiferencaDaFatura) -->
+      <div id="blocoDiferencaFatura" class="escondido" style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--texto-tenue);margin-bottom:6px;">O que fazer com a diferença de <strong id="valorDiferencaFatura" style="color:var(--amarelo);"></strong>?</div>
+        <label class="opcao-diferenca"><input type="radio" name="comoDiferencaFatura" value="conciliar" onchange="previewAjusteFatura()">
+          <span><strong>Deixar a conciliar</strong><br><span id="explicaDifConciliar"></span></span></label>
+        <label class="opcao-diferenca"><input type="radio" name="comoDiferencaFatura" value="proxima" onchange="previewAjusteFatura()">
+          <span><strong id="tituloDifProxima">Levar pra próxima fatura</strong><br><span id="explicaDifProxima"></span></span></label>
+        <label class="opcao-diferenca"><input type="radio" name="comoDiferencaFatura" value="ajuste" onchange="previewAjusteFatura()">
+          <span><strong>Lançar ajuste</strong><br><span id="explicaDifAjuste"></span></span></label>
+      </div>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalPagarFatura')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarPagarFatura()">Confirmar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CONCILIAÇÃO DA FATURA COM O BANCO: cada item com "confere", os totais
+       e o que falta conferir em destaque (ver abrirConciliacaoFatura) -->
+  <div id="modalConciliarFatura" class="modal-overlay escondido" onclick="if(event.target===this) fecharConciliacaoFatura()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloConciliarFatura">Conciliar com o banco</h3>
+        <button class="btn-fechar" onclick="fecharConciliacaoFatura()">&times;</button>
+      </div>
+      <div class="box-resumo-modal" style="margin-bottom:12px;">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label for="conciliarTotalBanco">Total da fatura no banco</label>
+          <input type="text" id="conciliarTotalBanco" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this); salvarTotalBancoConciliacao();">
+        </div>
+        <div id="resumoConciliacao"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <button type="button" class="btn-mini" onclick="document.getElementById('arquivoConciliacao').click()">Importar CSV/OFX</button>
+        <button type="button" class="btn-mini" onclick="abrirItemDoBanco('compra')">+ compra que faltou</button>
+        <button type="button" class="btn-mini" onclick="abrirItemDoBanco('estorno')">+ estorno do banco</button>
+        <input type="file" id="arquivoConciliacao" class="escondido" aria-label="Arquivo da fatura do banco (CSV ou OFX)"
+          accept=".csv,.ofx,.txt,text/csv,text/plain,application/x-ofx" onchange="importarArquivoConciliacao(event)">
+      </div>
+      <!-- lançar um item que só está no banco, já dentro desta fatura -->
+      <div id="formItemDoBanco" class="escondido" style="border:1px solid var(--borda);border-radius:10px;padding:10px;margin-bottom:10px;">
+        <div id="tituloItemDoBanco" style="font-size:12px;font-weight:700;margin-bottom:8px;"></div>
+        <div class="form-group"><label for="itemBancoDesc">Descrição</label><input type="text" id="itemBancoDesc" placeholder="Como aparece na fatura"></div>
+        <div class="form-row">
+          <div class="form-group"><label for="itemBancoValor">Valor</label><input type="text" id="itemBancoValor" inputmode="numeric" placeholder="R$ 0,00" oninput="mascaraMoeda(this)"></div>
+          <div class="form-group"><label for="itemBancoCategoria">Categoria</label><select id="itemBancoCategoria"></select></div>
+        </div>
+        <p style="font-size:10.5px;color:var(--texto-tenue);margin:-4px 0 8px;line-height:1.4;" id="notaItemDoBanco"></p>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn-cancelar" style="flex:1;margin:0;padding:8px;" onclick="document.getElementById('formItemDoBanco').classList.add('escondido')">Cancelar</button>
+          <button type="button" class="btn-salvar" style="flex:1;margin:0;padding:8px;" onclick="confirmarItemDoBanco()">Lançar</button>
+        </div>
+      </div>
+      <div id="sugestoesConciliacao"></div>
+      <div id="listaConciliacao"></div>
     </div>
   </div>
 
@@ -5406,6 +5474,7 @@
         orcamentosCategoria,
         planejamento,
         faturasPagas,
+        conciliacoes,
         contas,
         categorias,
         categoriasExcluidas,
@@ -5496,6 +5565,8 @@
           valoresOcultos = !!data.valoresOcultos;
           orcamentosCategoria = data.orcamentosCategoria && typeof data.orcamentosCategoria === 'object' ? data.orcamentosCategoria : {};
           faturasPagas = data.faturasPagas && typeof data.faturasPagas === 'object' ? data.faturasPagas : {};
+          // backup de antes da conciliação não tem a chave: começa vazia
+          conciliacoes = data.conciliacoes && typeof data.conciliacoes === 'object' && !Array.isArray(data.conciliacoes) ? data.conciliacoes : {};
           if (Array.isArray(data.contas) && data.contas.length > 0) contas = data.contas;
           if (Array.isArray(data.categorias) && data.categorias.length > 0) categorias = data.categorias;
           if (Array.isArray(data.categoriasExcluidas)) { categoriasExcluidas = data.categoriasExcluidas; salvarCategoriasExcluidas(); }
@@ -5528,6 +5599,7 @@
           salvarPlanejamento();
           espelharLimitesDoMesAtual();
           salvarFaturasPagas();
+          salvarConciliacoes();
           salvarContas();
           salvarTransferencias();
           salvarContatos();
@@ -6556,6 +6628,10 @@
       mesJaPago: { emoji: '🧾', detalhe: 'Esse mês já tem pagamento registrado. Desfaça o pagamento antes de marcar o mês sem cobrança.', frases: [
         'Esse mês teve cobrança, e você pagou.',
         'Mês pago não vira mês sem cobrança.'
+      ] },
+      arquivoBancoVazio: { emoji: '📄', detalhe: 'O app lê OFX e CSV com uma data e um valor em cada linha (ex: 24/08/2026;LOJA X;123,45). PDF não dá: exporte a fatura em CSV ou OFX no app ou no site do banco.', frases: [
+        'Não achei nenhum lançamento nesse arquivo.',
+        'Esse arquivo não tem cara de fatura.'
       ] }
     };
 
@@ -7964,6 +8040,14 @@
             lancamentos[idx].consorcioMesRef = itemOriginal.data.slice(0, 7);
           }
 
+          /* Estorno no cartão editado continua estorno. O formulário de receita
+             não tem forma nem categoria: sem isto, corrigir a descrição de um
+             estorno transformava ele num Pix entrando na conta. */
+          if (ehEstornoNoCartao(itemOriginal) && tipoAtual === 'receita') {
+            lancamentos[idx].formaModo = itemOriginal.formaModo;
+            lancamentos[idx].categoria = itemOriginal.categoria || '';
+          }
+
           if (itemOriginal.aporteId) {
             sincronizarAporteDoLancamento(lancamentos[idx], valorTotal);
             renderizarInvestimentos();
@@ -8090,6 +8174,8 @@
       renderizarGrupos();
       atualizarResumoAnalista();
       atualizarAvisoBackup();
+      // editar um item no meio da conciliação: a lista dela acompanha
+      if (conciliacaoAberta()) renderizarConciliacao();
     }
 
     function prepararEdicao(id) {
@@ -12266,11 +12352,22 @@
     function itensTrazidosParaFatura(conta, mes, ano) {
       const itens = [];
       Object.entries(faturasPagas).forEach(([chave, pg]) => {
-        if (!pg || !pg.modo || pg.modo === 'total') return;
+        if (!pg) return;
         const o = partesChaveFatura(chave);
         if (o.conta !== conta) return;
         const k = (ano * 12 + mes) - (o.ano * 12 + o.mes);
         const deQual = NOMES_MESES[o.mes].toLowerCase();
+        /* Diferença com o banco levada pra fatura seguinte: o banco cobrou a
+           menos (vai cobrar agora: entra somando) ou a mais (cobrou antes o que
+           o app tem aqui: entra abatendo). Não é lançamento, então não conta
+           de novo como gasto em lugar nenhum. */
+        const dif = pg.diferenca;
+        if (dif && dif.como === 'proxima' && k === 1 && Math.abs(Number(dif.valor) || 0) >= 0.01) {
+          const v = -(Number(dif.valor) || 0);
+          itens.push({ chave, diferenca: true, valor: Math.round(v * 100) / 100,
+            rotulo: v > 0 ? `Diferença da fatura de ${deQual} (o banco cobra agora)` : `Diferença da fatura de ${deQual} (o banco cobrou antes)` });
+        }
+        if (!pg.modo || pg.modo === 'total') return;
         // parcial sem saldo = ainda sendo paga aos poucos: nada foi levado
         if (pg.modo === 'parcial' && parseVal(pg.saldo) > 0 && k === 1) {
           itens.push({ chave, rotulo: 'Saldo da fatura de ' + deQual, valor: parseVal(pg.saldo) });
@@ -12353,9 +12450,10 @@
     // dia 1 de propósito: antes do fechamento, então o ajuste cai na fatura
     // deste mês e não na do mês seguinte
     function lancarAjusteDaFatura(conta, mes, ano, dif) {
-      if (Math.abs(dif) < 0.01) return;
+      if (Math.abs(dif) < 0.01) return null;
+      const id = novoIdLancamento();
       lancamentos.unshift({
-        id: novoIdLancamento(),
+        id,
         tipo: dif > 0 ? 'despesa' : 'receita',
         descricao: dif > 0 ? 'Ajuste de fatura — não identificado' : 'Ajuste de fatura — estorno',
         conta,
@@ -12369,6 +12467,7 @@
         emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false,
         ajusteFatura: true
       });
+      return id;
     }
 
     // Total dos gastos fixos e movimento das últimas 24h: números pequenos, de
@@ -12517,6 +12616,20 @@
               : ' · <span style="color:var(--verde);">bateu</span>')
             + `</div>`;
         }
+        /* A diferença que você mandou conciliar fica à vista até zerar — e o
+           número é vivo: cada lançamento corrigido na conferência já desconta. */
+        const difReg = pago && pago.diferenca;
+        if (difReg && difReg.como === 'conciliar') {
+          const falta = Math.round((est.cobrado - total) * 100) / 100;
+          linhaApp += Math.abs(falta) >= 0.01
+            ? `<div style="font-size:10.5px;margin-top:3px;color:var(--amarelo);">⚠ ${fmtOculto(Math.abs(falta))} a conciliar com o banco `
+              + `<button type="button" class="btn-mini" data-conciliar style="padding:1px 8px;margin-left:4px;">conciliar</button></div>`
+            : `<div style="font-size:10.5px;margin-top:3px;color:var(--verde);">✓ conciliada com o banco</div>`;
+        } else if (difReg && difReg.como === 'proxima') {
+          const prox = NOMES_MESES[mesAdiante(mes, ano, 1).mes].toLowerCase();
+          linhaApp += `<div style="font-size:10.5px;margin-top:3px;color:var(--texto-fraco);">${fmtOculto(Math.abs(difReg.valor))} `
+            + `${difReg.valor < 0 ? 'levados pra' : 'abatidos da'} fatura de ${prox}</div>`;
+        }
 
         const linha = document.createElement('div');
         linha.className = 'item-lancamento';
@@ -12540,13 +12653,15 @@
               : emParte
                 ? `<span style="color:var(--amarelo);font-weight:700;text-align:right;line-height:1.15;">${fmtOculto(est.falta)}<br><span style="font-size:9.5px;font-weight:400;color:var(--texto-tenue);">falta</span></span>`
                 : `<span class="valor-despesa">${fmtOculto(total)}</span>`}
-            <button type="button" class="btn-mini">${pago ? 'desfazer' : 'pagar'}</button>
+            <button type="button" class="btn-mini" data-acao-fatura>${pago ? 'desfazer' : 'pagar'}</button>
           </div>
         `;
-        linha.querySelector('button').onclick = (ev) => {
+        linha.querySelector('[data-acao-fatura]').onclick = (ev) => {
           ev.stopPropagation();
           pago ? desfazerPagamentoFatura(c.nome, mes, ano) : abrirPagarFatura(c.nome, mes, ano);
         };
+        const btnConciliar = linha.querySelector('[data-conciliar]');
+        if (btnConciliar) btnConciliar.onclick = (ev) => { ev.stopPropagation(); abrirConciliacaoFatura(c.nome, mes, ano); };
         if (compras.length || trazidos.length) linha.onclick = () => alternarFaturaExpandida(c.nome);
         box.appendChild(linha);
 
@@ -12555,13 +12670,15 @@
           const det = document.createElement('div');
           det.style.cssText = 'margin:6px 0 10px 2px;padding-left:10px;border-left:2px solid var(--borda);';
           // o que veio das faturas anteriores primeiro: é dívida, não compra deste mês
-          det.innerHTML = trazidos.map(t => `
+          det.innerHTML = `
+            <div style="padding:4px 0 8px;"><button type="button" class="btn-mini" data-conciliar-fatura>Conciliar com o banco</button></div>`
+            + trazidos.map(t => `
             <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);">
               <div class="item-info">
                 <strong style="font-size:13px;">🔁 ${t.rotulo}</strong>
                 <div style="font-size:10.5px;color:var(--texto-fraco);">veio da fatura anterior · não conta de novo como gasto</div>
               </div>
-              <span class="valor-despesa" style="font-size:13px;">${fmtOculto(t.valor)}</span>
+              <span class="${t.valor < 0 ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;">${t.valor < 0 ? '− ' : ''}${fmtOculto(Math.abs(t.valor))}</span>
             </div>`).join('') + compras.map(l => `
             <div class="item-lancamento" style="padding:6px 0;border-bottom:1px solid var(--borda-fraca);cursor:pointer;"
                  data-detalhe="${l.id}" title="Ver os detalhes deste lançamento">
@@ -12582,6 +12699,10 @@
               if (alvo) abrirDetalheLancamento(alvo, null, null);
             };
           });
+          det.querySelector('[data-conciliar-fatura]').onclick = (ev) => {
+            ev.stopPropagation();
+            abrirConciliacaoFatura(c.nome, mes, ano);
+          };
           box.appendChild(det);
         }
       });
@@ -12631,6 +12752,7 @@
       document.getElementById('faturaJurosParcial').value = '';
       document.getElementById('faturaValorParcela').value = '';
       document.getElementById('faturaDataPagamento').value = obterDataBrasilia();
+      document.querySelectorAll('input[name="comoDiferencaFatura"]').forEach(r => { r.checked = false; });
       setModoPagamentoFatura('total');
       document.getElementById('modalPagarFatura').classList.remove('escondido');
     }
@@ -12673,11 +12795,17 @@
       return parseVal((document.getElementById(id).value || '').replace('R$', '').trim()) || 0;
     }
 
+    /* A diferença entre o banco e o app não tem mais destino automático (antes
+       virava ajuste sozinha, e a de novembro sumiu num estorno que ninguém
+       viu). Aqui ela só é dita; o que fazer com ela você escolhe embaixo. */
     function textoAjusteFatura(dif) {
       if (Math.abs(dif) < 0.01) return '';
-      return dif > 0
-        ? `O banco cobrou <strong>${fmtVal(dif)}</strong> a mais. Vai entrar como "Ajuste de fatura — não identificado", pra você descobrir depois o que foi.`
-        : `O banco cobrou <strong>${fmtVal(-dif)}</strong> a menos. Vai entrar como estorno, pra o mês fechar com o valor real.`;
+      return `O banco cobrou <strong>${fmtVal(Math.abs(dif))}</strong> a ${dif > 0 ? 'mais' : 'menos'} do que está lançado aqui.`;
+    }
+
+    function escolhaDiferencaFatura() {
+      const r = document.querySelector('input[name="comoDiferencaFatura"]:checked');
+      return r ? r.value : '';
     }
 
     /* Toda a conta do pagamento num lugar só: a prévia mostra, o confirmar
@@ -12698,7 +12826,8 @@
       const dif = Math.round((C - T) * 100) / 100;
       const ajuste = textoAjusteFatura(dif);
       const comAjuste = t => ajuste ? t + '<br>' + ajuste : t;
-      const base = { cobrado: C, dif };
+      // `fecha`: este pagamento fecha a fatura — é aí que a diferença precisa de destino
+      const base = { cobrado: C, dif, fecha: true };
       const quitar = (agora, texto) => Object.assign({ modo: 'total', agora, texto, cor: ajuste ? 'var(--amarelo)' : 'var(--verde)' }, base);
 
       if (modoPagamentoFatura === 'parcial') {
@@ -12716,7 +12845,7 @@
         }
         return Object.assign({ modo: 'parcial', levar: false, agora: valor, falta,
           texto: `Falta <strong>${fmtVal(falta)}</strong>. A fatura continua em aberto: quando pagar mais uma parte, é só tocar em <em>pagar</em> de novo.`
-            + (ajuste ? `<br>A diferença de ${fmtVal(Math.abs(dif))} entre o banco e o app vira ajuste quando a fatura fechar.` : '') }, base);
+            + (ajuste ? `<br>A diferença de ${fmtVal(Math.abs(dif))} entre o banco e o app você resolve quando a fatura fechar.` : '') }, base, { fecha: false });
       }
       if (modoPagamentoFatura === 'parcelado') {
         const n = parseInt(document.getElementById('faturaNumParcelas').value, 10) || 2;
@@ -12751,6 +12880,24 @@
       const c = calcularPagamentoFatura();
       el.style.color = c.erro ? 'var(--amarelo)' : (c.cor || 'var(--texto-fraco)');
       el.innerHTML = c.erro || c.texto;
+      // as três saídas da diferença, com o valor e o mês certos em cada uma
+      const precisa = !c.erro && c.fecha && Math.abs(c.dif) >= 0.01;
+      document.getElementById('blocoDiferencaFatura').classList.toggle('escondido', !precisa);
+      if (!precisa) return;
+      const f = faturaEmPagamento;
+      const v = fmtVal(Math.abs(c.dif));
+      const prox = NOMES_MESES[mesAdiante(f.mes, f.ano, 1).mes].toLowerCase();
+      const aMenos = c.dif < 0;
+      document.getElementById('valorDiferencaFatura').textContent = v;
+      document.getElementById('explicaDifConciliar').textContent =
+        `Nada muda nos lançamentos. A fatura fica paga e os ${v} ficam marcados até você conferir item por item, na tela de conciliação.`;
+      document.getElementById('tituloDifProxima').textContent = aMenos ? `Levar pra fatura de ${prox}` : `Abater da fatura de ${prox}`;
+      document.getElementById('explicaDifProxima').textContent = aMenos
+        ? `São compras que o banco ainda vai cobrar: os ${v} entram na fatura de ${prox}.`
+        : `O banco cobrou antes o que o app tem em ${prox}: os ${v} saem da fatura de ${prox}.`;
+      document.getElementById('explicaDifAjuste').textContent = aMenos
+        ? `Cria um estorno de ${v} no cartão, e a fatura daqui fica igual à do banco.`
+        : `Cria o gasto "Ajuste de fatura — não identificado" de ${v}, e a fatura daqui fica igual à do banco.`;
     }
 
     function confirmarPagarFatura() {
@@ -12760,6 +12907,14 @@
       const chave = chaveFatura(conta, mes, ano);
       const c = calcularPagamentoFatura();
       if (c.erro) { previewAjusteFatura(); return; }
+      const temDiferenca = c.fecha && Math.abs(c.dif) >= 0.01;
+      const como = temDiferenca ? escolhaDiferencaFatura() : '';
+      if (temDiferenca && !como) {
+        const el = document.getElementById('previaAjusteFatura');
+        el.style.color = 'var(--amarelo)';
+        el.innerHTML = `Escolha abaixo o que fazer com a diferença de <strong>${fmtVal(Math.abs(c.dif))}</strong>.`;
+        return;
+      }
 
       // as partes já pagas continuam; a de agora entra no fim da lista
       const pagamentos = pagamentosDaFatura(faturasPagas[chave]).map(p => ({ valor: textoCentavos(p.valor), data: p.data }));
@@ -12776,7 +12931,14 @@
         // continua em aberto: nada de ajuste, juros ou saldo levado até ela fechar
         reg.modo = 'parcial';
       } else {
-        lancarAjusteDaFatura(conta, mes, ano, c.dif);
+        /* A diferença com o banco, do jeito que você escolheu:
+           conciliar → fica anotada, e a fatura mostra quanto falta conferir;
+           proxima   → vai pra fatura seguinte (itensTrazidosParaFatura);
+           ajuste    → vira lançamento, como era antes. */
+        if (como) {
+          reg.diferenca = { valor: Math.round(c.dif * 100) / 100, como, em: dataPag };
+          if (como === 'ajuste') reg.diferenca.ajusteId = lancarAjusteDaFatura(conta, mes, ano, c.dif);
+        }
         // fechou depois de partes: o "desfazer" volta só até elas
         if (qtdAntes) reg.pagamentosAntes = qtdAntes;
         if (c.modo === 'parcial') {
@@ -12804,6 +12966,8 @@
       fecharModal('modalPagarFatura');
       faturaEmPagamento = null;
       atualizarTudo();
+      // "deixar a conciliar" já leva pra conferência, com o total do banco preenchido
+      if (como === 'conciliar') abrirConciliacaoFatura(conta, mes, ano);
     }
 
     // ✕ numa parte já paga: tira só ela. Fatura em parte ainda não tem ajuste
@@ -12862,6 +13026,483 @@
         delete faturasPagas[chave];
       }
       salvarFaturasPagas();
+      atualizarTudo();
+    }
+
+    /* CONCILIAÇÃO DA FATURA COM O BANCO
+
+       A pergunta de sempre — "por que o banco cobrou diferente?" — vira uma
+       lista: cada item da fatura do app ganha um "confere com o banco", os
+       totais dizem quanto já foi conferido e quanto falta, e o que ainda não
+       foi conferido fica em destaque. "editar" abre o lançamento pra corrigir
+       data, valor ou cartão; o que só existe no banco entra pelos botões de
+       compra e estorno, já dentro desta fatura.
+
+       O arquivo do banco (CSV ou OFX) é opcional: cada linha dele procura um
+       item daqui pelo valor (e pela data, quando bate) e o app sugere marcar
+       os pares. A conferência mora à parte (conciliacoes), sem mexer em
+       lançamento nenhum, e vai junto no backup. */
+    let conciliacoes = {};
+    const STORAGE_KEY_CONCILIACOES = 'meu_financeiro_conciliacoes_v1';
+
+    function salvarConciliacoes() { localStorage.setItem(STORAGE_KEY_CONCILIACOES, JSON.stringify(conciliacoes)); }
+    function carregarConciliacoes() {
+      try { conciliacoes = JSON.parse(localStorage.getItem(STORAGE_KEY_CONCILIACOES) || '{}'); } catch (e) { conciliacoes = {}; }
+      if (!conciliacoes || typeof conciliacoes !== 'object' || Array.isArray(conciliacoes)) conciliacoes = {};
+    }
+
+    // texto que vem de fora (arquivo do banco) ou digitado: nunca vira HTML
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    // { conta, mes, ano, chave, banco: [linhas do arquivo], pares: {item: linha}, soNoBanco: [...] }
+    let conciliacaoAtual = null;
+
+    function registroConciliacao(chave) {
+      if (!conciliacoes[chave]) conciliacoes[chave] = { ok: [] };
+      if (!Array.isArray(conciliacoes[chave].ok)) conciliacoes[chave].ok = [];
+      return conciliacoes[chave];
+    }
+
+    // O que se confere: os lançamentos da fatura (compra soma, estorno abate)
+    // e o que veio de faturas anteriores (saldo, parcelamento, diferença)
+    function itensDaConciliacao(conta, mes, ano) {
+      const trazidos = itensTrazidosParaFatura(conta, mes, ano).map(t => ({
+        chave: 't:' + t.chave + ':' + t.rotulo, desc: '🔁 ' + t.rotulo, data: '', valor: t.valor, categoria: '', trazido: true
+      }));
+      const lancs = lancamentosDaFatura(conta, mes, ano).map(l => ({
+        chave: 'l:' + l.id, lanc: l, desc: l.descricao || '', data: l.data, valor: valorNaFatura(l), categoria: l.categoria || ''
+      })).sort((a, b) => a.data.localeCompare(b.data) || a.desc.localeCompare(b.desc));
+      return trazidos.concat(lancs);
+    }
+
+    function abrirConciliacaoFatura(conta, mes, ano) {
+      const chave = chaveFatura(conta, mes, ano);
+      conciliacaoAtual = { conta, mes, ano, chave, banco: [], pares: {}, soNoBanco: [] };
+      document.getElementById('tituloConciliarFatura').textContent = 'Conciliar · ' + conta + ' · ' + NOMES_MESES[mes].toLowerCase();
+      // o total do banco: o que você já digitou aqui, senão o que o banco cobrou no pagamento
+      const reg = conciliacoes[chave];
+      const pg = faturasPagas[chave];
+      const banco = reg && reg.banco ? parseVal(reg.banco) : (pg && pg.cobrado !== undefined ? parseVal(pg.cobrado) : 0);
+      document.getElementById('conciliarTotalBanco').value = banco ? fmtVal(banco) : '';
+      document.getElementById('formItemDoBanco').classList.add('escondido');
+      document.getElementById('sugestoesConciliacao').innerHTML = '';
+      renderizarConciliacao();
+      document.getElementById('modalConciliarFatura').classList.remove('escondido');
+    }
+
+    function fecharConciliacaoFatura() {
+      fecharModal('modalConciliarFatura');
+      conciliacaoAtual = null;
+      atualizarTudo();
+    }
+
+    function conciliacaoAberta() {
+      return !!conciliacaoAtual && !document.getElementById('modalConciliarFatura').classList.contains('escondido');
+    }
+
+    function salvarTotalBancoConciliacao() {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      const v = lerDinheiro('conciliarTotalBanco');
+      const reg = registroConciliacao(cc.chave);
+      if (v > 0) reg.banco = textoCentavos(v); else delete reg.banco;
+      salvarConciliacoes();
+      renderizarConciliacao();
+    }
+
+    function renderizarConciliacao() {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      const reg = conciliacoes[cc.chave] || { ok: [] };
+      const ok = new Set(reg.ok || []);
+      const itens = itensDaConciliacao(cc.conta, cc.mes, cc.ano);
+      const r2 = v => Math.round(v * 100) / 100;
+      const sinal = v => (v < -0.004 ? '− ' : '') + fmtOculto(Math.abs(v));
+      const T = r2(itens.reduce((s, i) => s + i.valor, 0));
+      const conferidos = itens.filter(i => ok.has(i.chave));
+      const S = r2(conferidos.reduce((s, i) => s + i.valor, 0));
+      const pendentes = itens.length - conferidos.length;
+      const B = lerDinheiro('conciliarTotalBanco');
+      const linha = (rotulo, valor, cor) => `<div class="linha-subtotal" style="cursor:default;"><span>${rotulo}</span><strong style="color:${cor || 'var(--texto-forte)'};">${valor}</strong></div>`;
+      let html = linha('Somado no app', sinal(T))
+        + linha(`Conferido (${conferidos.length} de ${itens.length})`, sinal(S), 'var(--verde)')
+        + linha(`Falta conferir (${pendentes})`, sinal(r2(T - S)), pendentes ? 'var(--amarelo)' : 'var(--texto-fraco)');
+      let status, fechou = false;
+      if (B > 0) {
+        const dif = r2(B - T);
+        html += linha('Banco − app', (dif > 0 ? '+ ' : dif < 0 ? '− ' : '') + fmtOculto(Math.abs(dif)), Math.abs(dif) < 0.01 ? 'var(--verde)' : 'var(--amarelo)');
+        fechou = Math.abs(dif) < 0.01 && !pendentes;
+        status = Math.abs(dif) < 0.01
+          ? (pendentes
+            ? `O total bate com o banco. ${pendentes === 1 ? 'Falta 1 item' : 'Faltam ' + pendentes + ' itens'} pra marcar como conferido.`
+            : '✓ Fatura conciliada: o total bate e todos os itens foram conferidos.')
+          : dif < 0
+            ? `O app tem ${fmtOculto(-dif)} a mais que o banco. Procure nos itens em destaque o que o banco não cobrou nesta fatura (ou cobrou com outro valor).`
+            : `O banco cobrou ${fmtOculto(dif)} a mais que o app. Falta lançar o que só está no banco: use "+ compra que faltou".`;
+      } else {
+        status = 'Digite o total da fatura no banco pra ver a diferença.';
+      }
+      html += `<p style="font-size:11.5px;line-height:1.45;margin-top:8px;color:${fechou ? 'var(--verde)' : 'var(--texto-medio)'};">${status}</p>`;
+      document.getElementById('resumoConciliacao').innerHTML = html;
+
+      const pares = cc.pares || {};
+      const lista = document.getElementById('listaConciliacao');
+      lista.innerHTML = itens.length ? itens.map(i => {
+        const confere = ok.has(i.chave);
+        const par = pares[i.chave];
+        const dataTxt = i.data ? i.data.split('-').reverse().join('/') : 'veio da fatura anterior';
+        return `<label class="linha-conciliar${confere ? '' : ' pendente'}">
+          <input type="checkbox" data-item="${esc(i.chave)}"${confere ? ' checked' : ''} aria-label="Confere com o banco: ${esc(i.desc)}">
+          <div class="info"><strong>${esc(i.desc)}</strong><div>${dataTxt}${i.categoria ? ' · ' + esc(i.categoria) : ''}`
+          + `${!par ? '' : par.tipo === 'aproximado'
+              ? ' · <span style="color:var(--amarelo);">↔ banco: ' + esc(par.desc) + ' ' + par.data.slice(8, 10) + '/' + par.data.slice(5, 7)
+                + ' com ' + sinal(par.valor) + ' — corrija o valor daqui</span>'
+              : ' · <span style="color:var(--verde);">↔ banco: ' + esc(par.desc) + ' ' + par.data.slice(8, 10) + '/' + par.data.slice(5, 7) + '</span>'}</div></div>
+          <span class="${i.valor < 0 ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;white-space:nowrap;">${sinal(i.valor)}</span>
+          ${i.lanc ? `<button type="button" class="btn-mini" data-editar="${i.lanc.id}" style="padding:2px 8px;">editar</button>` : ''}
+        </label>`;
+      }).join('') : '<p style="color:var(--texto-medio);font-size:13px;">Nenhum item nesta fatura.</p>';
+      lista.querySelectorAll('input[data-item]').forEach(chk => {
+        chk.onchange = () => marcarItemConciliado(chk.dataset.item, chk.checked);
+      });
+      lista.querySelectorAll('[data-editar]').forEach(b => {
+        b.onclick = (ev) => {
+          ev.preventDefault();   // dentro do <label>: sem isto o toque também marcava o item
+          ev.stopPropagation();
+          const id = lancamentos.find(l => String(l.id) === b.dataset.editar);
+          if (id) abrirEdicaoLancamentoGlobal(id.id);
+        };
+      });
+      renderizarSugestoesConciliacao(itens, ok);
+    }
+
+    function marcarItemConciliado(chaveItem, marcado) {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      const reg = registroConciliacao(cc.chave);
+      reg.ok = reg.ok.filter(k => k !== chaveItem);
+      if (marcado) reg.ok.push(chaveItem);
+      salvarConciliacoes();
+      renderizarConciliacao();
+    }
+
+    /* ARQUIVO DO BANCO
+       OFX: cada <STMTTRN> com data, valor e descrição. CSV: cada linha com uma
+       data e um valor vira um item, venha a coluna na ordem que vier (o
+       cabeçalho e o total ficam de fora sozinhos, porque não têm os dois). */
+    function lerDataDoBanco(txt, cc) {
+      const s = String(txt || '').trim();
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
+      if (!m) return null;
+      const d = parseInt(m[1], 10), mo = parseInt(m[2], 10);
+      if (d < 1 || d > 31 || mo < 1 || mo > 12) return null;
+      let a = m[3] ? parseInt(m[3], 10) : null;
+      if (a !== null && a < 100) a += 2000;
+      // sem ano (fatura do Itaú): o da fatura; mês depois dela é compra do ano anterior
+      if (a === null) a = mo - 1 > cc.mes ? cc.ano - 1 : cc.ano;
+      return `${a}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    // "1.234,56" · "-12,74" · "1234.56" · "R$ 12,34" · "12,34-" → número; o resto → null
+    function lerValorDoBanco(txt) {
+      let s = String(txt || '').replace(/R\$|\s/g, '');
+      if (!s) return null;
+      const neg = /^-/.test(s) || /-$/.test(s) || /^\(.*\)$/.test(s);
+      s = s.replace(/^[-(]+|[-)]+$/g, '');
+      let v;
+      if (/^\d{1,3}(\.\d{3})*,\d{2}$|^\d+,\d{2}$/.test(s)) v = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+      else if (/^\d{1,3}(,\d{3})*\.\d{2}$|^\d+\.\d{2}$/.test(s)) v = parseFloat(s.replace(/,/g, ''));
+      else return null;
+      return isNaN(v) ? null : (neg ? -v : v);
+    }
+
+    function dividirLinhaCSV(linha, sep) {
+      const out = [];
+      let cur = '', aspas = false;
+      for (let i = 0; i < linha.length; i++) {
+        const ch = linha[i];
+        if (ch === '"') {
+          if (aspas && linha[i + 1] === '"') { cur += '"'; i++; } else aspas = !aspas;
+        } else if (ch === sep && !aspas) { out.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur);
+      return out.map(s => s.trim());
+    }
+
+    function lerArquivoDoBanco(texto, cc) {
+      let itens = [];
+      if (/<STMTTRN>/i.test(texto)) {
+        texto.split(/<STMTTRN>/i).slice(1).forEach(bloco => {
+          const campo = nome => { const m = bloco.match(new RegExp('<' + nome + '>([^<\\r\\n]*)', 'i')); return m ? m[1].trim() : ''; };
+          const dt = campo('DTPOSTED');
+          const v = parseFloat(campo('TRNAMT').replace(',', '.'));
+          if (!/^\d{8}/.test(dt) || isNaN(v)) return;
+          // no OFX de cartão a compra vem negativa (é débito na conta do cartão)
+          itens.push({ data: dt.slice(0, 4) + '-' + dt.slice(4, 6) + '-' + dt.slice(6, 8), desc: campo('MEMO') || campo('NAME'), valor: -v });
+        });
+      } else {
+        const linhas = texto.split(/\r?\n/).filter(l => l.trim());
+        const amostra = linhas.slice(0, 10);
+        const conta = re => amostra.reduce((s, l) => s + (l.match(re) || []).length, 0);
+        const sep = conta(/;/g) >= amostra.length ? ';' : conta(/\t/g) >= amostra.length ? '\t' : ',';
+        linhas.forEach(linha => {
+          let data = null, valor = null;
+          const desc = [];
+          dividirLinhaCSV(linha, sep).forEach(cel => {
+            const x = cel.trim();
+            if (!x) return;
+            if (!data) { const d = lerDataDoBanco(x, cc); if (d) { data = d; return; } }
+            const v = lerValorDoBanco(x);
+            if (v !== null) { valor = v; return; }   // a última coluna de valor vence (R$ depois de US$)
+            desc.push(x);
+          });
+          if (data && valor !== null) itens.push({ data, desc: desc.join(' ') || '(sem descrição)', valor });
+        });
+      }
+      /* O pagamento da fatura anterior aparece no arquivo como crédito, mas não
+         é estorno nem compra: fica de fora da conta. Ele também fica de fora da
+         decisão do sinal — numa fatura o que mais aparece é compra, então se o
+         resto soma negativo o arquivo usa o sinal ao contrário. */
+      const pareceePagamento = i => /pagamento|pgto|pagto|saldo anterior/i.test(i.desc);
+      const somaSemPagamento = itens.filter(i => !pareceePagamento(i)).reduce((s, i) => s + i.valor, 0);
+      if (somaSemPagamento < 0) itens.forEach(i => { i.valor = -i.valor; });
+      itens.forEach((i, k) => {
+        i.id = 'b' + k;
+        i.valor = Math.round(i.valor * 100) / 100;
+        i.pagamento = i.valor < 0 && pareceePagamento(i);
+      });
+      return itens;
+    }
+
+    function importarArquivoConciliacao(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file || !conciliacaoAtual) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          // banco brasileiro ainda exporta muito em Latin-1: se não for UTF-8, lê assim
+          let texto;
+          try { texto = new TextDecoder('utf-8', { fatal: true }).decode(reader.result); }
+          catch (err) { texto = new TextDecoder('windows-1252').decode(reader.result); }
+          receberLinhasDoBanco(lerArquivoDoBanco(texto, conciliacaoAtual));
+        } catch (err) {
+          avisar('arquivoBancoVazio');
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function receberLinhasDoBanco(itens) {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      if (!itens.length) { avisar('arquivoBancoVazio'); return; }
+      cc.banco = itens;
+      // total do banco ainda vazio: vem do arquivo
+      if (!lerDinheiro('conciliarTotalBanco')) {
+        const soma = itens.filter(i => !i.pagamento).reduce((s, i) => s + i.valor, 0);
+        if (soma > 0) {
+          document.getElementById('conciliarTotalBanco').value = fmtVal(soma);
+          const reg = registroConciliacao(cc.chave);
+          reg.banco = textoCentavos(soma);
+          salvarConciliacoes();
+        }
+      }
+      casarConciliacao();
+      renderizarConciliacao();
+    }
+
+    /* Cada linha do banco procura um item daqui, do mais seguro pro menos:
+       1. mesmo valor, data até 3 dias de distância (compra à vista);
+       2. mesmo valor, qualquer data (parcela: o banco mostra a data da
+          compra, o app a da parcela);
+       3. várias linhas do mesmo dia somando um item daqui — os pedágios de
+          uma viagem lançados como "Pedágio R$ 66";
+       4. valor parecido no mesmo dia (até R$ 1 ou 3%): a corrida de R$ 11,07
+          lançada como R$ 11. Esse par é só sugestão — fica de fora do "marcar
+          todos", porque o certo é corrigir o valor daqui.
+       Um item casa com uma linha só (ou um grupo), e a mais perto ganha. */
+    function casarConciliacao() {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      const itens = itensDaConciliacao(cc.conta, cc.mes, cc.ano);
+      const pares = {};
+      const usados = new Set();
+      const banco = cc.banco.filter(b => !b.pagamento);
+      const r2 = v => Math.round(v * 100) / 100;
+      const dias = (a, b) => (a && b ? Math.abs((new Date(a + 'T12:00:00') - new Date(b + 'T12:00:00')) / 86400000) : 999);
+      const livres = () => banco.filter(b => !usados.has(b.id));
+      const casar = (item, linhas, tipo) => {
+        pares[item.chave] = {
+          tipo, linhas, data: linhas[0].data, valor: r2(linhas.reduce((s, b) => s + b.valor, 0)),
+          desc: linhas.length === 1 ? linhas[0].desc : linhas.length + ' linhas do dia: ' + linhas.map(b => b.desc).join(' + ')
+        };
+        linhas.forEach(b => usados.add(b.id));
+      };
+      [3, Infinity].forEach(janela => {
+        livres().forEach(b => {
+          const cand = itens.filter(i => !pares[i.chave] && Math.abs(i.valor - b.valor) < 0.01
+            && (janela === Infinity || dias(i.data, b.data) <= janela));
+          if (!cand.length) return;
+          cand.sort((x, y) => dias(x.data, b.data) - dias(y.data, b.data));
+          casar(cand[0], [b], 'exato');
+        });
+      });
+      itens.filter(i => !pares[i.chave] && i.data).forEach(i => {
+        const perto = livres().filter(b => dias(i.data, b.data) <= 1 && (b.valor > 0) === (i.valor > 0) && Math.abs(b.valor) < Math.abs(i.valor));
+        if (perto.length < 2 || perto.length > 12) return;
+        // busca de soma exata, de 2 a 6 linhas
+        const achar = (ini, resto, escolhidas) => {
+          if (escolhidas.length >= 2 && Math.abs(resto) < 0.01) return escolhidas;
+          if (escolhidas.length === 6) return null;
+          for (let k = ini; k < perto.length; k++) {
+            const r = achar(k + 1, r2(resto - perto[k].valor), escolhidas.concat(perto[k]));
+            if (r) return r;
+          }
+          return null;
+        };
+        const grupo = achar(0, i.valor, []);
+        if (grupo) casar(i, grupo, 'agrupado');
+      });
+      livres().forEach(b => {
+        const cand = itens.filter(i => !pares[i.chave] && dias(i.data, b.data) <= 1 && (b.valor > 0) === (i.valor > 0)
+          && Math.abs(i.valor - b.valor) <= Math.max(1, 0.03 * Math.abs(b.valor)));
+        if (!cand.length) return;
+        cand.sort((x, y) => Math.abs(x.valor - b.valor) - Math.abs(y.valor - b.valor));
+        casar(cand[0], [b], 'aproximado');
+      });
+      cc.pares = pares;
+      cc.soNoBanco = livres();
+    }
+
+    function renderizarSugestoesConciliacao(itens, ok) {
+      const cc = conciliacaoAtual;
+      const box = document.getElementById('sugestoesConciliacao');
+      if (!cc || !cc.banco.length) { box.innerHTML = ''; return; }
+      const pares = cc.pares || {};
+      // o par de valor diferente não entra no "marcar": o certo é corrigir o valor
+      const aMarcar = itens.filter(i => pares[i.chave] && pares[i.chave].tipo !== 'aproximado' && !ok.has(i.chave));
+      const soNoBanco = cc.soNoBanco || [];
+      const pagamentos = cc.banco.filter(b => b.pagamento);
+      const doArquivo = cc.banco.filter(b => !b.pagamento);
+      const somaArq = doArquivo.reduce((s, b) => s + b.valor, 0);
+      const semPar = itens.filter(i => !pares[i.chave]).length;
+      const qtd = tipo => Object.values(pares).filter(x => x.tipo === tipo).length;
+      const partes = [`${qtd('exato')} batem`];
+      if (qtd('agrupado')) partes.push(`${qtd('agrupado')} ${qtd('agrupado') === 1 ? 'bate' : 'batem'} com várias linhas do banco somadas`);
+      if (qtd('aproximado')) partes.push(`${qtd('aproximado')} com valor diferente (em amarelo)`);
+      partes.push(`${soNoBanco.length} só no banco`, `${semPar} só no app (em destaque na lista)`);
+      let html = `<div style="border:1px solid var(--borda);border-radius:10px;padding:10px;margin-bottom:10px;font-size:11.5px;line-height:1.45;color:var(--texto-medio);">
+        <div><strong style="color:var(--texto-forte);">Arquivo do banco:</strong> ${doArquivo.length} ${doArquivo.length === 1 ? 'item' : 'itens'}, ${fmtOculto(somaArq)}`
+        + (pagamentos.length ? ` (fora ${pagamentos.length === 1 ? 'o pagamento' : pagamentos.length + ' pagamentos'} da fatura anterior)` : '') + `.</div>
+        <div>${partes.join(' · ')}.</div>`;
+      if (aMarcar.length) {
+        html += `<button type="button" class="btn-mini" style="margin-top:8px;" onclick="aplicarSugestoesConciliacao()">`
+          + `Marcar ${aMarcar.length === 1 ? 'o par que bate' : 'os ' + aMarcar.length + ' pares que batem'} como conferido${aMarcar.length === 1 ? '' : 's'}</button>`;
+      }
+      if (soNoBanco.length) {
+        html += `<div style="margin-top:10px;font-size:10.5px;font-weight:700;color:var(--texto-tenue);text-transform:uppercase;letter-spacing:.4px;">Só no banco</div>`
+          + soNoBanco.map(b => `<div class="linha-subtotal" style="cursor:default;align-items:center;margin-bottom:4px;gap:8px;">
+              <span style="min-width:0;">${esc(b.desc)} <span style="color:var(--texto-tenue);">${b.data.slice(8, 10)}/${b.data.slice(5, 7)}</span></span>
+              <span style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                <strong style="color:${b.valor < 0 ? 'var(--verde)' : 'var(--texto-forte)'};">${b.valor < 0 ? '− ' : ''}${fmtOculto(Math.abs(b.valor))}</strong>
+                <button type="button" class="btn-mini" style="padding:1px 8px;" data-lancar-banco="${esc(b.id)}">lançar</button>
+              </span></div>`).join('');
+      }
+      box.innerHTML = html + '</div>';
+      box.querySelectorAll('[data-lancar-banco]').forEach(bt => { bt.onclick = () => lancarItemSoNoBanco(bt.dataset.lancarBanco); });
+    }
+
+    function aplicarSugestoesConciliacao() {
+      const cc = conciliacaoAtual;
+      if (!cc || !cc.pares) return;
+      const reg = registroConciliacao(cc.chave);
+      const ok = new Set(reg.ok);
+      Object.entries(cc.pares).forEach(([k, par]) => { if (par.tipo !== 'aproximado') ok.add(k); });
+      reg.ok = [...ok];
+      salvarConciliacoes();
+      renderizarConciliacao();
+    }
+
+    // LANÇAR O QUE SÓ ESTÁ NO BANCO — compra (despesa) ou estorno (receita), no
+    // cartão e dentro desta fatura, já marcado como conferido
+    let tipoItemDoBanco = 'compra';
+
+    function abrirItemDoBanco(tipo, linhaBanco) {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      tipoItemDoBanco = tipo === 'estorno' ? 'estorno' : 'compra';
+      const b = linhaBanco || {};
+      document.getElementById('tituloItemDoBanco').textContent = tipoItemDoBanco === 'estorno'
+        ? 'Estorno ou crédito que o banco deu nesta fatura'
+        : 'Compra que está na fatura do banco e não no app';
+      document.getElementById('itemBancoDesc').value = b.desc || '';
+      document.getElementById('itemBancoValor').value = b.valor ? fmtVal(Math.abs(b.valor)) : '';
+      const sel = document.getElementById('itemBancoCategoria');
+      sel.innerHTML = (tipoItemDoBanco === 'estorno' ? '<option value="">sem categoria (só abate a fatura)</option>' : '')
+        + obterCategoriasDespesas().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      sel.value = tipoItemDoBanco === 'estorno' ? '' : categoriaPadrao();
+      cc.itemOrigem = b.id || null;
+      cc.itemData = b.data || null;
+      document.getElementById('notaItemDoBanco').textContent = `Entra na fatura de ${NOMES_MESES[cc.mes].toLowerCase()} do ${cc.conta}`
+        + (b.data ? ` (data do banco: ${b.data.split('-').reverse().join('/')})` : '') + ', já marcado como conferido.'
+        + (tipoItemDoBanco === 'estorno' ? ' Estorno abate a fatura e não entra no saldo da conta.' : '');
+      document.getElementById('formItemDoBanco').classList.remove('escondido');
+    }
+
+    function lancarItemSoNoBanco(idBanco) {
+      const cc = conciliacaoAtual;
+      const b = cc && cc.banco.find(x => x.id === idBanco);
+      if (b) abrirItemDoBanco(b.valor < 0 ? 'estorno' : 'compra', b);
+    }
+
+    // A data do banco, se ela cai nesta fatura; senão o dia 1 do mês da fatura
+    // (que cai sempre nela), com a data do banco guardada na observação
+    function dataDentroDaFatura(cc, dataBanco) {
+      if (dataBanco) {
+        const f = getMesFatura(dataBanco, 'Crédito à Vista', cc.conta);
+        if (f.mes === cc.mes && f.ano === cc.ano) return { data: dataBanco, nota: '' };
+      }
+      return { data: cc.ano + '-' + String(cc.mes + 1).padStart(2, '0') + '-01',
+        nota: dataBanco ? ' Data no banco: ' + dataBanco.split('-').reverse().join('/') + '.' : '' };
+    }
+
+    function confirmarItemDoBanco() {
+      const cc = conciliacaoAtual;
+      if (!cc) return;
+      const desc = document.getElementById('itemBancoDesc').value.trim();
+      const valor = lerDinheiro('itemBancoValor');
+      if (!desc) { avisar('semDescricao'); return; }
+      if (!(valor > 0)) { avisar('valorInvalido'); return; }
+      const estorno = tipoItemDoBanco === 'estorno';
+      const { data, nota } = dataDentroDaFatura(cc, cc.itemData);
+      const id = novoIdLancamento();
+      lancamentos.unshift({
+        id, tipo: estorno ? 'receita' : 'despesa', descricao: desc, conta: cc.conta,
+        formaModo: 'Crédito à Vista', numParcelas: '1',
+        categoria: document.getElementById('itemBancoCategoria').value || (estorno ? '' : categoriaPadrao()),
+        observacao: (estorno ? 'Estorno lançado na conciliação da fatura.' : 'Lançado na conciliação da fatura: estava no banco e não no app.') + nota,
+        data, valor: textoCentavos(valor),
+        grupoViagemId: '', grupoViagemNome: '',
+        emprestimoPara: '', emprestimoVence: '', emprestimoQuitado: false
+      });
+      registroConciliacao(cc.chave).ok.push('l:' + id);
+      // a linha do arquivo que virou lançamento deixa de ser "só no banco"
+      if (cc.itemOrigem) {
+        const b = cc.banco.find(x => x.id === cc.itemOrigem);
+        if (b) cc.pares['l:' + id] = { tipo: 'exato', linhas: [b], desc: b.desc, data: b.data, valor: b.valor };
+        cc.soNoBanco = cc.soNoBanco.filter(x => x.id !== cc.itemOrigem);
+        cc.itemOrigem = null;
+      }
+      salvarConciliacoes();
+      salvarLocalStorage();
+      document.getElementById('formItemDoBanco').classList.add('escondido');
       atualizarTudo();
     }
 
@@ -13658,7 +14299,7 @@
           extrasHTML = trazidos.map(t => `
             <div class="linha-subtotal" style="cursor:default;">
               <span>🔁 ${t.conta} · ${t.rotulo}</span>
-              <strong style="color:var(--vermelho);">${fmtOculto(t.valor)}</strong>
+              <strong style="color:${t.valor < 0 ? 'var(--verde)' : 'var(--vermelho)'};">${t.valor < 0 ? '− ' : ''}${fmtOculto(Math.abs(t.valor))}</strong>
             </div>`).join('');
         }
       } else if (tipoFiltro === 'conta') {
@@ -17184,6 +17825,7 @@ function confirmarLancamentoVoz() {
     carregarOrcamentos();
     carregarPlanejamento();   // depois das metas e dos lançamentos: na primeira vez, o plano nasce deles
     carregarFaturasPagas();
+    carregarConciliacoes();
     carregarContas();
     migrarFormaPadraoDasContas();   // depois de carregarContas: antes o array está vazio
     migrarPrazosDeFixos();
