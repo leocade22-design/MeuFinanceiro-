@@ -11403,23 +11403,30 @@
     function cobrancasAbertas() {
       const hoje = obterDataBrasilia();
       return lancamentos
-        /* Gasto fixo aparece pela PROXIMIDADE DO PRAZO, não pelo mês do gasto.
-           Antes a regra era o mês: a mensalidade de setembro só virava cobrança
-           quando setembro chegasse — tarde demais, porque o prazo é o dia 10 e
-           você precisa avisar a pessoa antes disso.
-
-           Parcela e gasto avulso são outra história: a compra inteira já saiu do
-           seu bolso, então todas já são devidas. */
-        .filter(l => {
-          if (!l.fixoId) return true;
-          // já aconteceu: o dinheiro saiu (ou está na fatura), então é devido
-          if (l.data.slice(0, 7) <= hoje.slice(0, 7)) return true;
-          // ainda não aconteceu, mas o prazo está chegando: aparece assim mesmo,
-          // senão você só descobriria a cobrança depois de já ter que pagar
-          return !!l.emprestimoVence && hoje >= somarDias(l.emprestimoVence, -DIAS_ANTECEDENCIA_COBRANCA);
-        })
         .reduce((acc, l) => acc.concat(cobrancasDoLancamento(l)), [])
-        .filter(c => !c.quitado);
+        .filter(c => !c.quitado && cobrancaJaAparece(c, hoje));
+    }
+
+    /* QUANDO A COBRANÇA DE UM GASTO FIXO ENTRA NA LISTA
+
+       Pela PROXIMIDADE DO PRAZO, e só por ela: dez dias antes do vencimento,
+       pra todo mundo. A regra antiga também mostrava a cobrança "quando chegava
+       o mês do gasto", e isso dependia do dia do gasto: o Gympass do Emir
+       (dia 2, cobrança dia 10) aparecia nove dias antes, e o do Bernardo
+       (dia 26, cobrança dia 10 do mês seguinte) aparecia no dia 1º — quarenta
+       dias antes, e antes até do gasto existir.
+
+       O prazo lido é o da COBRANÇA (de cada pessoa, no rateio), não o do
+       lançamento: é ele que o botão de adiar move, então adiar e a lista
+       nunca discordam.
+
+       Parcela e gasto avulso são outra história: a compra inteira já saiu do
+       seu bolso, então todas já são devidas. */
+    function cobrancaJaAparece(c, hoje) {
+      if (!c.lanc.fixoId) return true;
+      if (c.vence) return hoje >= somarDias(c.vence, -DIAS_ANTECEDENCIA_COBRANCA);
+      // registro sem prazo (antigo): vale quando o gasto acontece
+      return (c.lanc.data || '') <= hoje;
     }
 
     /* `info` carimba QUANDO e COMO a dívida foi embora ({em, como, conta, por}),
@@ -12791,9 +12798,12 @@
       renderizarEmprestimos();
     }
 
+    /* O prazo da COBRANÇA, não o do lançamento: numa dívida em três parcelas o
+       lançamento guarda só o prazo da primeira, e o badge contava as três como
+       vencidas assim que a primeira vencia. */
     function cobrancasVencidas() {
       const hoje = obterDataBrasilia();
-      return cobrancasAbertas().filter(c => c.lanc.emprestimoVence && c.lanc.emprestimoVence <= hoje);
+      return cobrancasAbertas().filter(c => c.vence && c.vence <= hoje);
     }
 
     // O que o aviso cobre: o que já venceu mais o que cai numa das antecedências
@@ -13737,11 +13747,15 @@
           // Marcar/desmarcar empréstimo vale do mês atual pra frente: meses passados
           // já foram acertados na vida real, não faz sentido reabrir cobrança neles.
           let mudouLanc = false;
+          const refazerRateio = [];
           lancamentos.forEach(l => {
             if (l.fixoId !== f.id || !l.data || l.data.slice(0, 7) < mesAtual) return;
             if (l.emprestimoQuitado) return;
+            // alguém do rateio já pagou: aquilo aconteceu, não se reescreve
+            if (Array.isArray(l.emprestimoRateio) && l.emprestimoRateio.some(d => d.quitado)) return;
             l.emprestimoPara = emprestimoPara;
             l.emprestimoVence = emprestimoPara ? venceEmprestimoFixo(f, l.data.slice(0, 7)) : '';
+            refazerRateio.push(l);
             mudouLanc = true;
           });
           // Se o lançamento deste mês ainda não venceu, atualiza ele também
@@ -13762,6 +13776,16 @@
             ajustarPendenciaDoLancamento(l);
             l.data = l.data.slice(0, 7) + '-' + dia;
             mudouLanc = true;
+          });
+          /* A divisão entre pessoas acompanha a edição. Antes só o nome e o
+             prazo mudavam: trocar "Bernardo" por "Bernardo, Emir" deixava o
+             rateio antigo de pé, e a lista de cobranças seguia mostrando quem
+             não devia mais nada. Vem depois do laço de cima, que acerta o valor. */
+          refazerRateio.forEach(l => {
+            const nomes = nomesEmprestimo(emprestimoPara);
+            l.emprestimoRateio = emprestimoPara
+              ? montarRateio(nomes, f.rateioIncluiVoce !== false, parseVal(l.valor), '1', l.emprestimoVence)
+              : null;
           });
           if (mudouLanc) salvarLocalStorage();
         }
