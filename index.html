@@ -1812,6 +1812,31 @@
     </div>
   </div>
 
+  <!-- RECORRENTE: mês sem cobrança (consórcio, gasto fixo, cobrança de empréstimo) -->
+  <div id="modalMesSemCobranca" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalMesSemCobranca')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Mês sem cobrança</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalMesSemCobranca')">&times;</button>
+      </div>
+      <input type="hidden" id="idFixoMesSemCobranca" value="">
+      <p id="infoMesSemCobranca" style="font-size:11.5px;color:var(--texto-tenue);margin-bottom:12px;line-height:1.45;"></p>
+      <div id="blocoEscolherMesSemCobranca">
+        <div class="form-group">
+          <label for="mesSemCobranca">Mês que não teve cobrança</label>
+          <select id="mesSemCobranca" onchange="atualizarPreviaMesSemCobranca()"></select>
+        </div>
+        <p id="previaMesSemCobranca" style="font-size:11.5px;color:var(--texto-medio);margin-bottom:12px;line-height:1.45;"></p>
+        <button type="button" class="btn-salvar" style="margin-top:0;" onclick="confirmarMesSemCobranca()">Marcar sem cobrança</button>
+      </div>
+      <p id="semMesParaPular" class="escondido" style="font-size:11.5px;color:var(--texto-medio);line-height:1.45;">Nenhum mês em aberto pra marcar: os que existem já têm pagamento registrado.</p>
+      <div id="blocoMesesPulados" class="escondido" style="margin-top:16px;">
+        <div style="font-size:10.5px;font-weight:700;color:var(--texto-tenue);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Meses marcados sem cobrança</div>
+        <div id="listaMesesPulados"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- CONSÓRCIO: contemplação -->
   <div id="modalContemplacao" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalContemplacao')">
     <div class="modal-content">
@@ -2047,6 +2072,7 @@
       </div>
       <div class="balao-acoes">
         <button class="btn-opcao-balao" onclick="executarEditarFixo()">Editar gasto fixo</button>
+        <button class="btn-opcao-balao" onclick="executarMesSemCobrancaFixo()">Mês sem cobrança</button>
         <button class="btn-opcao-balao escondido" id="btnRecriarFixo" onclick="executarRecriarFixo()">Recriar cobranças que faltam</button>
         <button class="btn-opcao-balao danger" onclick="executarExcluirFixo()">Remover gasto fixo</button>
       </div>
@@ -2852,11 +2878,37 @@
       if (!Array.isArray(consorcios)) consorcios = [];
     }
 
-    // Mês da última parcela: começo + (total - 1) meses. É o que faz o boleto
-    // parar de nascer quando o consórcio acaba.
+    /* MÊS SEM COBRANÇA
+
+       Nem todo mês de um recorrente tem cobrança: o consórcio que cobrou a
+       primeira parcela na adesão e só voltou a cobrar dois meses depois, a
+       assinatura que o banco não lançou num mês. O mês fica marcado no GASTO
+       FIXO — é ele que gera tudo, do boleto do consórcio à cobrança do
+       Gympass dividido —, e quem gera, numera e avisa passa a pular ele. */
+    function mesesPuladosDoFixo(f) {
+      return f && Array.isArray(f.mesesPulados) ? f.mesesPulados : [];
+    }
+
+    function mesesPuladosDoConsorcio(c) {
+      return c ? mesesPuladosDoFixo(fixos.find(f => f.id === c.fixoId)) : [];
+    }
+
+    // Mês da última parcela: começo + (total - 1) meses, mais um mês pra cada
+    // mês sem cobrança no caminho (são as mesmas parcelas, num calendário mais
+    // comprido). É o que faz o boleto parar de nascer quando o consórcio acaba.
     function ultimoMesConsorcio(c) {
       if (!c || !c.dataInicio || !c.totalParcelas) return null;
-      const porParcelas = somarMeses(c.dataInicio, Math.max(0, parseInt(c.totalParcelas, 10) - 1)).slice(0, 7);
+      const passos = Math.max(0, parseInt(c.totalParcelas, 10) - 1);
+      const ini = c.dataInicio.slice(0, 7);
+      const pulados = mesesPuladosDoConsorcio(c);
+      let extra = 0, porParcelas = somarMeses(c.dataInicio, passos).slice(0, 7);
+      // empurrar o fim pode engolir outro mês pulado; repete até estabilizar
+      for (let guarda = 0; guarda < 240; guarda++) {
+        const n = pulados.filter(m => m >= ini && m <= porParcelas).length;
+        if (n === extra) break;
+        extra = n;
+        porParcelas = somarMeses(c.dataInicio, passos + extra).slice(0, 7);
+      }
       // Encerrado na mão (vendeu a cota, desistiu): o fim vira a data do
       // encerramento, mesmo faltando parcela pelo contrato original.
       if (c.encerradoManual && c.dataEncerramentoManual) {
@@ -2892,15 +2944,20 @@
 
     /* Parcelas que já saíram: as que venceram (o boleto correu sozinho) mais as
        que você deu baixa na mão antes do vencimento. Sem o segundo caso, pagar
-       adiantado não contava e o card ficava atrasado em relação à realidade. */
+       adiantado não contava e o card ficava atrasado em relação à realidade.
+
+       Boleto "a pagar" vencido NÃO saiu: está em atraso. Contar ele como pago
+       fazia o card dizer "2 de 80" e "já paguei" com uma parcela que ninguém
+       pagou — e era o mesmo card que pintava ela de vermelho como vencida. */
     function parcelasPagasConsorcio(c) {
       const hoje = obterDataBrasilia();
       return lancamentos.filter(l => l.fixoId === c.fixoId && l.data
-        && (l.data <= hoje || l.consorcioPagoEm));
+        && ((l.data <= hoje && !aguardandoPagamento(l)) || l.consorcioPagoEm));
     }
 
     // Número da parcela pela distância em meses desde a primeira — não pelo
     // índice na lista, que escorregaria se uma parcela antiga fosse apagada.
+    // Mês sem cobrança no caminho não conta: a parcela seguinte herda o número.
     function numeroDaParcelaConsorcio(c, dataStr) {
       // aceita tanto a data crua quanto o lançamento inteiro
       if (dataStr && typeof dataStr === 'object') dataStr = mesDaParcelaConsorcio(dataStr);
@@ -2909,7 +2966,8 @@
       if (!ini || !m) return 0;
       const a = parseInt(ini.slice(0, 4), 10) * 12 + parseInt(ini.slice(5, 7), 10);
       const b = parseInt(m.slice(0, 4), 10) * 12 + parseInt(m.slice(5, 7), 10);
-      return b - a + 1;
+      const pulados = mesesPuladosDoConsorcio(c).filter(p => p >= ini && p < m).length;
+      return b - a + 1 - pulados;
     }
 
     function parcelaDoMesConsorcio(c, chaveMes) {
@@ -6406,6 +6464,10 @@
       acertoFeito: { emoji: '🤝', detalhe: '', frases: [
         'Contas acertadas.',
         'Pronto: vocês estão quites.'
+      ] },
+      mesJaPago: { emoji: '🧾', detalhe: 'Esse mês já tem pagamento registrado. Desfaça o pagamento antes de marcar o mês sem cobrança.', frases: [
+        'Esse mês teve cobrança, e você pagou.',
+        'Mês pago não vira mês sem cobrança.'
       ] }
     };
 
@@ -7804,6 +7866,15 @@
             emprestimoRateio: rateioOuPreservado(itemOriginal, montarRateio(nomesEmpr, rateioIncluiVoce, valorParcela, parcelasDivida, emprestimoVence, fracoesRateio), nomesEmpr, valorParcela),
             emprestimoQuitado: emprestimoPara ? (itemOriginal.emprestimoQuitado || false) : false
           };
+
+          /* Mudar a data de uma ocorrência de gasto fixo/consórcio pra outro mês
+             (a cobrança de outubro que veio em novembro) não muda DE QUE MÊS ela
+             é. Sem guardar a referência, outubro parecia vazio: o card acusava
+             "falta 1 cobrança" e o "Recriar" fazia uma parcela em dobro. */
+          if (itemOriginal.fixoId && !itemOriginal.consorcioMesRef && itemOriginal.data && dataBase
+              && dataBase.slice(0, 7) !== itemOriginal.data.slice(0, 7)) {
+            lancamentos[idx].consorcioMesRef = itemOriginal.data.slice(0, 7);
+          }
 
           if (itemOriginal.aporteId) {
             sincronizarAporteDoLancamento(lancamentos[idx], valorTotal);
@@ -10299,6 +10370,7 @@
           // Fora do cartão o pagamento é tarefa sua, e continua sendo mesmo que
           // a cobrança do mês não exista (apagada, ou ainda não projetada)
           const naSuaMao = !eCredito(formaModoDoFixo(f));
+          const semCobranca = !lancado && mesesPuladosDoFixo(f).includes(chaveMesExibido);
           /* Três estados possíveis, e cada um quer uma frase diferente:
              no cartão o app só confirma que a cobrança entrou; fora do cartão a
              pergunta é se você já pagou, e quando pagou, de onde saiu. */
@@ -10307,6 +10379,7 @@
             : pago
               ? 'pago em ' + doMes.consorcioPagoEm.slice(8, 10) + '/' + doMes.consorcioPagoEm.slice(5, 7)
                 + ' · ' + doMes.conta + (doMes.pagoComo ? ' · ' + doMes.pagoComo : '')
+              : semCobranca ? 'sem cobrança neste mês'
               : (lancado ? 'lançado neste mês' : 'ainda não lançado neste mês');
           const corEstado = pendente ? 'var(--amarelo)' : (lancado ? 'var(--verde)' : 'var(--texto-tenue)');
           /* Consórcio também é gasto fixo — tem que entrar no total do mês. Mas
@@ -10342,7 +10415,7 @@
           /* No cartão não há o que fazer: chegou o dia, já está na fatura. Fora
              do cartão o pagamento é uma tarefa sua, e o botão é o lugar de
              encerrá-la — inclusive dizendo de que conta o dinheiro saiu. */
-          if (naSuaMao) {
+          if (naSuaMao && !semCobranca) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'btn-mini';
@@ -13846,6 +13919,12 @@
       abrirFormFixo(fixoSelecionadoId);
     }
 
+    function executarMesSemCobrancaFixo() {
+      if (!fixoSelecionadoId) return;
+      fecharModal('modalAcoesFixo');
+      abrirMesSemCobranca(fixoSelecionadoId);
+    }
+
     function executarExcluirFixo() {
       if (!fixoSelecionadoId) return;
       fecharModal('modalAcoesFixo');
@@ -14090,6 +14169,42 @@
     // pra uma fatura futura mostrava R$ 0,00 mesmo com assinaturas ativas.
     const MESES_FIXOS_A_FRENTE = 12;
 
+    // O lançamento de UM mês de um gasto fixo, do jeito que o gerador cria.
+    // Separado pra que desfazer um "mês sem cobrança" recrie igualzinho.
+    function novoLancamentoDoFixo(f, chave, hoje) {
+      const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
+      const dataVenc = chave + '-' + String(dia).padStart(2, '0');
+      return {
+        id: novoIdLancamento(),
+        tipo: 'despesa',
+        descricao: f.descricao,
+        conta: f.conta || primeiraConta(),
+        formaModo: formaModoDoFixo(f),
+        numParcelas: '1',
+        categoria: f.categoria || 'Outros',
+        observacao: 'Gasto fixo mensal',
+        data: dataVenc,
+        valor: f.valor,
+        fixoId: f.id,
+        /* No cartão a cobrança acontece sozinha: chegou o dia, o valor está
+           na fatura, você não fez nada. Fora do cartão é o contrário — o
+           boleto só é pago se VOCÊ for lá fazer o Pix. Então ele nasce
+           "a pagar" e só vira dinheiro que saiu quando você dá baixa.
+           Parcela retroativa entra já paga: se é de antes de hoje, o app
+           está registrando uma coisa que já aconteceu. */
+        aPagar: (!eCredito(formaModoDoFixo(f)) && dataVenc >= hoje) || undefined,
+        emprestimoPara: f.emprestimoPara || '',
+        emprestimoQuitado: false,
+        emprestimoVence: venceEmprestimoFixo(f, chave),
+        // "Bernardo, Emir" num Gympass dividido vira uma cobrança pra cada
+        // um, com a cota certa — igual ao formulário de lançamento
+        emprestimoRateio: montarRateio(
+          nomesEmprestimo(f.emprestimoPara || ''),
+          f.rateioIncluiVoce !== false,
+          parseVal(f.valor), '1', venceEmprestimoFixo(f, chave))
+      };
+    }
+
     function gerarLancamentosFixos() {
       if (!fixos.length) return;
       const hoje = obterDataBrasilia();
@@ -14116,42 +14231,13 @@
         while (ano < anoAtual || (ano === anoAtual && mes <= mesAtual)) {
           const chave = chaveMesAno(ano, mes);
           if (fimConsorcio && chave > fimConsorcio) break;
-          const dia = Math.min(Math.max(parseInt(f.diaVencimento, 10) || 1, 1), 28);
           /* mesDaParcelaConsorcio e não l.data: quem paga o boleto de setembro
              em outubro move a DATA, e comparar pela data faria o gerador achar
              que setembro ficou vazio e criar a parcela de novo. */
           const jaExiste = lancamentos.some(l => l.fixoId === f.id && l.data && mesDaParcelaConsorcio(l) === chave);
-          if (!jaExiste) {
-            const dataVenc = chave + '-' + String(dia).padStart(2, '0');
-            lancamentos.push({
-              id: novoIdLancamento(),
-              tipo: 'despesa',
-              descricao: f.descricao,
-              conta: f.conta || primeiraConta(),
-              formaModo: formaModoDoFixo(f),
-              numParcelas: '1',
-              categoria: f.categoria || 'Outros',
-              observacao: 'Gasto fixo mensal',
-              data: dataVenc,
-              valor: f.valor,
-              fixoId: f.id,
-              /* No cartão a cobrança acontece sozinha: chegou o dia, o valor está
-                 na fatura, você não fez nada. Fora do cartão é o contrário — o
-                 boleto só é pago se VOCÊ for lá fazer o Pix. Então ele nasce
-                 "a pagar" e só vira dinheiro que saiu quando você dá baixa.
-                 Parcela retroativa entra já paga: se é de antes de hoje, o app
-                 está registrando uma coisa que já aconteceu. */
-              aPagar: (!eCredito(formaModoDoFixo(f)) && dataVenc >= hoje) || undefined,
-              emprestimoPara: f.emprestimoPara || '',
-              emprestimoQuitado: false,
-              emprestimoVence: venceEmprestimoFixo(f, chave),
-              // "Bernardo, Emir" num Gympass dividido vira uma cobrança pra cada
-              // um, com a cota certa — igual ao formulário de lançamento
-              emprestimoRateio: montarRateio(
-                nomesEmprestimo(f.emprestimoPara || ''),
-                f.rateioIncluiVoce !== false,
-                parseVal(f.valor), '1', venceEmprestimoFixo(f, chave))
-            });
+          // mês marcado "sem cobrança" não ganha lançamento — nem aviso
+          if (!jaExiste && !mesesPuladosDoFixo(f).includes(chave)) {
+            lancamentos.push(novoLancamentoDoFixo(f, chave, hoje));
             houveNovo = true;
           }
           f.ultimoMesGerado = chave;
@@ -14492,9 +14578,11 @@
         let ultimo = horizonte < primeiro ? primeiro : horizonte;
         if (fim && fim < ultimo) ultimo = fim;
 
+        // mês sem cobrança não é ocorrência: nem pra baixa, nem pra "recriar"
+        const pulados = mesesPuladosDoFixo(f);
         let m = primeiro, guarda = 0;
         while (m <= ultimo && guarda++ < 240) {
-          if (!porMes.has(m)) porMes.set(m, { mes: m, lanc: null });
+          if (!porMes.has(m) && !pulados.includes(m)) porMes.set(m, { mes: m, lanc: null });
           m = somarMeses(m + '-01', 1).slice(0, 7);
         }
       }
@@ -14543,6 +14631,172 @@
       salvarLocalStorage();
       atualizarTudo();
       renderizarConsorcios();
+    }
+
+    /* MARCAR UM MÊS SEM COBRANÇA
+
+       O caso que trouxe isto: consórcio com a parcela 1 paga na adesão (11/09)
+       e a 2 só cobrada em 15/11. O app projetou uma parcela em outubro, avisou
+       dela e passou a numerar tudo um mês adiantado.
+
+       Marcar o mês tira a ocorrência dele de tudo — projeção, fatura, saldo,
+       avisos, lista de quem te deve — e, no consórcio, renumera as seguintes
+       e empurra o fim um mês. As parcelas pagas não mudam: um mês sem
+       cobrança não é parcela paga nem parcela perdida.
+
+       Mês com pagamento registrado (ou cobrança já acertada com alguém) não
+       entra na lista: aquilo aconteceu. */
+    function rotuloMesCurto(chave) {
+      return MESES_ABREV[parseInt(chave.slice(5, 7), 10) - 1] + '/' + chave.slice(2, 4);
+    }
+
+    function mesTemPagamento(lanc) {
+      if (!lanc) return false;
+      if (lanc.consorcioPagoEm) return true;
+      return cobrancasDoLancamento(lanc).some(c => c.quitado);
+    }
+
+    /* `feito` vem preenchido quando a janela reabre logo depois de marcar ou
+       desfazer: aí ela confirma o que aconteceu e NÃO sugere mês nenhum — com
+       a sugestão de volta, um segundo toque no botão pulava o mês seguinte
+       sem querer. */
+    function abrirMesSemCobranca(fixoId, feito) {
+      const f = fixos.find(x => x.id === fixoId);
+      if (!f) return;
+      const cons = consorcioDoFixo(fixoId);
+      const credito = eCredito(formaModoDoFixo(f));
+      document.getElementById('idFixoMesSemCobranca').value = fixoId;
+      document.getElementById('infoMesSemCobranca').textContent = cons
+        ? `${cons.nome}: a parcela do mês marcado sai da projeção e dos avisos. As seguintes são renumeradas e o fim do consórcio anda um mês. As parcelas pagas não mudam.`
+        : `${f.descricao}: a cobrança do mês marcado sai da projeção, ${credito ? 'da fatura' : 'do "a pagar"'}${f.emprestimoPara ? ', da lista de quem te deve' : ''} e dos avisos. Os outros meses ficam como estão.`;
+
+      const hoje = obterDataBrasilia();
+      const mesAtual = hoje.slice(0, 7);
+      const candidatas = ocorrenciasDoFixo(fixoId).filter(oc => !mesTemPagamento(oc.lanc));
+      const sel = document.getElementById('mesSemCobranca');
+      sel.innerHTML = '';
+      candidatas.forEach(oc => {
+        const o = document.createElement('option');
+        o.value = oc.mes;
+        const pendente = oc.lanc && aguardandoPagamento(oc.lanc);
+        o.textContent = rotuloMesCurto(oc.mes)
+          + (cons ? ' · parcela ' + numeroDaParcelaConsorcio(cons, oc.mes) + '/' + cons.totalParcelas : '')
+          + (!oc.lanc ? ' · sem lançamento' : pendente && oc.lanc.data < hoje ? ' · vencida' : pendente ? ' · a pagar' : '');
+        sel.appendChild(o);
+      });
+      if (feito) {
+        const vazio = document.createElement('option');
+        vazio.value = '';
+        vazio.textContent = 'escolha outro mês…';
+        sel.insertBefore(vazio, sel.firstChild);
+        sel.value = '';
+      } else {
+        // o palpite: a cobrança em aberto mais antiga, senão a deste mês, senão a próxima
+        const palpite = candidatas.find(oc => oc.lanc && aguardandoPagamento(oc.lanc) && oc.lanc.data < hoje)
+          || candidatas.find(oc => oc.mes >= mesAtual)
+          || candidatas[candidatas.length - 1];
+        if (palpite) sel.value = palpite.mes;
+      }
+      document.getElementById('blocoEscolherMesSemCobranca').classList.toggle('escondido', !candidatas.length);
+      document.getElementById('semMesParaPular').classList.toggle('escondido', !!candidatas.length);
+      atualizarPreviaMesSemCobranca();
+      if (feito) document.getElementById('previaMesSemCobranca').textContent = feito;
+      renderizarMesesPulados(f);
+      document.getElementById('modalMesSemCobranca').classList.remove('escondido');
+    }
+
+    // O que muda, em uma frase, antes de confirmar
+    function atualizarPreviaMesSemCobranca() {
+      const f = fixos.find(x => x.id === document.getElementById('idFixoMesSemCobranca').value);
+      const mes = document.getElementById('mesSemCobranca').value;
+      const box = document.getElementById('previaMesSemCobranca');
+      if (!f || !mes) { box.textContent = ''; return; }
+      // a numeração que muda é a dos meses seguintes ao marcado
+      const cons = consorcioDoFixo(f.id);
+      if (!cons) {
+        box.textContent = `${rotuloMesCurto(mes)} fica sem cobrança de ${f.descricao}.`;
+        return;
+      }
+      const prox = somarMeses(mes + '-01', 1).slice(0, 7);
+      const fimAntes = ultimoMesConsorcio(cons);
+      const fimDepois = fimAntes ? somarMeses(fimAntes + '-01', 1).slice(0, 7) : null;
+      box.textContent = `${rotuloMesCurto(mes)} fica sem parcela; a de ${rotuloMesCurto(prox)} passa a ser a `
+        + `${numeroDaParcelaConsorcio(cons, mes)}/${cons.totalParcelas}`
+        + (fimDepois ? ` e o consórcio quita em ${rotuloMesCurto(fimDepois)}, não em ${rotuloMesCurto(fimAntes)}.` : '.');
+    }
+
+    function renderizarMesesPulados(f) {
+      const pulados = mesesPuladosDoFixo(f);
+      document.getElementById('blocoMesesPulados').classList.toggle('escondido', !pulados.length);
+      const lista = document.getElementById('listaMesesPulados');
+      lista.innerHTML = '';
+      pulados.forEach(mes => {
+        const linha = document.createElement('div');
+        linha.className = 'linha-subtotal';
+        linha.style.cssText = 'cursor:default;margin-bottom:4px;';
+        linha.innerHTML = `<span>${rotuloMesCurto(mes)} · sem cobrança</span>`;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-mini';
+        b.textContent = 'Desfazer';
+        b.title = 'Esse mês teve cobrança: trazer de volta';
+        b.onclick = () => desfazerMesSemCobranca(f.id, mes);
+        linha.appendChild(b);
+        lista.appendChild(linha);
+      });
+    }
+
+    function confirmarMesSemCobranca() {
+      const f = fixos.find(x => x.id === document.getElementById('idFixoMesSemCobranca').value);
+      const mes = document.getElementById('mesSemCobranca').value;
+      if (!f || !mes) return;
+      const doMes = lancamentos.filter(l => l.fixoId === f.id && l.data && mesDaParcelaConsorcio(l) === mes);
+      if (doMes.some(mesTemPagamento)) {
+        avisar('mesJaPago');
+        return;
+      }
+      f.mesesPulados = [...new Set(mesesPuladosDoFixo(f).concat(mes))].sort();
+      lancamentos = lancamentos.filter(l => !doMes.includes(l));
+      salvarFixos();
+      salvarLocalStorage();
+      gerarLancamentosFixos();   // consórcio: o fim andou, a parcela nova do fim nasce aqui
+      atualizarTudo();
+      renderizarConsorcios();
+      // fica aberto, já mostrando o mês na lista (com o Desfazer)
+      abrirMesSemCobranca(f.id, `✓ ${rotuloMesCurto(mes)} marcado sem cobrança.`);
+    }
+
+    function desfazerMesSemCobranca(fixoId, mes) {
+      const f = fixos.find(x => x.id === fixoId);
+      if (!f) return;
+      f.mesesPulados = mesesPuladosDoFixo(f).filter(m => m !== mes);
+      if (!f.mesesPulados.length) delete f.mesesPulados;
+      const hoje = obterDataBrasilia();
+      const cons = consorcioDoFixo(fixoId);
+      const fim = cons ? ultimoMesConsorcio(cons) : null;
+      if (fim) {
+        // o fim volta um mês: a parcela que tinha ido pra lá deixa de existir
+        // (só se ainda não aconteceu — parcela paga não se apaga)
+        lancamentos = lancamentos.filter(l => !(l.fixoId === f.id && mesDaParcelaConsorcio(l) > fim
+          && l.data > hoje && !mesTemPagamento(l)));
+        if (f.ultimoMesGerado && f.ultimoMesGerado > fim) f.ultimoMesGerado = fim;
+      }
+      /* O mês volta do jeito que o gerador cria. Fora do cartão ele volta
+         "a pagar" mesmo se já passou: desfazer é dizer que houve cobrança, e
+         cobrança sem baixa é conta em aberto (mesma regra do "Recriar"). */
+      const jaGerado = f.ultimoMesGerado && mes <= f.ultimoMesGerado;
+      const existe = lancamentos.some(l => l.fixoId === f.id && l.data && mesDaParcelaConsorcio(l) === mes);
+      if (jaGerado && !existe && (!fim || mes <= fim)) {
+        const l = novoLancamentoDoFixo(f, mes, hoje);
+        if (!eCredito(l.formaModo)) l.aPagar = true;
+        lancamentos.push(l);
+      }
+      salvarFixos();
+      salvarLocalStorage();
+      gerarLancamentosFixos();
+      atualizarTudo();
+      renderizarConsorcios();
+      abrirMesSemCobranca(fixoId, `✓ ${rotuloMesCurto(mes)} voltou a ter cobrança.`);
     }
 
     /* O consórcio já resolve as duas pontas com UM lançamento só: ele aparece na
@@ -14933,8 +15187,9 @@
         : diasParaVencer === 1 ? 'amanhã'
         : `${diasParaVencer} dias`;
 
+      const puladosCons = mesesPuladosDoConsorcio(c);
       const statusMes = !parcelaMes
-        ? `sem parcela em ${nomeMes}`
+        ? (puladosCons.includes(mesCorrente) ? `${nomeMes} sem cobrança (marcado por você)` : `sem parcela em ${nomeMes}`)
         : pagoNoMes
           ? `✓ parcela de ${nomeMes} paga em ${parcelaMes.consorcioPagoEm.slice(8, 10)}/${parcelaMes.consorcioPagoEm.slice(5, 7)}`
             + (parcelaMes.pagoComo ? ' · ' + parcelaMes.pagoComo : '')
@@ -14971,6 +15226,7 @@
           <div style="font-size:11px;color:var(--texto-fraco);">dia ${c.diaVencimento} · ${c.conta} · ${credito ? 'entra na fatura' : 'sai da conta'}</div>
           <div style="font-size:11.5px;margin-top:6px;color:${corStatus};font-weight:${alertaMes ? '600' : 'normal'};">${statusMes}</div>
           ${faltamParcelas ? `<div style="font-size:11px;margin-top:4px;color:var(--amarelo);">⚠ ${faltamParcelas === 1 ? 'falta 1 cobrança' : 'faltam ' + faltamParcelas + ' cobranças'} na projeção — use “Recriar cobranças”</div>` : ''}
+          ${puladosCons.length ? `<div style="font-size:11px;margin-top:4px;color:var(--texto-fraco);">sem cobrança em ${puladosCons.map(rotuloMesCurto).join(', ')}</div>` : ''}
           <div class="barra-bg" style="margin:10px 0 6px;">
             <div class="barra-fill" style="width:${pct}%;background-color:${c.contemplado ? 'var(--verde-escuro)' : 'var(--azul)'};"></div>
           </div>
@@ -14999,6 +15255,7 @@
         boxAcoes.appendChild(b);
       };
       acao('Registrar pagamento', 'Dar baixa na parcela com o valor, a data e a conta que saíram de verdade', () => abrirPagamentoRecorrente(c.fixoId));
+      acao('Mês sem cobrança', 'Um mês em que a administradora não cobrou: tira a parcela dele e renumera as seguintes', () => abrirMesSemCobranca(c.fixoId));
       if (faltamParcelas) acao('Recriar cobranças', 'Trazer de volta as parcelas que sumiram da projeção', () => recriarParcelasFaltantes(c.fixoId));
       acao('Editar', 'Mudar valor, parcelas, conta, forma de pagamento...', () => abrirFormConsorcio(c.id));
       if (!c.contemplado) acao('Fui contemplado', '', () => abrirContemplacao(c.id));
