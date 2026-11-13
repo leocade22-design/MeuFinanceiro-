@@ -4476,8 +4476,11 @@
       if (localStorage.getItem(CHAVE_AVISO_ESTORNO)) return;
       const hoje = obterDataBrasilia();
       const porConta = {};
+      /* Só o ajuste automático da fatura: antes desta versão era o único jeito
+         de existir receita no cartão. Estorno lançado depois (conciliação,
+         backup corrigido) já nasceu com a regra certa e não mexeu em saldo. */
       lancamentos.forEach(l => {
-        if (!ehEstornoNoCartao(l) || !l.data || l.data > hoje) return;
+        if (!ehEstornoNoCartao(l) || !l.ajusteFatura || !l.data || l.data > hoje) return;
         const x = porConta[l.conta] || (porConta[l.conta] = { conta: l.conta, valor: 0, ids: [] });
         x.valor += parseVal(l.valor);
         x.ids.push(l.id);

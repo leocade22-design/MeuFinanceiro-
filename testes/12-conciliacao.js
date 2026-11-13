@@ -187,4 +187,30 @@ iniciar('12 · conciliação da fatura', async t => {
   const exporta = await p.evaluate(() => /\bconciliacoes,/.test(exportarBackup.toString()));
   t.ok(exporta && comConc.aviso === 'backupOk' && comConc.conc === '{"Itaú|2026-10":{"ok":["l:1"],"banco":"10,00"}}'
     && semConc.conc === '{}', 'a conferência vai e volta no backup; backup antigo, sem ela, começa vazio');
+
+  t.secao('AVISO DA ATUALIZAÇÃO (ESTORNO DEIXOU DE SER DINHEIRO)');
+  const aviso = async lancs => {
+    await p.evaluate(() => localStorage.clear());
+    await t.recarregar(p);
+    await p.evaluate(({ contas, lancs }) => {
+      __semear({ contas, lancamentos: lancs.map(l => Object.assign({ data: __mes(-1, 1), conta: 'Itaú', formaModo: 'Crédito à Vista', numParcelas: '1', categoria: '' }, l)) });
+      localStorage.removeItem('meu_financeiro_aviso_estorno_v1');   // como na primeira abertura da versão nova
+    }, { contas: CONTAS, lancs });
+    await t.recarregar(p);
+    return p.evaluate(() => ({ visivel: !document.getElementById('avisoEstornoSaldo').classList.contains('escondido'), texto: __texto('#textoAvisoEstorno') }));
+  };
+  const comAjuste = await aviso([{ id: 1, tipo: 'receita', descricao: 'Ajuste de fatura — estorno', valor: '1.099,60', ajusteFatura: true }]);
+  const semAjuste = await aviso([{ id: 1, tipo: 'receita', descricao: 'Cancelamento parcial (estorno)', valor: '12,74' }]);
+  t.ok(comAjuste.visivel && /Itaú \(R\$ 1\.099,60\)/.test(comAjuste.texto), 'ajuste de estorno antigo: o aviso diz quanto o saldo do Itaú mudou');
+  t.ok(!semAjuste.visivel, 'estorno lançado já com a regra nova (conciliação, backup corrigido) não gera aviso');
+  const manter = await p.evaluate(async () => {
+    localStorage.removeItem('meu_financeiro_aviso_estorno_v1');
+    lancamentos = [{ id: 1, tipo: 'receita', descricao: 'Ajuste de fatura — estorno', valor: '100,00', data: __mes(-1, 1), conta: 'Itaú', formaModo: 'Crédito à Vista', ajusteFatura: true }];
+    salvarLocalStorage();
+    prepararAvisoEstorno(); atualizarTudo();
+    const antes = Math.round(saldoDaContaAgora('Itaú') * 100) / 100;
+    manterSaldoDeAntesDoEstorno();
+    return { antes, depois: Math.round(saldoDaContaAgora('Itaú') * 100) / 100, some: document.getElementById('avisoEstornoSaldo').classList.contains('escondido'), hist: correcoesSaldo.length };
+  });
+  t.ok(manter.depois === manter.antes + 100 && manter.some && manter.hist === 1, '"Manter o saldo de antes" devolve o valor ao saldo, com registro no histórico, e o aviso some');
 });
