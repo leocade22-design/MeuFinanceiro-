@@ -158,4 +158,50 @@ iniciar('05 · empréstimos', async t => {
     return { bruto: g.bruto, aReceber: g.aReceber, liquido: g.liquido };
   });
   t.ok(grupo.bruto === 900 && grupo.aReceber === 600, 'pousada de R$ 900 dividida em 3: o grupo mostra R$ 900 gastos e R$ 600 a receber');
+
+  t.secao('COBRANÇA RECORRENTE: UMA REGRA SÓ (10 DIAS ANTES DO PRAZO)');
+  const recorrente = await p.evaluate(() => {
+    const base = { tipo: 'despesa', conta: 'Itaú', formaModo: 'Crédito Parcelado', categoria: 'Empréstimo', numParcelas: '1', observacao: 'Gasto fixo mensal' };
+    // gasto que já aconteceu (dia 1º deste mês) com prazo longe: era o caso do Bernardo
+    lancamentos.push(Object.assign({}, base, { id: novoIdLancamento(), descricao: 'Gympass B', valor: '189,90', data: __mes(0, 1), fixoId: 'fxB',
+      emprestimoPara: 'Bernardo', emprestimoVence: __dia(20), emprestimoQuitado: false }));
+    // gasto que ainda vai acontecer, com prazo perto: entra, como o do Emir sempre entrou
+    lancamentos.push(Object.assign({}, base, { id: novoIdLancamento(), descricao: 'Gympass E', valor: '115,90', data: __dia(2), fixoId: 'fxE',
+      emprestimoPara: 'Emir', emprestimoVence: __dia(8), emprestimoQuitado: false }));
+    // dívida em 3 parcelas, a primeira vencida anteontem
+    lancamentos.push({ id: novoIdLancamento(), tipo: 'despesa', descricao: 'Celular', valor: '300,00', data: __dia(-40), conta: 'Itaú', formaModo: 'Pix', categoria: 'Outros',
+      emprestimoPara: 'Bia', emprestimoVence: __dia(-2), emprestimoQuitado: false,
+      emprestimoRateio: [0, 1, 2].map(i => ({ nome: 'Bia', valor: '100,00', quitado: false, vence: somarMeses(__dia(-2), i), rotulo: (i + 1) + '/3' })) });
+    salvarLocalStorage();
+    const nomes = cobrancasAbertas().map(c => c.nome);
+    const vencidasBia = cobrancasVencidas().filter(c => c.nome === 'Bia').length;
+    // adiar a do Emir (botão de adiar) tira ela da lista: o prazo da cobrança manda
+    deslocarVencimentoCompra('fixo:fxE', 1);
+    const emirDepois = cobrancasAbertas().some(c => c.nome === 'Emir');
+    return { bernardo: nomes.includes('Bernardo'), emir: nomes.includes('Emir'), vencidasBia, emirDepois };
+  });
+  t.ok(!recorrente.bernardo, 'gasto recorrente com prazo daqui a 20 dias não aparece, mesmo com o gasto já feito');
+  t.ok(recorrente.emir, 'com prazo daqui a 8 dias aparece, mesmo antes do gasto acontecer');
+  t.ok(!recorrente.emirDepois, 'adiar um mês tira da lista: a lista lê o mesmo prazo que o botão move');
+  t.ok(recorrente.vencidasBia === 1, 'dívida em 3 parcelas com a primeira vencida: conta 1 vencida no badge, não 3');
+
+  const editado = await p.evaluate(() => {
+    abrirFormFixo();
+    document.getElementById('descFixo').value = 'Academia dividida';
+    document.getElementById('valorFixo').value = 'R$ 90,00';
+    document.getElementById('contaFixo').value = 'Itaú';
+    atualizarFormaFixoVisibilidade();
+    document.getElementById('diaFixo').value = '20';
+    document.getElementById('emprestimoFixo').value = 'Borges';
+    atualizarPrazoFixoVisibilidade();
+    salvarFixoModal({ preventDefault() {} });
+    const f = fixos[fixos.length - 1];
+    abrirFormFixo(f.id);
+    document.getElementById('emprestimoFixo').value = 'Borges, Ana';
+    atualizarPrazoFixoVisibilidade();
+    salvarFixoModal({ preventDefault() {} });
+    const l = lancamentos.filter(x => x.fixoId === f.id && x.data > obterDataBrasilia()).pop();
+    return cobrancasDoLancamento(l).map(c => c.nome + ' ' + c.valor.toFixed(2)).join(', ');
+  });
+  t.ok(editado === 'Borges 30.00, Ana 30.00', 'editar o gasto fixo de "Borges" pra "Borges, Ana" refaz a divisão dos meses que vêm (' + editado + ')');
 });

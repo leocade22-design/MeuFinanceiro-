@@ -5,7 +5,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
 (async () => {
   const b = await chromium.launch({ channel:'chromium' });
-  const page = await b.newPage({ viewport:{width:412,height:915}, deviceScaleFactor:3 });
+  const page = await b.newPage({ viewport:{width:412,height:915}, deviceScaleFactor:3, locale:'pt-BR' });
   const erros=[]; page.on('pageerror',e=>erros.push(e.message));
   page.on('dialog', async d=>await d.accept());
   await page.goto('file://' + __dirname + '/../index.html');
@@ -375,6 +375,82 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.evaluate(()=>{ setTipoEvolucao('barras'); setTipoComprometido('barras'); });
   await secao('evolucaoMensal', false);
   await secao('comprometidoFuturo', false);
+
+  // 22) pagar fatura com diferença: as três saídas, nenhuma marcada
+  await abrir('Faturas');
+  await secao('pagamentoFatura', true);
+  const faturaDoMes = await page.evaluate(()=>{
+    const cartao = contas.find(c => c.temCredito);
+    const h = new Date(obterDataBrasilia() + 'T12:00:00');
+    for (let k = 0; k <= 2; k++) {
+      const x = new Date(h.getFullYear(), h.getMonth() + k, 1);
+      if (totalFaturaConta(cartao.nome, x.getMonth(), x.getFullYear()) > 0) return { conta: cartao.nome, mes: x.getMonth(), ano: x.getFullYear() };
+    }
+    return null;
+  });
+  if (faturaDoMes) {
+    await page.evaluate(f => {
+      abrirPagarFatura(f.conta, f.mes, f.ano);
+      const total = totalFaturaConta(f.conta, f.mes, f.ano);
+      document.getElementById('faturaValorCobrado').value = fmtVal(Math.round((total - 76) * 100) / 100);
+      previewAjusteFatura();
+    }, faturaDoMes);
+    await page.waitForTimeout(400);
+    await tiro('fatura_diferenca', '#modalPagarFatura .modal-content');
+    await page.evaluate(()=>fecharModal('modalPagarFatura'));
+
+    // 23) a conciliação, com um arquivo do banco (fictício) já importado
+    await page.evaluate(f => {
+      abrirConciliacaoFatura(f.conta, f.mes, f.ano);
+      const itens = itensDaConciliacao(f.conta, f.mes, f.ano).filter(i => i.lanc);
+      const br = d => d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4);
+      // o banco tem tudo menos o cinema, e uma assinatura que não estava no app
+      const linhas = ['Data;Lançamento;Valor'].concat(itens.filter(i => !/Cinema/.test(i.desc))
+        .map(i => br(i.data) + ';' + i.desc.toUpperCase() + ';' + fmtVal(i.valor).replace('R$ ', '')));
+      linhas.push(br(itens[0].data) + ';STREAMING MUSICA;21,90');
+      receberLinhasDoBanco(lerArquivoDoBanco(linhas.join('\n'), conciliacaoAtual));
+      aplicarSugestoesConciliacao();
+    }, faturaDoMes);
+    await page.waitForTimeout(400);
+    await tiro('conciliacao', '#modalConciliarFatura .modal-content');
+    await page.evaluate(()=>fecharConciliacaoFatura());
+  }
+  await secao('pagamentoFatura', false);
+
+  // 24) mês sem cobrança num gasto fixo
+  await page.evaluate(()=>{ gerarLancamentosFixos(); abrirMesSemCobranca('f2'); });
+  await page.waitForTimeout(400);
+  await tiro('mes_sem_cobranca', '#modalMesSemCobranca .modal-content');
+  await page.evaluate(()=>fecharModal('modalMesSemCobranca'));
+
+  // 25) o relatório do consultor
+  await abrir('Gráficos');
+  await page.evaluate(()=>abrirRelatorioConsultor());
+  await page.waitForTimeout(500);
+  await tiro('relatorio', '#modalRelatorio .modal-content');
+  await page.evaluate(()=>fecharModal('modalRelatorio'));
+
+  // 26) manual e novidades em Ajustes (como num Android: "Salvar como" e folha de compartilhamento)
+  await abrir('Ajustes');
+  await page.evaluate(()=>{
+    if (typeof window.showSaveFilePicker !== 'function') window.showSaveFilePicker = async () => { throw new DOMException('', 'AbortError'); };
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true });
+    ajustarTextoDoBackup();
+  });
+  await secao('manual', true);
+  await page.evaluate(()=>{ document.getElementById('corpo-manual').closest('.card').id = 'cardManualTela'; });
+  await tiro('manual_novidades', '#cardManualTela');
+  await page.evaluate(()=>abrirNovidades());
+  await page.waitForTimeout(400);
+  await tiro('novidades', '#modalNovidades .modal-content');
+  await page.evaluate(()=>fecharModal('modalNovidades'));
+  await secao('manual', false);
+
+  // 27) a faixa que aparece uma vez depois de cada atualização
+  await page.evaluate(()=>{ localStorage.setItem(CHAVE_VERSAO_VISTA, '2026.11.13-1'); verificarNovidades(); });
+  await abrir('Lançamentos');
+  await tiro('faixa_novidades', '#avisoNovidades');
+  await page.evaluate(()=>marcarNovidadesVistas());
 
   console.log('\nerros:', erros.length?erros:'nenhum');
   await b.close();

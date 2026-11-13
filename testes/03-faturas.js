@@ -50,16 +50,22 @@ iniciar('03 · faturas', async t => {
     previewAjusteFatura();
     const prevMais = document.getElementById('previaAjusteFatura').innerText;
     document.getElementById('faturaDataPagamento').value = __mes(0, 5);
+    // com diferença, sem escolher o que fazer com ela, não confirma
+    confirmarPagarFatura();
+    const semEscolha = { pago: !!faturasPagas[chaveFatura('Itaú', m - 1, a)], aviso: document.getElementById('previaAjusteFatura').innerText };
+    document.querySelector('input[name="comoDiferencaFatura"][value="ajuste"]').checked = true;
     confirmarPagarFatura();
     const pg = faturasPagas[chaveFatura('Itaú', m - 1, a)];
     const aj = lancamentos.filter(l => l.ajusteFatura);
     irParaFatura(...(() => { const [a0, m0] = __chaveMes(0).split('-').map(Number); return [m0 - 1, a0]; })(), true);
-    return { prevBateu, prevMais, pg, aj: aj.map(l => l.tipo + ':' + l.valor + ':' + l.data), dataAj: __mes(-1, 1),
+    return { prevBateu, prevMais, semEscolha, pg, aj: aj.map(l => l.tipo + ':' + l.valor + ':' + l.data), dataAj: __mes(-1, 1),
       total: totalFaturaConta('Itaú', m - 1, a), pagasNoMes: resumoFaturaAtual.faturasPagasNoMes };
   });
   t.ok(/Bateu certinho/.test(tudo.prevBateu), 'valor do banco igual ao do app: "Bateu certinho"');
   t.ok(/O banco cobrou R\$ 12,00 a mais/.test(tudo.prevMais), 'banco cobrou R$ 12 a mais: a prévia avisa');
-  t.ok(tudo.pg.modo === 'total' && tudo.pg.valorPago === '1012,00' && tudo.aj.join() === 'despesa:12,00:' + tudo.dataAj, 'paga: registro de R$ 1.012 e um ajuste de R$ 12 no dia 1º da fatura');
+  t.ok(!tudo.semEscolha.pago && /Escolha abaixo o que fazer com a diferença de R\$ 12,00/.test(tudo.semEscolha.aviso), 'sem escolher o que fazer com a diferença, o pagamento não é registrado');
+  t.ok(tudo.pg.modo === 'total' && tudo.pg.valorPago === '1012,00' && tudo.aj.join() === 'despesa:12,00:' + tudo.dataAj
+    && tudo.pg.diferenca.como === 'ajuste', 'escolhendo "Lançar ajuste": registro de R$ 1.012 e um ajuste de R$ 12 no dia 1º da fatura');
   t.ok(Math.abs(tudo.total - 1012) < 0.001 && Math.abs(tudo.pagasNoMes - 1012) < 0.001, 'a fatura passa a somar R$ 1.012, e sai da conta no mês do pagamento');
   const desfeito = await p.evaluate(() => {
     const [a, m] = __chaveMes(-1).split('-').map(Number);
@@ -84,6 +90,9 @@ iniciar('03 · faturas', async t => {
       document.getElementById('faturaDataPagamento').value = data;
       previewAjusteFatura();
       const prev = document.getElementById('previaAjusteFatura').innerText;
+      // quando fecha com diferença, a escolha aqui é a de antes: lançar ajuste
+      const ajuste = document.querySelector('input[name="comoDiferencaFatura"][value="ajuste"]');
+      if (ajuste) ajuste.checked = true;
       confirmarPagarFatura();
       return prev;
     };
@@ -134,7 +143,7 @@ iniciar('03 · faturas', async t => {
     return r;
   });
   console.log('   card:', partes.card);
-  t.ok(/Falta R\$ 1\.500,00\. A fatura continua em aberto/.test(partes.prev1) && /diferença de R\$ 200,00/.test(partes.prev1), 'R$ 1.000 de R$ 2.500: "falta R$ 1.500", e os R$ 200 a mais viram ajuste só no fechamento');
+  t.ok(/Falta R\$ 1\.500,00\. A fatura continua em aberto/.test(partes.prev1) && /diferença de R\$ 200,00/.test(partes.prev1), 'R$ 1.000 de R$ 2.500: "falta R$ 1.500", e os R$ 200 a mais só se resolvem no fechamento');
   t.ok(partes.e1.situacao === 'emParte' && partes.e1.falta === 1500 && partes.ajustesEmParte === 0, 'a fatura fica em parte, sem ajuste ainda');
   t.ok(/Banco cobrou R\$ 2\.500,00/.test(partes.caixa) && /Falta R\$ 1\.500,00/.test(partes.caixa) && partes.botoes === 'O que falta|Mais uma parte|Parcelei', 'ao voltar: banco cobrou, a parte paga, o que falta, e os botões de continuar');
   t.ok(/Passou do que falta pagar \(R\$ 1\.500,00\)/.test(partes.passou) && partes.bloqueou, 'pagar mais do que falta é barrado');
