@@ -606,6 +606,28 @@
     .linha-conciliar .info strong { display:block; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .linha-conciliar .info div { font-size:10.5px; color:var(--texto-fraco); }
 
+    /* Relatório do consultor: texto corrido, tabelas com número alinhado e as
+       recomendações com a borda amarela. Na impressão (PDF) só ele aparece. */
+    .relatorio .rel-titulo { font-size:15px; margin:0 0 6px; color:var(--texto-forte); }
+    .relatorio h4 { font-size:11.5px; margin:18px 0 6px; color:var(--texto-forte); text-transform:uppercase; letter-spacing:.5px; }
+    .relatorio p, .relatorio li { font-size:12.5px; line-height:1.55; color:var(--texto-medio); margin:0 0 6px; }
+    .relatorio ul { margin:0 0 8px; padding-left:18px; }
+    .relatorio .tabela { overflow-x:auto; margin:4px 0 10px; }
+    .relatorio table { width:100%; border-collapse:collapse; font-size:11.5px; font-variant-numeric:tabular-nums; }
+    .relatorio th, .relatorio td { padding:5px 6px; border-bottom:1px solid var(--borda-fraca); text-align:right; white-space:nowrap; color:var(--texto-medio); }
+    .relatorio th { color:var(--texto-tenue); font-weight:600; }
+    .relatorio th:first-child, .relatorio td:first-child { text-align:left; }
+    .relatorio .dica { border-left:3px solid var(--amarelo); padding:6px 10px; background:rgba(255,209,102,.06); border-radius:0 8px 8px 0; }
+    #areaImpressao { display:none; }
+    @media print {
+      body.imprimindo > *:not(#areaImpressao) { display:none !important; }
+      body.imprimindo { background:#fff !important; }
+      body.imprimindo #areaImpressao { display:block !important; padding:0; }
+      #areaImpressao .relatorio * { color:#111 !important; background:transparent !important; }
+      #areaImpressao .relatorio th, #areaImpressao .relatorio td { border-bottom:1px solid #bbb !important; }
+      #areaImpressao .relatorio .dica { border-left:3px solid #b8860b !important; }
+    }
+
     /* Convite discreto pra cadastrar: verde apagado, sem peso de botão primário.
        O formulário só aparece quando pedido, numa janela centralizada. */
     .btn-adicionar { width:100%; margin-top:14px; padding:12px; border-radius:10px; cursor:pointer;
@@ -976,6 +998,8 @@
       <p style="font-size:10px;color:var(--texto-tenue);text-align:center;margin-top:8px;line-height:1.5;">
         gasto do período, incluindo o que foi no crédito · o saldo da conta fica em Faturas
       </p>
+      <!-- O relatório inteiro, do jeito que um consultor entregaria (ver blocosDoRelatorio) -->
+      <button type="button" class="btn-adicionar" style="margin-top:10px;" onclick="abrirRelatorioConsultor()">📋 Relatório do consultor</button>
       </div>
 
       <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas / Contas)
@@ -2308,6 +2332,23 @@
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalPagarFatura')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" onclick="confirmarPagarFatura()">Confirmar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- RELATÓRIO DO CONSULTOR: em tela, texto pra copiar/compartilhar e PDF -->
+  <div id="modalRelatorio" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalRelatorio')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Relatório do consultor</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalRelatorio')">&times;</button>
+      </div>
+      <div id="acoesRelatorio" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        <button type="button" class="btn-mini" onclick="copiarRelatorio()">Copiar texto</button>
+        <button type="button" class="btn-mini" onclick="compartilharRelatorio()">Compartilhar (.txt)</button>
+        <button type="button" class="btn-mini" onclick="imprimirRelatorio()">Salvar em PDF</button>
+      </div>
+      <p id="avisoRelatorio" class="escondido" style="font-size:11.5px;color:var(--amarelo);margin-bottom:10px;">Com os valores ocultos o relatório não é exportado.</p>
+      <div id="corpoRelatorio" class="relatorio"></div>
     </div>
   </div>
 
@@ -6629,6 +6670,9 @@
         'Esse mês teve cobrança, e você pagou.',
         'Mês pago não vira mês sem cobrança.'
       ] },
+      relatorioCopiado: { emoji: '📋', detalhe: 'Cole onde quiser: WhatsApp, e-mail, notas ou uma conversa com o seu consultor.', frases: [
+        'Relatório copiado.'
+      ] },
       arquivoBancoVazio: { emoji: '📄', detalhe: 'O app lê OFX e CSV com uma data e um valor em cada linha (ex: 24/08/2026;LOJA X;123,45). PDF não dá: exporte a fatura em CSV ou OFX no app ou no site do banco.', frases: [
         'Não achei nenhum lançamento nesse arquivo.',
         'Esse arquivo não tem cara de fatura.'
@@ -9881,6 +9925,380 @@
         `dá <b>${fmtOculto(sobra / faltam)}</b> por dia.${nota}`;
     }
 
+    /* RELATÓRIO DO CONSULTOR FINANCEIRO
+
+       Um retrato das finanças escrito como um consultor escreveria: quanto
+       entra e sai, pra onde vai, o que já está comprometido nos próximos
+       meses, como estão investimentos e empréstimos — e o que ele recomenda,
+       tirado dos SEUS números (a régua é sempre o seu histórico).
+
+       Usa as mesmas contas do resto do app, pra nenhum número brigar com
+       outra tela: gasto é o do planejamento (consumo pela data da compra, sem
+       aporte nem consórcio, já descontado o reembolso que voltou), renda é a
+       do planejamento, saldo é o da aba Faturas (resumoDoMes). A mesma lista
+       de blocos vira a tela, o texto pra copiar/compartilhar e o PDF. */
+    function blocosDoRelatorio() {
+      const B = [];
+      const fmt = v => fmtVal(v);
+      const fmtS = v => (v < -0.004 ? '− ' : '') + fmtVal(Math.abs(v));
+      const pct = (a, b) => (b ? Math.round(a / b * 100) : 0);
+      const hoje = obterDataBrasilia();
+      const atual = chaveDoMesAtual();
+      const nomeMes = ch => NOMES_MESES[parseInt(ch.slice(5, 7), 10) - 1];
+      const curto = ch => nomeMes(ch).slice(0, 3).toLowerCase() + '/' + ch.slice(2, 4);
+      const somaObj = o => Object.values(o).reduce((s, v) => s + v, 0);
+      const despesasDaChave = ch => { const [a, m] = ch.split('-').map(Number); return despesasDoMes(m - 1, a); };
+      /* As contas do planejamento (gastoPorCategoriaNoOrcamento, rendaSomadaDasReceitas),
+         só que no mês atual vale o que já aconteceu: o boleto do dia 15 e o
+         gasto fixo do dia 26 já estão lançados, e contavam como "até agora". */
+      const doMes = ch => {
+        const ateHoje = ch === atual;
+        const desps = despesasDaChave(ch).filter(l => !ateHoje || (l.data || '') <= hoje);
+        const porCat = {};
+        desps.filter(l => !ehInvestimentoNoOrcamento(l)).forEach(l => {
+          const c = l.categoria || 'Outros';
+          porCat[c] = (porCat[c] || 0) + valorLiquidoDespesa(l);
+        });
+        const renda = lancamentos.filter(l => receitaContaComoRenda(l) && (l.data || '').slice(0, 7) === ch && (!ateHoje || l.data <= hoje))
+          .reduce((s, l) => s + parseVal(l.valor), 0);
+        const gasto = somaObj(porCat);
+        const investido = desps.filter(ehInvestimentoNoOrcamento).reduce((s, l) => s + parseVal(l.valor), 0);
+        return { ch, porCat, renda, gasto, investido, sobra: renda - gasto - investido };
+      };
+      const seis = [];
+      for (let k = 5; k >= 0; k--) seis.push(doMes(deslocarChaveMes(atual, -k)));
+      const mesAt = seis[5];
+      // a régua: os até 3 meses fechados antes deste, só os que têm movimento
+      const fechados = seis.slice(2, 5).filter(m => m.gasto > 0 || m.renda > 0);
+      const media = campo => (fechados.length ? fechados.reduce((s, m) => s + m[campo], 0) / fechados.length : 0);
+      const mRenda = media('renda'), mGasto = media('gasto'), mInvest = media('investido');
+      const { dia, diasNoMes, fracao } = fracaoDoMes();
+      const projecao = fracao > 0.15 && mesAt.gasto > 0 ? mesAt.gasto / fracao : null;
+      const periodoRef = fechados.length ? fechados.map(m => curto(m.ch)).join(', ') : '';
+      const dicas = [];
+
+      B.push({ titulo: 'Relatório financeiro · ' + hoje.split('-').reverse().join('/') });
+      B.push({ p: `Feito pelo app com os seus lançamentos. ${nomeMes(atual)} vai até o dia ${dia} de ${diasNoMes}`
+        + (periodoRef ? `; as médias são dos meses fechados (${periodoRef}).` : '; ainda não há mês fechado pra comparar.') });
+
+      if (!lancamentos.length) {
+        B.push({ p: 'Ainda não há lançamentos: registre os gastos e receitas do mês que o relatório ganha conteúdo.' });
+        return B;
+      }
+
+      /* ---------- 1. visão geral ---------- */
+      B.push({ h: 'Visão geral' });
+      B.push({ p: `Em ${nomeMes(atual).toLowerCase()}, até agora: entrou ${fmt(mesAt.renda)} de renda, `
+        + `foram ${fmt(mesAt.gasto)} em gastos e ${fmt(mesAt.investido)} em investimentos.` });
+      if (projecao) {
+        let comp = '';
+        if (mGasto > 0) {
+          const d = pct(projecao - mGasto, mGasto);
+          comp = Math.abs(d) < 10 ? ', em linha com a sua média' : `, ${Math.abs(d)}% ${d > 0 ? 'acima' : 'abaixo'} da média de ${fmt(mGasto)}`;
+        }
+        B.push({ p: `No ritmo atual, os gastos do mês fecham perto de ${fmt(projecao)}${comp}.` });
+      }
+      const [anoAt, mesAtN] = atual.split('-').map(Number);
+      const caixa = resumoDoMes(mesAtN - 1, anoAt);
+      const contasComSaldo = Object.entries(caixa.porContaAcumulado).filter(([, v]) => Math.abs(v) >= 0.01).sort((a, b) => b[1] - a[1]);
+      if (contasComSaldo.length) {
+        const total = contasComSaldo.reduce((s, [, v]) => s + v, 0);
+        B.push({ p: `Saldo nas contas: ${fmtS(total)} (${contasComSaldo.map(([c, v]) => c + ' ' + fmtS(v)).join(' · ')}).`
+          + (caixa.faturaEmAberto > 0.004 || caixa.aPagarNoMes > 0.004
+            ? ` Ainda a pagar neste mês: ${[caixa.faturaEmAberto > 0.004 ? 'fatura ' + fmt(caixa.faturaEmAberto) : '', caixa.aPagarNoMes > 0.004 ? 'boletos ' + fmt(caixa.aPagarNoMes) : ''].filter(Boolean).join(' e ')}.`
+            : '') });
+      }
+      // nas tabelas os valores vão como número: a tela tira o "R$" pra caber
+      B.push({ tabela: {
+        cab: ['Mês', 'Renda', 'Gastos', 'Investido', 'Sobra'],
+        linhas: seis.filter(m => m.gasto || m.renda || m.investido).map(m => [
+          curto(m.ch) + (m.ch === atual ? ' (até ' + dia + ')' : ''), m.renda, m.gasto, m.investido, m.sobra])
+      } });
+      if (fechados.length && mRenda > 0) {
+        const poupanca = pct(mRenda - mGasto, mRenda);
+        B.push({ p: `Média por mês: renda ${fmt(mRenda)}, gastos ${fmt(mGasto)}, investimentos ${fmt(mInvest)}. `
+          + `Você guarda ${poupanca}% da renda (o que não vira gasto).` });
+      }
+
+      /* ---------- 2. para onde vai o dinheiro ---------- */
+      if (fechados.length) {
+        B.push({ h: 'Para onde vai o dinheiro' });
+        const catMedia = {};
+        fechados.forEach(m => Object.entries(m.porCat).forEach(([c, v]) => { catMedia[c] = (catMedia[c] || 0) + v / fechados.length; }));
+        const topCat = Object.entries(catMedia).filter(([, v]) => v >= 0.5).sort((a, b) => b[1] - a[1]).slice(0, 7);
+        if (topCat.length) {
+          B.push({ p: 'Por categoria (média por mês):' });
+          B.push({ li: topCat.map(([c, v]) => `${c}: ${fmt(v)} (${pct(v, mGasto)}% dos gastos)`) });
+        }
+        // por conta: o mesmo consumo, separado por onde ele passou
+        const porConta = {};
+        fechados.forEach(m => despesasDaChave(m.ch).filter(l => !ehInvestimentoNoOrcamento(l)).forEach(l => {
+          const k = (l.conta || 'Sem conta') + (eCredito(l.formaModo) ? ' (cartão)' : '');
+          porConta[k] = (porConta[k] || 0) + valorLiquidoDespesa(l) / fechados.length;
+        }));
+        const topConta = Object.entries(porConta).filter(([, v]) => v >= 0.5).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        if (topConta.length) {
+          B.push({ p: 'Por conta ou cartão (média por mês):' });
+          B.push({ li: topConta.map(([c, v]) => `${c}: ${fmt(v)}`) });
+        }
+      }
+      // grupos (viagens, eventos) com movimento nos últimos seis meses
+      const desde = deslocarChaveMes(atual, -5) + '-01';
+      const gruposAtivos = grupos.map(g => ({ g, r: resumoGrupo(g.id) }))
+        .filter(x => x.r.itens.some(l => (l.data || '') >= desde) && x.r.bruto > 0)
+        .sort((a, b) => b.r.bruto - a.r.bruto).slice(0, 5);
+      if (gruposAtivos.length) {
+        B.push({ p: 'Grupos dos últimos seis meses:' });
+        B.push({ li: gruposAtivos.map(({ g, r }) => `${g.nome}: ${fmt(r.bruto)} no total`
+          + (r.aReceber > 0.004 ? `, ${fmt(r.aReceber)} ainda a receber` : '') + `, ${fmt(r.liquido)} saíram do seu bolso`
+          + (g.status === 'fechado' ? ' (fechado)' : '')) });
+      }
+
+      /* ---------- 3. compromissos dos próximos meses ---------- */
+      B.push({ h: 'Compromissos dos próximos meses' });
+      const fixosAtivos = fixos.filter(f => !(f.consorcioId && consorcios.some(c => c.id === f.consorcioId && consorcioEncerrado(c))));
+      const totalFixos = fixosAtivos.reduce((s, f) => s + parseVal(f.valor), 0);
+      if (fixosAtivos.length) {
+        B.push({ p: `Gastos fixos: ${fixosAtivos.length}, somando ${fmt(totalFixos)} por mês`
+          + (mRenda > 0 ? ` (${pct(totalFixos, mRenda)}% da renda média)` : '') + '. Os maiores:' });
+        B.push({ li: fixosAtivos.slice().sort((a, b) => parseVal(b.valor) - parseVal(a.valor)).slice(0, 6)
+          .map(f => `${f.descricao}: ${fmt(parseVal(f.valor))} (dia ${f.diaVencimento}${eCredito(formaModoDoFixo(f)) ? ', no cartão' : ''})`) });
+      }
+      // o que já está contratado em cada um dos próximos seis meses
+      const proximos = [];
+      for (let k = 1; k <= 6; k++) {
+        const ch = deslocarChaveMes(atual, k);
+        const [a, m] = ch.split('-').map(Number);
+        const noMes = l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === m - 1 && f.ano === a; };
+        const futuras = lancamentos.filter(l => l.tipo === 'despesa' && l.data > hoje && noMes(l));
+        const parcelas = futuras.filter(l => !l.fixoId).reduce((s, l) => s + parseVal(l.valor), 0);
+        const fixosMes = futuras.filter(l => l.fixoId).reduce((s, l) => s + parseVal(l.valor), 0);
+        const trazido = contas.filter(c => c.temCredito).reduce((s, c) => s + itensTrazidosParaFatura(c.nome, m - 1, a).reduce((x, i) => x + i.valor, 0), 0);
+        proximos.push({ ch, parcelas: parcelas + trazido, fixos: fixosMes, total: parcelas + trazido + fixosMes });
+      }
+      B.push({ tabela: { cab: ['Mês', 'Parcelas', 'Fixos', 'Total'], linhas: proximos.map(x => [curto(x.ch), x.parcelas, x.fixos, x.total]) } });
+      const parcelasFuturas = lancamentos.filter(l => l.tipo === 'despesa' && l.grupoId && l.data > hoje);
+      if (parcelasFuturas.length) {
+        const compras = new Set(parcelasFuturas.map(l => l.grupoId)).size;
+        const ultima = parcelasFuturas.map(l => l.data).sort().pop();
+        B.push({ p: `Parcelas em aberto: ${compras} ${compras === 1 ? 'compra' : 'compras'}, ${fmt(parcelasFuturas.reduce((s, l) => s + parseVal(l.valor), 0))} `
+          + `ainda por vir, a última em ${curto(ultima.slice(0, 7))}.` });
+      }
+      if (mRenda > 0 && proximos[0].total > mRenda * 0.6) {
+        dicas.push(`O mês que vem já começa com ${fmt(proximos[0].total)} comprometidos — ${pct(proximos[0].total, mRenda)}% da sua renda média. Segure compras parceladas novas até essa conta baixar.`);
+      }
+
+      /* ---------- 4. investimentos ---------- */
+      const ativosCons = consorcios.filter(c => !consorcioEncerrado(c));
+      if (!investimentos.length && mGasto > 0) {
+        dicas.push(`Não há reserva de emergência registrada em Investimentos. O alvo é guardar de 3 a 6 meses de gastos — de ${fmt(mGasto * 3)} a ${fmt(mGasto * 6)} no seu caso —, num lugar de resgate rápido. Consórcio não conta: não dá pra sacar.`);
+      }
+      if (investimentos.length || ativosCons.length) {
+        B.push({ h: 'Investimentos' });
+        if (investimentos.length) {
+          const tipos = investimentosPorTipo();
+          const aportado = tipos.reduce((s, g) => s + g.aportado, 0);
+          const atualInv = tipos.reduce((s, g) => s + g.atual, 0);
+          B.push({ p: `Carteira: ${fmt(atualInv)} hoje, de ${fmt(aportado)} aportados (${fmtS(atualInv - aportado)}`
+            + (aportado > 0 ? `, ${((atualInv - aportado) / aportado * 100).toFixed(1).replace('.', ',')}%` : '') + ').' });
+          B.push({ li: tipos.map(g => `${g.tipo}: ${fmt(g.atual)}`) });
+          if (mGasto > 0) {
+            const meses = atualInv / mGasto;
+            B.push({ p: `Isso cobre ${meses.toFixed(1).replace('.', ',')} ${meses >= 1 && meses < 2 ? 'mês' : 'meses'} dos seus gastos médios.` });
+            if (meses < 6) dicas.push(`Sua reserva cobre ${meses.toFixed(1).replace('.', ',')} meses de gastos. O alvo de uma reserva de emergência é de 3 a 6 meses: ${fmt(mGasto * 6)} no seu caso.`);
+          }
+        }
+        ativosCons.forEach(c => {
+          const t = totaisConsorcio(c);
+          const fim = ultimoMesConsorcio(c);
+          B.push({ p: `${c.nome}: ${t.qtdPagas} de ${t.total} parcelas pagas (${fmt(t.jaPago)}), falta ${fmt(t.falta)}; `
+            + `carta de ${fmt(t.carta)}${c.contemplado ? ', já contemplado' : ''}${fim ? ', quita em ' + curto(fim) : ''}.` });
+        });
+      }
+
+      /* ---------- 5. empréstimos e cobranças ---------- */
+      const abertas = cobrancasAbertas();
+      const aReceber = abertas.filter(c => !c.devo), devo = abertas.filter(c => c.devo);
+      if (abertas.length) {
+        B.push({ h: 'Empréstimos e cobranças' });
+        const porPessoa = lista => {
+          const o = {};
+          lista.forEach(c => {
+            const x = o[c.nome] || (o[c.nome] = { v: 0, vencido: 0 });
+            x.v += c.valor;
+            if (c.vence && c.vence < hoje) x.vencido += c.valor;
+          });
+          return Object.entries(o).sort((a, b) => b[1].v - a[1].v);
+        };
+        if (aReceber.length) {
+          const tot = aReceber.reduce((s, c) => s + c.valor, 0);
+          B.push({ p: `Te devem ${fmt(tot)}:` });
+          B.push({ li: porPessoa(aReceber).slice(0, 8).map(([n, x]) => `${n}: ${fmt(x.v)}${x.vencido > 0.004 ? ` (${fmt(x.vencido)} já vencidos)` : ''}`) });
+          const vencidoTot = aReceber.filter(c => c.vence && diasAte(c.vence) < -30).reduce((s, c) => s + c.valor, 0);
+          if (vencidoTot > 0.004) dicas.push(`${fmt(vencidoTot)} de cobranças venceram há mais de 30 dias. Cobre agora: dívida velha é a que menos volta.`);
+        }
+        if (devo.length) {
+          B.push({ p: `Você deve ${fmt(devo.reduce((s, c) => s + c.valor, 0))}:` });
+          B.push({ li: porPessoa(devo).slice(0, 8).map(([n, x]) => `${n}: ${fmt(x.v)}`) });
+        }
+      }
+
+      /* ---------- 6. dicas ---------- */
+      // categoria fora da curva: o mês atual projetado (ou o último fechado,
+      // no começo do mês) contra a média dos meses de antes
+      if (fechados.length) {
+        const cedo = fracao < 0.35;
+        const alvo = cedo ? seis[4] : mesAt;
+        const base = cedo ? seis.slice(1, 4).filter(m => m.gasto > 0) : fechados;
+        if (base.length) {
+          const fator = cedo ? 1 : 1 / fracao;
+          Object.entries(alvo.porCat).forEach(([c, v]) => {
+            const ref = base.reduce((s, m) => s + (m.porCat[c] || 0), 0) / base.length;
+            const esperado = v * fator;
+            if (ref >= 30 && esperado > ref * 1.25 && esperado - ref >= 50) {
+              dicas.push(`${c} ${cedo ? 'fechou ' + curto(alvo.ch) + ' em' : 'caminha pra'} ${fmt(esperado)}, ${pct(esperado - ref, ref)}% acima da sua média de ${fmt(ref)}.`);
+            }
+          });
+        }
+      }
+      // metas do mês
+      const plano = planoDoMes(atual);
+      Object.entries(plano.limites || {}).forEach(([c, lim]) => {
+        const g = mesAt.porCat[c] || 0;
+        if (lim > 0 && g > lim) dicas.push(`Meta de ${c} estourada: ${fmt(g)} de ${fmt(lim)} (${fmt(g - lim)} acima).`);
+        else if (lim > 0 && g >= lim * (plano.aviso || 80) / 100) dicas.push(`Meta de ${c} perto do limite: ${fmt(g)} de ${fmt(lim)} (${pct(g, lim)}%).`);
+      });
+      const teto = tetoDoMes(atual, plano, mesAt.porCat);
+      if (teto && teto.gasto > teto.valor) dicas.push(`O orçamento do mês estourou: ${fmt(teto.gasto)} de ${fmt(teto.valor)}.`);
+      // sobra e reserva
+      if (fechados.length && mRenda > 0) {
+        const sobra = mRenda - mGasto - mInvest;
+        const negativos = fechados.filter(m => m.renda - m.gasto < 0).length;
+        if (negativos) dicas.push(`Em ${negativos} dos últimos ${fechados.length} meses fechados os gastos passaram da renda. Antes de investir mais, feche essa conta: comece pela categoria que mais subiu.`);
+        else if (sobra > 0) dicas.push(`Sobram em média ${fmt(sobra)} por mês depois de gastos e investimentos. Programe uma transferência automática de ${fmt(Math.floor(sobra * 0.5 / 10) * 10 || sobra)} no dia do salário pra uma aplicação separada — o que não fica na conta não vira gasto.`);
+        if (totalFixos > mRenda * 0.5) dicas.push(`Os gastos fixos levam ${pct(totalFixos, mRenda)}% da renda. Revise assinaturas e planos: cada fixo cortado vale 12 vezes o valor por ano.`);
+      }
+      // juros pagos ao banco
+      const juros = lancamentos.filter(l => l.tipo === 'despesa' && (l.categoria === 'Juros e encargos' || l.encargoFatura) && (l.data || '') >= desde)
+        .reduce((s, l) => s + parseVal(l.valor), 0);
+      if (juros > 0.004) dicas.push(`Nos últimos seis meses foram ${fmt(juros)} de juros e encargos do cartão. Pagar a fatura inteira é o investimento de retorno mais alto que existe: o rotativo cobra mais de 10% ao mês.`);
+      // faturas com diferença por conciliar
+      Object.entries(faturasPagas).forEach(([chave, pg]) => {
+        if (!pg || !pg.diferenca || pg.diferenca.como !== 'conciliar') return;
+        const o = partesChaveFatura(chave);
+        const falta = Math.round((estadoFatura(o.conta, o.mes, o.ano).cobrado - totalFaturaConta(o.conta, o.mes, o.ano)) * 100) / 100;
+        if (Math.abs(falta) >= 0.01) dicas.push(`A fatura ${o.conta} de ${NOMES_MESES[o.mes].toLowerCase()} tem ${fmt(Math.abs(falta))} a conciliar com o banco.`);
+      });
+
+      B.push({ h: 'O que eu faria' });
+      if (dicas.length) dicas.forEach(d => B.push({ dica: d }));
+      else B.push({ p: 'Nada fora da curva: gastos em linha com a sua média, metas dentro do limite e nenhuma cobrança velha. Mantenha.' });
+      return B;
+    }
+
+    // Os blocos em HTML (a tela e o PDF)
+    function relatorioEmHtml(B) {
+      return B.map(b => {
+        if (b.titulo) return `<h3 class="rel-titulo">${esc(b.titulo)}</h3>`;
+        if (b.h) return `<h4>${esc(b.h)}</h4>`;
+        if (b.p) return `<p>${esc(b.p)}</p>`;
+        if (b.li) return `<ul>${b.li.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+        if (b.dica) return `<p class="dica">${esc(b.dica)}</p>`;
+        if (b.tabela) {
+          const cel = c => (typeof c === 'number' ? (c < -0.004 ? '−' : '') + fmtVal(Math.abs(c)).replace('R$ ', '') : esc(c));
+          return `<div class="tabela"><table><thead><tr>${b.tabela.cab.map((c, i) => `<th>${esc(c)}${i ? ' (R$)' : ''}</th>`).join('')}</tr></thead>`
+            + `<tbody>${b.tabela.linhas.map(l => `<tr>${l.map(c => `<td>${cel(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+        }
+        return '';
+      }).join('');
+    }
+
+    // Os blocos em texto puro: cola bem no WhatsApp, num e-mail ou numa conversa com IA
+    function relatorioEmTexto(B) {
+      const out = [];
+      B.forEach(b => {
+        if (b.titulo) out.push(b.titulo.toUpperCase(), '');
+        else if (b.h) out.push('', '== ' + b.h.toUpperCase() + ' ==');
+        else if (b.p) out.push(b.p);
+        else if (b.li) b.li.forEach(x => out.push('• ' + x));
+        else if (b.dica) out.push('→ ' + b.dica);
+        else if (b.tabela) {
+          const val = v => (typeof v === 'number' ? (v < -0.004 ? '− ' : '') + fmtVal(Math.abs(v)) : v);
+          b.tabela.linhas.forEach(l => out.push('• ' + l[0] + ': ' + l.slice(1).map((v, i) => b.tabela.cab[i + 1].toLowerCase() + ' ' + val(v)).join(' · ')));
+        }
+      });
+      return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+    }
+
+    let relatorioAtual = null;   // { blocos, texto }
+
+    function abrirRelatorioConsultor() {
+      const blocos = blocosDoRelatorio();
+      relatorioAtual = { blocos, texto: relatorioEmTexto(blocos) };
+      document.getElementById('corpoRelatorio').innerHTML = relatorioEmHtml(blocos);
+      // valores ocultos: o relatório também esconde, e não sai do app assim
+      document.getElementById('avisoRelatorio').classList.toggle('escondido', !valoresOcultos);
+      document.getElementById('acoesRelatorio').classList.toggle('escondido', valoresOcultos);
+      if (valoresOcultos) document.getElementById('corpoRelatorio').innerHTML =
+        '<p>Os valores estão ocultos. Toque no olho pra mostrar e abra o relatório de novo.</p>';
+      document.getElementById('modalRelatorio').classList.remove('escondido');
+      document.getElementById('modalRelatorio').querySelector('.modal-content').scrollTop = 0;
+    }
+
+    async function copiarRelatorio() {
+      if (!relatorioAtual) return;
+      try {
+        await navigator.clipboard.writeText(relatorioAtual.texto);
+        avisar('relatorioCopiado');
+      } catch (e) {
+        // sem permissão de área de transferência: o texto fica selecionado pra copiar na mão
+        const ta = document.createElement('textarea');
+        ta.value = relatorioAtual.texto;
+        ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); avisar('relatorioCopiado'); } catch (e2) { /* sem cópia */ }
+        ta.remove();
+      }
+    }
+
+    // Folha de compartilhar do celular (WhatsApp, Drive, e-mail); sem ela, baixa o .txt
+    async function compartilharRelatorio() {
+      if (!relatorioAtual) return;
+      const nome = `relatorio-financeiro-${obterDataBrasilia()}.txt`;
+      const blob = new Blob([relatorioAtual.texto], { type: 'text/plain' });
+      try {
+        const arquivo = new File([blob], nome, { type: 'text/plain' });
+        if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+          await navigator.share({ files: [arquivo], title: 'Relatório financeiro' });
+          return;
+        }
+        if (navigator.share) { await navigator.share({ title: 'Relatório financeiro', text: relatorioAtual.texto }); return; }
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nome;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    /* PDF: a impressão do celular tem "Salvar como PDF". Só o relatório vai pro
+       papel — o resto do app some enquanto a janela de impressão está aberta. */
+    function imprimirRelatorio() {
+      if (!relatorioAtual) return;
+      const area = document.getElementById('areaImpressao');
+      area.innerHTML = `<div class="relatorio">${relatorioEmHtml(relatorioAtual.blocos)}</div>`;
+      document.body.classList.add('imprimindo');
+      const limpar = () => { document.body.classList.remove('imprimindo'); area.innerHTML = ''; window.removeEventListener('afterprint', limpar); };
+      window.addEventListener('afterprint', limpar);
+      window.print();
+      // navegador que não avisa o fim da impressão: limpa depois de um tempo
+      setTimeout(() => { if (document.body.classList.contains('imprimindo')) limpar(); }, 60000);
+    }
+
     /* SUGESTÕES PRONTAS
        O campo em branco é o pior convite possível: ninguém adivinha o que a
        máquina entende, e a primeira pergunta que não cola mata a vontade de
@@ -10377,34 +10795,12 @@
     // Toque em Receitas/Despesas: total do mês + quebra por fonte/categoria,
     // com filtro por conta (segue as contas cadastradas) e toque na linha
     // pra ver os lançamentos daquela categoria/fonte
-    function atualizarFaturas() {
-      const container = document.getElementById('listaFaturas');
-      const containerFixos = document.getElementById('listaFixos');
-      if (!container) return;
-
-      const ref = getMesReferencia(faturaMesOffset);
-      const mes = ref.getMonth(), ano = ref.getFullYear();
-      document.getElementById('tituloMesFatura').textContent = NOMES_MESES[mes] + ' ' + ano;
-      const cap = document.getElementById('capFatura');
-      if (cap) cap.textContent = textoFechamento(mes, ano);
-      renderizarAvisoCorrecoes(mes, ano);
-      renderizarAvisoEstorno();
-      const btnAtual = document.getElementById('btnMesAtual');
-      if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
-      // Saldo é acumulado até o fim do mês visto: "atual" só é verdade no mês
-      // corrente. Num mês passado (ou à frente) o número é o retrato daquele
-      // fechamento, e o rótulo precisa dizer isso.
-      const ehMesAtual = faturaMesOffset === 0;
-      const rotuloSaldo = document.getElementById('rotuloSaldoFatura');
-      if (rotuloSaldo) rotuloSaldo.textContent = ehMesAtual ? 'Saldo atual' : 'Saldo no fim do mês';
-
-      /* SALDO DO MÊS = O QUE REALMENTE SAIU DA CONTA (regime de caixa)
-         Compra no crédito não tira dinheiro da conta no dia da compra — ela vira
-         fatura, e o dinheiro só sai quando a fatura é paga. Por isso o saldo soma:
-           receitas do mês − gastos em débito/dinheiro − faturas PAGAS neste mês
-         (pelo valor real que você digitou ao marcar como paga, não pelo somado
-         aqui). O que está no crédito e ainda não foi pago aparece à parte, como
-         compromisso — não como despesa já realizada. */
+    /* O SALDO DE UM MÊS, SEM DESENHAR NADA
+       Saldo por conta (acumulado até o fim do mês), o que entrou, o que saiu
+       da conta, o que foi pro cartão e o que ainda está por pagar. Era o miolo
+       de atualizarFaturas; saiu daqui pra que o relatório do consultor leia o
+       mesmo número da aba Faturas, sem depender de qual mês está aberto lá. */
+    function resumoDoMes(mes, ano) {
       const porContaNet = {};
       // Mesma lógica do net acima, só que sem limite inferior de data: soma tudo
       // que afeta cada conta desde o início dos registros até o FIM do mês
@@ -10503,6 +10899,41 @@
       });
 
       const saiuDaConta = saiuEmDebito + faturasPagasNoMes;
+      return { porContaNet, porContaAcumulado, totalRecebimentos, saiuEmDebito, compradoNoCredito,
+               aPagarNoMes, faturasPagasNoMes, faturaEmAberto, saiuDaConta };
+    }
+
+    function atualizarFaturas() {
+      const container = document.getElementById('listaFaturas');
+      const containerFixos = document.getElementById('listaFixos');
+      if (!container) return;
+
+      const ref = getMesReferencia(faturaMesOffset);
+      const mes = ref.getMonth(), ano = ref.getFullYear();
+      document.getElementById('tituloMesFatura').textContent = NOMES_MESES[mes] + ' ' + ano;
+      const cap = document.getElementById('capFatura');
+      if (cap) cap.textContent = textoFechamento(mes, ano);
+      renderizarAvisoCorrecoes(mes, ano);
+      renderizarAvisoEstorno();
+      const btnAtual = document.getElementById('btnMesAtual');
+      if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
+      // Saldo é acumulado até o fim do mês visto: "atual" só é verdade no mês
+      // corrente. Num mês passado (ou à frente) o número é o retrato daquele
+      // fechamento, e o rótulo precisa dizer isso.
+      const ehMesAtual = faturaMesOffset === 0;
+      const rotuloSaldo = document.getElementById('rotuloSaldoFatura');
+      if (rotuloSaldo) rotuloSaldo.textContent = ehMesAtual ? 'Saldo atual' : 'Saldo no fim do mês';
+
+      /* SALDO DO MÊS = O QUE REALMENTE SAIU DA CONTA (regime de caixa)
+         Compra no crédito não tira dinheiro da conta no dia da compra — ela vira
+         fatura, e o dinheiro só sai quando a fatura é paga. Por isso o saldo soma:
+           receitas do mês − gastos em débito/dinheiro − faturas PAGAS neste mês
+         (pelo valor real que você digitou ao marcar como paga, não pelo somado
+         aqui). O que está no crédito e ainda não foi pago aparece à parte, como
+         compromisso — não como despesa já realizada. */
+      // a conta inteira mora em resumoDoMes (o relatório do consultor usa a mesma)
+      const { porContaNet, porContaAcumulado, totalRecebimentos, saiuEmDebito, compradoNoCredito,
+              aPagarNoMes, faturasPagasNoMes, faturaEmAberto, saiuDaConta } = resumoDoMes(mes, ano);
       // Saldo do card: acumulado até o fim do mês visto, não só o que aconteceu
       // isolado nele — nasce igual ao saldo final do mês anterior quando não há
       // nada novo ainda, em vez de zerar na virada.
@@ -18029,6 +18460,8 @@ function confirmarLancamentoVoz() {
     </div>
   </div>
 </div>
+<!-- o que vai pro papel quando o relatório é salvo em PDF (ver imprimirRelatorio) -->
+<div id="areaImpressao"></div>
 </body>
 </html>
 
