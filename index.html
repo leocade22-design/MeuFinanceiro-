@@ -813,6 +813,15 @@
         <!-- AJUSTE DE SALDO NESTE MÊS
              Uma linha, sem valor: aqui o que importa é você notar que houve
              ajuste. O número está a um toque, no histórico. -->
+        <!-- Aviso de uma vez só, da versão em que o estorno no cartão deixou de
+             contar como dinheiro entrando (ver prepararAvisoEstorno) -->
+        <div id="avisoEstornoSaldo" class="escondido" style="border:1px solid var(--amarelo);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:11.5px;line-height:1.45;color:var(--texto-medio);">
+          <div id="textoAvisoEstorno"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <button type="button" class="btn-mini" onclick="manterSaldoDeAntesDoEstorno()">Manter o saldo de antes</button>
+            <button type="button" class="btn-mini" onclick="dispensarAvisoEstorno()">O saldo novo está certo</button>
+          </div>
+        </div>
         <button type="button" id="avisoCorrecoesSaldo" class="escondido" onclick="abrirHistoricoCorrecoes()"
           aria-label="Ver os ajustes de saldo"
           style="width:100%;background:transparent;border:none;text-align:center;font-size:10.5px;color:var(--texto-fraco);cursor:pointer;padding:0;margin:-4px 0 10px;">
@@ -4341,6 +4350,79 @@
       salvarCorrecoes();
     }
 
+    /* ATUALIZAÇÃO: ESTORNO NO CARTÃO DEIXOU DE SER DINHEIRO ENTRANDO
+
+       Até esta versão o estorno no cartão (o ajuste "o banco cobrou a menos")
+       somava no saldo da conta. Quem corrigiu o saldo depois disso acertou o
+       número compensando esse erro sem saber — e com a regra certa o saldo
+       dessa conta cai exatamente o valor do estorno.
+
+       Nada é mexido sozinho. Na primeira abertura desta versão o app anota
+       quanto de estorno cada conta tinha; o aviso mostra isso, e você escolhe:
+       manter o saldo de antes (vira um ajuste de saldo, com registro no
+       histórico, como o "Corrigir saldo") ou ficar com o novo. */
+    const CHAVE_AVISO_ESTORNO = 'meu_financeiro_aviso_estorno_v1';
+
+    function prepararAvisoEstorno() {
+      if (localStorage.getItem(CHAVE_AVISO_ESTORNO)) return;
+      const hoje = obterDataBrasilia();
+      const porConta = {};
+      lancamentos.forEach(l => {
+        if (!ehEstornoNoCartao(l) || !l.data || l.data > hoje) return;
+        const x = porConta[l.conta] || (porConta[l.conta] = { conta: l.conta, valor: 0, ids: [] });
+        x.valor += parseVal(l.valor);
+        x.ids.push(l.id);
+      });
+      const pendente = Object.values(porConta)
+        .filter(x => x.valor >= 0.01)
+        .map(x => Object.assign(x, { valor: Math.round(x.valor * 100) / 100 }));
+      localStorage.setItem(CHAVE_AVISO_ESTORNO, JSON.stringify({ pendente }));
+    }
+
+    // Só vale enquanto os estornos anotados existirem: restaurar um backup
+    // que já não tem aquele ajuste faz o aviso sumir sozinho.
+    function avisoEstornoPendente() {
+      try {
+        const o = JSON.parse(localStorage.getItem(CHAVE_AVISO_ESTORNO) || '{}');
+        const lista = Array.isArray(o.pendente) ? o.pendente : [];
+        return lista.filter(x => Array.isArray(x.ids) && x.ids.length
+          && x.ids.every(id => lancamentos.some(l => l.id === id && ehEstornoNoCartao(l))));
+      } catch (e) { return []; }
+    }
+
+    function renderizarAvisoEstorno() {
+      const el = document.getElementById('avisoEstornoSaldo');
+      if (!el) return;
+      const pend = avisoEstornoPendente();
+      el.classList.toggle('escondido', !pend.length);
+      if (!pend.length) return;
+      const lista = pend.map(x => `${x.conta} (${fmtOculto(x.valor)})`).join(', ');
+      document.getElementById('textoAvisoEstorno').innerHTML =
+        `<strong style="color:var(--amarelo);">O saldo mudou com a atualização.</strong> Estorno no cartão não conta mais como dinheiro `
+        + `entrando na conta — agora ele abate a fatura, que é o que o banco faz. Por isso o saldo de ${lista} ficou menor nesse valor. `
+        + `Se você já tinha corrigido o saldo pra bater com o banco depois desse estorno, mantenha o saldo de antes.`;
+    }
+
+    function manterSaldoDeAntesDoEstorno() {
+      avisoEstornoPendente().forEach(x => {
+        const c = contas.find(cc => cc.nome === x.conta);
+        if (!c) return;
+        const antes = saldoDaContaAgora(c.nome);
+        registrarCorrecaoSaldo(c.nome, antes, antes + x.valor, x.valor);
+        const novo = parseValComSinal(c.saldoInicial) + x.valor;
+        c.saldoInicial = (novo < 0 ? '-' : '') + Math.abs(novo).toFixed(2).replace('.', ',');
+        if (!c.saldoInicialEm) c.saldoInicialEm = primeiraDataDaConta(c.nome) || obterDataBrasilia();
+      });
+      salvarContas();
+      dispensarAvisoEstorno();
+      renderizarListaContas();
+    }
+
+    function dispensarAvisoEstorno() {
+      localStorage.setItem(CHAVE_AVISO_ESTORNO, JSON.stringify({ pendente: [] }));
+      atualizarTudo();
+    }
+
     function correcoesDoMes(mes, ano) {
       const alvo = String(ano) + '-' + String(mes + 1).padStart(2, '0');
       return correcoesSaldo.filter(x => (x.data || '').slice(0, 7) === alvo);
@@ -5103,7 +5185,13 @@
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
         if (l.tipo === 'receita') {
-          if (ehEmprestimoIndireto(l)) return;
+          const abate = abateNoConsumo(l);
+          if (abate) {
+            desp -= abate;
+            porCategoria[l.categoria] = (porCategoria[l.categoria] || 0) - abate;
+            porConta[l.conta || 'Outros'] = (porConta[l.conta || 'Outros'] || 0) - abate;
+          }
+          if (naoEntraComoReceita(l)) return;
           rec += v;
         } else {
           desp += v;
@@ -5734,7 +5822,7 @@
     }
 
     function receitaContaComoRenda(l) {
-      return l.tipo === 'receita' && !l.reembolsoDe && !l.emprestimoPara && !ehEmprestimoIndireto(l) && !l.ajusteFatura;
+      return l.tipo === 'receita' && !l.reembolsoDe && !l.emprestimoPara && !naoEntraComoReceita(l) && !l.ajusteFatura;
     }
 
     function rendaSomadaDasReceitas(chave) {
@@ -7435,8 +7523,8 @@
         const noCartao = l => !l.__transf && l.tipo === 'despesa' && eCredito(l.formaModo);
         const saiu = soma(saiuDaConta);
         const aPagar = soma(aguardandoPagamento);
-        const cartao = soma(noCartao);
-        const entrou = soma(l => !l.__transf && l.tipo === 'receita' && !ehEmprestimoIndireto(l));
+        const cartao = soma(noCartao) - soma(l => !l.__transf && ehEstornoNoCartao(l));
+        const entrou = soma(l => !l.__transf && l.tipo === 'receita' && !naoEntraComoReceita(l));
         const pedaco = (rotulo, valor, cor) => `<span style="white-space:nowrap;"><span style="color:var(--texto-tenue);">${rotulo}</span> <strong style="color:${cor};">${fmtOculto(valor)}</strong></span>`;
         const pedacos = [];
         if (filtroFormaLanc !== 'cartao') {
@@ -8702,7 +8790,7 @@
 
       if (tipoModalAtual === 'receita') {
         titulo.textContent = 'Consulta: Receitas';
-        itensPeriodo = itensPeriodo.filter(l => l.tipo === 'receita');
+        itensPeriodo = itensPeriodo.filter(l => l.tipo === 'receita' && !ehEstornoNoCartao(l));
       } else if (tipoModalAtual === 'despesa') {
         titulo.textContent = 'Consulta: Despesas';
         itensPeriodo = itensPeriodo.filter(l => l.tipo === 'despesa');
@@ -8752,7 +8840,9 @@
         itensPeriodo.forEach(l => {
           const v = parseVal(l.valor);
           if (l.tipo === 'receita') {
-            if (ehEmprestimoIndireto(l)) return;
+            const abate = abateNoConsumo(l);
+            if (abate) { totalDesp -= abate; porConta[l.conta] = (porConta[l.conta] || 0) + abate; }
+            if (naoEntraComoReceita(l)) return;
             totalRec += v;
             porConta[l.conta] = (porConta[l.conta] || 0) + v;
           } else {
@@ -9041,8 +9131,14 @@
       itensPeriodo.forEach(l => {
         const v = parseVal(l.valor);
         if (l.tipo === 'receita') {
-          // pagaram por você: dívida sim, receita não
-          if (ehEmprestimoIndireto(l)) return;
+          const abate = abateNoConsumo(l);
+          if (abate) {
+            desp -= abate;
+            porCategoria[l.categoria] = (porCategoria[l.categoria] || 0) - abate;
+            porContaGrafico[l.conta || 'Outros'] = (porContaGrafico[l.conta || 'Outros'] || 0) - abate;
+          }
+          // pagaram por você (e estorno do cartão): dívida/fatura sim, receita não
+          if (naoEntraComoReceita(l)) return;
           rec += v;
           const chave = chaveReceitaAgrupada(l);
           porFonte[chave] = (porFonte[chave] || 0) + v;
@@ -9178,7 +9274,7 @@
           const d = new Date(l.data + 'T12:00:00');
           if (d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear()) {
             const v = parseVal(l.valor);
-            if (l.tipo === 'receita') { if (!ehEmprestimoIndireto(l)) rec += v; } else desp += v;
+            if (l.tipo === 'receita') { desp -= abateNoConsumo(l); if (!naoEntraComoReceita(l)) rec += v; } else desp += v;
           }
         });
         dadosMeses.push({ label: NOMES_MESES[ref.getMonth()].slice(0, 3) + '/' + String(ref.getFullYear()).slice(2), rec, desp, saldo: rec - desp });
@@ -9293,6 +9389,31 @@
        e undefined !== 'indireto' já o trata como direto, sem precisar migração. */
     function ehEmprestimoIndireto(l) {
       return l && l.emprestimoTipo === 'indireto';
+    }
+
+    /* ESTORNO NO CARTÃO
+       Crédito que o banco põe na fatura — compra cancelada, estorno, o ajuste
+       "o banco cobrou a menos". É receita no cartão, e não é dinheiro entrando
+       em conta nenhuma: quem fica menor é a FATURA. Antes ele entrava no saldo
+       e no "recebido" como se fosse um Pix: o ajuste de R$ 1.099,60 da fatura
+       de novembro aumentou o saldo do Itaú nesse valor, e a fatura continuou
+       somando o mesmo.
+
+       Regra única: abate da fatura, fica fora do saldo, do "recebido" e da
+       renda. No consumo (gráficos), abate da categoria dele quando tem uma —
+       o ajuste genérico, sem categoria, não fala de gasto nenhum e fica fora. */
+    function ehEstornoNoCartao(l) {
+      return !!l && l.tipo === 'receita' && eCredito(l.formaModo);
+    }
+
+    // "Esta receita é dinheiro que entrou pra você?" — o que soma em receita
+    function naoEntraComoReceita(l) {
+      return ehEmprestimoIndireto(l) || ehEstornoNoCartao(l);
+    }
+
+    // Quanto o estorno abate do gasto no consumo: só o que diz de que categoria é
+    function abateNoConsumo(l) {
+      return ehEstornoNoCartao(l) && l.categoria ? parseVal(l.valor) : 0;
     }
 
     /* Indireto resolvido (por "Paguei" ou por "Quitar") troca o azul de dívida
@@ -9460,7 +9581,7 @@
     }
 
     function despesasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'despesa' && p.teste(l.data)); }
-    function receitasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'receita' && !ehEmprestimoIndireto(l) && p.teste(l.data)); }
+    function receitasDaPergunta(p) { return lancamentos.filter(l => l.tipo === 'receita' && !naoEntraComoReceita(l) && p.teste(l.data)); }
     const somar = lista => lista.reduce((s, l) => s + parseVal(l.valor), 0);
 
     function responderPergunta(textoDitado) {
@@ -9777,12 +9898,12 @@
 
       // --- fatura do cartão ---
       if (/fatura/.test(texto)) {
-        const doMes = lancamentos.filter(l => l.tipo === 'despesa' && eCredito(l.formaModo))
+        const doMes = lancamentos.filter(l => eCredito(l.formaModo) && (l.tipo === 'despesa' || ehEstornoNoCartao(l)))
           .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === p.mes && f.ano === p.ano; });
-        const total = somar(doMes);
+        const total = doMes.reduce((s, l) => s + valorNaFatura(l), 0);
         if (!total) return `Nenhuma compra no crédito na fatura de ${NOMES_MESES[p.mes]}.`;
         const porCartao = {};
-        doMes.forEach(l => { porCartao[l.conta] = (porCartao[l.conta] || 0) + parseVal(l.valor); });
+        doMes.forEach(l => { porCartao[l.conta] = (porCartao[l.conta] || 0) + valorNaFatura(l); });
         const detalhe = Object.keys(porCartao).length > 1
           ? '<br>' + Object.entries(porCartao).sort((a, b) => b[1] - a[1]).map(([c, v]) => `• ${c}: ${fmtOculto(v)}`).join('<br>')
           : '';
@@ -10181,6 +10302,7 @@
       const cap = document.getElementById('capFatura');
       if (cap) cap.textContent = textoFechamento(mes, ano);
       renderizarAvisoCorrecoes(mes, ano);
+      renderizarAvisoEstorno();
       const btnAtual = document.getElementById('btnMesAtual');
       if (btnAtual) btnAtual.classList.toggle('escondido', faturaMesOffset === 0);
       // Saldo é acumulado até o fim do mês visto: "atual" só é verdade no mês
@@ -10220,6 +10342,12 @@
         const ateFimDoMes = d.getFullYear() < ano || (d.getFullYear() === ano && d.getMonth() <= mes);
 
         if (l.tipo === 'receita') {
+          // Estorno no cartão: é a fatura que fica menor, não a conta que recebe
+          if (ehEstornoNoCartao(l)) {
+            const f = getMesFatura(l.data, l.formaModo, l.conta);
+            if (f.mes === mes && f.ano === ano) compradoNoCredito -= v;
+            return;
+          }
           // Pagaram por você: a dívida existe (e vira cobrança), mas nenhum
           // centavo passou por conta nenhuma — não entra em saldo nem em
           // "Recebido", nem no mês, nem no acumulado.
@@ -12102,11 +12230,21 @@
       return conta + '|' + ano + '-' + String(mes + 1).padStart(2, '0');
     }
 
-    function totalFaturaConta(conta, mes, ano) {
+    // Os lançamentos que formam a fatura: as compras no crédito e os estornos
+    // (que abatem). É a lista que o card, a conciliação e o total usam.
+    function lancamentosDaFatura(conta, mes, ano) {
       return lancamentos
-        .filter(l => l.tipo === 'despesa' && l.conta === conta && eCredito(l.formaModo))
-        .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === mes && f.ano === ano; })
-        .reduce((sm, l) => sm + parseVal(l.valor), 0)
+        .filter(l => l.conta === conta && eCredito(l.formaModo) && (l.tipo === 'despesa' || ehEstornoNoCartao(l)))
+        .filter(l => { const f = getMesFatura(l.data, l.formaModo, l.conta); return f.mes === mes && f.ano === ano; });
+    }
+
+    // valor com sinal dentro da fatura: compra soma, estorno abate
+    function valorNaFatura(l) {
+      return ehEstornoNoCartao(l) ? -parseVal(l.valor) : parseVal(l.valor);
+    }
+
+    function totalFaturaConta(conta, mes, ano) {
+      return lancamentosDaFatura(conta, mes, ano).reduce((sm, l) => sm + valorNaFatura(l), 0)
         + itensTrazidosParaFatura(conta, mes, ano).reduce((sm, i) => sm + i.valor, 0);
     }
 
@@ -12243,7 +12381,7 @@
         const hoje = obterDataBrasilia();
         const limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         const recentes = lancamentos.filter(l => l.data >= limite && l.data <= hoje);
-        const rec = recentes.filter(l => l.tipo === 'receita' && !ehEmprestimoIndireto(l)).reduce((sm, l) => sm + parseVal(l.valor), 0);
+        const rec = recentes.filter(l => l.tipo === 'receita' && !naoEntraComoReceita(l)).reduce((sm, l) => sm + parseVal(l.valor), 0);
         const desp = recentes.filter(l => l.tipo === 'despesa').reduce((sm, l) => sm + parseVal(l.valor), 0);
         // Compacto porque agora divide a linha com o título do card: duas linhas
         // curtas em vez de três, com as setas fazendo o papel dos rótulos.
@@ -12341,11 +12479,8 @@
         const pago = est.pg && !emParte ? est.pg : null;
         if (total <= 0 && !est.pg) return;
 
-        const compras = lancamentos.filter(l => {
-          if (l.tipo !== 'despesa' || l.conta !== c.nome || !eCredito(l.formaModo)) return false;
-          const f = getMesFatura(l.data, l.formaModo, l.conta);
-          return f.mes === mes && f.ano === ano;
-        }).sort((a, b) => (a.data < b.data ? 1 : -1));
+        // compras e estornos da fatura (o estorno entra com sinal de menos)
+        const compras = lancamentosDaFatura(c.nome, mes, ano).sort((a, b) => (a.data < b.data ? 1 : -1));
 
         const aberto = faturasExpandidas.has(c.nome);
 
@@ -12354,7 +12489,7 @@
            cobre a diferença continua existindo — esta linha só deixa à vista,
            mês a mês, quanto fugiu do que você tinha lançado. */
         const trazidos = itensTrazidosParaFatura(c.nome, mes, ano);
-        const ajustes = compras.filter(l => l.ajusteFatura).reduce((s, l) => s + parseVal(l.valor), 0);
+        const ajustes = compras.filter(l => l.ajusteFatura).reduce((s, l) => s + valorNaFatura(l), 0);
         const semAjuste = total - ajustes;
         let linhaApp = '';
         if (emParte) {
@@ -12432,9 +12567,9 @@
                  data-detalhe="${l.id}" title="Ver os detalhes deste lançamento">
               <div class="item-info">
                 <strong style="font-size:13px;">${l.descricao}</strong>
-                <div style="font-size:10.5px;color:var(--texto-fraco);">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}</div>
+                <div style="font-size:10.5px;color:var(--texto-fraco);">${l.data.split('-').reverse().join('/')}${l.categoria ? ' · ' + l.categoria : ''}${ehEstornoNoCartao(l) ? ' · estorno, abate da fatura' : ''}</div>
               </div>
-              <span class="valor-despesa" style="font-size:13px;">${fmtOculto(parseVal(l.valor))}</span>
+              <span class="${ehEstornoNoCartao(l) ? 'valor-receita' : 'valor-despesa'}" style="font-size:13px;">${ehEstornoNoCartao(l) ? '− ' : ''}${fmtOculto(parseVal(l.valor))}</span>
             </div>`).join('');
           /* Tocar na compra abre a ficha dela. O extrato é irmão da linha do
              cartão, não filho, então o toque já não chegaria lá pra fechar o
@@ -13480,7 +13615,7 @@
         titulo.textContent = 'Recebimentos de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const d = new Date(l.data + 'T12:00:00');
-          return l.tipo === 'receita' && !ehEmprestimoIndireto(l) && d.getMonth() === mes && d.getFullYear() === ano;
+          return l.tipo === 'receita' && !naoEntraComoReceita(l) && d.getMonth() === mes && d.getFullYear() === ano;
         });
       } else if (tipoFiltro === 'aPagar') {
         // Boletos previstos e ainda não pagos: o que está na sua mão neste mês
@@ -13514,7 +13649,8 @@
         titulo.textContent = 'Fatura Crédito de ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           const { mes: m, ano: a } = getMesFatura(l.data, l.formaModo, l.conta);
-          return l.tipo === 'despesa' && eCredito(l.formaModo) && m === mes && a === ano;
+          // estorno no cartão também é item da fatura (abate)
+          return (l.tipo === 'despesa' || ehEstornoNoCartao(l)) && eCredito(l.formaModo) && m === mes && a === ano;
         });
         const trazidos = contas.filter(c => c.temCredito)
           .reduce((acc, c) => acc.concat(itensTrazidosParaFatura(c.nome, mes, ano).map(t => Object.assign({ conta: c.nome }, t))), []);
@@ -13531,7 +13667,8 @@
         titulo.textContent = contaNome + ' em ' + NOMES_MESES[mes];
         filtrados = lancamentos.filter(l => {
           if (l.conta !== contaNome) return false;
-          if (l.tipo === 'despesa' && eCredito(l.formaModo)) return false;
+          // compra e estorno no cartão moram na fatura, não na conta
+          if (eCredito(l.formaModo) && (l.tipo === 'despesa' || ehEstornoNoCartao(l))) return false;
           // boleto ainda não pago não passou por conta nenhuma
           if (aguardandoPagamento(l)) return false;
           const d = new Date(l.data + 'T12:00:00');
@@ -17060,6 +17197,7 @@ function confirmarLancamentoVoz() {
     repararGruposDeInvestimento();   // grupo com aporte sempre existe nos dois lugares
     repararConsorciosSemFixo();   // antes do "a pagar": pode criar lançamento novo
     migrarRecorrentesAPagar();
+    prepararAvisoEstorno();   // só anota; o saldo só muda se você escolher no aviso
     carregarUiPrefs();
     aplicarTravaDeZoom();   // antes de qualquer render: a tela já nasce na escala certa
     equiparCamposComCalculadora();   // todo campo de dinheiro da tela, inclusive os dos modais
