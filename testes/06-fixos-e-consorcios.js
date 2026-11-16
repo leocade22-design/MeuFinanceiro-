@@ -130,6 +130,10 @@ iniciar('06 · gastos fixos e consórcios', async t => {
       categoria: 'Investimento', observacao: 'Gasto fixo mensal', valor: '394,78', fixoId: 'fCarro' };
     lancamentos.push(Object.assign({}, base, { id: novoIdLancamento(), data: __mes(-2, 11), consorcioMesRef: __chaveMes(-2), consorcioPagoEm: __mes(-2, 11) }));
     lancamentos.push(Object.assign({}, base, { id: novoIdLancamento(), data: __mes(-1, 15), aPagar: true }));
+    // a deste mês o app já tinha projetado antes de vencer, como "a pagar" (sem
+    // ela, depois do dia 15 o gerador criaria uma retroativa já paga e o teste
+    // passaria a depender do dia do mês em que roda)
+    lancamentos.push(Object.assign({}, base, { id: novoIdLancamento(), data: __mes(0, 15), aPagar: true }));
     salvarFixos(); salvarConsorcios(); salvarLocalStorage();
   });
   await t.recarregar(p);
@@ -149,7 +153,8 @@ iniciar('06 · gastos fixos e consórcios', async t => {
       depois: { pagas: totaisConsorcio(c).qtdPagas, numMes0: numeroDaParcelaConsorcio(c, __chaveMes(0)), fim: ultimoMesConsorcio(c) },
       faltam: parcelasFaltantesDoFixo('fCarro'),
       naBaixa: ocorrenciasDoFixo('fCarro').some(oc => oc.mes === __chaveMes(-1)),
-      boletoVencido: boletosParaAvisar().some(l => l.fixoId === 'fCarro' && l.data < obterDataBrasilia()),
+      // o aviso que importa é o do mês marcado sem cobrança (o deste mês pode estar vencido de verdade)
+      boletoVencido: boletosParaAvisar().some(l => l.fixoId === 'fCarro' && l.data < obterDataBrasilia() && mesDaParcelaConsorcio(l) === __chaveMes(-1)),
       card: /sem cobrança em/.test(card) && /1 de 80/.test(card),
       esperado: { m1: __chaveMes(-1), fimAntes: __chaveMes(77), fimDepois: __chaveMes(78) }
     };

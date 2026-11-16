@@ -654,6 +654,15 @@
     .novidades-versao ul { margin:0; padding-left:18px; }
     .novidades-versao li { font-size:12.5px; color:var(--texto-fraco); line-height:1.5; margin:4px 0; }
 
+    .link-corrigir { background:none; border:none; padding:8px 2px; margin:-8px 0; font:inherit; font-size:11.5px;
+      color:var(--texto-medio); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+    .card.boas-vindas { border:1px solid rgba(95,153,51,.45); background:linear-gradient(180deg, rgba(95,153,51,.10), transparent 70%), var(--card); }
+
+    .grupo-sons { padding-bottom:12px; }
+    .grupo-sons + .grupo-sons { padding-top:12px; border-top:1px solid var(--borda-fraca); }
+    .titulo-grupo-som { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer;
+      color:var(--texto-forte); padding:4px 0 6px; }
+
     .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .backup-actions .btn-cancelar { flex:1; margin-top:0; }
     .btn-backup { width:100%; padding:12px; border:1px solid var(--borda); border-radius:10px; background:var(--campo); color:var(--texto); font-weight:700; cursor:pointer; }
@@ -684,6 +693,17 @@
     </div>
 
     <div id="abaLancamentos" class="aba-conteudo ativo">
+      <!-- Primeira vez no app: sem conta cadastrada, este cartão vem antes de tudo.
+           Some sozinho quando a primeira conta é criada. -->
+      <div id="cartaoBoasVindas" class="card boas-vindas escondido">
+        <h3 style="font-size:17px;margin-bottom:6px;">👋 Comece pelas suas contas</h3>
+        <p style="color:var(--texto-medio);font-size:13px;line-height:1.5;margin-bottom:12px;">
+          Cadastre onde o seu dinheiro mora: conta do banco, cartão de crédito, vale-refeição,
+          carteira. Cada lançamento entra numa delas, e é assim que o app calcula o saldo e a fatura.
+        </p>
+        <button type="button" class="btn-backup primary" onclick="abrirCadastroDeContas()">Cadastrar minhas contas</button>
+        <p style="color:var(--texto-tenue);font-size:11.5px;margin-top:10px;">Depois dá pra mudar em Ajustes → Contas e categorias.</p>
+      </div>
       <div id="ancoraFormLancamento"></div>
       <div class="card" id="cardFormLancamento">
         <div class="form-header-linha">
@@ -732,7 +752,10 @@
             </div>
             <div class="form-group" id="grupoFormaModo">
               <label for="formaModo">Forma / Modo</label>
+              <!-- Nasce em branco ("Escolha"): crédito, débito e Pix mudam onde o
+                   dinheiro sai, então a forma é escolhida, não herdada. -->
               <select id="formaModo" name="formaModo" onchange="verificarParcelamento(this.value)">
+                <option value="" selected disabled hidden>Escolha</option>
                 <option value="Crédito à Vista">Crédito</option>
                 <option value="Crédito Parcelado">Crédito parcelado</option>
                 <option value="À Vista / Débito">Débito</option>
@@ -1413,13 +1436,9 @@
           <span class="chevron-sec" id="chevron-sons">▸</span>
         </button>
         <div id="corpo-sons" class="escondido" style="margin-top:10px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Toque na linha pra ouvir. Toque no ✓ pra tirar ou botar o som no sorteio — a cada receita, um dos marcados toca.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Cada tipo de lançamento tem os seus sons. Toque na linha pra ouvir e no ✓ pra tirar ou botar o som no sorteio: a cada lançamento, um dos marcados daquele tipo toca.</p>
           <div id="listaSons"></div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
-            <input type="checkbox" id="chkSomLigado" onchange="alternarSomLigado()" aria-label="Tocar som ao salvar receita" style="width:auto;margin:0;">
-            <span>Tocar som ao salvar receita</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="chkVibrar" onchange="alternarVibracao()" aria-label="Vibrar ao salvar" style="width:auto;margin:0;">
             <span>Vibrar ao salvar</span>
           </label>
@@ -1476,14 +1495,11 @@
            sempre o da versão atual, e "O que mudou" lista os ajustes de cada uma. -->
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('manual')">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:1;min-width:0;">
-            <h3 style="font-size:16px;">Manual e novidades</h3>
-            <span id="versaoManual" style="font-size:11px;color:var(--texto-medio);"></span>
-          </div>
+          <h3 style="font-size:16px;">Manual e novidades</h3>
           <span class="chevron-sec" id="chevron-manual">▸</span>
         </button>
         <div id="corpo-manual" class="escondido" style="margin-top:10px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">O manual acompanha o app: a cada atualização, o arquivo daqui já é o da versão nova. Em <strong style="color:var(--texto-forte);font-weight:600;">O que mudou</strong> fica a lista do que foi ajustado em cada versão.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Você está na versão <strong id="versaoManual" style="color:var(--texto-forte);font-weight:600;"></strong>. O manual acompanha o app: a cada atualização, o arquivo daqui já é o da versão nova. Em <strong style="color:var(--texto-forte);font-weight:600;">O que mudou</strong> fica a lista do que foi ajustado em cada versão.</p>
           <div class="backup-actions">
             <button type="button" class="btn-backup primary" onclick="baixarManual(this)">Baixar o manual (PDF)</button>
             <button type="button" class="btn-backup" onclick="abrirNovidades()">O que mudou</button>
@@ -1505,7 +1521,7 @@
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
           </div>
           <button type="button" id="btnEnviarBackup" class="btn-backup escondido" style="margin-top:8px;" onclick="enviarBackup()">Enviar backup (WhatsApp, e-mail, Drive)</button>
-          <input type="file" id="importBackupInput" class="escondido" aria-label="Arquivo de backup para importar" accept="application/json" onchange="importarBackup(event)">
+          <input type="file" id="importBackupInput" class="escondido" aria-label="Arquivo de backup para importar" accept="application/json,text/plain,.json,.txt" onchange="importarBackup(event)">
         </div>
         <!-- Versão e assinatura ficam FORA do corpo retrátil: são a identidade do
              app, não um detalhe de backup. Some o card, some a autoria junto. -->
@@ -3276,7 +3292,13 @@
     function carregarContas() {
       const d = localStorage.getItem(STORAGE_KEY_CONTAS);
       if (d) { try { contas = JSON.parse(d) || []; } catch (e) { contas = []; } }
-      if (!Array.isArray(contas) || contas.length === 0) contas = CONTAS_PADRAO.map(c => ({ ...c }));
+      if (!Array.isArray(contas)) contas = [];
+      /* QUEM INSTALA AGORA COMEÇA SEM CONTA NENHUMA
+         As contas são de cada um: o cartão de boas-vindas em Lançamentos pede pra
+         cadastrar. A lista padrão antiga (Itaú, PicPay...) só volta pra quem já
+         tinha lançamentos sem nunca ter salvo contas — sem ela, esses lançamentos
+         ficariam apontando pra contas que não existem. */
+      if (!d && (lancamentos.length || fixos.length || transferencias.length)) contas = CONTAS_PADRAO.map(c => ({ ...c }));
       // contas criadas antes dos dias por cartão herdam o padrão, pra o valor
       // ficar explícito no cadastro em vez de só no fallback
       let ajustou = false;
@@ -3367,15 +3389,32 @@
       { id: 'neutro', rotulo: '😐 Neutro', dica: 'direto ao ponto' }
     ];
 
-    // O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
-    // qualquer formato ((11) 98765-4321, +55 11 98765 4321, 11987654321) e resolve.
+    /* O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
+       qualquer formato ((11) 98765-4321, +55 11 98765 4321, 11987654321) e resolve.
+
+       Da agenda do celular vem de tudo: o 0 da discagem nacional (028 98765-4321),
+       a operadora (0 21 28 98765-4321) e o +55, às vezes com o 0 depois. Antes,
+       um número de 12 dígitos começando com 0 era lido como se já tivesse DDI:
+       o "02" sumia e o DDD 28 virava 89. */
     function normalizarTelefone(bruto) {
-      let d = String(bruto || '').replace(/\D/g, '');
+      const texto = String(bruto || '');
+      let d = texto.replace(/\D/g, '');
       if (!d) return '';
-      if (d.startsWith('00')) d = d.slice(2);
+      let internacional = /^\s*\+/.test(texto);
+      if (d.startsWith('00')) { d = d.slice(2); internacional = true; }   // 00 + DDI
+      // número do Brasil sem o país: tira o 0 da discagem e a operadora
+      const nacional = n => {
+        n = n.replace(/^0+/, '');
+        if (n.length === 12 || n.length === 13) n = n.slice(2);
+        return n.length === 10 || n.length === 11 ? '55' + n : '';
+      };
+      if (d.startsWith('55') && d.length >= 12) return nacional(d.slice(2));   // já veio com o +55
+      // outro país, já com o DDI: fica como veio
+      if (internacional) return d.length >= 8 && d.length <= 15 ? d : '';
+      if (d.startsWith('0')) return nacional(d);
       // 10 ou 11 dígitos = número nacional sem o país; qualquer coisa maior já veio
       // com DDI (não assume 55 pra número estrangeiro que o usuário digitou inteiro)
-      if (d.length === 10 || d.length === 11) d = '55' + d;
+      if (d.length === 10 || d.length === 11) return '55' + d;
       return d.length >= 12 && d.length <= 15 ? d : '';
     }
 
@@ -4380,6 +4419,18 @@
       document.getElementById('modalContas').classList.remove('escondido');
     }
 
+    // Do cartão de boas-vindas (e do aviso de "sem conta"): a lista de contas
+    // com o formulário de conta nova já aberto por cima.
+    function abrirCadastroDeContas() {
+      abrirModalContas();
+      abrirFormConta();
+    }
+
+    function atualizarBoasVindas() {
+      const el = document.getElementById('cartaoBoasVindas');
+      if (el) el.classList.toggle('escondido', contas.length > 0);
+    }
+
     // Conta/categoria favorita sobe pro topo dos seletores do formulário — quem
     // usa sempre a mesma conta ou categoria não precisa mais rolar a lista toda
     // vez. A ordem de cadastro continua sendo o critério de desempate.
@@ -4459,6 +4510,15 @@
     function saldoDaContaAgora(nome) {
       const acumulado = (resumoFaturaAtual && resumoFaturaAtual.porContaAcumulado) || {};
       return acumulado[nome] || 0;
+    }
+
+    // Do Resumo da aba Faturas: a mesma janela, já na conta tocada
+    function corrigirSaldoPeloResumo(nome) {
+      const c = contas.find(x => x.nome === nome);
+      if (!c) return;
+      fecharModal('modalResumoFatura');
+      contaAcoesId = c.id;
+      abrirCorrigirSaldo();
     }
 
     function abrirCorrigirSaldo() {
@@ -4870,6 +4930,7 @@
       popularSelectsContas();
       atualizarVisibilidadeForma();
       renderizarListaContas();
+      atualizarBoasVindas();
       fecharFormConta();   // salvou, some a janela e volta pra lista
       renderizarLancamentos();
       atualizarFaturas();
@@ -5614,7 +5675,12 @@
       };
       const nome = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      return { nome, blob, arquivo: new File([blob], nome, { type: 'application/json' }) };
+      /* Pra COMPARTILHAR, o mesmo conteúdo vai como .txt: o Chrome só deixa
+         compartilhar alguns tipos de arquivo (imagem, PDF, texto...) e recusa
+         .json com "permissão negada" — era por isso que o Enviar caía no
+         download. O Importar aceita .json e .txt. */
+      const paraEnviar = new File([blob], nome.replace(/\.json$/, '.txt'), { type: 'text/plain' });
+      return { nome, blob, arquivo: paraEnviar };
     }
 
     // Só conta como backup feito quando o arquivo REALMENTE sai — por isso a
@@ -5718,7 +5784,7 @@
     // aparece quando o Exportar não é ele mesmo a folha de compartilhamento.
     function ajustarTextoDoBackup() {
       const comSalvarComo = temSalvarComo();
-      const comFolha = podeCompartilharArquivo(new File(['{}'], 'backup.json', { type: 'application/json' }));
+      const comFolha = podeCompartilharArquivo(new File(['{}'], 'backup.txt', { type: 'text/plain' }));
       const enviar = document.getElementById('btnEnviarBackup');
       if (enviar) enviar.classList.toggle('escondido', !(comSalvarComo && comFolha));
       const el = document.getElementById('textoDestinoBackup');
@@ -5727,7 +5793,7 @@
       const base = 'Exporte um arquivo com tudo ou restaure depois sem perder dados. ';
       el.innerHTML = base + (comSalvarComo
         ? `Ao exportar, abre o ${forte('Salvar como')} do aparelho pra você escolher a pasta (no Android, o Drive também aparece na lista).`
-          + (comFolha ? ` Pra mandar por WhatsApp ou e-mail, use ${forte('Enviar')}.` : '')
+          + (comFolha ? ` Pra mandar por WhatsApp ou e-mail, use ${forte('Enviar')}: o arquivo vai como .txt, e o Importar aceita.` : '')
         : comFolha
           ? `Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — ${forte('Salvar no Drive')}, Arquivos, WhatsApp.`
           : 'Ao exportar, o arquivo vai pra pasta de downloads.');
@@ -6488,7 +6554,12 @@
       src.start(ini); src.stop(ini + dur + 0.05);
     }
 
-    const SONS_RECEITA = [
+    /* Cada tipo de lançamento tem os seus sons. A cada lançamento sai um,
+       sorteado entre os marcados (✓) daquele tipo. Os índices de cada lista são
+       o que fica guardado: som novo entra sempre no FIM, pra não trocar a escolha
+       de quem já marcou os seus. */
+    const SONS = {
+      receita: [
       // CAIXA REGISTRADORA — o tinido metálico são dois parciais desafinados de
       // propósito (metal não é harmônico); atrás vem o baque da gaveta abrindo.
       { nome: 'Caixa registradora', tocar(ctx, t) {
@@ -6536,61 +6607,163 @@
       { nome: 'Apito subindo', tocar(ctx, t) {
         nota(ctx, { onda:'sine', freq: 620, freqFim: 2500, ini: t, dur: 0.45, vol: 0.11 });
         nota(ctx, { onda:'sine', freq: 624, freqFim: 2515, ini: t, dur: 0.45, vol: 0.05 });
-      } }
-    ];
+      } },
 
-    /* Quais sons entram no sorteio. Guardado como lista de índices; vazio ou
-       ausente significa "todos", que é o padrão de quem nunca mexeu. */
-    function sonsAtivos() {
-      const d = localStorage.getItem('meu_financeiro_sons_ativos');
-      if (!d) return SONS_RECEITA.map((_, i) => i);
-      try {
-        const lista = JSON.parse(d);
-        const validos = Array.isArray(lista) ? lista.filter(i => i >= 0 && i < SONS_RECEITA.length) : [];
-        return validos.length ? validos : SONS_RECEITA.map((_, i) => i);
-      } catch (e) { return SONS_RECEITA.map((_, i) => i); }
+        // COFRINHO — duas moedas tilintando e o "toc" oco de cair dentro do porquinho.
+        { nome: 'Cofrinho', tocar(ctx, t) {
+          nota(ctx, { onda:'triangle', freq:1568, ini:t, dur:0.18, vol:0.09 });
+          nota(ctx, { onda:'triangle', freq:2349, ini:t, dur:0.14, vol:0.05 });
+          nota(ctx, { onda:'triangle', freq:1760, ini:t + 0.12, dur:0.18, vol:0.08 });
+          nota(ctx, { onda:'triangle', freq:2637, ini:t + 0.12, dur:0.14, vol:0.045 });
+          nota(ctx, { onda:'sine', freq:220, freqFim:150, ini:t + 0.26, dur:0.16, vol:0.16 });
+          chiado(ctx, { ini:t + 0.26, dur:0.10, vol:0.06, freq:700, freqFim:250 });
+        } },
+
+        // SININHO — sino de balcão: parciais inarmônicos com cauda longa, duas batidas.
+        { nome: 'Sininho', tocar(ctx, t) {
+          [0, 0.16].forEach((atraso, i) => {
+            const f = i ? 1318.5 : 987.8;
+            nota(ctx, { onda:'sine', freq:f, ini:t + atraso, dur:0.9, vol:0.09 });
+            nota(ctx, { onda:'sine', freq:f * 2.76, ini:t + atraso, dur:0.5, vol:0.03 });
+            nota(ctx, { onda:'sine', freq:f * 5.4, ini:t + atraso, dur:0.25, vol:0.015 });
+          });
+        } }
+      ],
+
+      // Despesa é o lançamento mais comum do dia: sons curtos e discretos, sem festa.
+      despesa: [
+        // MOEDA CAINDO — uma moeda na mesa: o tinido e dois quiques, cada vez mais curtos.
+        { nome: 'Moeda caindo', tocar(ctx, t) {
+          [[0, 0.16, 0.08], [0.11, 0.09, 0.05], [0.18, 0.06, 0.03]].forEach(([atraso, dur, vol]) => {
+            nota(ctx, { onda:'triangle', freq:1975, ini:t + atraso, dur, vol });
+            nota(ctx, { onda:'triangle', freq:2960, ini:t + atraso, dur: dur * 0.7, vol: vol * 0.5 });
+          });
+        } },
+        // CLIQUE — o mais discreto: um toque curto, pra quem lança muito.
+        { nome: 'Clique', tocar(ctx, t) {
+          chiado(ctx, { ini:t, dur:0.035, vol:0.07, tipo:'highpass', freq:2500 });
+          nota(ctx, { onda:'sine', freq:1100, ini:t, dur:0.05, vol:0.06 });
+        } },
+        // BOLHA — um "bloop" descendo: o dinheiro indo embora sem drama.
+        { nome: 'Bolha', tocar(ctx, t) {
+          nota(ctx, { onda:'sine', freq:720, freqFim:260, ini:t, dur:0.18, vol:0.12 });
+        } },
+        // CARIMBO — baque grave com o estalo do papel: "pago".
+        { nome: 'Carimbo', tocar(ctx, t) {
+          nota(ctx, { onda:'sine', freq:140, freqFim:70, ini:t, dur:0.14, vol:0.22 });
+          chiado(ctx, { ini:t, dur:0.07, vol:0.08, tipo:'bandpass', freq:1800, q:0.7 });
+        } },
+        // GAVETA FECHANDO — o contrário da caixa registradora: a gaveta volta e trava.
+        { nome: 'Gaveta fechando', tocar(ctx, t) {
+          chiado(ctx, { ini:t, dur:0.16, vol:0.10, freq:300, freqFim:900 });
+          nota(ctx, { onda:'triangle', freq:1400, ini:t + 0.16, dur:0.06, vol:0.06 });
+        } },
+        // UH-OH — duas notas descendo, de leve: "lá se foi".
+        { nome: 'Uh-oh', tocar(ctx, t) {
+          nota(ctx, { onda:'triangle', freq:587.3, ini:t, dur:0.13, vol:0.10 });
+          nota(ctx, { onda:'triangle', freq:440, ini:t + 0.15, dur:0.26, vol:0.10 });
+        } }
+      ],
+
+      // Transferência não é dinheiro entrando nem saindo, é dinheiro andando.
+      transferencia: [
+        // VENTO — um sopro passando de um lado pro outro (o de sempre).
+        { nome: 'Vento', tocar(ctx, t) {
+          chiado(ctx, { ini:t, dur:0.55, vol:0.09, tipo:'bandpass', freq:380, freqFim:1900, q:0.8 });
+          chiado(ctx, { ini:t + 0.10, dur:0.45, vol:0.05, tipo:'bandpass', freq:600, freqFim:2600, q:1.2 });
+        } },
+        // DESLIZE — um "swish" rápido, como passar a nota pro outro bolso.
+        { nome: 'Deslize', tocar(ctx, t) {
+          chiado(ctx, { ini:t, dur:0.24, vol:0.10, tipo:'bandpass', freq:900, freqFim:3200, q:1.4 });
+          nota(ctx, { onda:'sine', freq:520, freqFim:880, ini:t + 0.02, dur:0.2, vol:0.04 });
+        } },
+        // PING-PONG — de uma conta pra outra: alto, baixo, alto.
+        { nome: 'Ping-pong', tocar(ctx, t) {
+          [[1318.5, 0], [987.8, 0.11], [1318.5, 0.22]].forEach(([f, atraso]) => {
+            nota(ctx, { onda:'triangle', freq:f, ini:t + atraso, dur:0.1, vol:0.08 });
+          });
+        } },
+        // ENVELOPE — papel deslizando e o toque de entregar.
+        { nome: 'Envelope', tocar(ctx, t) {
+          chiado(ctx, { ini:t, dur:0.22, vol:0.06, tipo:'highpass', freq:1800, freqFim:4200 });
+          nota(ctx, { onda:'sine', freq:330, ini:t + 0.22, dur:0.07, vol:0.10 });
+        } }
+      ]
+    };
+    const SONS_RECEITA = SONS.receita;   // nome antigo
+
+    /* Onde cada tipo guarda as suas escolhas. A receita continua nas chaves de
+       sempre. Despesa nasce desligada. A transferência, enquanto você não mexer
+       nela, segue o liga/desliga da receita (era assim antes) e sorteia só o
+       Vento, o som que sempre tocou. */
+    const CONFIG_SOM = {
+      receita:       { ligado: 'meu_financeiro_som',               sorteio: 'meu_financeiro_sons_ativos',        rotulo: 'receita',       padrao: null },
+      despesa:       { ligado: 'meu_financeiro_som_despesa',       sorteio: 'meu_financeiro_sons_despesa',       rotulo: 'despesa',       padrao: null },
+      transferencia: { ligado: 'meu_financeiro_som_transferencia', sorteio: 'meu_financeiro_sons_transferencia', rotulo: 'transferência', padrao: [0] }
+    };
+
+    function somLigadoPara(tipo) {
+      let v = null;
+      try { v = localStorage.getItem(CONFIG_SOM[tipo].ligado); } catch (e) { /* sem armazenamento */ }
+      if (tipo === 'receita') return v !== '0';
+      if (tipo === 'despesa') return v === '1';
+      return v === null ? somLigadoPara('receita') : v === '1';
     }
 
-    function alternarSomAtivo(indice) {
-      const atuais = new Set(sonsAtivos());
+    /* Quais sons entram no sorteio de cada tipo. Guardado como lista de índices;
+       vazio ou ausente é o padrão do tipo (todos, na receita e na despesa). */
+    function sonsAtivos(tipo = 'receita') {
+      const lista = SONS[tipo], cfg = CONFIG_SOM[tipo];
+      const padrao = (cfg.padrao || lista.map((_, i) => i)).slice();
+      let d = null;
+      try { d = localStorage.getItem(cfg.sorteio); } catch (e) { /* sem armazenamento */ }
+      if (!d) return padrao;
+      try {
+        const salvos = JSON.parse(d);
+        const validos = Array.isArray(salvos) ? salvos.filter(i => Number.isInteger(i) && i >= 0 && i < lista.length) : [];
+        return validos.length ? validos : padrao;
+      } catch (e) { return padrao; }
+    }
+
+    function alternarSomAtivo(tipo, indice) {
+      if (typeof tipo === 'number') { indice = tipo; tipo = 'receita'; }   // chamada antiga, só receita
+      const atuais = new Set(sonsAtivos(tipo));
       if (atuais.has(indice)) atuais.delete(indice);
       else atuais.add(indice);
-      // Desmarcar o último deixaria a receita muda sem querer: o toggle não passa daí.
+      // Desmarcar o último deixaria o tipo mudo sem querer: o toggle não passa daí.
       if (!atuais.size) return;
-      localStorage.setItem('meu_financeiro_sons_ativos', JSON.stringify([...atuais].sort((a, b) => a - b)));
+      localStorage.setItem(CONFIG_SOM[tipo].sorteio, JSON.stringify([...atuais].sort((a, b) => a - b)));
       renderizarSons();
-      testarSom(indice);
+      testarSom(tipo, indice);
     }
 
-    function tocarSomReceita() {
+    // Toca o som do tipo, se ele estiver ligado (forcar: toca mesmo desligado,
+    // pra amostra). Sorteia entre os marcados.
+    function tocarSom(tipo, forcar) {
+      if (!forcar && !somLigadoPara(tipo)) return;
       try {
         const ctx = ctxAudio();
-        const ativos = sonsAtivos();
-        const s = SONS_RECEITA[ativos[Math.floor(Math.random() * ativos.length)]];
+        const ativos = sonsAtivos(tipo);
+        const s = SONS[tipo][ativos[Math.floor(Math.random() * ativos.length)]];
         s.tocar(ctx, ctx.currentTime + 0.02);
-        window.__ultimoSomReceita = s.nome;
-        window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1;
+        // ajuda os testes a saber o que tocou
+        window.__ultimoSom = Object.assign({}, window.__ultimoSom, { [tipo]: s.nome });
+        window.__sonsTocados = Object.assign({}, window.__sonsTocados, { [tipo]: ((window.__sonsTocados || {})[tipo] || 0) + 1 });
+        if (tipo === 'receita') { window.__ultimoSomReceita = s.nome; window.__sonsReceitaTocados = (window.__sonsReceitaTocados || 0) + 1; }
+        if (tipo === 'transferencia') window.__sonsTransferenciaTocados = (window.__sonsTransferenciaTocados || 0) + 1;
       } catch (e) { /* sem áudio disponível, segue o jogo em silêncio */ }
     }
 
-    // Transferência não é dinheiro entrando, é dinheiro andando — por isso um sopro
-    // passando de um lado pro outro, e não uma celebração.
-    function tocarSomTransferencia() {
-      try {
-        const ctx = ctxAudio();
-        const t = ctx.currentTime + 0.02;
-        chiado(ctx, { ini:t, dur:0.55, vol:0.09, tipo:'bandpass', freq:380, freqFim:1900, q:0.8 });
-        chiado(ctx, { ini:t + 0.10, dur:0.45, vol:0.05, tipo:'bandpass', freq:600, freqFim:2600, q:1.2 });
-        window.__sonsTransferenciaTocados = (window.__sonsTransferenciaTocados || 0) + 1;
-      } catch (e) { /* idem */ }
-    }
+    function tocarSomReceita() { tocarSom('receita', true); }
+    function tocarSomTransferencia() { tocarSom('transferencia', true); }
 
-    // Toca um som específico — usado pelos botões de teste em Ajustes.
-    function testarSom(indice) {
+    // Toca um som específico — usado pelas linhas de Ajustes → Sons.
+    function testarSom(tipo, indice) {
+      if (typeof tipo === 'number') { indice = tipo; tipo = 'receita'; }
+      if (tipo === 'transferencia' && indice === undefined) indice = 0;
       try {
         const ctx = ctxAudio();
-        if (indice === 'transferencia') return tocarSomTransferencia();
-        SONS_RECEITA[indice].tocar(ctx, ctx.currentTime + 0.02);
+        SONS[tipo][indice].tocar(ctx, ctx.currentTime + 0.02);
       } catch (e) { /* idem */ }
     }
 
@@ -6638,7 +6811,7 @@
         </button>`).join('');
     }
 
-    function somLigado() { return localStorage.getItem('meu_financeiro_som') !== '0'; }
+    function somLigado() { return somLigadoPara('receita'); }
 
     /* VIBRAÇÃO
        Serve pra quando o som está desligado (reunião, cinema, celular no mudo) e
@@ -6717,44 +6890,52 @@
       window.__vibracoes = (window.__vibracoes || []).concat(tipo);   // ajuda os testes
     }
 
-    function alternarSomLigado() {
-      const on = document.getElementById('chkSomLigado').checked;
-      localStorage.setItem('meu_financeiro_som', on ? '1' : '0');
-      if (on) tocarSomReceita();
+    function alternarSomLigado(tipo = 'receita') {
+      const chk = document.getElementById('chkSom-' + tipo);
+      const on = !!(chk && chk.checked);
+      localStorage.setItem(CONFIG_SOM[tipo].ligado, on ? '1' : '0');
+      renderizarSons();
+      if (on) tocarSom(tipo, true);   // amostra na hora, pra ouvir o que ligou
     }
+
+    const GRUPOS_SOM = ['receita', 'despesa', 'transferencia'];
 
     function renderizarSons() {
       const box = document.getElementById('listaSons');
       if (!box) return;
-      const chk = document.getElementById('chkSomLigado');
-      if (chk) chk.checked = somLigado();
       const chkV = document.getElementById('chkVibrar');
       if (chkV) chkV.checked = vibracaoLigada();
       box.innerHTML = '';
-      const ativos = new Set(sonsAtivos());
-      SONS_RECEITA.concat([{ nome: 'Vento (transferência)' }]).forEach((s, i) => {
-        const ehTransf = i === SONS_RECEITA.length;
-        const ligado = ehTransf || ativos.has(i);
-        const linha = document.createElement('div');
-        linha.className = 'item-lancamento';
-        linha.style.cursor = 'pointer';
-        linha.onclick = () => testarSom(ehTransf ? 'transferencia' : i);
-        // O tique verde marca quem entra no sorteio. O vento não tem tique: ele não
-        // é sorteado, toca sempre que há transferência.
-        linha.innerHTML = `
-          <div class="item-info" style="display:flex;align-items:center;gap:9px;">
-            <span style="font-size:14px;line-height:1;color:${ligado ? 'var(--verde)' : 'var(--borda-forte)'};">✓</span>
-            <strong style="font-size:13.5px;color:${ligado ? 'var(--texto)' : 'var(--texto-tenue)'};">${s.nome}</strong>
-          </div>
-          <span style="font-size:11px;color:var(--texto-fraco);">▶ ouvir</span>
-        `;
-        if (!ehTransf) {
-          const tique = linha.querySelector('span');
-          tique.style.cursor = 'pointer';
-          tique.style.padding = '4px 2px';
-          tique.onclick = (ev) => { ev.stopPropagation(); alternarSomAtivo(i); };
-        }
-        box.appendChild(linha);
+      GRUPOS_SOM.forEach(tipo => {
+        const ligado = somLigadoPara(tipo);
+        const ativos = new Set(sonsAtivos(tipo));
+        const bloco = document.createElement('div');
+        bloco.className = 'grupo-sons';
+        bloco.innerHTML = `
+          <label class="titulo-grupo-som">
+            <input type="checkbox" id="chkSom-${tipo}" ${ligado ? 'checked' : ''} onchange="alternarSomLigado('${tipo}')"
+              aria-label="Tocar som ao salvar ${CONFIG_SOM[tipo].rotulo}" style="width:auto;margin:0;">
+            <span>Tocar som ao salvar ${CONFIG_SOM[tipo].rotulo}</span>
+          </label>`;
+        SONS[tipo].forEach((s, i) => {
+          const marcado = ativos.has(i);
+          const linha = document.createElement('div');
+          linha.className = 'item-lancamento';
+          linha.style.cursor = 'pointer';
+          // desligado, a lista fica apagada, mas dá pra ouvir e escolher do mesmo jeito
+          if (!ligado) linha.style.opacity = '.55';
+          linha.onclick = () => testarSom(tipo, i);
+          // o tique verde marca quem entra no sorteio daquele tipo
+          linha.innerHTML = `
+            <div class="item-info" style="display:flex;align-items:center;gap:9px;">
+              <span class="tique-som" style="font-size:14px;line-height:1;cursor:pointer;padding:4px 2px;color:${marcado ? 'var(--verde)' : 'var(--borda-forte)'};">✓</span>
+              <strong style="font-size:13.5px;color:${marcado ? 'var(--texto)' : 'var(--texto-tenue)'};">${s.nome}</strong>
+            </div>
+            <span style="font-size:11px;color:var(--texto-fraco);">▶ ouvir</span>`;
+          linha.querySelector('.tique-som').onclick = ev => { ev.stopPropagation(); alternarSomAtivo(tipo, i); };
+          bloco.appendChild(linha);
+        });
+        box.appendChild(bloco);
       });
     }
 
@@ -6858,6 +7039,15 @@
       zoomTravado: { emoji: '🔒', detalhe: 'Se a tela já estava ampliada, feche e abra o app pra ela voltar ao normal.', frases: [
         'Zoom travado. A tela para de fugir agora.',
         'Pronto: nada de zoom sem querer.'
+      ] },
+      semForma: { emoji: '💳', detalhe: 'Escolha em Forma / Modo como você pagou: crédito, débito, Pix ou dinheiro.', frases: [
+        'Pagou como? Crédito, débito, Pix… escolhe aí.',
+        'Falta dizer como você pagou.',
+        'Sem a forma de pagamento eu não sei de onde o dinheiro saiu.'
+      ] },
+      semConta: { emoji: '🏦', detalhe: 'Cadastre pelo menos uma conta (banco, cartão, vale, carteira). É nela que o lançamento entra.', frases: [
+        'Antes de lançar, me conta onde mora o seu dinheiro.',
+        'Primeiro as contas, depois os gastos.'
       ] },
       manualSalvo: { emoji: '📘', detalhe: 'O manual da versão atual foi gravado na pasta que você escolheu.', frases: [
         'Manual salvo.',
@@ -7516,7 +7706,9 @@
       if (tipoAtual !== 'despesa') {
         gF.classList.add('escondido');
         gP.classList.add('escondido');
-        sel.value = 'À Vista / Débito';
+        // receita não usa a forma (grava sempre À Vista / Débito); o campo volta em
+        // branco, pra não reaparecer preenchido quando você voltar pra despesa
+        sel.value = '';
         return;
       }
 
@@ -7530,12 +7722,13 @@
         o.hidden = !permitidas.includes(o.value);
       });
 
-      /* O que você escolheu na mão só é trocado se a conta nova não aceitar aquela
-         forma. Com uma forma só na lista, ela vira a resposta automática — não há
-         o que escolher. */
-      if (!permitidas.includes(sel.value)) {
-        sel.value = permitidas.includes('À Vista / Débito') ? 'À Vista / Débito' : permitidas[0];
-      }
+      /* A forma nasce em branco e é você quem escolhe. O que você escolheu só é
+         trocado se a conta nova não aceitar aquela forma: aí volta pro branco,
+         pra você escolher de novo, em vez de o app trocar por outra calado. Com
+         uma forma só na lista (vale-refeição: só débito), ela vira a resposta
+         automática — não há o que escolher. */
+      if (permitidas.length === 1) sel.value = permitidas[0];
+      else if (sel.value && !permitidas.includes(sel.value)) sel.value = '';
 
       verificarParcelamento(sel.value);
     }
@@ -8145,6 +8338,9 @@
       if (!valorBruto) { avisar('semValor'); return; }
       const valorTotal = parseVal(valorBruto);
       if (!valorTotal || valorTotal <= 0) { avisar('valorInvalido'); return; }
+      // sem conta cadastrada (instalação nova) não há onde o lançamento entrar
+      if (!ehLancamentoIndireto() && !contas.length) { avisar('semConta'); abrirCadastroDeContas(); return; }
+      if (tipoAtual === 'despesa' && !document.getElementById('formaModo').value) { avisar('semForma'); return; }
 
       if (!idEditando) {
         abrirConfirmacaoLancamento(valorTotal);
@@ -8416,7 +8612,7 @@
         salvarLocalStorage();
         renderizarInvestimentos();
       }
-      if (!idEditando && tipoAtual === 'receita' && somLigado()) tocarSomReceita();
+      if (!idEditando) tocarSom(tipoAtual === 'receita' ? 'receita' : 'despesa');
       if (!idEditando) vibrar(tipoAtual === 'receita' ? 'receita' : 'despesa');
       cancelarEdicao();
       atualizarTudo();
@@ -8427,6 +8623,7 @@
     // chamar isso a qualquer momento — garante que editar/salvar/excluir um lançamento
     // nunca deixe outra aba com dado desatualizado, mesmo sem trocar de aba.
     function atualizarTudo() {
+      atualizarBoasVindas();
       renderizarDashboard();
       renderizarLancamentos();
       atualizarFaturas();
@@ -8957,7 +9154,7 @@
       transferencias.unshift(transferenciaPendente);
       transferenciaPendente = null;
       salvarTransferencias();
-      if (somLigado()) tocarSomTransferencia();
+      tocarSom('transferencia');
       vibrar('transferencia');
       fecharModal('modalConfirmaTransferencia');
       fecharModal('modalTransferencia');
@@ -11317,12 +11514,20 @@
 
       // Saldo de verdade de cada conta até este mês — bate com o card principal,
       // diferente da seção "no mês" logo abaixo (que é só o líquido daquele mês).
+      /* "corrigir" ao lado de cada conta: o saldo que não bate com o banco se
+         acerta daqui mesmo, sem ir até Ajustes. Só no mês atual, porque corrigir
+         é dizer quanto tem AGORA; num mês que já passou o número é outro. */
       const linhasContaAcumulado = Object.entries(porContaAcumulado)
         .sort((a, b) => b[1] - a[1])
         .map(([conta, saldo]) => `
           <div class="linha-subtotal" onclick="fecharModal('modalResumoFatura');exibirLancamentosDetalhadosFatura('conta', ${mes}, ${ano}, '${conta.replace(/'/g, "\\'")}')">
             <span>${conta}</span>
-            <strong style="color:${saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(saldo)}</strong>
+            <span style="display:flex;align-items:center;gap:10px;">
+              <strong style="color:${saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(saldo)}</strong>
+              ${ehMesAtual && contas.some(c => c.nome === conta)
+                ? `<button type="button" class="link-corrigir" data-conta="${esc(conta)}" onclick="event.stopPropagation();corrigirSaldoPeloResumo(this.dataset.conta)">corrigir</button>`
+                : ''}
+            </span>
           </div>
         `).join('');
 
@@ -12044,11 +12249,24 @@
       document.getElementById('modalContatoCobranca').classList.remove('escondido');
     }
 
+    /* Da agenda vêm o número e o nome. Com mais de um número no contato, o
+       celular vai na frente (é ele que tem WhatsApp). O nome só entra se o campo
+       estiver vazio: o que você já escreveu (um apelido) fica, mesmo que a agenda
+       traga o nome completo. */
     async function escolherDaAgenda() {
       try {
         const sel = await navigator.contacts.select(['name', 'tel'], { multiple: false });
-        if (!sel || !sel.length || !sel[0].tel || !sel[0].tel.length) return;
-        document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(normalizarTelefone(sel[0].tel[0])) || sel[0].tel[0];
+        const pessoa = sel && sel[0];
+        if (!pessoa) return;
+        const tels = (pessoa.tel || []).filter(Boolean);
+        const numeros = tels.map(normalizarTelefone).filter(Boolean);
+        const celular = numeros.find(t => t.length === 13 && t.startsWith('55') && t[4] === '9') || numeros[0];
+        const campoTel = document.getElementById('inputTelefoneCobranca');
+        if (celular) campoTel.value = telefoneVisivel(celular);
+        else if (tels.length) campoTel.value = tels[0];
+        const nome = String((pessoa.name || []).find(n => n && String(n).trim()) || '').trim().replace(/\s+/g, ' ');
+        const campoNome = document.getElementById('inputNomeContato');
+        if (nome && !campoNome.value.trim()) campoNome.value = nome;
       } catch (e) { /* usuário cancelou a agenda, segue com o campo manual */ }
     }
 
@@ -14786,7 +15004,7 @@
       });
 
       salvarLocalStorage();
-      if (!devo && somLigado()) tocarSomReceita();
+      tocarSom(devo ? 'despesa' : 'receita');
       vibrar(devo ? 'despesa' : 'receita');
       fecharModal('modalAbaterValor');
       abatimentoEmCurso = null;
@@ -14888,7 +15106,7 @@
       });
 
       salvarLocalStorage();
-      if (!devo && somLigado()) tocarSomReceita();   // o som celebra dinheiro entrando
+      tocarSom(devo ? 'despesa' : 'receita');   // dinheiro entrando celebra; o seu pagamento é despesa
       vibrar(devo ? 'despesa' : 'receita');
       fecharModal('modalReceberEmprestimo');
       recebimentoEmprestimoChaves = [];
@@ -18533,13 +18751,22 @@ function confirmarLancamentoVoz() {
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js, e
     // acrescente o que mudou no começo de NOVIDADES (o teste 15 confere).
-    const APP_VERSION = '2026.11.13-2';
+    const APP_VERSION = '2026.11.16-1';
 
     /* NOVIDADES — o que mudou em cada versão, da mais nova pra mais velha. É o
        que aparece em Ajustes → Manual e novidades → O que mudou, e na faixa que
        surge uma vez depois de cada atualização. Escrito pra quem usa o app, sem
        termo técnico. */
     const NOVIDADES = [
+      { versao: '2026.11.16-1', data: '16/11/2026', itens: [
+        'Contato da agenda: o número vem certo mesmo com o 0 da discagem, a operadora ou o +55 (antes, 028 98765-4321 virava (89) 8765-4321), e o nome da pessoa vem junto.',
+        'Enviar backup agora abre a folha de compartilhamento (WhatsApp, e-mail, Drive). O arquivo vai como .txt, porque o Chrome não compartilha .json, e o Importar backup aceita os dois.',
+        'Sons também pra despesa e transferência, cada um com o seu liga/desliga e os seus sons. Despesa: Moeda caindo, Clique, Bolha, Carimbo, Gaveta fechando e Uh-oh. Transferência: Deslize, Ping-pong e Envelope, além do Vento. E dois novos de receita: Cofrinho e Sininho.',
+        'Forma / Modo vem em branco no formulário: você escolhe como pagou. Se a conta só aceita uma forma, ela já vem marcada.',
+        'Primeira vez no app: ele começa sem contas cadastradas, com um cartão em Lançamentos pra você cadastrar as suas.',
+        'Corrigir saldo direto da aba Faturas: no Resumo do mês, toque em "corrigir" ao lado da conta.',
+        'O card fechado de Manual e novidades não mostra mais a versão (ela fica dentro do card).'
+      ] },
       { versao: '2026.11.13-2', data: '13/11/2026', itens: [
         'Exportar backup abre o "Salvar como" do aparelho: você escolhe a pasta (no Android, o Drive também aparece na lista). Pra mandar o arquivo por WhatsApp ou e-mail, use o botão Enviar.',
         'Ajustes ganhou "Manual e novidades": baixe o manual da versão atual em PDF, leia online ou veja o que mudou em cada atualização.',
@@ -18701,9 +18928,10 @@ function confirmarLancamentoVoz() {
     const elVersao = document.getElementById('versaoApp');
     if (elVersao) elVersao.textContent = 'versão ' + APP_VERSION;
     const elVersaoManual = document.getElementById('versaoManual');
-    if (elVersaoManual) elVersaoManual.textContent = 'versão ' + APP_VERSION;
+    if (elVersaoManual) elVersaoManual.textContent = APP_VERSION;
     ajustarTextoDoBackup();
     verificarNovidades();
+    atualizarBoasVindas();
     atualizarBotaoLembretes();
     avisarCobrancasVencidas(false);
     limparSobrasDoLaboratorio();

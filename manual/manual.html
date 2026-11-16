@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.11.13-2 · Leia em 30 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.11.16-1 · Leia em 30 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -141,9 +141,21 @@
     <div class="tela metade"><img src="img/form.png" alt="Formulário de novo lançamento"></div>
     <div class="tela metade"><img src="img/ditado.png" alt="Caixa de ditado do lançamento"></div>
     <div class="legenda">Quando o aparelho não deixa o app ouvir, o microfone abre esta caixa — você dita pelo teclado.</div>
+    <div class="nota">
+      <strong>Primeira vez no app.</strong> Ele começa sem conta nenhuma: no topo de Lançamentos aparece
+      o cartão <em>“👋 Comece pelas suas contas”</em>. Toque em <em>Cadastrar minhas contas</em> e cadastre
+      onde o seu dinheiro mora: conta do banco, cartão de crédito (com o dia de fechamento e de
+      vencimento), vale-refeição, carteira. Com a primeira conta cadastrada, o cartão some. Lançar sem
+      conta não dá: o app avisa e abre o cadastro.
+      <br><br>Antes, o app já vinha com contas de exemplo (Itaú, PicPay...), que não eram as de quem
+      instalava. Quem já usava o app continua com as suas contas, sem mudança nenhuma.
+    </div>
+    <div class="tela metade"><img src="img/boas_vindas.png" alt="Cartão de boas-vindas pedindo pra cadastrar as contas"></div>
     <ul>
       <li><strong>Despesa ou Receita</strong> — os dois botões no topo.</li>
-      <li><strong>Forma</strong> — a escolha mais importante do formulário. Veja o item 5.</li>
+      <li><strong>Forma</strong> — a escolha mais importante do formulário (veja o item 5). Ela vem em
+          branco, escrito <em>Escolha</em>: o app não chuta como você pagou. Se a conta só aceita uma forma
+          (o vale-refeição, que é só débito), ela já vem marcada. Salvar sem escolher, o app avisa.</li>
       <li><strong>Valor</strong> — o ícone de calculadora dentro do campo abre uma com <em>+ − × ÷</em>, pra quando você precisa somar a conta do rachão antes de lançar. O resultado já volta formatado no campo.</li>
       <li><strong>Data</strong> — toque em qualquer parte do campo e o calendário abre. Antes só abria acertando o iconezinho do canto, e no iPhone dava a impressão de que o campo não fazia nada.</li>
       <li><strong>Pix</strong> entrou na lista de formas. Ele se comporta como débito: sai da conta na data da compra e não entra em fatura nenhuma.</li>
@@ -287,6 +299,14 @@
       <li><strong>Fatura em aberto</strong> — o que está no cartão e ainda vai sair. Toque para ir direto ao pagamento.</li>
       <li><strong>Boletos a pagar</strong> — os gastos recorrentes fora do cartão deste mês que ainda dependem de você. Toque para ver a lista.</li>
     </ul>
+    <div class="nota">
+      <strong>Saldo diferente do banco? Corrija dali mesmo.</strong> Tocando no <em>Saldo atual</em>
+      abre o resumo do mês, com o saldo de cada conta. Ao lado de cada uma tem um <em>corrigir</em>,
+      que abre direto o <em>Corrigir saldo</em> daquela conta (item 14): você digita o que o banco
+      mostra e o app acerta a diferença, sem criar lançamento. O <em>corrigir</em> só aparece no mês
+      atual, porque corrigir é dizer quanto você tem agora. Antes, isso só existia em Ajustes → Contas.
+    </div>
+    <div class="tela metade"><img src="img/resumo_corrigir.png" alt="Saldo por conta com o corrigir ao lado"></div>
     <div class="nota">
       <strong>Pra trocar de mês, arraste dentro deste card.</strong> Ele acompanha o dedo:
       vai saindo conforme você puxa e, passando de um terço da tela (ou com um peteleco rápido),
@@ -813,6 +833,15 @@
     <p>Na primeira cobrança de cada pessoa o app pede o WhatsApp dela — dá para escolher da agenda
        do celular ou digitar. Depois disso, vai direto.</p>
     <div class="nota">
+      <strong>Da agenda vêm o número e o nome.</strong> O número entra certo do jeito que estiver salvo
+      no celular: com o <em>+55</em>, com o 0 da discagem (<em>028 98765-4321</em>) ou com o código da
+      operadora (<em>0 21 28 98765-4321</em>). Antes, um número salvo com o 0 na frente perdia os dois
+      primeiros dígitos, e o DDD 28 virava 89. Com mais de um número no contato, vem o celular, que é o
+      que tem WhatsApp.
+      <br><br>O nome da agenda entra se o campo estiver vazio. Se você já escreveu um apelido
+      (<em>Nanda</em>), ele fica, mesmo que a agenda traga o nome completo.
+    </div>
+    <div class="nota">
       <strong>No iPhone não aparece o botão "Escolher da agenda"? Não é bug.</strong> Esse atalho
       depende de um recurso do Safari que, no iPhone, vem desligado por padrão. No lugar do botão
       some, aparece uma ajuda recolhível explicando o caminho:
@@ -1272,7 +1301,7 @@
     <ul>
       <li><strong>Contas e cartões</strong> — cadastre seus bancos, marque quais têm crédito e informe o dia de fechamento e vencimento de cada cartão. Isso é o que faz a fatura cair no mês certo.</li>
       <li><strong>Saldo inicial</strong> — dentro de cada conta. É quanto ela já tinha quando você começou a usar o app. Entra no saldo e em mais lugar nenhum: não vira receita, não aparece em “recebido”, nos gráficos nem nas perguntas. Pode ser negativo.</li>
-      <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número.</li>
+      <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número. Também dá pra corrigir direto da aba Faturas: no resumo do mês, cada conta tem um <em>corrigir</em> ao lado (item 5).</li>
       <li><strong>Categorias</strong> — crie, renomeie, reordene. Marque com ★ as que você mais usa para elas subirem no formulário.
           Ao <strong>excluir</strong> uma categoria que ainda tem lançamentos, o app pergunta o que fazer com eles:
           <em>mover para</em> outra categoria (os gastos fixos e consórcios vão junto, então os boletos futuros
@@ -1284,7 +1313,7 @@
       <li><strong>Contatos de cobrança</strong> — a agenda de quem você empresta. Cadastre pelo <em>+ Novo contato</em> (o telefone é opcional: sem ele a pessoa existe igual, só não dá pra abrir o WhatsApp) e depois é só escolher o nome na hora do lançamento. Quem você já emprestou antes aparece aqui sozinho, vindo do histórico.</li>
       <li><strong>Travar o zoom</strong> — dentro de <em>Aparência</em>. No iPhone um toque duplo sem querer dá zoom e, com o app instalado na tela inicial, não existe barra de endereço pra desfazer: a tela fica torta até você ajustar com os dedos. Ligando isso, a tela para de dar zoom. Vale só naquele aparelho, e vem desligado — quem usa o zoom pra enxergar melhor não perde nada.</li>
       <li><strong>Aparência</strong> — oito temas: Escuro, Claro, Índigo (escuro azulado), Sépia (fundo quente), Floresta (verde à noite), Papel (cinza-bege claro), Rosa (suave e claro) e Violeta (roxo-azulado). Vale só neste aparelho: não entra no backup, então quem receber seus dados continua com o tema dele.</li>
-      <li><strong>Sons</strong> — cinco comemorações diferentes. Toque na linha pra ouvir e no <strong>✓</strong> pra tirar ou botar cada uma no sorteio: dá pra deixar só as que você gosta. Ou desligue tudo. Ali também fica o <strong>vibrar ao salvar</strong>: um toque seco pra despesa, dois pra transferência, e uma vibração mais longa e oscilante pra receita — dá pra saber o que entrou sem olhar a tela, com o som desligado.</li>
+      <li><strong>Sons</strong> — som ao salvar receita, despesa e transferência, cada um com o seu liga/desliga e os seus sons (veja abaixo). Ali também fica o <strong>vibrar ao salvar</strong>: um toque seco pra despesa, dois pra transferência, e uma vibração mais longa e oscilante pra receita — dá pra saber o que entrou sem olhar a tela, com o som desligado.</li>
       <li><strong>Lançamentos excluídos</strong> — a lixeira. Tudo que você apaga fica guardado aqui com data e volta inteiro pelo botão <em>restaurar</em>. Guarda os últimos 30.</li>
       <li><strong>Manual e novidades</strong> — este manual em PDF, sempre na versão do app que está no seu celular, e a lista do que mudou em cada atualização (veja abaixo).</li>
       <li><strong>Backup e restauração</strong> — o item mais importante desta lista.</li>
@@ -1321,7 +1350,8 @@
       faixa no topo da aba Lançamentos com o atalho pra cá. Ao tocar em <em>Exportar backup</em>, abre o
       <strong>Salvar como</strong> do aparelho: você escolhe a pasta onde o arquivo fica (no Android, o
       <strong>Drive</strong> também aparece na lista). Pra mandar por WhatsApp ou e-mail, use
-      <em>Enviar backup</em>, que abre a folha de compartilhamento. No iPhone, que não tem Salvar como, o
+      <em>Enviar backup</em>, que abre a folha de compartilhamento: o arquivo vai como <em>.txt</em>, porque o
+      Chrome não deixa compartilhar <em>.json</em>, e o <em>Importar backup</em> aceita os dois. No iPhone, que não tem Salvar como, o
       próprio <em>Exportar backup</em> abre a folha. É a única forma de levar seu histórico para outro
       celular. Uma vez por mês já resolve.
       <br><br>Antes, no celular, o Exportar abria sempre a folha de compartilhamento, e não havia jeito de
@@ -1339,7 +1369,7 @@
     </div>
     <h3>Manual e novidades</h3>
     <p>Este manual fica dentro do app, em <strong>Ajustes → Manual e novidades</strong>, e acompanha cada
-       versão: quando o app atualiza, o PDF de lá já é o novo. O título do card mostra a versão que está
+       versão: quando o app atualiza, o PDF de lá já é o novo. Dentro do card aparece a versão que está
        rodando no seu celular.</p>
     <div class="tela metade"><img src="img/manual_novidades.png" alt="Card Manual e novidades em Ajustes"></div>
     <div class="legenda">O card em Ajustes: baixar o PDF, ver o que mudou ou ler online.</div>
@@ -1364,6 +1394,19 @@
       por versão. Numa instalação nova, sem nada lançado, ela não aparece: ainda não há novidade a contar.
     </div>
     <div class="tela metade"><img src="img/faixa_novidades.png" alt="Faixa de app atualizado na aba Lançamentos"></div>
+    <h3>Sons</h3>
+    <p>Em <strong>Ajustes → Sons</strong>, cada tipo de lançamento tem o seu liga/desliga e os seus sons:
+       sete de receita (da caixa registradora ao sininho), seis de despesa (moeda caindo, clique, bolha,
+       carimbo, gaveta fechando, uh-oh) e quatro de transferência (vento, deslize, ping-pong, envelope).
+       Toque na linha pra ouvir e no <strong>✓</strong> pra tirar ou botar o som no sorteio: a cada
+       lançamento, toca um dos marcados daquele tipo.</p>
+    <div class="nota">
+      A despesa vem desligada, porque é o lançamento mais comum do dia e nem todo mundo quer som a
+      cada cafezinho. A transferência, enquanto você não mexer nela, segue o liga/desliga da receita
+      e toca o vento, como antes. Desligado, o grupo fica apagado, mas dá pra ouvir e escolher do
+      mesmo jeito. O último som marcado de um grupo não sai, pra ele não ficar mudo sem querer.
+    </div>
+    <div class="tela metade"><img src="img/sons.png" alt="Sons de receita, despesa e transferência"></div>
     <div class="tela metade"><img src="img/ajustes.png" alt="Aba de ajustes"></div>
     <div class="tela metade"><img src="img/saldo_inicial.png" alt="Saldo inicial no cadastro da conta"></div>
     <div class="legenda">O saldo inicial fica no cadastro da conta, com a data a partir da qual vale.</div>
