@@ -120,13 +120,19 @@ async function iniciar(nome, corpo) {
       return !!cond;
     },
     secao(titulo) { console.log('\n┌─ ' + titulo + ' ─┐'); },
-    async abrir(caminho = 'index.html') {
+    // Instalação nova começa sem contas. As suítes antigas foram escritas com as
+    // contas que o app trazia (Itaú, PicPay...), então elas continuam vindo, a
+    // não ser que a suíte peça o app vazio: t.abrir('index.html', { semContas: true }).
+    async abrir(caminho = 'index.html', opcoes = {}) {
       const p = await contexto.newPage();
       p.on('pageerror', e => erros.push(e.message));
       p.on('dialog', d => d.accept());
       await p.goto(BASE + caminho);
       await p.waitForTimeout(700);
-      await p.evaluate(() => localStorage.clear());
+      await p.evaluate(semContas => {
+        localStorage.clear();
+        if (!semContas) localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(CONTAS_PADRAO));
+      }, !!opcoes.semContas);
       await t.recarregar(p);
       return p;
     },

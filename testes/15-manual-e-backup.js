@@ -68,7 +68,8 @@ iniciar('15 · manual, novidades e backup', async t => {
   t.secao('MANUAL');
   const versao = await p.evaluate(() => APP_VERSION);
   const noCard = await p.evaluate(() => __texto('#versaoManual'));
-  t.ok(noCard === 'versão ' + versao, 'o card "Manual e novidades" mostra a versão que está rodando');
+  const noCabecalho = await p.evaluate(() => __texto('#corpo-manual') !== '' && !document.querySelector('[onclick="alternarSecao(\'manual\')"]').innerText.includes(APP_VERSION));
+  t.ok(noCard === versao && noCabecalho, 'a versão aparece no texto do card aberto, e não no cabeçalho do card fechado');
 
   await preparar({ picker: 'ok', folha: true });
   const comPasta = await p.evaluate(async () => {

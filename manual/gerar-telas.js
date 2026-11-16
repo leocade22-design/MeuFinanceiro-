@@ -4,13 +4,17 @@ const fs = require('fs');
 fs.mkdirSync(OUT, { recursive: true });
 
 (async () => {
-  const b = await chromium.launch({ channel:'chromium' });
+  // o campo de data mostra o formato do idioma do sistema: em pt-BR sai 16/11/2026, e não 11/16/2026
+  const b = await chromium.launch({ channel:'chromium', args:['--lang=pt-BR'],
+    env: Object.assign({}, process.env, { LANG:'pt_BR.UTF-8', LC_ALL:'pt_BR.UTF-8', LANGUAGE:'pt_BR' }) });
   const page = await b.newPage({ viewport:{width:412,height:915}, deviceScaleFactor:3, locale:'pt-BR' });
   const erros=[]; page.on('pageerror',e=>erros.push(e.message));
   page.on('dialog', async d=>await d.accept());
   await page.goto('file://' + __dirname + '/../index.html');
   await page.waitForTimeout(900);
-  await page.evaluate(()=>localStorage.clear());
+  // o app instalado do zero começa sem contas; o cenário de demonstração usa
+  // as contas de exemplo (Itaú, PicPay...)
+  await page.evaluate(()=>{ localStorage.clear(); localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(CONTAS_PADRAO)); });
   await page.reload(); await page.waitForTimeout(900);
 
   // ---- dados de demonstração (fictícios) ----
@@ -451,6 +455,28 @@ fs.mkdirSync(OUT, { recursive: true });
   await abrir('Lançamentos');
   await tiro('faixa_novidades', '#avisoNovidades');
   await page.evaluate(()=>marcarNovidadesVistas());
+
+  // 28) os sons: receita, despesa e transferência, cada um com o seu liga/desliga
+  await abrir('Ajustes');
+  await page.evaluate(()=>{ localStorage.setItem(CONFIG_SOM.despesa.ligado, '1'); renderizarSons(); });
+  await secao('sons', true);
+  await page.evaluate(()=>{ document.getElementById('corpo-sons').closest('.card').id = 'cardSonsTela'; });
+  await tiro('sons', '#cardSonsTela');
+  await secao('sons', false);
+  await page.evaluate(()=>{ localStorage.removeItem(CONFIG_SOM.despesa.ligado); });
+
+  // 29) o Resumo do mês com o "corrigir" ao lado de cada conta
+  await abrir('Faturas');
+  await page.evaluate(()=>abrirModalResumoFatura());
+  await page.waitForTimeout(400);
+  await page.evaluate(()=>{ document.querySelector('#corpoResumoFatura .box-resumo-modal').id = 'boxSaldoContasTela'; });
+  await tiro('resumo_corrigir', '#boxSaldoContasTela');
+  await page.evaluate(()=>fecharModal('modalResumoFatura'));
+
+  // 30) primeira vez no app: sem conta nenhuma, o cartão de boas-vindas
+  await page.evaluate(()=>localStorage.clear());
+  await page.reload(); await page.waitForTimeout(900);
+  await tiro('boas_vindas', '#cartaoBoasVindas');
 
   console.log('\nerros:', erros.length?erros:'nenhum');
   await b.close();
