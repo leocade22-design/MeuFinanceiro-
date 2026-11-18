@@ -68,8 +68,8 @@ iniciar('01 · sanidade', async t => {
   t.ok(cheio.parcelas === 3 && cheio.aportes === 1 && cheio.fixos === 2 && cheio.consorcios === 1, 'parcelado em 3x, um aporte, um gasto fixo e um consórcio (que cria o próprio gasto fixo)');
   t.ok(cheio.geradosFixo > 4, 'gastos fixos já projetados nos meses à frente (' + cheio.geradosFixo + ' lançamentos)');
 
-  t.secao('AS SEIS ABAS');
-  const abas = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos', 'abaConfig'];
+  t.secao('AS CINCO ABAS');
+  const abas = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaInvestimentos', 'abaConfig'];
   for (const aba of abas) {
     const r = await p.evaluate(id => {
       __aba(id);
@@ -82,7 +82,8 @@ iniciar('01 · sanidade', async t => {
     lista: document.querySelectorAll('#listaLancamentos .item-lancamento').length,
     fatura: __texto('#listaPagamentoFatura'),
     total: __texto('#totalInvestido'),
-    grupos: __texto('#abaGrupos')
+    // o card de grupos nasce recolhido: o conteúdo existe, só não está aberto
+    grupos: document.querySelector('#abaFaturas [data-card="grupos"]').textContent
   }));
   t.ok(conteudo.lista >= 5, 'lista de lançamentos com itens');
   t.ok(/Itaú|Nubank/.test(conteudo.fatura), 'card da fatura com os cartões');
@@ -94,7 +95,7 @@ iniciar('01 · sanidade', async t => {
   const texto = fs.readFileSync(await download.path(), 'utf8');
   const backup = JSON.parse(texto);
   const chaves = ['lancamentos', 'fixos', 'investimentos', 'consorcios', 'grupos', 'orcamentosCategoria', 'planejamento', 'faturasPagas', 'contas', 'categorias', 'transferencias', 'contatos', 'lixeira'];
-  t.ok(backup.versao === 3 && chaves.every(k => k in backup), 'backup versão 3 com todas as gavetas');
+  t.ok(backup.versao === 4 && chaves.every(k => k in backup), 'backup versão 4 com todas as gavetas');
   t.ok(/^backup-meu-financeiro-\d{4}-\d\d-\d\d\.json$/.test(download.suggestedFilename()), 'nome do arquivo: ' + download.suggestedFilename());
   const antes = await p.evaluate(() => ({ lanc: lancamentos.length, inv: investimentos.length, fixos: fixos.length, cons: consorcios.length, transf: transferencias.length, contas: contas.length }));
   await p.evaluate(() => localStorage.clear());
@@ -114,7 +115,7 @@ iniciar('01 · sanidade', async t => {
     return { id: x.id, attr: document.documentElement.getAttribute('data-tema'), fundo: getComputedStyle(document.documentElement).getPropertyValue('--fundo').trim() };
   }));
   console.log('   ' + temas.map(x => x.id + ':' + x.fundo).join(' · '));
-  t.ok(temas.length === 8 && temas.every(x => x.attr === x.id && x.fundo), 'os 8 temas aplicam e definem a cor de fundo');
+  t.ok(temas.length === 9 && temas.some(x => x.id === 'fofo') && temas.every(x => x.attr === x.id && x.fundo), 'os 9 temas (com o Fofo) aplicam e definem a cor de fundo');
   t.ok(new Set(temas.map(x => x.fundo)).size >= 6, 'cada tema tem a sua cor');
   await p.evaluate(() => aplicarTema('escuro'));
 });

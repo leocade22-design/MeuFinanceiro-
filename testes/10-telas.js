@@ -26,7 +26,7 @@ iniciar('10 · telas no celular', async t => {
   });
   await t.recarregar(p);
 
-  const ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos', 'abaConfig'];
+  const ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaInvestimentos', 'abaConfig'];
   for (const largura of [360, 412]) {
     t.secao('LARGURA ' + largura + ' px');
     await p.setViewportSize({ width: largura, height: 800 });

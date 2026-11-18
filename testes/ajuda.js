@@ -129,10 +129,13 @@ async function iniciar(nome, corpo) {
       p.on('dialog', d => d.accept());
       await p.goto(BASE + caminho);
       await p.waitForTimeout(700);
-      await p.evaluate(semContas => {
+      await p.evaluate(([semContas, comTutorial]) => {
         localStorage.clear();
         if (!semContas) localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(CONTAS_PADRAO));
-      }, !!opcoes.semContas);
+        // o tutorial de primeiro uso abriria por cima de toda suíte; quem quer
+        // testá-lo pede: t.abrir('index.html', { tutorial: true })
+        if (!comTutorial) localStorage.setItem('meu_financeiro_tutorial_visto_v1', '1');
+      }, [!!opcoes.semContas, !!opcoes.tutorial]);
       await t.recarregar(p);
       return p;
     },
