@@ -115,7 +115,7 @@ iniciar('01 · sanidade', async t => {
     return { id: x.id, attr: document.documentElement.getAttribute('data-tema'), fundo: getComputedStyle(document.documentElement).getPropertyValue('--fundo').trim() };
   }));
   console.log('   ' + temas.map(x => x.id + ':' + x.fundo).join(' · '));
-  t.ok(temas.length === 9 && temas.some(x => x.id === 'fofo') && temas.every(x => x.attr === x.id && x.fundo), 'os 9 temas (com o Fofo) aplicam e definem a cor de fundo');
+  t.ok(temas.length === 10 && temas.some(x => x.id === 'grafite') && temas.some(x => x.id === 'fofo') && temas.every(x => x.attr === x.id && x.fundo), 'os 10 temas (com o Grafite e o Fofo) aplicam e definem a cor de fundo');
   t.ok(new Set(temas.map(x => x.fundo)).size >= 6, 'cada tema tem a sua cor');
   await p.evaluate(() => aplicarTema('escuro'));
 });

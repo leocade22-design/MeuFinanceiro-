@@ -139,6 +139,22 @@
       --acento:#9d6ce8; --acento-claro:#b78ff0; --acento-palido:#dcc7f5;
     }
 
+    /* Grafite: cinza-chumbo com destaque âmbar. Escuro sem o verde nem o roxo
+       dos outros: o acento é âmbar, e os cinzas de apoio ficam mais claros que
+       no Escuro, pra texto e valor lerem com folga no fundo chumbo. */
+    [data-tema="grafite"] {
+      --fundo:#1b1d20; --card:#272a2e; --campo:#212427;
+      --borda:#3a3e44; --borda-fraca:#2f3236; --borda-forte:#4e535a;
+      --texto:#f4f3ef; --texto-forte:#e0ded8; --texto-medio:#c2bfb7;
+      --texto-fraco:#aeaba3; --texto-tenue:#9b988f;
+      --verde:#5cc48c; --verde-claro:#7dd4a3; --verde-escuro:#3a9163;
+      --vermelho:#f27a72; --vermelho-medio:#d6625b; --vermelho-escuro:#ab4841;
+      --amarelo:#f5cf6b; --amarelo-forte:#ebbd45; --laranja:#f29d55;
+      --azul:#72aef2; --azul-forte:#5196e6; --azul-claro:#94c1f5;
+      --roxo:#c494e8; --marrom:#a48d7c; --turquesa:#55c4b6; --bege:#e6d9c3;
+      --acento:#e8a93c; --acento-claro:#f2bf63; --acento-palido:#f8dfab;
+    }
+
     /* Fofo: creme quentinho com lilás, cantos mais redondos e sombra macia.
        Tema claro: o acento-claro e o acento-pálido ficam MAIS escuros que o
        acento, como no Claro, porque viram texto em cima do creme. */
@@ -572,14 +588,23 @@
        .arrastando desliga a transição enquanto o dedo manda; .soltando liga de
        volta pro trecho final (completar ou voltar) correr sozinho. */
     .aba-conteudo.arrastando, .card.arrastando { transition: none; }
+    /* O .arrastando genérico (linha que você arrasta numa lista) pinta fundo de
+       card. Numa aba inteira esse fundo aparecia como faixa clara ao lado do
+       respiro entre as abas. */
+    .aba-conteudo.arrastando, .aba-conteudo.espiando { background: transparent; border-radius: 0; }
     .aba-conteudo.soltando { transition: transform .26s cubic-bezier(.25,.7,.35,1), opacity .26s ease; }
+    /* troca por toque: as duas abas andam juntas, como no arraste */
+    .aba-conteudo.trocando { transition: transform .3s cubic-bezier(.25,.7,.35,1), opacity .3s ease; }
     .card.soltando { transition: transform .24s cubic-bezier(.25,.7,.35,1), opacity .24s ease; }
     /* A vizinha sai do fluxo: presa ao viewport ela não empurra nada nem muda a
        altura da página no meio do gesto. Recortada embaixo porque é só uma
        espiada — o conteúdo inteiro chega quando a aba de fato troca. */
+    /* As laterais de 24px (RESPIRO_ABAS) são pra sombra dos cards: com o recorte
+       rente ao conteúdo, a sombra da aba que entra aparecia cortada no meio. */
     .aba-conteudo.espiando {
       display: block; position: fixed; z-index: 4;
       overflow: hidden; pointer-events: none;
+      box-sizing: border-box; padding-left: 24px; padding-right: 24px;
       -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
       mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
     }
@@ -726,6 +751,23 @@
     .dica-gesto > span { flex:1; min-width:0; }
     .dica-gesto button { background:none; border:none; color:var(--texto-fraco); font-size:20px; line-height:1;
       min-width:40px; min-height:40px; margin:-10px -8px -10px 0; cursor:pointer; }
+    /* JANELA DA MENSAGEM (cobrança, resposta, conversa de quem deve) */
+    .seletor-opcoes.tons-cobranca { display:grid; grid-template-columns:1fr 1fr; }
+    .seletor-opcoes button small { display:block; font-size:10px; font-weight:600; color:var(--acento-claro); margin-top:2px; letter-spacing:.02em; }
+    .chips-persona { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .chips-persona .btn-mini { min-height:36px; }
+    .chips-persona .btn-mini[aria-pressed="true"] { border-color:var(--acento); color:var(--texto); background:color-mix(in srgb, var(--acento) 16%, transparent); }
+    .previa-cobranca { width:100%; min-height:190px; resize:vertical; font:inherit; font-size:14px; line-height:1.5;
+      padding:10px 12px; border-radius:10px; border:1px solid var(--borda); background:var(--campo); color:var(--texto); }
+    .botoes-previa { display:flex; gap:8px; margin-top:10px; }
+    .botoes-previa .btn-backup { flex:1; min-height:46px; }
+    .pergunta-genero { background:color-mix(in srgb, var(--amarelo) 10%, var(--campo)); border:1px solid color-mix(in srgb, var(--amarelo) 35%, var(--borda));
+      border-radius:12px; padding:10px 12px 4px; margin-bottom:12px; }
+    .pergunta-genero p { font-size:13px; color:var(--texto-forte); margin-bottom:8px; }
+    .seletor-opcoes.seletor-relacao { flex-wrap:wrap; }
+    .seletor-opcoes.seletor-relacao button { flex:1 1 40%; }
+    .cabecalho-temas { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px; font-size:11px;
+      font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--texto-fraco); }
     .rotulo-opcao { font-size:12px; color:var(--texto-medio); font-weight:600; margin-bottom:6px; }
     .seletor-opcoes { display:flex; gap:6px; margin-bottom:8px; }
     .seletor-opcoes button { flex:1; min-height:44px; padding:8px 6px; border-radius:10px; border:1.5px solid var(--borda);
@@ -1157,7 +1199,8 @@
             </div>
             <span class="chevron-sec" id="chevron-grupos">▸</span>
           </button>
-          <button class="btn-olho" id="btnOlhoGrupos" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+          <!-- Sem olho próprio: o do Resumo, no topo da aba, esconde os valores da
+               aba inteira, Grupos inclusive (alternarVisibilidade redesenha os grupos). -->
         </div>
         <div id="corpo-grupos" class="escondido" style="margin-top:8px;">
           <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
@@ -1244,7 +1287,7 @@
         gasto do período, incluindo o que foi no crédito · o saldo da conta fica em Faturas
       </p>
       <!-- O relatório inteiro, do jeito que um consultor entregaria (ver blocosDoRelatorio) -->
-      <button type="button" class="btn-adicionar" style="margin-top:10px;" onclick="abrirRelatorioConsultor()">📋 Relatório do consultor</button>
+      <button type="button" class="btn-adicionar" onclick="abrirRelatorioConsultor()" style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>Relatório do consultor</button>
       </div>
 
       <!-- GRÁFICOS DO PERÍODO (card único: Despesas / Receitas / Contas)
@@ -1495,46 +1538,6 @@
     </div>
 
     <div id="abaConfig" class="aba-conteudo">
-      <!-- LETRA, MODO E AJUDA: no topo de Ajustes, porque é o card que quem
-           enxerga pouco precisa achar primeiro. Tudo vale só neste aparelho. -->
-      <div class="card" id="cardAcessibilidade">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('acessibilidade')">
-          <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;flex-wrap:wrap;">
-            <h3 style="font-size:16px;">Letra, modo e ajuda</h3>
-            <span id="resumoFechado-acessibilidade" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
-          </div>
-          <span class="chevron-sec" id="chevron-acessibilidade">▸</span>
-        </button>
-        <div id="corpo-acessibilidade" class="escondido" style="margin-top:12px;">
-          <div class="rotulo-opcao">Modo do app</div>
-          <div class="seletor-opcoes" role="group" aria-label="Modo do app">
-            <button type="button" data-modo="completo" aria-pressed="true" onclick="escolherModo(false)">Completo</button>
-            <button type="button" data-modo="simples" aria-pressed="false" onclick="escolherModo(true)">Simples</button>
-          </div>
-          <p class="nota-opcao">O Simples aumenta a letra e os botões, deixa o contraste mais forte e mostra na frente só o essencial: lançar, o saldo e a fatura do mês. O resto continua no app, só recolhido. Trocar de modo não apaga nada.</p>
-          <div class="rotulo-opcao">Tamanho da letra</div>
-          <div class="seletor-opcoes" role="group" aria-label="Tamanho da letra">
-            <button type="button" data-letra="normal" aria-pressed="true" onclick="escolherTamanhoLetra('normal')">Normal</button>
-            <button type="button" data-letra="grande" aria-pressed="false" onclick="escolherTamanhoLetra('grande')" style="font-size:15px;">Grande</button>
-            <button type="button" data-letra="extra" aria-pressed="false" onclick="escolherTamanhoLetra('extra')" style="font-size:17px;">Extra grande</button>
-          </div>
-          <label class="linha-opcao">
-            <input type="checkbox" id="chkAltoContraste" onchange="alternarAltoContraste(this.checked)">
-            <span>Alto contraste<small>textos e bordas mais fortes, em qualquer tema</small></span>
-          </label>
-          <label class="linha-opcao">
-            <input type="checkbox" id="chkGestoAbas" checked onchange="alternarGestoAbas(this.checked)">
-            <span>Trocar de aba arrastando o dedo<small>desligado, só tocando no nome da aba (vale também pra trocar o mês no Resumo)</small></span>
-          </label>
-          <div class="rotulo-opcao" style="margin-top:16px;">Ajuda</div>
-          <div class="botoes-ajuda">
-            <button type="button" class="btn-backup" onclick="abrirTutorial()">Ver o tutorial de novo</button>
-            <button type="button" class="btn-backup" onclick="abrirGuia('backup')">Como salvar uma cópia dos dados</button>
-            <button type="button" class="btn-backup" onclick="abrirGuia('instalar')">Como pôr o app na tela inicial</button>
-          </div>
-        </div>
-      </div>
-
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('contasCategorias')">
           <h3 style="font-size:16px;">Contas e categorias</h3>
@@ -1584,9 +1587,15 @@
           <div class="form-group">
             <label for="inputMeuNome">O SEU nome — o de quem emprestou</label>
             <input type="text" id="inputMeuNome" placeholder="ex: Léo" oninput="salvarMeuNome()" onchange="salvarMeuNome()">
+            <div class="seletor-opcoes" id="seletorMeuGenero" role="group" aria-label="Seu gênero" style="margin-top:8px;">
+              <button type="button" data-valor="m" onclick="escolherMeuGenero('m')">Masculino</button>
+              <button type="button" data-valor="f" onclick="escolherMeuGenero('f')">Feminino</button>
+              <button type="button" data-valor="n" onclick="escolherMeuGenero('n')">Não definir</button>
+            </div>
             <p style="color:var(--texto-fraco);font-size:11.5px;margin-top:7px;line-height:1.45;">
-              Nas cobranças o app finge ser um assistente seu, pra não parecer que é você
-              cobrando na cara dura. Ele se apresenta assim:
+              Na Zoeira, quem atrasou recebe a mensagem de um assistente seu (capanga,
+              secretária ou narrador de futebol), pra não parecer que é você cobrando na
+              cara dura. Ele se apresenta assim:
             </p>
             <p id="exemploMeuNome" style="color:var(--acento);font-size:12px;margin-top:5px;font-style:italic;"></p>
           </div>
@@ -1603,6 +1612,46 @@
         </div>
       </div>
 
+      <!-- LETRA, MODO E AJUDA: entre Contatos de cobrança e Aparência, junto do
+           que mexe no jeito de ver o app. Tudo vale só neste aparelho. -->
+      <div class="card" id="cardAcessibilidade">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('acessibilidade')">
+          <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;flex-wrap:wrap;">
+            <h3 style="font-size:16px;">Letra, modo e ajuda</h3>
+            <span id="resumoFechado-acessibilidade" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+          </div>
+          <span class="chevron-sec" id="chevron-acessibilidade">▸</span>
+        </button>
+        <div id="corpo-acessibilidade" class="escondido" style="margin-top:12px;">
+          <div class="rotulo-opcao">Modo do app</div>
+          <div class="seletor-opcoes" role="group" aria-label="Modo do app">
+            <button type="button" data-modo="completo" aria-pressed="true" onclick="escolherModo(false)">Completo</button>
+            <button type="button" data-modo="simples" aria-pressed="false" onclick="escolherModo(true)">Simples</button>
+          </div>
+          <p class="nota-opcao">O Simples aumenta a letra e os botões, deixa o contraste mais forte e mostra na frente só o essencial: lançar, o saldo e a fatura do mês. O resto continua no app, só recolhido. Trocar de modo não apaga nada.</p>
+          <div class="rotulo-opcao">Tamanho da letra</div>
+          <div class="seletor-opcoes" role="group" aria-label="Tamanho da letra">
+            <button type="button" data-letra="normal" aria-pressed="true" onclick="escolherTamanhoLetra('normal')">Normal</button>
+            <button type="button" data-letra="grande" aria-pressed="false" onclick="escolherTamanhoLetra('grande')" style="font-size:15px;">Grande</button>
+            <button type="button" data-letra="extra" aria-pressed="false" onclick="escolherTamanhoLetra('extra')" style="font-size:17px;">Extra grande</button>
+          </div>
+          <label class="linha-opcao">
+            <input type="checkbox" id="chkAltoContraste" onchange="alternarAltoContraste(this.checked)">
+            <span>Alto contraste<small>textos e bordas mais fortes, em qualquer tema</small></span>
+          </label>
+          <label class="linha-opcao">
+            <input type="checkbox" id="chkGestoAbas" checked onchange="alternarGestoAbas(this.checked)">
+            <span>Trocar de aba arrastando o dedo<small>desligado, só tocando no nome da aba (vale também pra trocar o mês no Resumo)</small></span>
+          </label>
+          <div class="rotulo-opcao" style="margin-top:16px;">Ajuda</div>
+          <div class="botoes-ajuda">
+            <button type="button" class="btn-backup" onclick="abrirTutorial()">Ver o tutorial de novo</button>
+            <button type="button" class="btn-backup" onclick="abrirGuia('backup')">Como salvar uma cópia dos dados</button>
+            <button type="button" class="btn-backup" onclick="abrirGuia('instalar')">Como pôr o app na tela inicial</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('tema')">
           <h3 style="font-size:16px;">Aparência</h3>
@@ -1610,6 +1659,7 @@
         </button>
         <div id="corpo-tema" class="escondido" style="margin-top:10px;">
           <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Vale só neste aparelho. Seus dados não mudam.</p>
+          <div id="cabecalhoTemas" class="cabecalho-temas" aria-hidden="true"></div>
           <div id="listaTemas" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="chkTravarZoom" onchange="alternarTravaDeZoom()" aria-label="Travar o zoom da tela" style="width:auto;margin:0;">
@@ -1643,25 +1693,18 @@
         </div>
       </div>
 
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemFaturas')">
-          <h3 style="font-size:16px;">Cards da aba Faturas</h3>
-          <span class="chevron-sec" id="chevron-ordemFaturas">▸</span>
+      <!-- ORDEM DOS CARDS: um card só, com a aba escolhida no topo. Eram dois
+           (Faturas e Gráficos); aba nova com cards ordenáveis entra sozinha no
+           seletor (ver abasComOrdem). -->
+      <div class="card" id="cardOrdemCards">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemCards')">
+          <h3 style="font-size:16px;">Ordem dos cards</h3>
+          <span class="chevron-sec" id="chevron-ordemCards">▸</span>
         </button>
-        <div id="corpo-ordemFaturas" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros, e desmarque o que você não usa pra ele sumir da aba (nada é apagado: marcou de novo, ele volta).</p>
-          <div id="ordemCardsAbaFaturas"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemGraficos')">
-          <h3 style="font-size:16px;">Cards da aba Gráficos</h3>
-          <span class="chevron-sec" id="chevron-ordemGraficos">▸</span>
-        </button>
-        <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros, e desmarque o que você não usa pra ele sumir da aba (nada é apagado: marcou de novo, ele volta).</p>
-          <div id="ordemCardsAbaGraficos"></div>
+        <div id="corpo-ordemCards" class="escondido" style="margin-top:10px;">
+          <div class="seletor-opcoes" id="seletorAbaOrdem" role="group" aria-label="Aba dos cards"></div>
+          <p id="dicaOrdemCards" style="font-size:12px;color:var(--texto-medio);margin:4px 0 10px;"></p>
+          <div id="ordemCardsLista"></div>
         </div>
       </div>
 
@@ -1743,9 +1786,31 @@
         <h3 id="tituloTomCobranca">Cobrar</h3>
         <button class="btn-fechar" onclick="fecharModal('modalTomCobranca')">&times;</button>
       </div>
-      <p style="font-size:12px;color:var(--texto-medio);margin-bottom:12px;line-height:1.5;">Como você quer falar dessa vez?</p>
-      <div id="opcoesTomCobranca"></div>
-      <p id="previaTomCobranca" style="font-size:11.5px;color:var(--texto-tenue);line-height:1.5;white-space:pre-wrap;"></p>
+      <!-- Contato sem gênero confirmado: o app pergunta aqui, e a mensagem já
+           sai com o palpite enquanto você não responde. -->
+      <div id="perguntaGeneroCobranca" class="pergunta-genero escondido">
+        <p>Pra mensagem sair certinha: <strong id="nomePerguntaGenero"></strong> é…</p>
+        <div class="seletor-opcoes" id="opcoesGeneroCobranca" role="group" aria-label="Gênero do contato"></div>
+      </div>
+      <div id="blocoTonsCobranca">
+        <div class="rotulo-opcao">Tom</div>
+        <div id="opcoesTomCobranca" class="seletor-opcoes tons-cobranca" role="group" aria-label="Tom da mensagem"></div>
+        <p id="motivoTomCobranca" class="nota-opcao"></p>
+      </div>
+      <div id="blocoPersona" class="escondido">
+        <div class="rotulo-opcao">Quem manda a mensagem</div>
+        <div id="opcoesPersona" class="chips-persona" role="group" aria-label="Personagem do assistente"></div>
+      </div>
+      <div class="rotulo-opcao" style="display:flex;justify-content:space-between;gap:8px;">
+        <span>Mensagem <span style="font-weight:400;color:var(--texto-tenue);">(dá pra editar)</span></span>
+        <span id="personaDaPrevia" style="font-weight:400;color:var(--texto-tenue);"></span>
+      </div>
+      <textarea id="previaCobrancaTexto" class="previa-cobranca" rows="9" aria-label="Mensagem que vai pro WhatsApp"></textarea>
+      <div class="botoes-previa">
+        <button type="button" class="btn-backup" id="btnOutraVersao" onclick="outraVersaoCobranca()">Outra versão</button>
+        <button type="button" class="btn-backup primary" id="btnAbrirWhatsAppCobranca" onclick="abrirWhatsAppDaPrevia()">Abrir no WhatsApp</button>
+      </div>
+      <p style="font-size:11px;color:var(--texto-tenue);margin-top:8px;line-height:1.45;">Nada é enviado daqui: o WhatsApp abre com o texto pronto e quem toca em enviar é você.</p>
     </div>
   </div>
 
@@ -2858,16 +2923,38 @@
            "Dudu" que o campo livre deixou criar antes do cadastro existir. -->
       <div class="form-group">
         <label for="inputNomeContato">Nome</label>
-        <input type="text" id="inputNomeContato" placeholder="Ex: Dudu">
+        <input type="text" id="inputNomeContato" placeholder="Ex: Dudu" oninput="atualizarPalpiteGenero()">
         <p id="dicaNomeContato" style="color:var(--texto-fraco);font-size:11.5px;margin-top:7px;line-height:1.45;"></p>
       </div>
       <div class="form-group">
         <label for="inputTelefoneCobranca">Número com DDD <span style="color:var(--texto-tenue);" id="rotuloTelOpcional">(opcional)</span></label>
         <input type="tel" id="inputTelefoneCobranca" placeholder="(11) 98765-4321" inputmode="tel">
       </div>
-      <!-- O tom não se fixa mais aqui: é escolhido a cada cobrança, no modal que
-           abre na hora de mandar. -->
-      <p style="color:var(--texto-fraco);font-size:11.5px;margin-bottom:14px;line-height:1.4;">O tom da cobrança é escolhido na hora de mandar.</p>
+      <!-- Como a mensagem trata a pessoa. O gênero vem com um palpite pelo nome,
+           mas só vale depois que você salva (é a sua confirmação). -->
+      <div class="form-group">
+        <label for="inputApelidoContato">Como chamo <span style="color:var(--texto-tenue);">(opcional)</span></label>
+        <input type="text" id="inputApelidoContato" placeholder="Ex: Bernardão, Aninha" oninput="atualizarPalpiteGenero()">
+      </div>
+      <div class="form-group">
+        <span class="rotulo-opcao" style="display:block;">Gênero</span>
+        <div class="seletor-opcoes" id="seletorGeneroContato" role="group" aria-label="Gênero do contato">
+          <button type="button" data-valor="m" onclick="marcarOpcaoContato('seletorGeneroContato', 'm')">Masculino</button>
+          <button type="button" data-valor="f" onclick="marcarOpcaoContato('seletorGeneroContato', 'f')">Feminino</button>
+          <button type="button" data-valor="n" onclick="marcarOpcaoContato('seletorGeneroContato', 'n')">Não definir</button>
+        </div>
+        <p id="dicaGeneroContato" style="color:var(--texto-fraco);font-size:11.5px;margin-top:2px;line-height:1.45;"></p>
+      </div>
+      <div class="form-group">
+        <span class="rotulo-opcao" style="display:block;">Relação</span>
+        <div class="seletor-opcoes seletor-relacao" id="seletorRelacaoContato" role="group" aria-label="Relação com o contato">
+          <button type="button" data-valor="amigo" onclick="marcarOpcaoContato('seletorRelacaoContato', 'amigo')">Amigo(a)</button>
+          <button type="button" data-valor="familia" onclick="marcarOpcaoContato('seletorRelacaoContato', 'familia')">Família</button>
+          <button type="button" data-valor="colega" onclick="marcarOpcaoContato('seletorRelacaoContato', 'colega')">Colega de trabalho</button>
+          <button type="button" data-valor="outro" onclick="marcarOpcaoContato('seletorRelacaoContato', 'outro')">Outro</button>
+        </div>
+        <p style="color:var(--texto-fraco);font-size:11.5px;margin-top:2px;line-height:1.45;">Família não recebe Zoeira nem o assistente por sugestão; colega, um tom mais neutro. O tom é escolhido na hora de mandar.</p>
+      </div>
       <div style="display:flex;gap:10px;">
         <button type="button" class="btn-cancelar" style="flex:1;margin:0;" onclick="fecharModal('modalContatoCobranca')">Cancelar</button>
         <button type="button" class="btn-salvar" style="flex:1;margin:0;" id="btnSalvarContato" onclick="salvarContatoCobranca()">Salvar</button>
@@ -3630,9 +3717,12 @@
       return !!normalizarTelefone(telDoContato(nome));
     }
 
+    // Quatro tons. O app sugere um (pela escalada e pela relação), você escolhe.
     const TONS_COBRANCA = [
-      { id: 'zoeira', rotulo: '😂 Zoeira', dica: 'pros moleques' },
-      { id: 'neutro', rotulo: '😐 Neutro', dica: 'direto ao ponto' }
+      { id: 'leve',   rotulo: '🙂 Leve',   dica: 'gentil, sem pressão' },
+      { id: 'neutro', rotulo: '😐 Neutro', dica: 'direto ao ponto' },
+      { id: 'zoeira', rotulo: '😂 Zoeira', dica: 'pros amigos de zoeira' },
+      { id: 'firme',  rotulo: '🧾 Firme',  dica: 'sério, sem grosseria' }
     ];
 
     /* O wa.me exige só dígitos, com o código do país na frente. Aceita colar em
@@ -3978,9 +4068,42 @@
     const SVG_CADEADO_FECHADO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     const SVG_CADEADO_ABERTO = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.5-2.2"/></svg>';
 
+    /* Qual aba aparece no card "Ordem dos cards". Entra no seletor toda aba com
+       pelo menos dois cards ordenáveis (com um só, não há o que ordenar). */
+    const FIXO_NO_TOPO = {
+      abaFaturas: 'O card Resumo fica sempre no topo.',
+      abaGraficos: 'O período e o gráfico principal ficam sempre no topo.'
+    };
+    function abasComOrdem() {
+      return ORDEM_ABAS.filter(id => chavesCardsDaAba(id).length >= 2);
+    }
+    function abaDaOrdem() {
+      const abas = abasComOrdem();
+      return abas.includes(uiPrefs.abaOrdemCards) ? uiPrefs.abaOrdemCards : abas[0];
+    }
+    function escolherAbaDaOrdem(idAba) {
+      uiPrefs.abaOrdemCards = idAba;
+      salvarUiPrefs();
+      renderizarCardOrdem();
+    }
+    function renderizarCardOrdem() {
+      const seletor = document.getElementById('seletorAbaOrdem');
+      if (!seletor) return;
+      const atual = abaDaOrdem();
+      seletor.innerHTML = abasComOrdem().map(id => {
+        const bt = document.querySelector('.nav-tab[onclick*="' + id + '"] .rotulo-aba');
+        const rotulo = bt ? (bt.dataset.completo || bt.textContent) : id;
+        return `<button type="button" data-aba-ordem="${id}" aria-pressed="${id === atual}" onclick="escolherAbaDaOrdem('${id}')">${esc(rotulo)}</button>`;
+      }).join('');
+      document.getElementById('dicaOrdemCards').textContent = (FIXO_NO_TOPO[atual] || '')
+        + ' Arraste pelas listrinhas pra mudar a ordem dos outros, e desmarque o que você não usa pra ele sumir da aba (nada é apagado: marcou de novo, ele volta).';
+      renderizarOrdemCards(atual);
+    }
+
     function renderizarOrdemCards(idAba) {
-      const container = document.getElementById('ordemCards' + idAba.replace('aba', 'Aba'));
-      if (!container) return;
+      // a lista é uma só: desenha a aba pedida só se for a que está no seletor
+      const container = document.getElementById('ordemCardsLista');
+      if (!container || idAba !== abaDaOrdem()) return;
       // Mesmo filtro do aplicarOrdemCards: só entra card que existe NESTA aba hoje.
       // Sem isso, um card que mudou de aba (o Backup foi pra Ajustes) ficava de
       // fantasma na lista, ocupando linha e não reordenando nada.
@@ -7633,7 +7756,7 @@
     const SVG_OLHO_FECHADO = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--texto-fraco)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
     function atualizarIconesOlho() {
-      ['btnOlho', 'btnOlhoFaturas', 'btnOlhoGrupos', 'btnOlhoInvest'].forEach(id => {
+      ['btnOlho', 'btnOlhoFaturas', 'btnOlhoInvest'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = valoresOcultos ? SVG_OLHO_FECHADO : SVG_OLHO;
       });
@@ -7912,16 +8035,20 @@
        O tema é do aparelho, não do dado: quem usa o app em dois celulares pode
        ter um claro e outro escuro. Por isso fica no localStorage e não no
        backup — restaurar backup não muda a cara do app de quem restaurou. */
+    /* Dez temas, cinco escuros e cinco claros. A grade de Aparência mostra os
+       escuros na coluna da esquerda e os claros na da direita, na ordem daqui.
+       O id é o que fica salvo: trocar a ordem não muda o tema de ninguém. */
     const TEMAS = [
-      { id: 'escuro', nome: 'Escuro',  dica: 'o de sempre',      amostra: ['#121212', '#242424', '#4caf50'] },
-      { id: 'claro',  nome: 'Claro',   dica: 'pra luz do dia',   amostra: ['#f2f3f5', '#ffffff', '#2e8b3d'] },
-      { id: 'indigo', nome: 'Índigo',  dica: 'escuro azulado',   amostra: ['#131826', '#1c2436', '#4ec97c'] },
-      { id: 'sepia',  nome: 'Sépia',   dica: 'fundo quente',     amostra: ['#f4ece0', '#fdf8f0', '#3f7d33'] },
-      { id: 'floresta', nome: 'Floresta', dica: 'verde à noite',    amostra: ['#0f1a15', '#182a22', '#55d47c'] },
-      { id: 'papel',     nome: 'Papel',    dica: 'cinza-bege claro', amostra: ['#ecebe4', '#f8f7f2', '#3f6b2b'] },
-      { id: 'rosa',      nome: 'Rosa',     dica: 'suave e claro',    amostra: ['#faf0f2', '#fffbfc', '#c23e83'] },
-      { id: 'violeta',   nome: 'Violeta',  dica: 'roxo-azulado',     amostra: ['#17142b', '#221d3d', '#9d6ce8'] },
-      { id: 'fofo',      nome: 'Fofo',     dica: 'creme e lilás',    amostra: ['#fff5ec', '#fffdfa', '#8a63d2'] }
+      { id: 'escuro',   nome: 'Escuro',   dica: 'o de sempre',          escuro: true,  amostra: ['#121212', '#242424', '#4caf50'] },
+      { id: 'indigo',   nome: 'Índigo',   dica: 'escuro azulado',       escuro: true,  amostra: ['#131826', '#1c2436', '#4ec97c'] },
+      { id: 'floresta', nome: 'Floresta', dica: 'verde à noite',        escuro: true,  amostra: ['#0f1a15', '#182a22', '#55d47c'] },
+      { id: 'violeta',  nome: 'Violeta',  dica: 'roxo-azulado',         escuro: true,  amostra: ['#17142b', '#221d3d', '#9d6ce8'] },
+      { id: 'grafite',  nome: 'Grafite',  dica: 'chumbo com âmbar',     escuro: true,  amostra: ['#1b1d20', '#272a2e', '#e8a93c'] },
+      { id: 'claro',    nome: 'Claro',    dica: 'pra luz do dia',       escuro: false, amostra: ['#f2f3f5', '#ffffff', '#2e8b3d'] },
+      { id: 'sepia',    nome: 'Sépia',    dica: 'fundo quente',         escuro: false, amostra: ['#f4ece0', '#fdf8f0', '#3f7d33'] },
+      { id: 'papel',    nome: 'Papel',    dica: 'cinza-bege claro',     escuro: false, amostra: ['#ecebe4', '#f8f7f2', '#3f6b2b'] },
+      { id: 'rosa',     nome: 'Rosa',     dica: 'suave e claro',        escuro: false, amostra: ['#faf0f2', '#fffbfc', '#c23e83'] },
+      { id: 'fofo',     nome: 'Fofo',     dica: 'creme e lilás',        escuro: false, amostra: ['#fff5ec', '#fffdfa', '#8a63d2'] }
     ];
     const CHAVE_TEMA = 'meu_financeiro_tema';
 
@@ -7941,7 +8068,13 @@
       const box = document.getElementById('listaTemas');
       if (!box) return;
       const atual = temaAtual();
-      box.innerHTML = TEMAS.map(t => `
+      // linha a linha: um escuro à esquerda, um claro à direita
+      const escuros = TEMAS.filter(t => t.escuro), claros = TEMAS.filter(t => !t.escuro);
+      const emPares = [];
+      for (let i = 0; i < Math.max(escuros.length, claros.length); i++) {
+        emPares.push(escuros[i] || null, claros[i] || null);
+      }
+      box.innerHTML = emPares.map(t => !t ? '<span></span>' : `
         <button type="button" onclick="aplicarTema('${t.id}')"
           style="text-align:left;padding:10px;border-radius:12px;cursor:pointer;font-family:inherit;
                  background:var(--campo);border:1.5px solid ${t.id === atual ? 'var(--acento)' : 'var(--borda)'};">
@@ -7951,6 +8084,9 @@
           <span style="display:block;font-size:13px;font-weight:600;color:var(--texto);">${t.nome}${t.id === atual ? ' ✓' : ''}</span>
           <span style="display:block;font-size:11px;color:var(--texto-fraco);">${t.dica}</span>
         </button>`).join('');
+      // os dois títulos das colunas
+      const cab = document.getElementById('cabecalhoTemas');
+      if (cab) cab.innerHTML = '<span>Escuros</span><span>Claros</span>';
     }
 
     function somLigado() { return somLigadoPara('receita'); }
@@ -8444,13 +8580,22 @@
 
     // Mostra a frase pronta enquanto o nome é digitado: sem isso ninguém adivinha
     // se o campo pede o nome de quem cobra ou o de quem é cobrado.
+    // "do Léo" ou "da Ana": o assistente concorda com quem usa o app
+    function escolherMeuGenero(g) {
+      uiPrefs.meuGenero = g;
+      salvarUiPrefs();
+      atualizarExemploMeuNome();
+    }
+
     function atualizarExemploMeuNome() {
+      const sel = document.getElementById('seletorMeuGenero');
+      if (sel) {
+        const g = generoDoDono();
+        sel.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.valor === g ? 'true' : 'false'));
+      }
       const el = document.getElementById('exemploMeuNome');
       if (!el) return;
-      const nome = meuNome();
-      const feminino = /a$/i.test(nome) && nome !== 'o chefe';
-      const artigo = feminino ? 'da ' : (nome === 'o chefe' ? 'd' : 'do ');
-      el.textContent = `“Oi Dudu! Aqui é o assistente ${artigo}${nome}, cuido das contas ${feminino ? 'dela' : 'dele'}.”`;
+      el.textContent = `“Buona sera, Dudu. Aqui é o capanga ${doDono()}.”`;
     }
 
     function renderizarContatos() {
@@ -8529,6 +8674,11 @@
        saída passa por encerrarArraste(): uma aba esquecida em position:fixed
        ficaria colada na tela por cima de tudo. */
     let arraste = null;
+    /* RESPIRO ENTRE AS ABAS
+       A aba que sai e a que entra andavam coladas, card encostado em card. Agora
+       há sempre 24px entre as duas, no arraste, no encaixe e na troca por toque.
+       É o mesmo valor do padding lateral da .espiando (a sombra cabe ali). */
+    const RESPIRO_ABAS = 24;
 
     // Qual aba está a um passo da atual, com a volta ao começo depois da última
     function idAbaVizinha(passo) {
@@ -8564,11 +8714,11 @@
       // Visível ANTES de renderizar: com display:none qualquer medida de
       // largura dentro dos gráficos voltaria zero.
       entraEl.classList.add('espiando', 'arrastando');
-      entraEl.style.left = r.left / z + 'px';
-      entraEl.style.width = largura + 'px';
+      entraEl.style.left = (r.left / z - RESPIRO_ABAS) + 'px';
+      entraEl.style.width = (largura + 2 * RESPIRO_ABAS) + 'px';
       entraEl.style.top = topo + 'px';
       entraEl.style.maxHeight = (window.innerHeight / z - topo) + 'px';
-      entraEl.style.transform = 'translateX(' + (-sentido * largura) + 'px)';
+      entraEl.style.transform = 'translateX(' + (-sentido * (largura + RESPIRO_ABAS)) + 'px)';
       entraEl.style.opacity = '.55';
 
       // A vizinha entraria desatualizada se ninguém a montasse. É o mesmo
@@ -8592,7 +8742,7 @@
       arraste.dx = d;
       arraste.atualEl.style.transform = 'translateX(' + d + 'px)';
       arraste.atualEl.style.opacity = String(1 - fracao * 0.45);
-      arraste.entraEl.style.transform = 'translateX(' + (d - arraste.sentido * arraste.largura) + 'px)';
+      arraste.entraEl.style.transform = 'translateX(' + (d - arraste.sentido * (arraste.largura + RESPIRO_ABAS)) + 'px)';
       arraste.entraEl.style.opacity = String(0.55 + fracao * 0.45);
     }
 
@@ -8607,10 +8757,11 @@
       a.entraEl.classList.remove('arrastando');
       a.atualEl.classList.add('soltando');
       a.entraEl.classList.add('soltando');
-      const alvo = trocar ? a.sentido * a.largura : 0;
+      const passo = a.largura + RESPIRO_ABAS;
+      const alvo = trocar ? a.sentido * passo : 0;
       a.atualEl.style.transform = 'translateX(' + alvo + 'px)';
       a.atualEl.style.opacity = trocar ? '.4' : '1';
-      a.entraEl.style.transform = 'translateX(' + (alvo - a.sentido * a.largura) + 'px)';
+      a.entraEl.style.transform = 'translateX(' + (alvo - a.sentido * passo) + 'px)';
       a.entraEl.style.opacity = trocar ? '1' : '.55';
 
       setTimeout(() => {
@@ -8638,7 +8789,7 @@
       /* Tudo que rola sozinho pros lados fica de fora: a fileira de abas, as
          colunas dos gráficos, os chips, o trilho de meses. Importa mais agora
          que o arraste segura a rolagem — dentro de um desses o dedo é deles. */
-      toqueValido = e.touches.length === 1 && gestoAbasLigado() && !algumModalAberto() && !arraste
+      toqueValido = e.touches.length === 1 && gestoAbasLigado() && !algumModalAberto() && !arraste && !trocaPorToque
         && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas,'
           + ' .colunas, .chips-periodo, .faixa-meses, #chipsContasConsulta, #chipsFormasConsulta'));
       direcaoTravada = null;
@@ -8687,6 +8838,60 @@
       encerrarArraste(false);
     }, { passive: true });
 
+    /* TROCA POR TOQUE COM O MESMO DESLIZE DO ARRASTE
+       Antes, tocar no nome da aba só dava uma sacudidinha de 8px na aba nova.
+       Agora as duas andam juntas, com o mesmo respiro de 24px do arraste: a que
+       sai vira uma espiada (presa ao viewport, fora do fluxo) e a que entra já
+       é a aba ativa, só vindo de lado. A troca de .ativo continua imediata —
+       quem lê a aba ativa logo depois do toque já encontra a nova. */
+    let trocaPorToque = null;
+
+    function semMovimento() {
+      try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+    }
+
+    function prepararSaidaDaAba(el) {
+      const z = escalaDaTela();
+      const r = el.getBoundingClientRect();
+      const topo = Math.max(r.top, 0) / z;
+      const largura = (r.width || window.innerWidth) / z;
+      return { el, r, z, topo, largura };
+    }
+
+    function deslizarTrocaDeAba(s, entra, sentido) {
+      if (trocaPorToque) encerrarTrocaPorToque();
+      const passo = s.largura + RESPIRO_ABAS;
+      const sai = s.el;
+      sai.classList.add('espiando');
+      sai.style.left = (s.r.left / s.z - RESPIRO_ABAS) + 'px';
+      sai.style.width = (s.largura + 2 * RESPIRO_ABAS) + 'px';
+      sai.style.top = s.topo + 'px';
+      sai.style.maxHeight = (window.innerHeight / s.z - s.topo) + 'px';
+      sai.style.transform = 'translateX(0)';
+      entra.style.transform = 'translateX(' + (sentido * passo) + 'px)';
+      entra.style.opacity = '.55';
+      void entra.offsetWidth;   // fixa o ponto de partida antes de ligar a transição
+      sai.classList.add('trocando');
+      entra.classList.add('trocando');
+      sai.style.transform = 'translateX(' + (-sentido * passo) + 'px)';
+      sai.style.opacity = '.4';
+      entra.style.transform = 'translateX(0)';
+      entra.style.opacity = '1';
+      trocaPorToque = { sai, entra, timer: setTimeout(encerrarTrocaPorToque, 320) };
+    }
+
+    function encerrarTrocaPorToque() {
+      const t = trocaPorToque;
+      if (!t) return;
+      clearTimeout(t.timer);
+      trocaPorToque = null;
+      t.sai.classList.remove('espiando', 'trocando');
+      t.entra.classList.remove('trocando');
+      ['transform', 'opacity', 'left', 'top', 'width', 'maxHeight'].forEach(p => { t.sai.style[p] = ''; });
+      t.entra.style.transform = '';
+      t.entra.style.opacity = '';
+    }
+
     /* Monta o conteúdo de uma aba. Separado do mudarAba() porque o arraste
        precisa da aba vizinha pronta ANTES de ela aparecer na espiada. */
     function prepararAba(idAba) {
@@ -8695,7 +8900,7 @@
       if (idAba === 'abaInvestimentos') { renderizarInvestimentos(); renderizarConsorcios(); }
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
       if (idAba === 'abaConfig') {
-        renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos');
+        renderizarCardOrdem();
         renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); aplicarTravaDeZoom();
         atualizarInfoFotos();
       }
@@ -8714,18 +8919,19 @@
       const de = antes ? fileira.indexOf(antes.id) : -1;
       const para = fileira.indexOf(idAba);
 
+      const alvo = document.getElementById(idAba);
+      const animar = !semAnimacao && alvo && antes && de !== -1 && para !== -1 && de !== para && !semMovimento();
+      // a aba que sai é medida ainda no lugar, antes de perder o .ativo
+      const saida = animar ? prepararSaidaDaAba(antes) : null;
+
       document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('ativo', 'anim-esq', 'anim-dir'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('ativo'));
-      const alvo = document.getElementById(idAba);
       if (alvo) alvo.classList.add('ativo');
       if (elemento) elemento.classList.add('ativo');
 
       // Depois de um arraste a passagem já foi feita no dedo: repetir a
-      // animaçãozinha aqui daria um segundo salto, do nada.
-      if (!semAnimacao && alvo && de !== -1 && para !== -1 && de !== para) {
-        void alvo.offsetWidth;   // reinicia a animação
-        alvo.classList.add(para > de ? 'anim-esq' : 'anim-dir');
-      }
+      // animação aqui daria um segundo salto, do nada.
+      if (animar) deslizarTrocaDeAba(saida, alvo, para > de ? 1 : -1);
       // Trocar de aba com a página rolada deixava você no meio do conteúdo novo
       if (de !== para) window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -12898,11 +13104,9 @@
     function textoDoAcerto(nome) {
       const x = contaCruzada(nome);
       if (!x) return '';
+      // em prosa, como as cobranças: valor no meio da frase, nunca em lista
       const linhas = [
-        `Oi ${nome}! 👋 Olhei aqui e a gente se deve dos dois lados:`,
-        '',
-        `• Você comigo: ${fmtVal(x.meDeve)}`,
-        `• Eu com você: ${fmtVal(x.euDevo)}`,
+        `Oi, ${comoChamar(nome)}! 👋 Olhei aqui e a gente se deve dos dois lados: você comigo ${valorHumano(x.meDeve)} e eu com você ${valorHumano(x.euDevo)}.`,
         ''
       ];
       if (Math.abs(x.saldo) < 0.005) {
@@ -13090,113 +13294,9 @@
       abrirModalContatoCobranca(nome);
     }
 
-    function textoDaCobranca(nome, lista, devo, tomForcado) {
-      const hoje = obterDataBrasilia();
-      // dd/mm basta na mensagem: o ano só polui uma frase curta de WhatsApp
-      const dia = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
-
-      // Uma linha por compra, não por parcela: "Airbnb (venceu 05/08)" é o que a
-      // pessoa reconhece, "parcela 2/4" não.
-      const montarCompras = arr => {
-        const porCompra = {};
-        arr.forEach(c => {
-          const k = chaveCompra(c.lanc);
-          (porCompra[k] = porCompra[k] || { desc: descricaoBaseCompra(c.lanc.descricao), valor: 0, vence: null }).valor += c.valor;
-          const p = porCompra[k];
-          if (c.vence && (!p.vence || c.vence < p.vence)) p.vence = c.vence;
-        });
-        // Com uma compra só, o valor já foi dito na abertura — repetir soa de robô.
-        const compras = Object.values(porCompra);
-        const umaSo = compras.length === 1;
-        const itens = compras.map(p => {
-          const prazo = p.vence ? (p.vence < hoje ? ' (venceu ' + dia(p.vence) + ')' : ' (vence ' + dia(p.vence) + ')') : '';
-          return umaSo ? `${p.desc}${prazo}` : `${p.desc} — ${fmtVal(p.valor)}${prazo}`;
-        });
-        return { compras, umaSo, detalhe: itens.length > 1 ? ':\n\n• ' + itens.join('\n• ') : ' — ' + itens[0] };
-      };
-
-      const emAtraso = c => c.vence && c.vence < hoje;
-      const perto = c => c.vence && !emAtraso(c) && diasAte(c.vence) <= janelaAtencao();
-
-      if (devo) {
-        // Aqui é você quem deve: a conversa é sobre tudo que está com você, sem
-        // recorte de mês e sem chave Pix (quem manda a chave é o outro lado).
-        const total = lista.reduce((sm, c) => sm + c.valor, 0);
-        const situacao = tomDaCobranca(lista, emAtraso, perto);
-        const abertura = /atrasado/i.test(situacao)
-          ? `Oi ${nome}! 👋 Passou do combinado e os ${fmtVal(total)} ainda estão comigo`
-          : `Oi ${nome}! 👋 Passando pra acertar os ${fmtVal(total)} que estão comigo`;
-        return abertura + montarCompras(lista).detalhe + '\n\nMe manda a chave que eu já resolvo 🙏';
-      }
-
-      /* COBRAR UM MÊS DE CADA VEZ
-         Somar parcelas de meses à frente no mesmo pedido assusta à toa: chega um
-         valor alto e parece que tudo vence agora. A mensagem passa a falar só do
-         que vence neste mês — mais o que já venceu, que não pode sumir — e o que
-         sobra vira uma linha informativa no fim. */
-      const mesAtual = hoje.slice(0, 7);
-      let doMes = lista.filter(c => !c.vence || c.vence.slice(0, 7) <= mesAtual);
-      let futuro = lista.filter(c => c.vence && c.vence.slice(0, 7) > mesAtual);
-      // Só sobrou coisa de mês que vem (o deste mês já foi pago): cobra o mês
-      // mais próximo, senão a mensagem sairia sem valor e sem item nenhum.
-      if (!doMes.length && futuro.length) {
-        const primeiro = futuro.map(c => c.vence.slice(0, 7)).sort()[0];
-        doMes = futuro.filter(c => c.vence.slice(0, 7) === primeiro);
-        futuro = futuro.filter(c => c.vence.slice(0, 7) !== primeiro);
-      }
-
-      const total = doMes.reduce((sm, c) => sm + c.valor, 0);
-      const { compras, umaSo, detalhe } = montarCompras(doMes);
-      const situacao = tomDaCobranca(doMes, emAtraso, perto);
-      const proximoPrazo = doMes.map(c => c.vence).filter(Boolean).sort()[0];
-
-      const tom = tomForcado || tomDoContato(nome);
-      const ctx = {
-        nome, total: fmtVal(total), detalhe, compras, umaSo,
-        meu: meuNome(),
-        contas: contas.length,
-        adiada: Math.max(0, ...doMes.map(c => c.adiamentos || 0)),
-        quando: (() => {
-          if (!proximoPrazo) return 'em breve';
-          const f = diasAte(proximoPrazo);
-          return f === 0 ? 'hoje' : f === 1 ? 'amanhã' : 'em ' + f + ' dias';
-        })(),
-        diasFalta: proximoPrazo ? Math.max(0, diasAte(proximoPrazo)) : 0,
-        // "do Léo" x "da Ana": sem isso o assistente falava "d o Léo" ou errava o
-        // gênero de quem usa o app
-        artigo: /a$/i.test(meuNome()) && meuNome() !== 'o chefe' ? 'a ' : (meuNome() === 'o chefe' ? '' : 'o '),
-        ele: /a$/i.test(meuNome()) && meuNome() !== 'o chefe' ? 'ela' : 'ele'
-      };
-      // Quem já venceu tem dias de atraso; quem só foi adiado, não — e "venceram há
-      // 0 dias" é frase de robô quebrado. Um texto só cobre os dois casos.
-      const vencidas = doMes.filter(emAtraso);
-      const valorVencido = vencidas.reduce((sm, c) => sm + c.valor, 0);
-      ctx.vencido = fmtVal(valorVencido > 0 ? valorVencido : total);
-      ctx.desde = vencidas.length
-        ? 'vencidos há ' + Math.abs(diasAte(vencidas.map(c => c.vence).sort()[0])) + ' dias'
-        : 'com o prazo já adiado ' + ctx.adiada + ' vezes';
-
-      let texto = frasePronta(situacao, tom, ctx);
-
-      // O que fica pros próximos meses é informação, não cobrança: entra sempre
-      // em tom neutro, mesmo quando o resto da mensagem é zoeira.
-      const restante = futuro.reduce((sm, c) => sm + c.valor, 0);
-      if (restante > 0) {
-        texto += `\n\nDepois desse pagamento ainda ficam ${fmtVal(restante)} pros meses seguintes.`;
-      }
-
-      const pix = chavePix();
-      if (pix) texto += `\n\nPix (telefone): ${pix}`;
-      return texto;
-    }
-
     /* MENSAGENS COM PERSONALIDADE
-       Três tons por pessoa (definidos junto com o telefone) × três situações, e
-       três variações de cada, sorteadas pelo MÊS — assim a mesma pessoa não recebe
-       o mesmo texto duas vezes seguidas, e ninguém compara mensagens iguais.
-
-       Quem está atrasado não recebe mensagem "sua": recebe do ASSISTENTE, que é um
-       personagem. Tira o peso de você cobrar amigo e ainda é engraçado. */
+       Ver BANCO_COBRANCA e o motor logo abaixo. O nome de quem usa o app entra
+       quando o assistente se apresenta ("o capanga do Léo"). */
     function meuNome() {
       return (uiPrefs.meuNome || '').trim() || 'o chefe';
     }
@@ -13217,193 +13317,1221 @@
       salvarUiPrefs();
     }
 
-    /* O banco é dividido pelo QUANTO FALTA, não só por "vai vencer / venceu":
-       lembrete de uma semana tem outro peso que o do dia, e quem passou de duas
-       semanas merece o capanga. Cada balde tem os três tons, e o mês sorteia a
-       variação — a mesma pessoa não recebe a mesma frase duas vezes seguidas.
+    /* BANCO DE FRASES DA COBRANÇA
+       Cada mensagem é montada em partes: abertura + corpo + fecho (+ Pix), cada
+       uma sorteada do seu banco pela situação e pelo tom. São três situações —
+       combinar (sem prazo), lembrar (antes de vencer) e cobrar (venceu) — e
+       quatro tons: Leve, Neutro, Zoeira e Firme.
 
-       O personagem do zoeira é o CAPANGA de um agiota de brincadeira: cobra em
-       nome do "seu Léo", fala em juros absurdos e faz ameaças obviamente ridículas
-       (pastel, grupo da família, story) — nunca nada que soe como ameaça de
-       verdade. A graça está no exagero, não no medo. */
-    const FRASES_COBRANCA = {
-      // ---------- falta uma semana ou mais ----------
-      semana: {
-        zoeira: [
-          c => `Fala ${c.nome}! 👀 Passando pra avisar com carinho: faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nÉ só um aviso amigável. Por enquanto. 😌`,
-          c => `${c.nome}, meu chapa! O setor de cobrança d${c.artigo}${c.meu} me pediu pra "passar um recadinho gentil" 📋${c.detalhe}\n\n${c.total}, vencendo em ${c.diasFalta} dias. Tô sendo simpático agora, aproveita.`,
-          c => `Opa ${c.nome}! Marquei aqui na agenda: ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nAgenda bonita, caneta vermelha do lado. Só dizendo. ✍️`,
-          c => `${c.nome}! 🔔 Bota um alarme aí: em ${c.diasFalta} dias vencem ${c.total}${c.detalhe}\n\nAinda dá tempo de fingir que não viu essa mensagem. Mas eu vou mandar de novo. 😏`,
-          c => `Ô ${c.nome}, registrando com antecedência de gente organizada: ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nQuero começar o mês sem ressentimento. Ajuda um homem aí. 🙃`,
-          c => `${c.nome}! Isso aqui é só um "oi, eu existo": ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}\n\nDaqui a pouco esse tom de voz muda. Aproveita enquanto tá gostoso. 😌`,
-          c => `Fala ${c.nome}! Antes que eu esqueça (ou finja que esqueci): ${c.total} em ${c.diasFalta} dias${c.detalhe}\n\nTô fazendo média de bonzinho. Não dura muito. 👼`
+       CONCORDÂNCIA. Os marcadores trocam pelo gênero:
+         {o/a}  ou  {o/a/neutro}  → gênero do CONTATO
+         [do/da/de]               → gênero de quem usa o app (o dono)
+       Peça com marcador de duas opções não entra pra contato "Não definir":
+       assim a mensagem neutra nunca sai com um "querido" pela metade.
+
+       Peça com `se` só entra quando a condição vale (sexta-feira, começo de
+       mês, prazo adiado...). Cada tom × situação tem pelo menos 10 aberturas,
+       10 corpos e 8 fechos que valem em qualquer dia; as condicionais somam.
+
+       O que entra no `c` (montado em contextoDaMensagem):
+         c.n        como chamar (o apelido, se houver, senão o nome)
+         c.saud     Bom dia / Boa tarde / Boa noite (pela hora do aparelho)
+         c.valor    "R$ 140" (centavos só quando existem)
+         c.coisa    "do Gympass" / "do Airbnb e do Gympass"     (com artigo)
+         c.oCoisa   "o Gympass" / "o Airbnb e o Gympass"
+         c.oCoisaCap  o mesmo, com maiúscula
+         c.detalhe  " (R$ 200 do Airbnb e R$ 140 do Gympass)" quando são várias
+         c.prazo    "vence sexta" / "vencem sexta" / "venceu dia 13" (concorda com c.oCoisa)
+         c.prazoV   o mesmo no singular (quando o sujeito é o valor)
+         c.emQuando "na sexta" / "hoje" / "no dia 20"     c.praQuando "pra sexta" / "pro dia 20"
+         c.venceuHa "ontem" / "há 10 dias"   c.desdeDia "ontem" / "o dia 13"
+         c.diaPrazoDia "ontem" / "dia 13"    c.diasTxt "10 dias"
+         c.ate      "até sexta" (prazo que o Firme propõe)
+         c.esta / c.ta / c.ficou / c.deu / c.passa / c.venceu  verbos que concordam com c.oCoisa
+         c.quitado  "quitado" / "quitada" / "quitados" / "quitadas"
+         c.doDono   "do Léo" / "da Ana"     c.donoCap "Léo" (ou "O chefe")
+         c.sexta, c.inicioMes, c.adiada, c.familia, c.varias */
+    const se = (cond, t) => ({ se: cond, t });
+    const sexta = c => c.sexta;
+    const inicioMes = c => c.inicioMes;
+    const naoFamilia = c => !c.familia;
+
+    const BANCO_COBRANCA = {
+      leve: {
+        aberturas: [
+          c => `Oi, ${c.n}!`,
+          c => `${c.saud}, ${c.n}!`,
+          c => `Oi, ${c.n}, tudo bem?`,
+          c => `Olá, ${c.n}!`,
+          c => `${c.n}, tudo certo por aí?`,
+          c => `Oi, ${c.n}! Espero que esteja tudo bem.`,
+          c => `E aí, ${c.n}, como vão as coisas?`,
+          c => `Oi, ${c.n}! Como você está?`,
+          c => `${c.saud}! Tudo bem, ${c.n}?`,
+          c => `Oi, ${c.n}, {meu querido/minha querida}!`,
+          c => `Oi, oi, ${c.n}!`,
+          se(sexta, c => `Oi, ${c.n}! Sextou?`),
+          se(inicioMes, c => `${c.saud}, ${c.n}! Mês novo começando, né?`)
         ],
-        neutro: [
-          c => `Oi ${c.nome}. ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}.`,
-          c => `Oi ${c.nome}. Lembrete: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}.`,
-          c => `Oi ${c.nome}. Aviso antecipado: ${c.total} vencem em ${c.diasFalta} dias${c.detalhe}.`
-        ]
+        corpos: {
+          lembrete: [
+            c => `Passando só pra lembrar ${c.coisa}, ${c.valor}, que ${c.prazo}.`,
+            c => `Só um lembrete carinhoso: ${c.oCoisa} ${c.prazo}, ${c.valor}.`,
+            c => `Lembrando que ${c.prazoV} aquele valor ${c.coisa}, ${c.valor}.`,
+            c => `Vi aqui que ${c.oCoisa} ${c.prazo}. São ${c.valor}${c.detalhe}.`,
+            c => `${c.valor} ${c.coisa} ${c.prazoV}, tá? Só pra você se programar.`,
+            c => `Anotei aqui pra não esquecer: ${c.valor} ${c.coisa}, que ${c.prazoV}.`,
+            c => `Te mando isso só pra não passar batido: ${c.oCoisa}, ${c.valor}, ${c.prazo}.`,
+            c => `Queria só lembrar ${c.coisa}. O combinado foi ${c.praQuando}, ${c.valor}.`,
+            c => `Lembra ${c.coisa}? ${c.valor} ${c.praQuando}.`,
+            c => `Tô te lembrando com antecedência: ${c.valor} ${c.coisa} ${c.prazoV}${c.detalhe}.`,
+            se(c => c.diasFalta <= 3, c => `Daqui a pouquinho ${c.prazo} ${c.oCoisa}: ${c.valor}.`),
+            se(inicioMes, c => `Como o mês tá começando, já deixo o lembrete: ${c.valor} ${c.coisa}, que ${c.prazoV}.`),
+            se(sexta, c => `Só pra fechar a semana organizado: ${c.oCoisa} ${c.prazo}, ${c.valor}.`)
+          ],
+          atrasado: [
+            c => `Acho que passou batido: ${c.oCoisa} ${c.prazo}, ${c.valor}.`,
+            c => `Vi aqui que ${c.valor} ${c.coisa} ${c.prazoV} e ainda não caiu. Deve ter esquecido, né?`,
+            c => `Lembra ${c.coisa}? Já passou do combinado, ${c.valor}${c.detalhe}.`,
+            c => `Tô passando porque ${c.oCoisa} ${c.prazo} e ${c.ficou} em aberto: ${c.valor}.`,
+            c => `Só pra não ficar esquecido: ${c.valor} ${c.coisa}, que ${c.prazoV}.`,
+            c => `${c.valor} ${c.coisa} venceu ${c.venceuHa}. Quando der, me manda?`,
+            c => `Passou ${c.desdeDia} e ${c.oCoisa} ${c.ficou} pra trás: ${c.valor}.`,
+            c => `Tudo certo com ${c.oCoisa}? Os ${c.valor} ainda não chegaram por aqui.`,
+            c => `Sei que a correria é grande, mas ${c.oCoisa} ${c.prazo}: ${c.valor}.`,
+            c => `Ficou pendente um valorzinho ${c.coisa}: ${c.valor}, vencido ${c.venceuHa}.`,
+            se(inicioMes, c => `Começo de mês costuma ajudar, né? ${c.valor} ${c.coisa} ${c.prazoV}.`),
+            se(sexta, c => `Antes do fim de semana: ${c.valor} ${c.coisa} ${c.prazoV} e ainda ${c.esta} em aberto.`)
+          ],
+          combinar: [
+            c => `Passando pra gente combinar ${c.coisa}, ${c.valor}. Quando fica bom pra você?`,
+            c => `Lembra ${c.coisa}? Deu ${c.valor}. Me fala quando der pra acertar.`,
+            c => `Só pra deixar anotado: ${c.valor} ${c.coisa}. Sem pressa nenhuma.`,
+            c => `Fiz as contas ${c.coisa}: ficou ${c.valor}${c.detalhe}.`,
+            c => `Deixando registrado aqui: ${c.oCoisa} ${c.deu} ${c.valor}.`,
+            c => `Quando puder, a gente acerta ${c.oCoisa}: ${c.valor}.`,
+            c => `Te mando o valor ${c.coisa} pra gente não esquecer: ${c.valor}.`,
+            c => `Ficou ${c.valor} ${c.coisa}. Combina comigo um dia bom pra você?`,
+            c => `Pra não passar batido: ${c.valor} ${c.coisa}. Qual dia fica melhor pra você?`,
+            c => `Anotei aqui ${c.oCoisa}, ${c.valor}, pra gente acertar quando der.`,
+            se(inicioMes, c => `Começo de mês, então aproveito: ${c.valor} ${c.coisa}, quando der.`)
+          ]
+        },
+        fechos: {
+          lembrete: [
+            c => `Sem pressa, tá?`,
+            c => `Qualquer coisa, me avisa!`,
+            c => `Valeu!`,
+            c => `Se já tiver resolvido, desconsidera. 🙂`,
+            c => `Fico no aguardo, mas sem estresse.`,
+            c => `Abraço!`,
+            c => `Se precisar de mais uns dias, me fala.`,
+            c => `Tudo de bom pra você!`,
+            c => `Qualquer dúvida, é só chamar. 😊`,
+            se(sexta, c => `Bom fim de semana!`)
+          ],
+          atrasado: [
+            c => `Sem estresse, tá?`,
+            c => `Quando puder, me avisa.`,
+            c => `Se já mandou, desconsidera!`,
+            c => `Me fala se precisar de mais um tempinho.`,
+            c => `Fico no aguardo. 🙂`,
+            c => `Abraço!`,
+            c => `Valeu!`,
+            c => `Qualquer coisa, a gente conversa.`,
+            c => `Se ficar apertado, me fala que a gente combina.`
+          ],
+          combinar: [
+            c => `Sem pressa, tá?`,
+            c => `Qualquer coisa, me avisa!`,
+            c => `Valeu!`,
+            c => `Abraço!`,
+            c => `Me fala o que fica melhor pra você.`,
+            c => `Fico no aguardo, sem estresse.`,
+            c => `Tudo de bom! 🙂`,
+            c => `Qualquer dúvida, é só chamar.`,
+            se(sexta, c => `Bom fim de semana!`)
+          ]
+        }
       },
 
-      // ---------- faltam poucos dias ----------
-      dias: {
-        zoeira: [
-          c => `${c.nome}! ⏰ Faltam ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\nO relógio tá correndo e o meu chefe tá olhando pra planilha com cara feia. 👀`,
-          c => `Ô ${c.nome}, ${c.quando} vencem ${c.total}${c.detalhe}\n\nDepois disso eu começo a cobrar juros em pastel. E eu como muito pastel. 🥟`,
-          c => `Fala ${c.nome}! Aviso de ${c.diasFalta} dias: ${c.total}${c.detalhe}\n\nAinda tô na fase simpática do meu trabalho. Não me faz mudar de fase. 😇`,
-          c => `${c.nome}! 🚦 Sinal amarelo: ${c.quando} vencem ${c.total}${c.detalhe}\n\nDepois vira vermelho e eu não dirijo bem no vermelho. 🚗💨`,
-          c => `Ô ${c.nome}, a contagem regressiva começou: ${c.diasFalta} dias pros ${c.total}${c.detalhe}\n\n3... 2... você ainda tem tempo de me surpreender. 🎬`,
-          c => `${c.nome}! Deixando registrado que eu avisei bonito: ${c.total} ${c.quando}${c.detalhe}\n\nDepois não vem dizer que não teve aviso prévio. 🗒️`,
-          c => `Fala ${c.nome}! Faltam só ${c.diasFalta} dias e eu já tô ensaiando a cara de decepcionado${c.detalhe}\n\n${c.total}. Me poupa da atuação. 🎭`
+      neutro: {
+        aberturas: [
+          c => `Oi, ${c.n}.`,
+          c => `Olá, ${c.n}.`,
+          c => `${c.saud}, ${c.n}.`,
+          c => `Oi, ${c.n}, tudo bem?`,
+          c => `${c.n}, tudo bem?`,
+          c => `Oi, ${c.n}! Tudo certo?`,
+          c => `${c.saud}, ${c.n}, tudo bem?`,
+          c => `Olá, ${c.n}, como vai?`,
+          c => `Oi, ${c.n}, beleza?`,
+          c => `Oi, ${c.n}, passando rapidinho.`,
+          se(sexta, c => `${c.saud}, ${c.n}. Boa sexta!`)
         ],
-        neutro: [
-          c => `Oi ${c.nome}. ${c.total} vencem ${c.quando}${c.detalhe}.`,
-          c => `Oi ${c.nome}. Faltam ${c.diasFalta} dias: ${c.total}${c.detalhe}.`,
-          c => `Oi ${c.nome}. ${c.total} vencem em breve, ${c.quando}${c.detalhe}.`
-        ]
+        corpos: {
+          lembrete: [
+            c => `Lembrete: ${c.valor} ${c.coisa}, que ${c.prazoV}.`,
+            c => `${c.oCoisaCap} ${c.prazo}: ${c.valor}${c.detalhe}.`,
+            c => `Só confirmando: ${c.valor} ${c.coisa} ${c.prazoV}.`,
+            c => `O pagamento ${c.coisa}, ${c.valor}, ${c.prazoV}.`,
+            c => `Fica o aviso: ${c.prazoV} o valor de ${c.valor} ${c.coisa}.`,
+            c => `Passando pra lembrar que ${c.prazoV} o valor ${c.coisa}: ${c.valor}.`,
+            c => `${c.valor} ${c.coisa}, com vencimento ${c.emQuando}.`,
+            c => `Te lembrando ${c.coisa}: ${c.valor}, ${c.prazoV}.`,
+            c => `Anotado aqui: ${c.valor} ${c.coisa} ${c.prazoV}${c.detalhe}.`,
+            c => `Só pra deixar registrado: ${c.prazo} ${c.oCoisa}, no valor de ${c.valor}.`,
+            se(inicioMes, c => `Começo de mês, então já deixo o lembrete: ${c.valor} ${c.coisa} ${c.prazoV}.`)
+          ],
+          atrasado: [
+            c => `${c.oCoisaCap} ${c.prazo} e ${c.esta} em aberto: ${c.valor}.`,
+            c => `O valor de ${c.valor} ${c.coisa} ${c.prazoV} e ainda não foi pago.`,
+            c => `Ainda ${c.esta} em aberto ${c.oCoisa}: ${c.valor}, que ${c.prazo}.`,
+            c => `${c.valor} ${c.coisa} venceu ${c.venceuHa}. Consegue fazer hoje?`,
+            c => `Passando pra lembrar que ${c.valor} ${c.coisa} ${c.prazoV}. Pode me mandar?`,
+            c => `Tá pendente o pagamento ${c.coisa}: ${c.valor}, vencido ${c.venceuHa}.`,
+            c => `Sobre ${c.oCoisa}: ${c.valor}, ${c.prazo}. Ainda não recebi.`,
+            c => `Já passou do prazo ${c.coisa}. São ${c.valor}${c.detalhe}.`,
+            c => `Preciso receber os ${c.valor} ${c.coisa}, que ${c.prazoV}.`,
+            c => `${c.ficouCap} em aberto ${c.oCoisa}, ${c.valor}, desde ${c.desdeDia}.`,
+            se(inicioMes, c => `Mês novo, e ${c.valor} ${c.coisa} ainda em aberto desde ${c.desdeDia}.`)
+          ],
+          combinar: [
+            c => `${c.oCoisaCap} ${c.deu} ${c.valor}${c.detalhe}.`,
+            c => `Fica ${c.valor} ${c.coisa}. Quando você consegue pagar?`,
+            c => `Registrando: ${c.valor} ${c.coisa}.`,
+            c => `O valor ${c.coisa} ficou em ${c.valor}${c.detalhe}.`,
+            c => `Passando o valor ${c.coisa}: ${c.valor}.`,
+            c => `${c.valor} ${c.coisa}. Me diz uma data pra acertar.`,
+            c => `Pra combinar: ${c.valor} ${c.coisa}. Qual data fica boa?`,
+            c => `Somei aqui ${c.oCoisa}: ${c.valor}.`,
+            c => `${c.ficouCap} em aberto ${c.oCoisa}, ${c.valor}. Quando dá pra acertar?`,
+            c => `Te passo o valor ${c.coisa}: ${c.valor}. Me avisa quando fizer.`
+          ]
+        },
+        fechos: {
+          lembrete: [
+            c => `Valeu.`,
+            c => `Qualquer coisa, me avisa.`,
+            c => `Fico no aguardo.`,
+            c => `Abraço.`,
+            c => `Até mais.`,
+            c => `Se já pagou, desconsidere.`,
+            c => `Me avisa quando fizer, por favor.`,
+            c => `Agradeço desde já.`,
+            c => `Combinado?`,
+            c => `👍`
+          ],
+          atrasado: [
+            c => `Me avisa quando fizer.`,
+            c => `Fico no aguardo.`,
+            c => `Pode me confirmar?`,
+            c => `Valeu.`,
+            c => `Consegue ver isso hoje?`,
+            c => `Aguardo seu retorno.`,
+            c => `Se já pagou, me manda o comprovante, por favor.`,
+            c => `Agradeço.`,
+            c => `Até mais.`
+          ],
+          combinar: [
+            c => `Valeu.`,
+            c => `Fico no aguardo.`,
+            c => `Abraço.`,
+            c => `Até mais.`,
+            c => `Me avisa, por favor.`,
+            c => `Combinado?`,
+            c => `Agradeço.`,
+            c => `Qualquer coisa, me chama.`,
+            c => `👍`
+          ]
+        }
       },
 
-      // ---------- vence hoje ou amanhã ----------
-      hoje: {
-        zoeira: [
-          c => `${c.nome}. 🚨 É ${c.quando}. ${c.total}${c.detalhe}\n\nDepois da meia-noite eu viro outra pessoa. Uma pessoa com planilha. 📊`,
-          c => `Fala ${c.nome}! Dia D chegou: ${c.total} ${c.quando}${c.detalhe}\n\nPix hoje e a gente continua amigo. Amanhã eu já tenho que "seguir o protocolo" 🕴️`,
-          c => `${c.nome}, ${c.quando}! ⏳ ${c.total}${c.detalhe}\n\nTô com o dedo no botão de mandar o capanga. E o capanga sou eu mesmo, mas de mau humor. 😤`,
-          c => `${c.nome}! 🔴 AO VIVO: é ${c.quando} e ${c.total} ainda não caiu${c.detalhe}\n\nO placar tá 1x0 pro seu atraso. Empata esse jogo. ⚽`,
-          c => `Ô ${c.nome}, ${c.quando} é o último dia do meu bom humor de graça${c.detalhe}\n\n${c.total}. Amanhã cobro humor junto com o valor. 😏`,
-          c => `${c.nome}! Chegou o dia. ${c.total}, ${c.quando}${c.detalhe}\n\nMinha paciência hoje tá tipo bateria de celular velho: 100% até você piscar. 🔋`,
-          c => `Fala ${c.nome}, ${c.quando} é ${c.quando}${c.detalhe}\n\n${c.total}. Não vou fingir que não é sobre isso que eu tô mandando mensagem. 📲`
+      zoeira: {
+        aberturas: [
+          c => `Fala, ${c.n}! 👋`,
+          c => `E aí, ${c.n}, beleza? 😎`,
+          c => `${c.n}!! 🙌`,
+          c => `Ô ${c.n}, {sumido/sumida}! 😄`,
+          c => `Opa, ${c.n}! 👀`,
+          c => `Salve, ${c.n}! 🤙`,
+          c => `${c.saud}, ${c.n}! 👋`,
+          c => `Ei, ${c.n}! Tudo em paz? ✌️`,
+          c => `Alô, alô, ${c.n}! 📣`,
+          c => `${c.n}, {meu querido/minha querida}! 😁`,
+          c => `Grande ${c.n}! 💪`,
+          c => `Oi, ${c.n}! Tudo nos conformes? 😄`,
+          c => `${c.n}, bom te ver por aqui! 😁`,
+          se(sexta, c => `Sextou, ${c.n}! 🍻`),
+          se(inicioMes, c => `${c.n}, começo de mês, hein? 💸`)
         ],
-        neutro: [
-          c => `Oi ${c.nome}. ${c.total} vencem ${c.quando}${c.detalhe}.`,
-          c => `Oi ${c.nome}. Vence ${c.quando}: ${c.total}${c.detalhe}.`,
-          c => `Oi ${c.nome}. O prazo de ${c.total} é ${c.quando}${c.detalhe}.`
-        ]
+        corpos: {
+          lembrete: [
+            c => `Passando pra avisar que ${c.oCoisa} ${c.prazo}: ${c.valor}${c.detalhe}. Só um aviso amigável. Por enquanto. 😌`,
+            c => `Botei um alarme aqui: ${c.valor} ${c.coisa}, ${c.prazoV}. ⏰`,
+            c => `O relógio tá correndo: ${c.valor} ${c.coisa} ${c.prazoV}. ⏳`,
+            c => `Minha agenda apitou: ${c.valor} ${c.coisa}, que ${c.prazoV}. 📅`,
+            c => `Tô só lembrando, sem cobrar (ainda 😏): ${c.valor} ${c.coisa}, ${c.prazoV}.`,
+            c => `Lembrete oficial do departamento de memória: ${c.valor} ${c.coisa}, ${c.prazoV}. 🧠`,
+            c => `Lembra ${c.coisa}? Pois é, ${c.prazoV}. ${c.valor}. 😬`,
+            c => `Antes que eu esqueça (ou finja que esqueci): ${c.valor} ${c.coisa} ${c.prazoV}. 🙃`,
+            c => `Contagem regressiva ligada: ${c.oCoisa} ${c.prazo}, ${c.valor}. 🚀`,
+            c => `Sinal amarelo aceso: ${c.valor} ${c.coisa}, ${c.prazoV}. 🚦`,
+            se(inicioMes, c => `O salário já caiu? 👀 Porque ${c.valor} ${c.coisa} ${c.prazoV}.`),
+            se(sexta, c => `Sextou, mas antes do happy hour: ${c.valor} ${c.coisa} ${c.prazoV}. 🍺`)
+          ],
+          atrasado: [
+            c => `Faz ${c.diasTxt} que ${c.oCoisa} ${c.venceu} e os ${c.valor} ainda não chegaram. Bora resolver? 😅`,
+            c => `Os ${c.valor} ${c.coisa} estão mais atrasados que eu em reunião. ⏰`,
+            c => `Tem um valor aqui com saudade de você: ${c.valor} ${c.coisa}, vencido ${c.venceuHa}. 🥲`,
+            c => `Notícia urgente: ${c.oCoisa} ${c.prazo} e o Pix ainda não apareceu. 📰`,
+            c => `Minha planilha tá me olhando torto por causa ${c.coisa}: ${c.valor}, que ${c.prazoV}. 👀`,
+            c => `Fiquei sabendo que ${c.valor} ${c.coisa} ${c.prazoV}. Fonte confiável: [eu mesmo/eu mesma/eu]. 🕵️`,
+            c => `Os ${c.valor} ${c.coisa} mandaram avisar que tão perdidos por aí desde ${c.desdeDia}. 🧭`,
+            c => `Atraso detectado no radar: ${c.valor} ${c.coisa}, vencido ${c.venceuHa}. 📡`,
+            c => `Juros de amizade correndo desde ${c.desdeDia}: ${c.valor} ${c.coisa}. Aceito Pix ou pastel. 🥟`,
+            c => `Passou ${c.desdeDia} e nada ${c.coisa}: ${c.valor}. 😬`,
+            se(inicioMes, c => `O salário já caiu? 👀 Porque os ${c.valor} ${c.coisa} tão me esperando desde ${c.desdeDia}.`),
+            se(sexta, c => `Sextou! E sabe o que combina com sexta? Acertar os ${c.valor} ${c.coisa}. 🍻`)
+          ],
+          combinar: [
+            c => `Fiz as contas ${c.coisa} e deu ${c.valor}. A calculadora não mente. 🧮`,
+            c => `Registro oficial do caderninho: ${c.valor} ${c.coisa}. 📒`,
+            c => `Sem pressa nenhuma, só pra memória não falhar: ${c.valor} ${c.coisa}. 🧠`,
+            c => `Isso aqui é só um "oi, eu existo": ${c.valor} ${c.coisa}. 👻`,
+            c => `A planilha agradece: ${c.valor} ${c.coisa}, anotado. 📊`,
+            c => `Notificação amigável: ${c.oCoisa} ${c.deu} ${c.valor}${c.detalhe}. 🔔`,
+            c => `Zero estresse, só rascunhando: ${c.valor} ${c.coisa}. ✍️`,
+            c => `Arquivo morto não, arquivo vivo: ${c.valor} ${c.coisa}. 😅`,
+            c => `Combinando pra não virar lenda: ${c.valor} ${c.coisa}. 🐉`,
+            c => `Pra gente não esquecer: ${c.valor} ${c.coisa}. Combinado? 🤝`,
+            se(inicioMes, c => `Começo de mês é bom pra acertar as contas, hein? ${c.valor} ${c.coisa}. 💸`)
+          ]
+        },
+        fechos: {
+          lembrete: [
+            c => `Tô de olho, hein! 👀`,
+            c => `Conto contigo! 🤝`,
+            c => `Bora não deixar passar! 💪`,
+            c => `Depois não diz que eu não avisei. 😜`,
+            c => `Valeu, {parceiro/parceira}! 🤙`,
+            c => `Fico na torcida! 🙏`,
+            c => `Até mais, e não some! 😄`,
+            c => `Mais tarde eu volto a ser chato. Brincadeira. Ou não. 😏`,
+            c => `Tamo junto! ✊`
+          ],
+          atrasado: [
+            c => `Tô no aguardo, hein! 👀`,
+            c => `Bora resolver? 🤝`,
+            c => `Paga aí que eu volto a ser legal. 😎`,
+            c => `Prometo não mandar áudio de 3 minutos. Ainda. 🎙️`,
+            c => `Fico na torcida! 🙏`,
+            se(naoFamilia, c => `Não me faz chamar o capanga. 🕴️`),
+            c => `Valeu, {parceiro/parceira}! 🤙`,
+            c => `Tamo junto (mas paga). ✊`,
+            c => `Beijo no coração e no bolso. 💸`,
+            c => `Me dá essa alegria hoje? 🥹`,
+            c => `Conto contigo! 💪`
+          ],
+          combinar: [
+            c => `Tamo junto! ✊`,
+            c => `Valeu, {parceiro/parceira}! 🤙`,
+            c => `Quando der, me dá um toque! 📲`,
+            c => `Sem pressa, mas com memória. 🧠`,
+            c => `Fechou? 🤝`,
+            c => `Até mais! 😄`,
+            c => `Conto contigo! 💪`,
+            c => `A planilha manda um abraço. 📊`,
+            c => `Beijo e me avisa! 😘`
+          ]
+        }
       },
 
-      /* ---------- atrasado: entra o ASSISTENTE ----------
-         Quem está atrasado não recebe mensagem sua. Recebe do personagem — tira o
-         peso de cobrar amigo e a piada faz o trabalho pesado. */
-      atrasado: {
-        zoeira: [
-          c => `Buona sera, ${c.nome}. 🤌\n\nAqui é o capanga d${c.artigo}${c.meu}. Cuido das ${c.contas} contas ${c.ele === "ela" ? "dela" : "dele"}, e hoje de manhã o seu nome apareceu na minha lista${c.detalhe}\n\n${c.vencido}, ${c.desde}. Nada pessoal — é só negócio. Resolve hoje e a gente esquece que essa conversa aconteceu. 🕴️`,
-          c => `${c.nome}. 🕴️\n\nO assistente d${c.artigo}${c.meu} falando. Eu tenho uma planilha. Ela é muito organizada. E o seu nome tá em vermelho nela${c.detalhe}\n\n${c.vencido}, ${c.desde}. Vamo resolver como pessoas civilizadas? 🤝`,
-          c => `Ei, caloteiro! 😤 (é o capanga falando — ${c.meu} é gente boa demais pra te cobrar)\n\n${c.vencido} parados, ${c.desde}${c.detalhe}\n\nFui contratado justamente pra essas horas. Paga aí que eu volto a ser simpático. 🥟`,
-          c => `Alô ${c.nome}. Departamento de cobrança d${c.artigo}${c.meu}, setor "amigos que esquecem". 📋${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros aqui são cobrados em cerveja, e a taxa tá subindo. 🍺`,
-          c => `${c.nome}, meu caro. 🤌 Sou o braço direito d${c.artigo}${c.meu} — e também o esquerdo, porque a folha tá apertada${c.detalhe}\n\n${c.vencido}, ${c.desde}. Me poupa de ter que aparecer aí com essa cara de sério.`,
-          c => `${c.nome}, aqui é o capanga d${c.artigo}${c.meu} de novo. 🕶️\n\n${c.vencido} em aberto, ${c.desde}${c.detalhe}\n\nJá liguei pro seu chefe. Brincadeira. Mas anotei o número. 📓`,
-          c => `Escuta, ${c.nome}. O relatório desta semana chegou na minha mesa com o seu nome sublinhado três vezes${c.detalhe}\n\n${c.vencido}, ${c.desde}. Sublinhado é sério aqui na empresa d${c.artigo}${c.meu}. 🖍️`,
-          c => `${c.nome}, vim em nome d${c.artigo}${c.meu} e da paciência que já era pouca${c.detalhe}\n\n${c.vencido}, ${c.desde}. Meu próximo passo profissional é passar a falar em MAIÚSCULAS. Não me obriga. 🔠`
+      firme: {
+        aberturas: [
+          c => `Oi, ${c.n}.`,
+          c => `Olá, ${c.n}.`,
+          c => `${c.saud}, ${c.n}.`,
+          c => `${c.n}, tudo bem?`,
+          c => `Oi, ${c.n}, tudo bem?`,
+          c => `Oi, ${c.n}. Preciso falar com você sobre um pagamento.`,
+          c => `Olá, ${c.n}, espero que esteja bem.`,
+          c => `${c.saud}, ${c.n}, tudo certo?`,
+          c => `Oi, ${c.n}, uma coisa rápida.`,
+          c => `${c.n}, passando pra alinhar uma coisa.`
         ],
-        neutro: [
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}. ${c.vencido} em aberto, ${c.desde}${c.detalhe}.`,
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu} novamente. ${c.vencido} em aberto, ${c.desde}${c.detalhe}.`,
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}: ${c.vencido} seguem em aberto, ${c.desde}${c.detalhe}.`
+        corpos: {
+          lembrete: [
+            c => `O valor de ${c.valor} ${c.coisa} ${c.prazoV}.`,
+            c => `${c.oCoisaCap} ${c.prazo}, no valor de ${c.valor}${c.detalhe}. Conto com o pagamento até lá.`,
+            c => `Lembrando que ${c.prazoV} o pagamento de ${c.valor} ${c.coisa}.`,
+            c => `O combinado é ${c.valor} ${c.coisa} ${c.praQuando}.`,
+            c => `Preciso que o valor de ${c.valor} ${c.coisa} seja pago ${c.emQuando}.`,
+            c => `Fica registrado: ${c.valor} ${c.coisa}, com vencimento ${c.emQuando}.`,
+            c => `Estou contando com os ${c.valor} ${c.coisa} ${c.emQuando}.`,
+            c => `O pagamento ${c.coisa} (${c.valor}) ${c.prazoV}. Por favor, não deixa passar.`,
+            c => `Só confirmando o prazo: ${c.valor} ${c.coisa}, que ${c.prazoV}.`,
+            c => `Aviso com antecedência: ${c.valor} ${c.coisa} ${c.prazoV}.`,
+            se(c => c.adiada >= 1, c => `${c.adiadaTxt}. O novo vencimento ${c.coisa}, ${c.valor}, é ${c.emQuando}, e preciso que ele seja cumprido.`)
+          ],
+          atrasado: [
+            c => `O valor de ${c.valor} ${c.coisa} venceu ${c.diaPrazoDia} e continua em aberto. Consegue acertar ${c.ate}?`,
+            c => `${c.oCoisaCap} ${c.prazo} e ainda não recebi os ${c.valor}. Preciso que isso seja resolvido ${c.ate}.`,
+            se(c => c.nivel >= 1, c => `Estou cobrando de novo os ${c.valor} ${c.coisa}, vencidos ${c.venceuHa}. Peço que acerte ${c.ate}.`),
+            c => `Os ${c.valor} ${c.coisa} venceram ${c.venceuHa}. Peço que você acerte ${c.ate}.`,
+            c => `Os ${c.valor} ${c.coisa} estão em atraso desde ${c.desdeDia}. Preciso de uma data pra receber.`,
+            c => `Já são ${c.diasTxt} de atraso nos ${c.valor} ${c.coisa}. Me diz quando você consegue pagar.`,
+            c => `O pagamento ${c.coisa} (${c.valor}) está vencido ${c.venceuHa}. Conto com isso ${c.ate}.`,
+            c => `Preciso receber os ${c.valor} ${c.coisa}. O prazo era ${c.diaPrazoDia}.`,
+            c => `Ainda consta em aberto o valor de ${c.valor} ${c.coisa}, vencido ${c.venceuHa}.`,
+            c => `Não recebi os ${c.valor} ${c.coisa}, que ${c.prazoV}. Pode me pagar ${c.ate}?`,
+            c => `Sobre ${c.oCoisa}: ${c.valor}, vencido ${c.venceuHa}. Preciso que você acerte ${c.ate}.`,
+            se(c => c.adiada >= 1, c => `${c.adiadaTxt}, e os ${c.valor} ${c.coisa} seguem em aberto. Preciso de uma data firme.`)
+          ],
+          combinar: [
+            c => `O valor ${c.coisa} ficou em ${c.valor}. Preciso que a gente combine uma data.`,
+            c => `${c.oCoisaCap} ${c.deu} ${c.valor}${c.detalhe}. Quando você consegue pagar?`,
+            c => `Registro o valor de ${c.valor} ${c.coisa}. Me passa uma data.`,
+            c => `Preciso combinar com você o pagamento de ${c.valor} ${c.coisa}.`,
+            c => `Os ${c.valor} ${c.coisa} estão em aberto. Qual data você consegue?`,
+            c => `Sobre ${c.oCoisa}: ${c.valor}. Vamos definir uma data pra acertar.`,
+            c => `Fica ${c.valor} ${c.coisa}. Preciso que você me diga quando paga.`,
+            c => `Deixo registrado: ${c.valor} ${c.coisa}, a combinar.`,
+            c => `Te passo o valor ${c.coisa}: ${c.valor}. Me confirma a data do pagamento.`,
+            c => `O valor de ${c.valor} ${c.coisa} precisa ser acertado. Qual data fica boa?`
+          ]
+        },
+        fechos: {
+          lembrete: [
+            c => `Agradeço.`,
+            c => `Conto com você.`,
+            c => `Me confirma, por favor.`,
+            c => `Aguardo.`,
+            c => `Até lá.`,
+            c => `Qualquer imprevisto, me avisa antes.`,
+            c => `Por favor, me confirma quando fizer.`,
+            c => `Fico no aguardo da confirmação.`,
+            c => `Combinado assim?`
+          ],
+          atrasado: [
+            c => `Agradeço.`,
+            c => `Aguardo seu retorno.`,
+            c => `Me confirma, por favor.`,
+            c => `Conto com você.`,
+            c => `Fico no aguardo.`,
+            c => `Por favor, me responde.`,
+            c => `[Obrigado/Obrigada/Agradeço] pela atenção.`,
+            c => `Se tiver algum problema, me fala pra gente combinar.`,
+            c => `Aguardo a confirmação do pagamento.`
+          ],
+          combinar: [
+            c => `Agradeço.`,
+            c => `Aguardo seu retorno.`,
+            c => `Me confirma, por favor.`,
+            c => `Conto com você.`,
+            c => `Fico no aguardo.`,
+            c => `Me responde quando puder.`,
+            c => `[Obrigado/Obrigada/Agradeço] pela atenção.`,
+            c => `Combinado assim?`
+          ]
+        }
+      }
+    };
+
+    /* O ASSISTENTE: personagens da Zoeira pra quem está atrasado. Quem fala não
+       é você: é alguém que trabalha "pra você". O exagero é a piada — nenhuma
+       ameaça soa como ameaça de verdade. Só entra no tom Zoeira, com a
+       cobrança vencida, e nunca sozinho pra Família. */
+    const PERSONAS_COBRANCA = {
+      capanga: {
+        nome: 'Capanga',
+        aberturas: [
+          c => `Buona sera, ${c.n}. 🤌 Aqui é o capanga ${c.doDono}.`,
+          c => `${c.n}. 🕴️ O assistente ${c.doDono} falando.`,
+          c => `Alô, ${c.n}. Departamento de cobrança ${c.doDono}, setor "amigos que esquecem". 📋`,
+          c => `${c.n}, {meu caro/minha cara}. 🤌 Sou o braço direito ${c.doDono}.`,
+          c => `Escuta, ${c.n}. 🕶️ Quem fala é o capanga ${c.doDono}.`,
+          c => `${c.saud}, ${c.n}. 🕴️ Vim em nome ${c.doDono}.`,
+          c => `Ei, ${c.n}. 🤌 ${c.donoCap} me mandou ter uma conversinha com você.`,
+          c => `${c.n}, tudo bem? 🕴️ ${c.donoCap} é gente boa demais pra cobrar, então mandou eu.`,
+          c => `Fala, ${c.n}. 🤌 O assistente ${c.doDono} na linha.`,
+          c => `${c.n}. 🕴️ Sou eu de novo, o capanga ${c.doDono}.`,
+          c => `Psiu, ${c.n}. 🕶️ Tenho um recado ${c.doDono}.`
+        ],
+        corpos: [
+          c => `Hoje de manhã o seu nome apareceu na minha lista: ${c.valor} ${c.coisa}, vencido ${c.venceuHa}. Nada pessoal, é só negócio.`,
+          c => `Eu tenho uma planilha. Ela é muito organizada. E o seu nome tá em vermelho nela: ${c.valor} ${c.coisa}, desde ${c.desdeDia}.`,
+          c => `Os ${c.valor} ${c.coisa} estão parados desde ${c.desdeDia}. Os juros aqui são cobrados em pastel, e a taxa tá subindo. 🥟`,
+          c => `O relatório da semana chegou na minha mesa com o seu nome sublinhado três vezes. Motivo: ${c.valor} ${c.coisa}, que ${c.prazoV}. 🖍️`,
+          c => `Faz ${c.diasTxt} que ${c.oCoisa} ${c.venceu} e o Pix não apareceu. Chefe triste me dá trabalho.`,
+          c => `Vim tratar de um assunto delicado: ${c.valor} ${c.coisa}. Venceu ${c.venceuHa}, e eu não gosto de assunto pendurado.`,
+          c => `Seu caso subiu pro meu supervisor. O supervisor sou eu de óculos. 🤓 ${c.valor} ${c.coisa}, desde ${c.desdeDia}.`,
+          c => `Já fui simpático, já fui paciente. Agora tô na fase de perguntar nos seus stories: "e os ${c.valor} ${c.coisa}?"`,
+          c => `Resolve hoje os ${c.valor} ${c.coisa} e a gente esquece que essa conversa aconteceu.`,
+          c => `Anotei o seu nome na caderneta: ${c.valor} ${c.coisa}, vencido ${c.venceuHa}. A caderneta não esquece. 📓`
+        ],
+        fechos: [
+          c => `Nada pessoal. 🕴️`,
+          c => `Paga aí que eu volto a ser simpático. 😎`,
+          c => `Vamo resolver como pessoas civilizadas? 🤝`,
+          c => `Me poupa de ter que aparecer aí com essa cara de sério. 😐`,
+          c => `Próximo passo: áudio de 3 minutos. Às 6h. 🎙️`,
+          c => `Se não resolver, eu te adiciono no grupo da família ${c.doDono}. Lá tem corrente de bom dia. 📿`,
+          c => `O chefe agradece. Eu também. 🤌`,
+          c => `Fico no aguardo. Com a planilha aberta. 📊`,
+          c => `Juros em pastel não se negociam. 🥟`
         ]
       },
-
-      /* ---------- muito atrasado: o capanga perde a paciência ----------
-         Passou de duas semanas, ou o prazo já foi adiado duas vezes. As ameaças
-         são absurdas de propósito: o exagero é a piada. */
-      muitoAtrasado: {
-        zoeira: [
-          c => `${c.nome}. 🕴️🕴️\n\nAgora somos dois. Eu e a planilha${c.detalhe}\n\n${c.vencido}, ${c.desde}. Se não resolver, eu vou ser obrigado a tomar a medida extrema: te adicionar no grupo da família d${c.artigo}${c.meu}. Lá tem corrente de bom dia. Todo dia. 📿`,
-          c => `Escuta aqui, ${c.nome}. 🤌\n\n${c.vencido}, ${c.desde}. Eu já fui simpático, já fui paciente, e agora tô na fase em que eu apareço no seu story respondendo "e o dinheiro?" em todos${c.detalhe}\n\nNão me obriga. Eu tenho tempo livre. ⏰`,
-          c => `${c.nome}, o seu caso subiu pro meu supervisor. O supervisor sou eu de óculos. 🤓${c.detalhe}\n\n${c.vencido}, ${c.desde}. Os juros já viraram: um pastel por semana. Você já me deve uma feira inteira. 🥟🥟🥟`,
-          c => `ÚLTIMO AVISO, ${c.nome}. 🚨 (o penúltimo também era o último, mas enfim)\n\n${c.vencido}, ${c.desde}${c.detalhe}\n\nPróximo passo é eu contar pra sua mãe. E eu tenho o número dela. 📞`,
-          c => `${c.nome}, meu velho amigo. 🕴️\n\nD${c.artigo}${c.meu} me disse pra "ser gentil". Eu disse que ia tentar${c.detalhe}\n\n${c.vencido}, ${c.desde}. Tentei. Agora vou começar a mandar áudio de 3 minutos. Todo dia. Às 6h. 🎙️`,
-          c => `${c.nome}. 📢\n\nConvoquei uma reunião de emergência só sobre você. Eu, eu mesmo e a calculadora${c.detalhe}\n\n${c.vencido}, ${c.desde}. A calculadora votou a favor de te ligar. Eu segurei ela.`,
-          c => `${c.nome}, isso já virou lenda urbana aqui n${c.artigo}${c.meu}. "Aquele que não paga"${c.detalhe}\n\n${c.vencido}, ${c.desde}. Tô pensando em fazer um documentário. Netflix, se você tiver. 🍿`,
-          c => `${c.nome}. 🥷 Ativando o plano B: comentário público e bem-humorado em algum grupo que a gente tem em comum${c.detalhe}\n\n${c.vencido}, ${c.desde}. Só tô avisando por educação. A ameaça é real na parte de "educação".`
+      secretaria: {
+        nome: 'Secretária',
+        aberturas: [
+          c => `${c.saud}, ${c.n}. Aqui é a secretária ${c.doDono}. 📋`,
+          c => `Oi, ${c.n}. Falo do escritório ${c.doDono}, setor financeiro. 🗂️`,
+          c => `${c.n}, aqui é a secretária ${c.doDono}. Tem um minutinho? Ótimo. ⏱️`,
+          c => `Olá, ${c.n}. Secretária ${c.doDono} falando, com a agenda aberta na sua página. 📒`,
+          c => `${c.n}? Secretária ${c.doDono}. Não desliga, é rapidinho. ☎️`,
+          c => `${c.n}, sou a secretária ${c.doDono}, e eu detesto pendência. 📌`,
+          c => `${c.saud}! ${c.n}, certo? Aqui é a secretária ${c.doDono}. 🖊️`,
+          c => `Oi, ${c.n}. A secretária ${c.doDono} de novo. Insistir é meu trabalho. 😌`,
+          c => `${c.n}, a agenda ${c.doDono} passa por mim. E a sua pendência também. 📆`,
+          c => `Alô, ${c.n}? Secretária ${c.doDono}, ramal da cobrança. 📞`
         ],
-        neutro: [
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}. ${c.vencido} em aberto, ${c.desde}. Já são algumas tentativas sem retorno${c.detalhe}.`,
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}. ${c.vencido} seguem em aberto, ${c.desde}${c.detalhe}. Preciso de um retorno.`,
-          c => `Olá ${c.nome}. Assistente d${c.artigo}${c.meu}, retomando: ${c.vencido} em aberto, ${c.desde}${c.detalhe}.`
+        corpos: [
+          c => `Consta aqui no sistema: ${c.valor} ${c.coisa}, vencido ${c.venceuHa}. Preciso dar baixa nisso hoje.`,
+          c => `Estou organizando as pendências da semana e a sua é a primeira da lista: ${c.valor} ${c.coisa}.`,
+          c => `Seu protocolo é o ${c.protocolo}. Assunto: ${c.valor} ${c.coisa}, em aberto desde ${c.desdeDia}.`,
+          c => `Já anotei, grifei e colei post-it: ${c.valor} ${c.coisa}, que ${c.prazoV}. 🟨`,
+          c => `${c.donoCap} está em reunião, então eu mesma estou cuidando do seu caso: ${c.valor} ${c.coisa}.`,
+          c => `Preciso fechar o caixa e falta só você: ${c.valor} ${c.coisa}, vencido ${c.venceuHa}.`,
+          c => `Tenho aqui um lembrete com o seu nome, sublinhado em vermelho: ${c.valor} ${c.coisa}. 🖍️`,
+          c => `A planilha ${c.doDono} não fecha sem os ${c.valor} ${c.coisa}. E eu não saio daqui enquanto ela não fechar.`,
+          c => `Por favor, regularize os ${c.valor} ${c.coisa}. O prazo era ${c.diaPrazoDia}. Sim, eu anotei.`,
+          c => `Vou ser objetiva: ${c.valor} ${c.coisa}, desde ${c.desdeDia}. Meu café já esfriou esperando. ☕`
+        ],
+        fechos: [
+          c => `Aguardo o comprovante. 🧾`,
+          c => `Obrigada, e tenha um ótimo dia.`,
+          c => `Fico no aguardo. Com a caneta na mão. 🖊️`,
+          c => `Posso contar com você ainda hoje?`,
+          c => `Não me faça ligar de novo. ☎️`,
+          c => `Pode mandar o Pix que eu já dou baixa. ✅`,
+          c => `Grata pela atenção. 📋`,
+          c => `Minha agenda e eu agradecemos. 📆`
         ]
       },
-
-      tranquilo: {
-        zoeira: [
-          c => `Fala ${c.nome}! Nada urgente, só registrando aqui os ${c.total} pra memória não falhar 😅${c.detalhe}`,
-          c => `${c.nome}! Passando pra alinhar os ${c.total}${c.detalhe}\n\nTá tranquilo, é só pra deixar combinado 👊`,
-          c => `Opa ${c.nome}, tudo certo? Só pra deixar anotado: ${c.total}${c.detalhe}\n\nA planilha agradece. 📋`,
-          c => `${c.nome}! Isso aqui é arquivo morto, só não quero perder o fio: ${c.total}${c.detalhe}\n\nSem pressa nenhuma. Minha memória que é ruim. 🧠`,
-          c => `Ô ${c.nome}, deixando anotado no caderninho mental: ${c.total}${c.detalhe}\n\nCaderninho mental furado, mas anotado. 📝`,
-          c => `${c.nome}! Zero estresse, só rascunhando aqui: ${c.total}${c.detalhe}\n\nQuando bater vontade, resolve. Ou quando eu perguntar de novo. 😏`,
-          c => `Fala ${c.nome}, deixa eu só passar isso pro papel antes que eu esqueça de vez: ${c.total}${c.detalhe}\n\nNão tem pressa, só existência. 🫠`
+      narrador: {
+        nome: 'Narrador',
+        aberturas: [
+          c => `Atenção, ${c.n}! 📣 Aqui é o narrador oficial ${c.doDono}!`,
+          c => `É COM VOCÊ, ${c.nMaiusc}! ⚽`,
+          c => `{Olha ele/Olha ela/Olha só} na área: ${c.n}! ⚽`,
+          c => `${c.saud}, torcida! E ${c.saudMin} pra você também, ${c.n}! 🎙️`,
+          c => `Começa o jogo, ${c.n}! 🏟️`,
+          c => `Alô, alô, ${c.n}! Narrador ${c.doDono} na transmissão! 📻`,
+          c => `${c.n}, segura essa! 🎙️`,
+          c => `Tá no ar, ${c.n}! 📺`,
+          c => `Pega a visão, ${c.n}! 🎙️`,
+          c => `E o placar é... ${c.n}, presta atenção! 🏆`
         ],
-        neutro: [
-          c => `Oi ${c.nome}. ${c.total} em aberto${c.detalhe}.`,
-          c => `Oi ${c.nome}. Registrando: ${c.total} em aberto${c.detalhe}.`,
-          c => `Oi ${c.nome}. Anotado: ${c.total} em aberto${c.detalhe}.`
+        corpos: [
+          c => `Faltam só os ${c.valor} ${c.coisa} pra fechar o placar! O jogo tá parado desde ${c.desdeDia}! ⏱️`,
+          c => `${c.oCoisaCap} ${c.prazo} e a bola tá com você! Os ${c.valor} ainda não entraram! ⚽`,
+          c => `Placar: a dívida ${c.coisa} ganha por ${c.valor} a zero, e já são ${c.diasTxt} de jogo! 🏟️`,
+          c => `Que fase! ${c.diasTxt} de acréscimo e os ${c.valor} ${c.coisa} ainda não balançaram a rede! 🥅`,
+          c => `Vai pra cobrança! Os ${c.valor} ${c.coisa}, vencidos ${c.venceuHa}! 🎯`,
+          c => `O VAR confirmou: ${c.valor} ${c.coisa} em aberto desde ${c.desdeDia}! 📺`,
+          c => `A torcida tá de pé esperando o Pix de ${c.valor} ${c.coisa}! 🙌`,
+          c => `Cartão amarelo pro atraso! ${c.valor} ${c.coisa}, que ${c.prazoV}! 🟨`,
+          c => `Bola na marca do pênalti: ${c.valor} ${c.coisa}. É só bater! ⚽`,
+          c => `Que jogada seria pagar os ${c.valor} ${c.coisa} hoje, antes do apito final! 📣`
+        ],
+        fechos: [
+          c => `Pode correr pro abraço! 🤗`,
+          c => `É gol? É GOL? Só depende de você! ⚽`,
+          c => `A torcida agradece! 🙌`,
+          c => `Fim de papo, bora pro Pix! 📣`,
+          c => `Haja coração! ❤️`,
+          c => `Segue o jogo! 🎙️`,
+          c => `O apito final é no Pix! 📣`,
+          c => `Tá lá o comprovante? Tá lá? 🎙️`
         ]
       }
     };
 
-    function frasePronta(situacao, tom, ctx) {
-      const banco = (FRASES_COBRANCA[situacao] || FRASES_COBRANCA.tranquilo);
-      const lista = banco[tom] || banco.neutro;
-      const mes = new Date(obterDataBrasilia() + 'T12:00:00').getMonth();
-      const i = ctx.adiada >= 2 ? lista.length - 1 : (mes + ctx.adiada) % lista.length;
-      let texto = lista[i](ctx);
-      if (ctx.adiada >= 2 && /atrasado/i.test(situacao)) {
-        texto += `\n\n(P.S.: essa é a ${ctx.adiada + 1}ª vez que esse prazo muda. Minha planilha tá anotando. 📋)`;
+    /* RESPOSTAS: o "recebi, valeu" e a confirmação do novo prazo. Três tons
+       (Leve, Neutro e Zoeira): Firme não faz sentido pra agradecer. */
+    const RESPOSTAS_COBRANCA = {
+      recebi: {
+        leve: {
+          aberturas: [c => `Oi, ${c.n}!`, c => `${c.n}!`, c => `${c.saud}, ${c.n}!`, c => `Opa, ${c.n}!`, c => `Oi, ${c.n}, tudo bem?`, c => `E aí, ${c.n}!`],
+          corpos: [
+            c => `Caiu aqui, valeu demais! Estamos quites.`,
+            c => `Recebi os ${c.valor} ${c.coisa}, [muito obrigado/muito obrigada/valeu demais]!`,
+            c => `Chegou certinho aqui: ${c.valor}. Valeu!`,
+            c => `Tudo certo, recebi! [Muito obrigado/Muito obrigada/Valeu demais]!`,
+            c => `Pix recebido, ${c.valor}. Estamos quites!`,
+            c => `Confirmado: os ${c.valor} ${c.coisa} caíram aqui.`,
+            c => `Recebi! ${c.oCoisaCap} ${c.ta} ${c.quitado}.`,
+            c => `Recebi aqui, ${c.valor}. Valeu por resolver!`
+          ],
+          fechos: [c => `Abraço!`, c => `Valeu!`, c => `Até a próxima!`, se(sexta, c => `Bom fim de semana!`), c => `Qualquer coisa, tô por aqui.`, c => `🙂`, c => `Beijo!`]
+        },
+        neutro: {
+          aberturas: [c => `Oi, ${c.n}.`, c => `Olá, ${c.n}.`, c => `${c.saud}, ${c.n}.`, c => `Oi, ${c.n}! Tudo certo?`, c => `Oi, ${c.n}, tudo bem?`, c => `Olá, ${c.n}, tudo certo?`],
+          corpos: [
+            c => `Recebi os ${c.valor}. [Obrigado/Obrigada/Agradeço].`,
+            c => `Pagamento ${c.coisa} recebido. Tudo certo.`,
+            c => `Confirmo o recebimento de ${c.valor}.`,
+            c => `Caiu aqui, ${c.valor}. Estamos quites.`,
+            c => `Recebido. ${c.oCoisaCap} ${c.ta} ${c.quitado}.`,
+            c => `Tudo certo com ${c.oCoisa}, recebi.`,
+            c => `Chegou certinho: ${c.valor}.`,
+            c => `Recebi, tudo certo por aqui.`
+          ],
+          fechos: [c => `Abraço.`, c => `Até mais.`, c => `Valeu.`, c => `Agradeço.`, c => `Até a próxima.`, c => `👍`]
+        },
+        zoeira: {
+          aberturas: [c => `${c.n}!! 🙌`, c => `Fala, ${c.n}! 👋`, c => `Opa, ${c.n}! 😎`, c => `Salve, ${c.n}! 🤙`, c => `E aí, ${c.n}! 🎉`, c => `Grande ${c.n}! 💪`],
+          corpos: [
+            c => `Caiu aqui! 🎉 Os ${c.valor} chegaram sãos e salvos.`,
+            c => `Pix recebido! A planilha até sorriu. 😁`,
+            c => `RECEBIDO! ✅ ${c.oCoisaCap} ${c.ta} ${c.quitado}, pode dormir em paz. 😴`,
+            c => `Chegou! Pode tirar o seu nome da lista vermelha. 📋✅`,
+            c => `Recebi os ${c.valor}! {O melhor pagador/A melhor pagadora/Pagamento nota 10} da região. 🏆`,
+            c => `Os ${c.valor} chegaram e trouxeram paz pro meu coração. 💚`,
+            c => `Caiu, caiu! 💸 Estamos quites!`,
+            se(naoFamilia, c => `Pagamento confirmado! O capanga tá de folga hoje. 🕴️😌`),
+            c => `Valeu demais! Os ${c.valor} já tão aqui comigo. 🙌`
+          ],
+          fechos: [c => `Tamo junto! ✊`, c => `Valeu, {parceiro/parceira}! 🤙`, c => `Até a próxima (sem atraso, hein 😜)`, c => `Bora comemorar? 🍻`, c => `[Obrigado/Obrigada/Valeu] demais! 🙏`, c => `Você é demais! 💚`]
+        }
+      },
+      novoPrazo: {
+        leve: {
+          aberturas: [c => `Oi, ${c.n}!`, c => `${c.n}!`, c => `${c.saud}, ${c.n}!`, c => `Combinado, ${c.n}!`, c => `Oi, ${c.n}, tudo bem?`, c => `Opa, ${c.n}!`],
+          corpos: [
+            c => `Então fica assim: ${c.oCoisa} ${c.passa} ${c.proNovo}, ${c.valor}.`,
+            c => `Tranquilo! Mudei aqui: ${c.valor} ${c.coisa} ${c.proNovo}.`,
+            c => `Sem problema. Anotei o novo prazo: ${c.novoDiaTxt}.`,
+            c => `Fechado! Fica ${c.proNovo}, tá? ${c.valor} ${c.coisa}.`,
+            c => `Anotado: ${c.valor} ${c.coisa}, agora ${c.proNovo}.`,
+            c => `Tudo bem, a gente passa ${c.oCoisa} ${c.proNovo}.`,
+            c => `Beleza, novo prazo ${c.proNovo}: ${c.valor} ${c.coisa}.`,
+            c => `Pode deixar, te lembro de novo perto ${c.doNovo}.`
+          ],
+          fechos: [c => `Qualquer coisa, me avisa.`, c => `Valeu por avisar!`, c => `Abraço!`, c => `Sem estresse. 🙂`, c => `Tá ótimo assim.`, c => `Combinado!`]
+        },
+        neutro: {
+          aberturas: [c => `Oi, ${c.n}.`, c => `Olá, ${c.n}.`, c => `${c.saud}, ${c.n}.`, c => `Oi, ${c.n}, tudo bem?`, c => `${c.n}, combinado.`, c => `Olá, ${c.n}, tudo certo?`],
+          corpos: [
+            c => `Confirmando o novo prazo: ${c.valor} ${c.coisa}, ${c.proNovo}.`,
+            c => `Atualizei aqui: ${c.oCoisa} ${c.passa} ${c.proNovo}.`,
+            c => `Fica combinado ${c.proNovo}: ${c.valor} ${c.coisa}.`,
+            c => `Novo vencimento ${c.coisa}: ${c.novoDiaTxt}, ${c.valor}.`,
+            c => `Ok, prazo alterado ${c.proNovo}.`,
+            c => `Registrei o novo prazo: ${c.novoDiaTxt}.`,
+            c => `Certo, ${c.valor} ${c.coisa} ${c.proNovo}.`,
+            c => `Combinado: pagamento ${c.coisa} ${c.proNovo}.`
+          ],
+          fechos: [c => `Até lá.`, c => `Valeu.`, c => `Me avisa se mudar algo.`, c => `Fico no aguardo nessa data.`, c => `Abraço.`, c => `Combinado.`]
+        },
+        zoeira: {
+          aberturas: [c => `Fala, ${c.n}! 👋`, c => `${c.n}!! 😎`, c => `Opa, ${c.n}! 📅`, c => `Salve, ${c.n}! 🤙`, c => `Beleza, ${c.n}! 👍`, c => `Ô ${c.n}! 😄`],
+          corpos: [
+            c => `Prazo novo na área: ${c.proNovo}! 📅 ${c.valor} ${c.coisa}.`,
+            c => `Anotado com caneta permanente: ${c.proNovo}. 🖊️`,
+            c => `Ganhou mais uns dias! ${c.oCoisaCap} agora ${c.vence} ${c.emNovo}. 😎`,
+            c => `Tá, tá, ${c.proNovo}. Mas esse é o último, hein? 😏`,
+            c => `Combinado! Marquei ${c.novoDiaTxt} na agenda e no coração. 💘`,
+            c => `Prorrogação aprovada pela diretoria: ${c.proNovo}. 📋`,
+            c => `Fechou! ${c.valor} ${c.coisa}, ${c.proNovo}. Vou cobrar, hein! 👀`,
+            c => `Tempo extra concedido até ${c.novoDiaTxt}! ⏱️`
+          ],
+          fechos: [c => `Tô de olho! 👀`, c => `Combinado, combinado! 🤝`, c => `Valeu! 🤙`, c => `Agora vai! 💪`, c => `Não esquece, hein! 😜`, c => `Tamo junto! ✊`]
+        }
       }
-      return texto;
+    };
+
+    /* QUANDO QUEM DEVE É VOCÊ: a conversa é pedir a chave pra pagar. */
+    const DEVO_COBRANCA = {
+      aberturas: [c => `Oi, ${c.n}!`, c => `${c.saud}, ${c.n}!`, c => `Opa, ${c.n}!`, c => `E aí, ${c.n}, tudo bem?`, c => `Oi, ${c.n}, tudo certo?`, c => `${c.n}! 👋`],
+      corpos: [
+        se(c => c.atrasado, c => `Passou do combinado e os ${c.valor} ${c.coisa} ainda estão comigo, desculpa!`),
+        se(c => c.atrasado, c => `Me atrasei com os ${c.valor} ${c.coisa}, mas quero resolver hoje.`),
+        se(c => !c.atrasado, c => `Passando pra acertar os ${c.valor} ${c.coisa} que estão comigo.`),
+        c => `Quero te pagar os ${c.valor} ${c.coisa}.`,
+        c => `Bora acertar os ${c.valor} ${c.coisa}?`,
+        c => `Tô com os ${c.valor} ${c.coisa} aqui pra te passar.`,
+        c => `Deixa eu te pagar os ${c.valor} ${c.coisa}.`,
+        c => `Separei os ${c.valor} ${c.coisa} pra te mandar.`
+      ],
+      fechos: [c => `Me manda a chave que eu já resolvo. 🙏`, c => `Qual a sua chave Pix?`, c => `Me passa o Pix?`, c => `Manda a chave que eu faço agora.`, c => `Me fala a chave e já era.`, c => `Me passa seu Pix que eu mando hoje.`]
+    };
+
+    /* AGENTE DE COBRANÇA — o motor
+       Escolhe as partes, aplica a concordância e desenha a janela com a prévia.
+       Nada sai sozinho: a mensagem só vai pro WhatsApp no "Abrir no WhatsApp",
+       e mesmo lá é você quem toca em enviar. */
+
+    // ---------- gênero, apelido e relação ----------
+    const NOMES_FEMININOS = new Set(['ingrid', 'raquel', 'rachel', 'isabel', 'isabelle', 'beatriz', 'carmen', 'rute', 'ruth',
+      'lourdes', 'ines', 'alice', 'liz', 'thais', 'miriam', 'mirian', 'ester', 'esther', 'abigail', 'evelyn', 'evelin',
+      'karen', 'sueli', 'suely', 'ivone', 'ivonete', 'nicole', 'michele', 'michelle', 'gabriele', 'gabrielle', 'daniele',
+      'danielle', 'isis', 'iris', 'luz', 'mel', 'kelly', 'shirley', 'marlene', 'irene', 'aline', 'denise', 'elaine',
+      'simone', 'solange', 'jaqueline', 'jacqueline', 'tatiane', 'viviane', 'cristiane', 'luciane', 'rosane', 'joyce',
+      'yasmin', 'jasmin', 'mae', 'tia', 'madrinha', 'sogra', 'prima', 'esposa', 'namorada', 'filha', 'neta', 'sobrinha',
+      'cunhada', 'amiga', 'chefa', 'dinda']);
+    const NOMES_MASCULINOS = new Set(['luca', 'lucca', 'joshua', 'nicola', 'jonas', 'lucas', 'matias', 'tomas', 'elias',
+      'davi', 'levi', 'rafael', 'gabriel', 'daniel', 'samuel', 'miguel', 'manuel', 'emanuel', 'ismael', 'joel', 'abel',
+      'noel', 'pai', 'tio', 'padrinho', 'sogro', 'primo', 'marido', 'namorado', 'filho', 'neto', 'sobrinho', 'cunhado',
+      'amigo', 'dindo', 'rony', 'ronny', 'henry', 'harry', 'thierry', 'jefferson', 'anderson', 'wellington', 'washington']);
+
+    /* Palpite pelo primeiro nome (ou pelo apelido). É só sugestão: quem
+       confirma é você, no cadastro ou na primeira cobrança. Sem palpite, a
+       mensagem sai neutra. */
+    function generoSugerido(nome) {
+      const primeiro = String(nome || '').trim().split(/\s+/)[0] || '';
+      const cru = primeiro.toLowerCase();
+      if (['vó', 'avó', 'mãe', 'irmã', 'vovó'].includes(cru)) return 'f';
+      if (['vô', 'avô', 'irmão', 'vovô'].includes(cru)) return 'm';
+      const p = textoSeguro(primeiro).replace(/[^a-z]/g, '');
+      if (!p) return '';
+      if (NOMES_FEMININOS.has(p)) return 'f';
+      if (NOMES_MASCULINOS.has(p)) return 'm';
+      if (/(inha|ona)$/.test(p)) return 'f';                  // Aninha, Fabiona
+      if (/(inho|ao|zao)$/.test(p)) return 'm';               // Juninho, Bernardão
+      if (/a$/.test(p)) return 'f';
+      if (/(o|os|son|el|or|us|ur|er|im|om|um|ar|iz|ilo|ton|ique|ei|ui)$/.test(p)) return 'm';
+      if (/(ane|ene|ine|ise|ice|ete|ade|ely|ly|lyn|elle|ele|ie)$/.test(p)) return 'f';
+      return '';
     }
 
-    /* ESCOLHER O TOM NA HORA
-       O tom saía do cadastro do contato e do quanto faltava pro prazo. Só que o
-       tom certo depende do dia: dá pra estar atrasado e você querer ir leve, ou
-       faltar uma semana e você querer zoar. Agora a régua automática vira só
-       SUGESTÃO — ela marca o botão recomendado, e você decide. */
-    let cobrancaEscolhendo = null;
+    // Quem você está cobrando: o gênero confirmado ou, enquanto não confirmar, o palpite
+    function generoDoContato(nome) {
+      const c = contatos[nome];
+      if (c && ['m', 'f', 'n'].includes(c.genero)) return { g: c.genero, confirmado: true };
+      const sugestao = generoSugerido((c && c.apelido) || nome);
+      return { g: sugestao || 'n', confirmado: false, sugestao };
+    }
+    function relacaoDoContato(nome) { return ((contatos[nome] || {}).relacao) || ''; }
+    function comoChamar(nome) { return String(((contatos[nome] || {}).apelido) || '').trim() || nome; }
+    function pronomeDe(nome) {
+      const g = generoDoContato(nome).g;
+      return g === 'f' ? 'ela' : g === 'm' ? 'ele' : nome;
+    }
 
+    // Quem usa o app: "do Léo", "da Ana", "de Sam"
+    function generoDoDono() {
+      if (['m', 'f', 'n'].includes(uiPrefs.meuGenero)) return uiPrefs.meuGenero;
+      return generoSugerido(uiPrefs.meuNome) || 'm';
+    }
+    function nomeDoDono() { return String(uiPrefs.meuNome || '').trim(); }
+    function doDono() {
+      const g = generoDoDono(), nome = nomeDoDono();
+      if (!nome) return g === 'f' ? 'da chefe' : g === 'n' ? 'da chefia' : 'do chefe';
+      return (g === 'f' ? 'da ' : g === 'n' ? 'de ' : 'do ') + nome;
+    }
+    function donoCap() {
+      const g = generoDoDono(), nome = nomeDoDono();
+      return nome || (g === 'f' ? 'A chefe' : g === 'n' ? 'A chefia' : 'O chefe');
+    }
+
+    // ---------- concordância ----------
+    // O que veio de fora (nome, apelido, descrição) é protegido: um "{" ou "["
+    // digitado por você nunca é lido como marcador.
+    const protegerTexto = s => String(s == null ? '' : s)
+      .replace(/\{/g, '\u0001').replace(/\}/g, '\u0002').replace(/\[/g, '\u0003').replace(/\]/g, '\u0004');
+    const desprotegerTexto = s => s
+      .replace(/\u0001/g, '{').replace(/\u0002/g, '}').replace(/\u0003/g, '[').replace(/\u0004/g, ']');
+    function temMarcadorBinario(texto) { return /\{[^{}\/]*\/[^{}\/]*\}/.test(texto); }
+    function concordar(texto, gContato, gDono) {
+      const escolher = (g, m, f, n) => (g === 'f' ? f : g === 'n' ? (n !== undefined ? n : m) : m);
+      return texto
+        .replace(/\{([^{}\/]*)\/([^{}\/]*)(?:\/([^{}\/]*))?\}/g, (_, m, f, n) => escolher(gContato, m, f, n))
+        .replace(/\[([^\[\]\/]*)\/([^\[\]\/]*)(?:\/([^\[\]\/]*))?\]/g, (_, m, f, n) => escolher(gDono, m, f, n))
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/ ([,.!?])/g, '$1');
+    }
+
+    // ---------- o que foi: artigo e plural da descrição ----------
+    const COISAS_FEMININAS = new Set(['netflix', 'internet', 'tv', 'luz', 'agua', 'gasolina', 'vaquinha']);
+    const COISAS_MASCULINAS = new Set(['dia', 'mapa', 'sofa', 'clima', 'problema', 'sistema', 'programa', 'tema',
+      'cinema', 'drama', 'planeta', 'pijama', 'guarana', 'samba', 'uber', 'ifood', 'pix']);
+    const SINGULAR_EM_S = new Set(['gympass', 'onibus', 'lapis', 'tenis', 'gas', 'mes', 'pais', 'atlas', 'virus',
+      'bonus', 'campus', 'pires', 'oculos', 'airbnbs']);
+    function artigoDaCoisa(desc) {
+      const p = textoSeguro(String(desc || '').trim().split(/\s+/)[0]).replace(/[^a-z]/g, '');
+      let pl = false, base = p;
+      if (p.length > 3 && /[aeiou]s$/.test(p) && !SINGULAR_EM_S.has(p)) { pl = true; base = p.slice(0, -1); }
+      if (p === 'oculos') pl = true;
+      const f = !COISAS_MASCULINAS.has(base)
+        && (COISAS_FEMININAS.has(base) || /(a|cao|sao|dade|gem|tude|ice)$/.test(base));
+      return { f, pl, o: (f ? 'a' : 'o') + (pl ? 's' : ''), d: 'd' + (f ? 'a' : 'o') + (pl ? 's' : '') };
+    }
+
+    // Uma linha por compra: "o Airbnb e o Gympass", nunca uma lista com marcador
+    function agruparCompras(lista) {
+      const por = {};
+      lista.forEach(c => {
+        const k = chaveCompra(c.lanc);
+        const p = por[k] = por[k] || { desc: descricaoBaseCompra(c.lanc.descricao), valor: 0, vence: null };
+        p.valor += c.valor;
+        if (c.vence && (!p.vence || c.vence < p.vence)) p.vence = c.vence;
+      });
+      return Object.values(por);
+    }
+    function valorHumano(v) { return fmtVal(v).replace(/,00$/, ''); }
+    function juntarComE(partes) {
+      return partes.length <= 1 ? (partes[0] || '') : partes.slice(0, -1).join(', ') + ' e ' + partes[partes.length - 1];
+    }
+    function descreverCompras(compras) {
+      const art = compras.map(p => Object.assign({ a: artigoDaCoisa(p.desc) }, p));
+      const mostrar = art.slice(0, 2);
+      const resto = art.length - mostrar.length;
+      const com = tipo => {
+        const partes = mostrar.map(p => (tipo === 'd' ? p.a.d : p.a.o) + ' ' + protegerTexto(p.desc));
+        if (resto > 0) partes.push((tipo === 'd' ? 'de ' : '') + 'mais ' + resto + (resto === 1 ? ' item' : ' itens'));
+        return juntarComE(partes);
+      };
+      const plural = art.length > 1 || (art[0] && art[0].a.pl);
+      const todasFem = art.every(p => p.a.f);
+      const oCoisa = com('o');
+      return {
+        coisa: com('d'), oCoisa, oCoisaCap: oCoisa.charAt(0).toUpperCase() + oCoisa.slice(1),
+        varias: art.length > 1, plural,
+        detalhe: art.length > 1
+          ? ' (' + juntarComE(art.map(p => valorHumano(p.valor) + ' ' + p.a.d + ' ' + protegerTexto(p.desc))) + ')' : '',
+        quitado: (art.length === 1 ? (art[0].a.f ? 'quitada' : 'quitado') : (todasFem ? 'quitada' : 'quitado')) + (plural ? 's' : ''),
+        esta: plural ? 'estão' : 'está', ta: plural ? 'tão' : 'tá',
+        ficou: plural ? 'ficaram' : 'ficou', ficouCap: plural ? 'Ficaram' : 'Ficou',
+        deu: plural ? 'deram' : 'deu', passa: plural ? 'passam' : 'passa',
+        venceu: plural ? 'venceram' : 'venceu', vence: plural ? 'vencem' : 'vence'
+      };
+    }
+
+    // ---------- datas em palavras ----------
+    const DIAS_SEMANA_NOME = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    function frasesDaData(iso, hoje) {
+      const f = diasAte(iso);
+      const d = parseInt(iso.slice(8, 10), 10);
+      const mesmoMes = iso.slice(0, 7) === hoje.slice(0, 7);
+      const dia = 'dia ' + d + (mesmoMes ? '' : '/' + iso.slice(5, 7));
+      if (f === 0) return { quando: 'hoje', em: 'hoje', pra: 'pra hoje', dia };
+      if (f === 1) return { quando: 'amanhã', em: 'amanhã', pra: 'pra amanhã', dia };
+      if (f > 1 && f <= 6) {
+        const ds = DIAS_SEMANA_NOME[new Date(iso + 'T12:00:00').getDay()];
+        const masc = ds === 'sábado' || ds === 'domingo';
+        return { quando: ds, em: (masc ? 'no ' : 'na ') + ds, pra: (masc ? 'pro ' : 'pra ') + ds, dia };
+      }
+      return { quando: dia, em: 'no ' + dia, pra: 'pro ' + dia, dia };
+    }
+    // O Firme propõe uma data: "até sexta" no começo da semana, "até segunda" na sexta
+    function prazoProposto(hoje) {
+      const w = new Date(hoje + 'T12:00:00').getDay();
+      return w >= 1 && w <= 4 ? 'até sexta' : w === 5 ? 'até segunda' : 'até terça';
+    }
+    function saudacaoDaHora() {
+      const h = new Date().getHours();
+      return h < 5 ? 'Boa noite' : h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    }
+
+    // ---------- o que vai na mensagem ----------
+    function separarMesDaCobranca(lista) {
+      // um mês de cada vez: o que vence neste mês e o que já venceu; o resto
+      // vira uma linha informativa no fim
+      const mesAtual = obterDataBrasilia().slice(0, 7);
+      let doMes = lista.filter(c => !c.vence || c.vence.slice(0, 7) <= mesAtual);
+      let futuro = lista.filter(c => c.vence && c.vence.slice(0, 7) > mesAtual);
+      if (!doMes.length && futuro.length) {
+        const primeiro = futuro.map(c => c.vence.slice(0, 7)).sort()[0];
+        doMes = futuro.filter(c => c.vence.slice(0, 7) === primeiro);
+        futuro = futuro.filter(c => c.vence.slice(0, 7) !== primeiro);
+      }
+      return { doMes, futuro };
+    }
+
+    function situacaoDaCobranca(doMes) {
+      const hoje = obterDataBrasilia();
+      if (doMes.some(c => c.vence && c.vence < hoje)) return 'atrasado';
+      if (doMes.some(c => c.vence)) return 'lembrete';
+      return 'combinar';
+    }
+
+    function contextoDaMensagem(st) {
+      const hoje = obterDataBrasilia();
+      const hojeData = new Date(hoje + 'T12:00:00');
+      const nome = st.nome;
+      const gen = generoDoContato(nome);
+      const n = protegerTexto(comoChamar(nome));
+      const saud = saudacaoDaHora();
+      const adiada = Math.max(0, ...st.lista.map(c => c.adiamentos || 0));
+      const c = {
+        nome, n, nMaiusc: n.toUpperCase(), g: gen.g, gd: generoDoDono(),
+        saud, saudMin: saud.toLowerCase(),
+        doDono: protegerTexto(doDono()), donoCap: protegerTexto(donoCap()),
+        sexta: hojeData.getDay() === 5, inicioMes: parseInt(hoje.slice(8, 10), 10) <= 5,
+        familia: relacaoDoContato(nome) === 'familia',
+        adiada, adiadaTxt: adiada === 1 ? 'O prazo já foi adiado uma vez' : 'O prazo já foi adiado ' + adiada + ' vezes',
+        ate: prazoProposto(hoje), nivel: st.nivel || 0,
+        protocolo: '#' + (1000 + Math.floor(Math.random() * 9000)),
+        restoFrase: '', situacao: 'combinar', diasFalta: 99, atrasado: false
+      };
+
+      let principal = st.lista;
+      if (st.tipo === 'cobranca') {
+        const { doMes, futuro } = separarMesDaCobranca(st.lista);
+        c.situacao = situacaoDaCobranca(doMes);
+        c.futuro = futuro.reduce((s, x) => s + x.valor, 0);
+        principal = doMes;
+        if (c.situacao === 'atrasado') {
+          const vencidas = doMes.filter(x => x.vence && x.vence < hoje);
+          const resto = doMes.filter(x => !(x.vence && x.vence < hoje));
+          principal = vencidas;
+          if (resto.length) {
+            const d = descreverCompras(agruparCompras(resto));
+            const fd = frasesDaData(resto.map(x => x.vence).filter(Boolean).sort()[0] || hoje, hoje);
+            const v = valorHumano(resto.reduce((s, x) => s + x.valor, 0));
+            const opcoes = [
+              `Já ${d.oCoisa} ${d.vence} ${fd.quando}, ${v}.`,
+              `E ${d.oCoisa} ${d.vence} ${fd.em}: ${v}.`,
+              `Ah, e ${d.oCoisa} ${d.vence} ${fd.quando} (${v}).`
+            ];
+            c.restoFrase = opcoes[Math.floor(Math.random() * opcoes.length)];
+          }
+        }
+      } else if (st.tipo === 'devo') {
+        c.atrasado = st.lista.some(x => x.vence && x.vence < hoje);
+      }
+
+      const compras = agruparCompras(principal);
+      Object.assign(c, descreverCompras(compras));
+      c.valor = valorHumano(principal.reduce((s, x) => s + x.valor, 0));
+
+      const prazos = principal.map(x => x.vence).filter(Boolean).sort();
+      if (c.situacao === 'atrasado' && prazos.length) {
+        const atraso = Math.max(1, -diasAte(prazos[0]));
+        const fd = frasesDaData(prazos[0], hoje);
+        c.venceuHa = atraso === 1 ? 'ontem' : atraso === 7 ? 'há uma semana' : atraso === 14 ? 'há duas semanas' : 'há ' + atraso + ' dias';
+        c.diaPrazoDia = atraso === 1 ? 'ontem' : fd.dia;
+        c.desdeDia = atraso === 1 ? 'ontem' : 'o ' + fd.dia;
+        c.diasTxt = atraso + (atraso === 1 ? ' dia' : ' dias');
+        c.prazo = c.venceu + ' ' + c.diaPrazoDia;
+        c.prazoV = 'venceu ' + c.diaPrazoDia;
+      } else if (prazos.length) {
+        const fd = frasesDaData(prazos[0], hoje);
+        c.diasFalta = Math.max(0, diasAte(prazos[0]));
+        c.prazo = c.vence + ' ' + fd.quando;
+        c.prazoV = 'vence ' + fd.quando;
+        c.emQuando = fd.em; c.praQuando = fd.pra;
+        // novo prazo (resposta depois de adiar): sempre com a data escrita
+        const dd = prazos[0].slice(8, 10) + '/' + prazos[0].slice(5, 7);
+        c.novoDiaTxt = dd; c.proNovo = 'pro dia ' + dd; c.emNovo = 'no dia ' + dd; c.doNovo = 'do dia ' + dd;
+      } else {
+        c.prazo = c.prazoV = c.emQuando = c.praQuando = '';
+      }
+      return c;
+    }
+
+    // ---------- sorteio sem repetir ----------
+    function historicoDeMensagens(nome) {
+      const h = (contatos[nome] || {}).ultimasMsgs;
+      return Array.isArray(h) ? h : [];
+    }
+    function guardarPecas(nome, pecas) {
+      if (!pecas || !pecas.length) return;
+      if (!contatos[nome]) contatos[nome] = { tel: '', tom: 'neutro' };
+      const h = historicoDeMensagens(nome).concat([pecas]).slice(-5);   // as últimas 5
+      contatos[nome].ultimasMsgs = h;
+      salvarContatos();
+    }
+    function pecasAEvitar(st) {
+      const h = historicoDeMensagens(st.nome);
+      const forte = new Set([].concat(...h));
+      const fraco = new Set([].concat(...h.slice(-2)));
+      (st.vistas || new Set()).forEach(id => { forte.add(id); fraco.add(id); });
+      return { forte, fraco };
+    }
+    function sortearPeca(lista, prefixo, c, evitar) {
+      const elegiveis = [];
+      (lista || []).forEach((p, i) => {
+        const peca = typeof p === 'function' ? { t: p } : p;
+        if (peca.se && !peca.se(c)) return;
+        const bruto = peca.t(c);
+        if (c.g === 'n' && temMarcadorBinario(bruto)) return;   // neutro não leva "querido/querida"
+        elegiveis.push({ id: prefixo + i, bruto });
+      });
+      if (!elegiveis.length) return null;
+      const pegar = arr => arr[Math.floor(Math.random() * arr.length)];
+      for (const nivel of [evitar.forte, evitar.fraco]) {
+        const livres = elegiveis.filter(e => !nivel.has(e.id));
+        if (livres.length) return pegar(livres);
+      }
+      return pegar(elegiveis);
+    }
+
+    const ORDEM_PERSONAS = ['capanga', 'secretaria', 'narrador'];
+    function personaDaVez(st, c) {
+      if (st.tipo !== 'cobranca' || st.tom !== 'zoeira' || c.situacao !== 'atrasado') return null;
+      const p = st.persona || (c.familia ? 'nenhum' : 'sorteio');
+      if (p === 'nenhum') return null;
+      if (p !== 'sorteio') return PERSONAS_COBRANCA[p] ? p : null;
+      // as três se revezam: as duas últimas usadas com a pessoa ficam de fora
+      const recentes = (st.ultimasPersonas || []).slice(-2);
+      const outras = ORDEM_PERSONAS.filter(x => !recentes.includes(x) && x !== st.ultimaPersona);
+      const pool = outras.length ? outras : ORDEM_PERSONAS.filter(x => x !== st.ultimaPersona);
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function ehTelefone(chave) { return /^\+?[\d\s().-]{10,}$/.test(String(chave || '')); }
+
+    function montarMensagem(st) {
+      const c = contextoDaMensagem(st);
+      const evitar = pecasAEvitar(st);
+      let persona = null, fontes;
+      if (st.tipo === 'devo') {
+        fontes = { ab: DEVO_COBRANCA.aberturas, co: DEVO_COBRANCA.corpos, fe: DEVO_COBRANCA.fechos, pref: 'devo', prefAb: 'devo' };
+      } else if (st.tipo === 'recebi' || st.tipo === 'novoPrazo') {
+        const tomR = RESPOSTAS_COBRANCA[st.tipo][st.tom] ? st.tom : 'neutro';
+        const b = RESPOSTAS_COBRANCA[st.tipo][tomR];
+        fontes = { ab: b.aberturas, co: b.corpos, fe: b.fechos, pref: st.tipo + '.' + tomR, prefAb: st.tipo + '.' + tomR };
+      } else {
+        persona = personaDaVez(st, c);
+        if (persona) {
+          const P = PERSONAS_COBRANCA[persona];
+          fontes = { ab: P.aberturas, co: P.corpos, fe: P.fechos, pref: 'p.' + persona, prefAb: 'p.' + persona };
+        } else {
+          const B = BANCO_COBRANCA[st.tom] || BANCO_COBRANCA.neutro;
+          const tom = BANCO_COBRANCA[st.tom] ? st.tom : 'neutro';
+          fontes = { ab: B.aberturas, co: B.corpos[c.situacao], fe: B.fechos[c.situacao], pref: tom + '.' + c.situacao, prefAb: tom };
+        }
+      }
+      const ab = sortearPeca(fontes.ab, fontes.prefAb + '.a', c, evitar);
+      const co = sortearPeca(fontes.co, fontes.pref + '.c', c, evitar);
+      // Tamanho variado: às vezes a mensagem é só abertura e corpo, numa linha
+      const semFecho = st.tipo === 'cobranca' && !persona && Math.random() < (st.tom === 'zoeira' ? 0.1 : 0.25);
+      const fe = semFecho ? null : sortearPeca(fontes.fe, fontes.pref + '.f', c, evitar);
+
+      let corpo = co ? co.bruto : '';
+      if (c.restoFrase) corpo += ' ' + c.restoFrase;
+      const abertura = ab ? ab.bruto : '';
+      const junta = (persona || abertura.length + corpo.length > 130) ? '\n\n' : ' ';
+      let texto = abertura + junta + corpo + (fe ? '\n\n' + fe.bruto : '');
+      texto = desprotegerTexto(concordar(texto, c.g, c.gd)).trim();
+
+      if (st.tipo === 'cobranca') {
+        // o que fica pros meses seguintes é informação, não cobrança
+        if (c.futuro > 0) texto += `\n\nDepois desse pagamento ainda ${c.futuro >= 2 ? 'ficam' : 'fica'} ${valorHumano(c.futuro)} pros meses seguintes.`;
+        const pix = chavePix();
+        if (pix) texto += `\n\nPix${ehTelefone(pix) ? ' (telefone)' : ''}: ${pix}`;
+      }
+      return { texto, pecas: [ab && ab.id, co && co.id, fe && fe.id].filter(Boolean), persona, situacao: c.situacao };
+    }
+
+    // ---------- escalada: 1ª leve, 2ª mais direta, 3ª em diante firme ----------
+    function enviadasPara(c) {
+      const m = c.lanc && c.lanc.cobrancasEnviadas;
+      if (m && m[c.nome] != null) return m[c.nome];
+      return c.ultimaCobranca ? 1 : 0;   // cobrança de antes do contador: conta como uma
+    }
+    function contagemDaCobranca(lista) {
+      const enviadas = Math.max(0, ...lista.map(enviadasPara));
+      const adiamentos = Math.max(0, ...lista.map(c => c.adiamentos || 0));
+      return { enviadas, adiamentos, nivel: enviadas + adiamentos };
+    }
+    function tomSugerido(nome, nivel, situacao) {
+      const rel = relacaoDoContato(nome);
+      let tom = situacao === 'combinar' || nivel <= 0 ? 'leve' : nivel === 1 ? 'neutro' : 'firme';
+      const habito = (contatos[nome] || {}).tom;
+      if (habito === 'zoeira' && nivel < 2 && rel !== 'familia' && rel !== 'colega') tom = 'zoeira';
+      if (rel === 'colega' && tom === 'leve') tom = 'neutro';
+      return tom;
+    }
+    function motivoDoTom(st) {
+      const nomeTom = { leve: 'Leve', neutro: 'Neutro', zoeira: 'Zoeira', firme: 'Firme' }[st.sugerido];
+      let txt;
+      if (st.tipo !== 'cobranca') txt = 'Sugestão: ' + nomeTom + ', o tom de sempre com ' + st.nome + '.';
+      else if (st.situacao === 'combinar') txt = 'Sugestão: ' + nomeTom + '. Ainda não tem prazo, é só combinar.';
+      else {
+        const k = st.contagem;
+        const partes = [];
+        if (k.enviadas) partes.push(k.enviadas + (k.enviadas === 1 ? ' mensagem' : ' mensagens'));
+        if (k.adiamentos) partes.push(k.adiamentos + (k.adiamentos === 1 ? ' adiamento' : ' adiamentos'));
+        const ja = !partes.length ? 'É a primeira mensagem sobre isso.'
+          : (k.nivel === 1 ? 'Já foi ' : 'Já foram ') + partes.join(' e ') + ' sem pagamento.';
+        txt = 'Sugestão: ' + nomeTom + (st.sugerido === 'neutro' && k.nivel === 1 ? ', mais direto' : '') + '. ' + ja;
+      }
+      const rel = relacaoDoContato(st.nome);
+      if (rel === 'familia') txt += ' Família: o app não sugere Zoeira nem o assistente.';
+      if (rel === 'colega') txt += ' Colega de trabalho: tom mais neutro.';
+      return txt;
+    }
+
+    // ---------- a janela ----------
+    let cobrancaEscolhendo = null;
+    const ROTULO_PERSONA = { sorteio: '🎲 Sortear', capanga: '🕴️ Capanga', secretaria: '📋 Secretária', narrador: '🎙️ Narrador', nenhum: 'Sem personagem' };
+
+    function abrirJanelaDeMensagem(st) {
+      // a última personagem usada com essa pessoa não volta logo na próxima
+      cobrancaEscolhendo = Object.assign({ vistas: new Set(), persona: null,
+        ultimaPersona: (contatos[st.nome] || {}).ultimaPersona || null,
+        ultimasPersonas: ((contatos[st.nome] || {}).ultimasPersonas || []).slice() }, st);
+      // a janela aparece antes de desenhar: escondida, a caixa da mensagem mede zero
+      document.getElementById('modalTomCobranca').classList.remove('escondido');
+      desenharJanelaCobranca(true);
+    }
+
+    // a mesma janela serve à cobrança, à conversa de quem deve e às respostas
     function abrirCobrancaWhatsApp(nome, chaves, devo) {
       const abertas = cobrancasAbertas().filter(c => chaves.includes(c.chave));
       if (!abertas.length) return;
-      cobrancaEscolhendo = { nome, abertas, devo };
-
-      const sugerido = tomDoContato(nome);
-      document.getElementById('tituloTomCobranca').textContent =
-        (devo ? 'Falar com ' : 'Cobrar ') + nome;
-      document.getElementById('opcoesTomCobranca').innerHTML = TONS_COBRANCA.map(t => `
-        <button type="button" class="btn-mini" onclick="escolherTomECobrar('${t.id}')"
-          style="width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;font-size:13.5px;${
-            t.id === sugerido ? 'border-color:rgba(95,153,51,.5);color:var(--acento-palido);' : ''}">
-          ${t.rotulo}<span style="color:var(--texto-fraco);font-size:11.5px;"> — ${t.dica}${
-            t.id === sugerido ? ' · o de sempre com ' + nome : ''}</span>
-        </button>`).join('');
-      document.getElementById('previaTomCobranca').textContent = '';
-      document.getElementById('modalTomCobranca').classList.remove('escondido');
+      const { doMes } = separarMesDaCobranca(abertas);
+      const situacao = devo ? 'devo' : situacaoDaCobranca(doMes);
+      const contagem = contagemDaCobranca(doMes);
+      const sugerido = devo ? 'neutro' : tomSugerido(nome, contagem.nivel, situacao);
+      abrirJanelaDeMensagem({ tipo: devo ? 'devo' : 'cobranca', nome, lista: abertas, devo, situacao, contagem,
+        nivel: contagem.nivel, sugerido, tom: sugerido });
     }
 
-    function escolherTomECobrar(tom) {
+    function abrirRespostaWhatsApp(nome, tipo) {
+      let lista = [];
+      if (tipo === 'recebi') {
+        const pagas = historicoDeQuitadas().filter(q => q.c.nome === nome && !q.c.devo);
+        const ultima = pagas.map(q => q.quando || '').sort().pop();
+        lista = pagas.filter(q => (q.quando || '') === ultima).map(q => q.c);
+      } else {
+        lista = cobrancasAbertas().filter(c => c.nome === nome && !c.devo && (c.adiamentos || 0) > 0);
+      }
+      if (!lista.length) return;
+      const habito = (contatos[nome] || {}).tom;
+      const tom = habito === 'zoeira' ? 'zoeira' : habito === 'leve' ? 'leve' : 'neutro';
+      abrirJanelaDeMensagem({ tipo, nome, lista, devo: false, situacao: tipo, contagem: { nivel: 0 }, nivel: 0, sugerido: tom, tom });
+    }
+
+    function desenharJanelaCobranca(gerar) {
+      const st = cobrancaEscolhendo;
+      if (!st) return;
+      const titulos = {
+        cobranca: { atrasado: 'Cobrar ', lembrete: 'Lembrar ', combinar: 'Combinar com ' }[st.situacao] || 'Cobrar ',
+        devo: 'Falar com ', recebi: 'Agradecer ', novoPrazo: 'Novo prazo com '
+      };
+      document.getElementById('tituloTomCobranca').textContent = (titulos[st.tipo] || 'Mensagem pra ') + comoChamar(st.nome);
+
+      // gênero ainda não confirmado: pergunta aqui, sem travar nada
+      const gen = generoDoContato(st.nome);
+      const pergunta = document.getElementById('perguntaGeneroCobranca');
+      pergunta.classList.toggle('escondido', gen.confirmado);
+      if (!gen.confirmado) {
+        document.getElementById('nomePerguntaGenero').textContent = comoChamar(st.nome);
+        document.getElementById('opcoesGeneroCobranca').innerHTML = [['m', 'Masculino'], ['f', 'Feminino'], ['n', 'Não definir']]
+          .map(([g, r]) => `<button type="button" data-genero="${g}" aria-pressed="false" onclick="escolherGeneroNaCobranca('${g}')">${r}${gen.sugestao === g ? '<small>palpite</small>' : ''}</button>`).join('');
+      }
+
+      // tons: os quatro na cobrança, três nas respostas, nenhum pra quem deve
+      const tons = st.tipo === 'devo' ? [] : TONS_COBRANCA.filter(t => st.tipo === 'cobranca' || t.id !== 'firme');
+      document.getElementById('blocoTonsCobranca').classList.toggle('escondido', !tons.length);
+      document.getElementById('opcoesTomCobranca').innerHTML = tons.map(t => `
+        <button type="button" data-tom="${t.id}" aria-pressed="${t.id === st.tom}" onclick="escolherTomCobranca('${t.id}')">
+          ${t.rotulo}${t.id === st.sugerido ? '<small>sugerido</small>' : ''}
+        </button>`).join('');
+      document.getElementById('motivoTomCobranca').textContent = tons.length ? motivoDoTom(st) : '';
+
+      // o assistente: só na Zoeira, com a cobrança vencida
+      const comPersona = st.tipo === 'cobranca' && st.tom === 'zoeira' && st.situacao === 'atrasado';
+      document.getElementById('blocoPersona').classList.toggle('escondido', !comPersona);
+      if (comPersona) {
+        const atual = st.persona || (relacaoDoContato(st.nome) === 'familia' ? 'nenhum' : 'sorteio');
+        document.getElementById('opcoesPersona').innerHTML = ['sorteio', 'capanga', 'secretaria', 'narrador', 'nenhum']
+          .map(p => `<button type="button" class="btn-mini" data-persona="${p}" aria-pressed="${p === atual}" onclick="escolherPersonaCobranca('${p}')">${ROTULO_PERSONA[p]}</button>`).join('');
+      }
+      if (gerar) gerarPreviaCobranca();
+    }
+
+    function gerarPreviaCobranca() {
+      const st = cobrancaEscolhendo;
+      if (!st) return;
+      const m = montarMensagem(st);
+      st.pecas = m.pecas;
+      st.personaAtual = m.persona;
+      if (m.persona) st.ultimaPersona = m.persona;
+      m.pecas.forEach(id => st.vistas.add(id));
+      const caixa = document.getElementById('previaCobrancaTexto');
+      caixa.value = m.texto;
+      // a caixa cresce com o texto (até metade da tela), pra mensagem caber inteira
+      caixa.style.height = 'auto';
+      caixa.style.height = Math.min(caixa.scrollHeight + 4, Math.round(window.innerHeight * 0.5 / escalaDaTela())) + 'px';
+      const rot = document.getElementById('personaDaPrevia');
+      if (rot) rot.textContent = m.persona ? 'quem fala: ' + ROTULO_PERSONA[m.persona].replace(/^\S+\s/, '').toLowerCase() : '';
+    }
+
+    function escolherTomCobranca(tom) {
       if (!cobrancaEscolhendo) return;
-      const { nome, abertas, devo } = cobrancaEscolhendo;
+      cobrancaEscolhendo.tom = tom;
+      desenharJanelaCobranca(true);
+    }
+    function escolherPersonaCobranca(p) {
+      if (!cobrancaEscolhendo) return;
+      cobrancaEscolhendo.persona = p;
+      desenharJanelaCobranca(true);
+    }
+    function escolherGeneroNaCobranca(g) {
+      const st = cobrancaEscolhendo;
+      if (!st) return;
+      contatos[st.nome] = Object.assign(contatos[st.nome] || { tel: '', tom: 'neutro' }, { genero: g });
+      salvarContatos();
+      desenharJanelaCobranca(true);
+    }
+    function outraVersaoCobranca() { gerarPreviaCobranca(); }
+
+    function abrirWhatsAppDaPrevia() {
+      const st = cobrancaEscolhendo;
+      if (!st) return;
+      const texto = document.getElementById('previaCobrancaTexto').value.trim();
+      if (!texto) return;
       // O tom viaja dentro de cobrancaPendente: se o contato ainda não tem
-      // telefone salvo, é salvarContatoCobranca() quem cria o registro dali a
-      // pouco, e precisa saber qual tom foi escolhido agora — sem isso o
-      // primeiro cadastro de cada pessoa perderia a escolha e cairia em neutro.
-      cobrancaPendente = { nome, tom, texto: textoDaCobranca(nome, abertas, devo, tom) };
+      // telefone, é o salvarContatoCobranca() quem cria o registro e precisa
+      // saber o tom escolhido agora.
+      cobrancaPendente = { nome: st.nome, tom: st.tom, texto, tipo: st.tipo, pecas: st.pecas, persona: st.personaAtual };
       cobrancaEscolhendo = null;
       fecharModal('modalTomCobranca');
-      const tel = normalizarTelefone(telDoContato(nome));
+      const tel = normalizarTelefone(telDoContato(st.nome));
       if (tel) {
-        // Contato já existia: o tom escolhido agora vira o "de sempre" com essa
-        // pessoa, aprendendo do uso real em vez de exigir configuração antes.
-        if (contatos[nome]) { contatos[nome].tom = tom; salvarContatos(); }
+        // o tom de agora vira "o de sempre" com essa pessoa (só na cobrança)
+        if (contatos[st.nome] && st.tipo === 'cobranca') { contatos[st.nome].tom = st.tom; salvarContatos(); }
         return dispararWhatsApp(tel);
       }
-      abrirModalContatoCobranca(nome);
+      abrirModalContatoCobranca(st.nome);
+    }
+
+    // Atalho antigo (tom escolhido e já abre): continua valendo
+    function escolherTomECobrar(tom) {
+      if (!cobrancaEscolhendo) return;
+      escolherTomCobranca(tom);
+      abrirWhatsAppDaPrevia();
+    }
+
+    // Texto pronto, sem janela (usado onde só o texto interessa)
+    function textoDaCobranca(nome, lista, devo, tomForcado) {
+      const { doMes } = separarMesDaCobranca(lista);
+      const contagem = contagemDaCobranca(doMes);
+      const situacao = devo ? 'devo' : situacaoDaCobranca(doMes);
+      const tom = tomForcado || tomSugerido(nome, contagem.nivel, situacao);
+      return montarMensagem({ tipo: devo ? 'devo' : 'cobranca', nome, lista, devo, tom, nivel: contagem.nivel, vistas: new Set() }).texto;
     }
 
     function dispararWhatsApp(tel) {
       if (!cobrancaPendente) return;
-      window.open(`https://wa.me/${tel}?text=${encodeURIComponent(cobrancaPendente.texto)}`, '_blank');
-      // Registra a cobrança pra o app saber depois quem foi cobrado e não respondeu
-      registrarCobranca(cobrancaPendente.nome);
+      const p = cobrancaPendente;
+      window.open(`https://wa.me/${tel}?text=${encodeURIComponent(p.texto)}`, '_blank');
+      // Registra a cobrança pra o app saber depois quem foi cobrado e não
+      // respondeu, e conta pra escalada. Agradecer e confirmar prazo não contam.
+      if (p.tipo !== 'recebi' && p.tipo !== 'novoPrazo') registrarCobranca(p.nome);
+      // as partes usadas não se repetem nas próximas 5 mensagens pra essa pessoa
+      if (p.pecas) guardarPecas(p.nome, p.pecas);
+      if (p.persona && contatos[p.nome]) {
+        contatos[p.nome].ultimaPersona = p.persona;
+        contatos[p.nome].ultimasPersonas = (contatos[p.nome].ultimasPersonas || []).concat([p.persona]).slice(-2);
+        salvarContatos();
+      }
       cobrancaPendente = null;
       renderizarEmprestimos();
     }
@@ -13428,6 +14556,14 @@
       campoNome.dataset.original = nome || '';
       document.getElementById('inputTelefoneCobranca').value = telefoneVisivel(telDoContato(nome));
       document.getElementById('inputTelefoneCobranca').dataset.nome = nome || '';
+      // gênero, apelido e relação: o que já está salvo, ou o palpite pelo nome
+      const ficha = contatos[nome] || {};
+      document.getElementById('inputApelidoContato').value = ficha.apelido || '';
+      const selGen = document.getElementById('seletorGeneroContato');
+      selGen.dataset.tocado = ['m', 'f', 'n'].includes(ficha.genero) ? '1' : '';
+      marcarOpcaoContato('seletorGeneroContato', ['m', 'f', 'n'].includes(ficha.genero) ? ficha.genero : '', true);
+      marcarOpcaoContato('seletorRelacaoContato', ficha.relacao || '', true);
+      atualizarPalpiteGenero();
       document.getElementById('rotuloTelOpcional').classList.toggle('escondido', paraCobrar);
       document.getElementById('btnSalvarContato').textContent = paraCobrar ? 'Salvar e abrir' : 'Salvar';
       // Remover só faz sentido em quem já está cadastrado, e nunca no meio de
@@ -13453,6 +14589,29 @@
       document.getElementById('ajudaAgendaIphone').classList.toggle('escondido', temPicker);
 
       document.getElementById('modalContatoCobranca').classList.remove('escondido');
+    }
+
+    // Seletor de uma opção só (gênero, relação): guarda a escolha no próprio bloco
+    function marcarOpcaoContato(id, valor, semToque) {
+      const bloco = document.getElementById(id);
+      if (!bloco) return;
+      bloco.dataset.valor = valor || '';
+      if (!semToque) bloco.dataset.tocado = '1';
+      bloco.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.valor === valor ? 'true' : 'false'));
+      if (id === 'seletorGeneroContato' && !semToque) atualizarPalpiteGenero();
+    }
+
+    /* Sem gênero escolhido, o palpite pelo nome (ou pelo apelido) já vem
+       marcado e avisado. Salvar é a confirmação: até lá, nada fica gravado. */
+    function atualizarPalpiteGenero() {
+      const bloco = document.getElementById('seletorGeneroContato');
+      const dica = document.getElementById('dicaGeneroContato');
+      if (!bloco || !dica) return;
+      if (bloco.dataset.tocado === '1') { dica.textContent = ''; return; }
+      const base = document.getElementById('inputApelidoContato').value.trim() || document.getElementById('inputNomeContato').value.trim();
+      const palpite = generoSugerido(base);
+      marcarOpcaoContato('seletorGeneroContato', palpite, true);
+      dica.textContent = palpite ? 'Palpite pelo nome. Confira antes de salvar.' : 'Escolha um. Sem gênero, a mensagem sai neutra.';
     }
 
     /* Da agenda vêm o número e o nome. Com mais de um número no contato, o
@@ -13510,8 +14669,16 @@
       // já estava salvo, sem apagar a aprendizagem.
       const tomEscolhido = (paraCobrar && cobrancaPendente.tom)
         || (contatos[nome] && contatos[nome].tom) || 'neutro';
-      // Juntar dois contatos não pode apagar o número que um deles já tinha.
-      contatos[nome] = { tel: tel || telDoContato(nome), tom: tomEscolhido };
+      // Juntar dois contatos não pode apagar o número que um deles já tinha. E
+      // salvar só o telefone não pode apagar gênero, apelido nem o histórico.
+      const genero = document.getElementById('seletorGeneroContato').dataset.valor || '';
+      const relacao = document.getElementById('seletorRelacaoContato').dataset.valor || '';
+      const apelido = document.getElementById('inputApelidoContato').value.trim().replace(/\s+/g, ' ');
+      const ficha = Object.assign({}, contatos[nome] || {}, { tel: tel || telDoContato(nome), tom: tomEscolhido });
+      if (genero) ficha.genero = genero; else delete ficha.genero;
+      if (relacao) ficha.relacao = relacao; else delete ficha.relacao;
+      if (apelido) ficha.apelido = apelido; else delete ficha.apelido;
+      contatos[nome] = ficha;
       salvarContatos();
       if (paraCobrar) cobrancaPendente.nome = nome;
       fecharModal('modalContatoCobranca');
@@ -13575,6 +14742,7 @@
         trocarChaves(l.rateioFracoes);
         trocarChaves(l.cobrancaPor);
         trocarChaves(l.alinhadoPor);
+        trocarChaves(l.cobrancasEnviadas);
       };
       lancamentos.forEach(aplicar);
       fixos.forEach(aplicar);
@@ -13583,10 +14751,11 @@
       const velho = contatos[de];
       if (velho) {
         const destino = contatos[para];
-        contatos[para] = {
+        // o que o destino já tem manda; o resto (gênero, apelido...) vem do velho
+        contatos[para] = Object.assign({}, velho, destino || {}, {
           tel: (destino && destino.tel) || velho.tel || '',
           tom: (destino && destino.tom) || velho.tom || 'neutro'
-        };
+        });
         delete contatos[de];
       }
       salvarLocalStorage(); salvarFixos(); salvarLixeira(); salvarContatos();
@@ -13931,6 +15100,14 @@
       const hoje = obterDataBrasilia();
       lancamentos.forEach(l => {
         if (!pessoasDoLancamento(l).includes(nome)) return;
+        /* ESCALADA: quantas mensagens foram pra essa dívida sem ela ser paga.
+           Só conta enquanto está em aberto; quitou, a dívida sai de cena e o
+           contador vai junto. Cobrança de antes do contador vale como uma. */
+        if (cobrancasDoLancamento(l).some(c => c.nome === nome && !c.quitado)) {
+          const mapa = l.cobrancasEnviadas = l.cobrancasEnviadas || {};
+          const antes = mapa[nome] != null ? mapa[nome] : (cobrancaDe(l, nome).ultima ? 1 : 0);
+          mapa[nome] = antes + 1;
+        }
         carimbarPessoa(l, nome, 'cobranca', hoje);
         // Cobrança nova apaga o alinhamento antigo daquela pessoa: você voltou a
         // cobrar, então a conversa anterior não vale mais como resposta.
@@ -14059,6 +15236,17 @@
           if (aberta) {
             const box = document.createElement('div');
             box.style.cssText = 'margin:4px 0 8px 8px;padding-left:8px;border-left:2px solid var(--borda);';
+            /* AGRADECER: um "recebi, valeu" pra quem acabou de pagar, num botão
+               discreto. Nada abre sozinho depois do Recebi. */
+            if (recebeu > 0) {
+              const btnValeu = document.createElement('button');
+              btnValeu.type = 'button';
+              btnValeu.className = 'btn-mini';
+              btnValeu.style.cssText = 'margin:4px 0 6px;';
+              btnValeu.textContent = '💬 mandar "recebi, valeu"';
+              btnValeu.onclick = () => abrirRespostaWhatsApp(nome, 'recebi');
+              box.appendChild(btnValeu);
+            }
             lista.slice().sort((a, b) => ((b.quando || b.c.lanc.data || '') < (a.quando || a.c.lanc.data || '') ? -1 : 1)).forEach(q => {
               const l = q.c.lanc;
               const rot = q.c.rotulo || rotuloParcela(l);
@@ -14308,7 +15496,7 @@
               const sobra = Math.abs(cruzada.saldo);
               const linhaAcerto = document.createElement('div');
               linhaAcerto.style.cssText = 'margin:8px 0 2px 6px;font-size:11.5px;color:var(--texto-fraco);line-height:1.45;';
-              linhaAcerto.innerHTML = `🔁 Vocês se devem dos dois lados: ele ${fmtOculto(cruzada.meDeve)}, você ${fmtOculto(cruzada.euDevo)}.<br>`
+              linhaAcerto.innerHTML = `🔁 Vocês se devem dos dois lados: ${esc(pronomeDe(nome))} ${fmtOculto(cruzada.meDeve)}, você ${fmtOculto(cruzada.euDevo)}.<br>`
                 + (sobra < 0.005
                   ? `<strong style="color:var(--texto-medio);">Abatendo, dá empate.</strong>`
                   : `Abatendo, sobram <strong style="color:${cruzada.saldo > 0 ? 'var(--verde)' : 'var(--vermelho)'};">${fmtOculto(sobra)}</strong> pra ${cruzada.saldo > 0 ? 'você receber' : 'você pagar'}.`);
@@ -14335,6 +15523,19 @@
               : abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
             listaEl.appendChild(btnZapCheio);
 
+            /* NOVO PRAZO: depois de um "+1 mês", um botão discreto pra confirmar
+               a data combinada com a pessoa. Nada abre sozinho. */
+            if (!devo && lista.some(c => (c.adiamentos || 0) > 0)) {
+              const btnPrazo = document.createElement('button');
+              btnPrazo.type = 'button';
+              btnPrazo.className = 'btn-mini';
+              btnPrazo.style.cssText = 'margin-top:8px;margin-left:6px;';
+              btnPrazo.textContent = '📅 avisar novo prazo';
+              btnPrazo.title = 'Confirmar no WhatsApp a data nova combinada';
+              btnPrazo.onclick = () => abrirRespostaWhatsApp(nome, 'novoPrazo');
+              listaEl.appendChild(btnPrazo);
+            }
+
             /* Quem quiser cobrar/falar só de um lado continua podendo: o acerto
                é a sugestão, não uma porta trancada. */
             if (cruzada) {
@@ -14342,7 +15543,7 @@
               btnSoEsteLado.type = 'button';
               btnSoEsteLado.className = 'btn-mini';
               btnSoEsteLado.style.cssText = 'margin-top:8px;margin-left:6px;';
-              btnSoEsteLado.textContent = devo ? 'só o que eu devo' : 'só o que ele deve';
+              btnSoEsteLado.textContent = devo ? 'só o que eu devo' : 'só o que ' + pronomeDe(nome) + ' deve';
               btnSoEsteLado.onclick = () => abrirCobrancaWhatsApp(nome, lista.map(c => c.chave), devo);
               listaEl.appendChild(btnSoEsteLado);
 
@@ -19959,13 +21160,24 @@ function confirmarLancamentoVoz() {
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js, e
     // acrescente o que mudou no começo de NOVIDADES (o teste 15 confere).
-    const APP_VERSION = '2026.11.18-1';
+    const APP_VERSION = '2026.11.18-2';
 
     /* NOVIDADES — o que mudou em cada versão, da mais nova pra mais velha. É o
        que aparece em Ajustes → Manual e novidades → O que mudou, e na faixa que
        surge uma vez depois de cada atualização. Escrito pra quem usa o app, sem
        termo técnico. */
     const NOVIDADES = [
+      { versao: '2026.11.18-2', data: '18/11/2026', itens: [
+        'Cobrança com cara de gente: ao tocar em Cobrar, abre uma janela com o tom, a mensagem pronta (dá pra editar) e os botões "Outra versão" e "Abrir no WhatsApp". Nada é enviado sozinho.',
+        'Quatro tons: Leve, Neutro, Zoeira e Firme. O app sugere pela quantidade de cobranças sem pagamento (1ª leve, 2ª mais direta, 3ª em diante firme, contando os "+1 mês"), e quem escolhe é você.',
+        'Cada mensagem é montada na hora, com o que foi, o valor, há quantos dias venceu, bom dia ou boa noite, sexta-feira e começo de mês. Cinco cobranças seguidas pra mesma pessoa saem diferentes.',
+        'Na Zoeira, quem atrasou recebe a mensagem de um assistente: o capanga, a secretária exigente ou o narrador de futebol. Nos outros tons é você falando.',
+        'Contatos com gênero (Masculino, Feminino ou Não definir), apelido ("Bernardão") e relação (Amigo, Família, Colega, Outro). A mensagem concorda com o gênero da pessoa e com o seu. Família não recebe Zoeira nem assistente por sugestão.',
+        'Botões discretos no card de Empréstimos: "avisar novo prazo" depois de adiar e "mandar \'recebi, valeu\'" pra quem pagou.',
+        'Trocar de aba, arrastando ou tocando no nome, agora tem 24px de respiro entre as duas abas.',
+        'Ajustes: "Letra, modo e ajuda" foi pra perto de Aparência, e a ordem dos cards virou um card só, com Faturas e Gráficos num seletor.',
+        'Dez temas, escuros à esquerda e claros à direita, com o novo Grafite (cinza-chumbo com âmbar). O card Grupos perdeu o olho próprio (o do Resumo vale pra aba toda), e o botão do relatório ganhou um ícone no lugar do emoji.'
+      ] },
       { versao: '2026.11.18-1', data: '18/11/2026', itens: [
         'Fotos nos lançamentos: na janela de "adicionar observação", tire uma foto ou escolha da galeria (até 5 por lançamento). Elas ficam menores pra não lotar o celular, aparecem na ficha do lançamento (arraste pro lado pra passar) e um iconezinho de câmera marca na lista quem tem foto.',
         'Memórias: no card de lançamentos da aba Faturas, o botão Memórias mostra só o que tem foto, em cards grandes, do mais novo pro mais antigo.',
@@ -20104,10 +21316,9 @@ function confirmarLancamentoVoz() {
     aplicarSecao('contatos');
     aplicarSecao('lixeira');
     aplicarSecao('contasCategorias');
-    aplicarSecao('ordemFaturas');
+    aplicarSecao('ordemCards');
     if (uiPrefs['secao_graficoPrincipal'] === undefined) uiPrefs['secao_graficoPrincipal'] = true;
     aplicarSecao('graficoPrincipal');
-    aplicarSecao('ordemGraficos');
     aplicarSecao('gruposInvestimento');
     renderizarListaTiposAtivo();
     aplicarSecao('analista');
