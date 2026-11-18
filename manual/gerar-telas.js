@@ -562,14 +562,34 @@ fs.mkdirSync(OUT, { recursive: true });
   await tiro('backup_fotos', '#cardBackupTela');
   await secao('backup', false);
 
-  // 35) ligar e desligar cards
-  await secao('ordemFaturas', true);
-  await page.evaluate(()=>{ alternarCardLigado('abaFaturas', 'emprestimos', false);
-    document.getElementById('corpo-ordemFaturas').closest('.card').id = 'cardOrdemTela'; });
+  // 35) ordem dos cards: um card só, com a aba no seletor, e um card desligado
+  await secao('ordemCards', true);
+  await page.evaluate(()=>{ escolherAbaDaOrdem('abaFaturas'); alternarCardLigado('abaFaturas', 'emprestimos', false); });
   await page.waitForTimeout(200);
-  await tiro('cards_ligar', '#cardOrdemTela');
+  await tiro('cards_ligar', '#cardOrdemCards');
   await page.evaluate(()=>alternarCardLigado('abaFaturas', 'emprestimos', true));
-  await secao('ordemFaturas', false);
+  await secao('ordemCards', false);
+
+  // 35b) temas: escuros à esquerda, claros à direita
+  await secao('tema', true);
+  await page.evaluate(()=>{ document.getElementById('corpo-tema').closest('.card').id = 'cardTemaTela'; });
+  await tiro('temas', '#cardTemaTela');
+  await secao('tema', false);
+
+  // 35c) a janela da cobrança: tom, personagem e prévia editável
+  await page.evaluate(()=>{ uiPrefs.meuNome = 'Léo'; salvarUiPrefs();
+    contatos['Bernardo'] = Object.assign(contatos['Bernardo'] || {}, { genero: 'm', apelido: 'Bernardão', relacao: 'amigo' }); salvarContatos();
+    const chaves = cobrancasAbertas().filter(c => c.nome === 'Bernardo' && !c.devo).map(c => c.chave);
+    abrirCobrancaWhatsApp('Bernardo', chaves, false); escolherTomCobranca('zoeira'); escolherPersonaCobranca('capanga'); });
+  await page.waitForTimeout(300);
+  await tiro('cobranca_previa', '#modalTomCobranca .modal-content');
+  await page.evaluate(()=>fecharModal('modalTomCobranca'));
+
+  // 35d) o cadastro do contato, com gênero, apelido e relação
+  await page.evaluate(()=>abrirModalContatoCobranca('Bernardo'));
+  await page.waitForTimeout(300);
+  await tiro('contato_genero', '#modalContatoCobranca .modal-content');
+  await page.evaluate(()=>fecharModal('modalContatoCobranca'));
 
   // 36) letra, modo e ajuda
   await secao('acessibilidade', true);

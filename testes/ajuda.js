@@ -106,7 +106,9 @@ async function iniciar(nome, corpo) {
   const srv = await servir();
   const BASE = `http://127.0.0.1:${srv.address().port}/MeuFinanceiro-/`;
   const navegador = await chromium.launch();
-  const contexto = await navegador.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2 });
+  // reducedMotion: a troca de aba por toque desliza (300ms); os testes medem a tela
+  // logo depois do toque, então rodam sem animação. Quem testa o deslize liga de volta.
+  const contexto = await navegador.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
   await contexto.addInitScript(ajudasDaPagina);
   const erros = [];
   let falhas = 0, verificacoes = 0;

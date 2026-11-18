@@ -86,7 +86,7 @@
     Controle de gastos que funciona no seu celular, sem conta pra criar,
     sem internet e sem ninguém vendo seus dados.
   </p>
-  <div class="rodape" style="margin-top:40px;">Versão 2026.11.18-1 · Leia em 30 minutos</div>
+  <div class="rodape" style="margin-top:40px;">Versão 2026.11.18-2 · Leia em 30 minutos</div>
 </div>
 
 <!-- ============================================================ -->
@@ -130,6 +130,9 @@
       e voltar atrás no meio do caminho: solte antes de um terço da tela e tudo volta pro lugar.
       Passando disso, ou com um peteleco rápido, a troca completa sozinha. O rodízio passa pelas
       <strong>cinco</strong> abas, Ajustes inclusive, e depois dele volta pra Lançamentos.
+      <br><br>Entre as duas abas fica sempre um <strong>respiro de 24px</strong>, no arraste e também
+      quando você toca no nome da aba: aí as duas deslizam juntas, do mesmo jeito. Antes os cards
+      de uma aba encostavam nos da outra.
       <br><br>Embaixo das abas aparece a dica <em>“arraste o dedo pro lado na tela pra trocar de aba”</em>.
       Ela some na primeira vez que você usa o gesto (ou no ✕). Se o gesto atrapalhar — trocar de aba
       sem querer ao rolar a tela —, desligue em <strong>Ajustes → Letra, modo e ajuda</strong>: aí só
@@ -904,14 +907,71 @@
           a linha acusa <strong>“cobrado há 8 dias”</strong> e sobe pro topo.</li>
     </ul>
 
-    <h3>O tom das mensagens</h3>
-    <p>São dois tons: <strong>😂 Zoeira</strong> e <strong>😐 Neutro</strong>. O texto muda conforme o tom,
-       a situação e o mês — a mesma pessoa não recebe a mesma frase duas vezes seguidas.</p>
+    <h3>A mensagem: com cara de gente, não de boleto</h3>
+    <p>Ao tocar em <strong>Cobrar</strong>, <strong>Lembrar</strong> ou <strong>Combinar</strong>, abre uma janela
+       com o tom, a mensagem pronta e dois botões: <strong>Outra versão</strong> (troca o texto) e
+       <strong>Abrir no WhatsApp</strong>. A mensagem dá pra editar ali mesmo, antes de abrir.</p>
+    <div class="tela metade"><img src="img/cobranca_previa.png" alt="Janela da cobrança com tom, personagem e prévia"></div>
+    <div class="legenda">Tom, quem manda a mensagem (só na Zoeira atrasada) e a prévia editável.</div>
+    <p>São quatro tons:</p>
+    <ul>
+      <li><strong>🙂 Leve</strong> — gentil, sem pressão. <em>“Oi, Aninha! Passando só pra lembrar do Gympass, R$ 140, que vence sexta. Sem pressa, tá?”</em></li>
+      <li><strong>😐 Neutro</strong> — direto ao ponto.</li>
+      <li><strong>😂 Zoeira</strong> — pros amigos de zoeira, com emoji. <em>“Faz 10 dias que o Airbnb venceu e os R$ 200 ainda não chegaram. Bora resolver? 😅”</em></li>
+      <li><strong>🧾 Firme</strong> — sério, sem grosseria e sem emoji. <em>“Oi, Carlos. O valor de R$ 120 venceu dia 13 e continua em aberto. Consegue acertar até sexta?”</em></li>
+    </ul>
     <div class="nota">
-      <strong>Quem está atrasado não recebe mensagem sua.</strong> Recebe do <em>assistente</em>: um
-      personagem que se apresenta como contratado pra cuidar das suas contas e cobra com sotaque de filme
-      de máfia. Tira o peso de cobrar amigo — e funciona melhor que cobrar você mesmo.
-      O nome que ele usa fica em <em>Ajustes → Contatos de cobrança</em>.
+      <strong>Cada mensagem é montada na hora.</strong> Ela junta uma abertura, um corpo e um fecho,
+      cada um sorteado de um banco próprio pra cada tom e situação (combinar, lembrar e cobrar), e o
+      Pix vai no fim. São centenas de versões, e o app guarda as últimas 5 que foram pra cada pessoa:
+      cinco cobranças seguidas pro mesmo amigo saem com cinco textos diferentes.
+      <br><br>O texto usa o que aconteceu de verdade: o que foi (<em>do Airbnb</em>, <em>da pizza</em>),
+      o valor e a data no meio da frase, há quantos dias venceu, <em>bom dia</em> ou <em>boa noite</em>
+      pela hora, a sexta-feira e o começo do mês (<em>“o salário já caiu?”</em>). Às vezes sai numa
+      linha, às vezes com mais detalhe. Nunca em formato de lista.
+    </div>
+    <div class="nota">
+      <strong>O assistente só aparece na Zoeira.</strong> Quem atrasou e recebe a Zoeira ganha a mensagem
+      de um personagem que trabalha “pra você”: o <strong>capanga</strong> de filme de máfia, a
+      <strong>secretária exigente</strong> ou o <strong>narrador de futebol</strong>. Dá pra sortear ou
+      escolher na janela. Nos outros tons é sempre você falando. O nome que ele usa (<em>“o capanga do
+      Léo”</em>) e o seu gênero ficam em <em>Ajustes → Contatos de cobrança</em>.
+    </div>
+    <div class="nota">
+      <strong>O app sugere o tom, você escolhe.</strong> A sugestão sobe com as cobranças sem pagamento:
+      a 1ª mensagem vem <em>Leve</em>, a 2ª <em>Neutro</em> (mais direta) e da 3ª em diante <em>Firme</em>.
+      Conta cada mensagem aberta no WhatsApp, inclusive o lembrete antes de vencer, e cada
+      <em>+1 mês</em>. Quando a pessoa paga, a contagem daquela dívida acaba. Quem você costuma cobrar na
+      Zoeira continua com Zoeira sugerida nas duas primeiras. A linha embaixo dos tons diz o porquê da
+      sugestão.
+    </div>
+    <div class="nota">
+      <strong>Homem, mulher ou sem definir.</strong> No cadastro do contato (<em>Ajustes → Contatos de
+      cobrança</em>, ou a janela que pede o telefone na primeira cobrança) tem três campos novos:
+      <ul>
+        <li><strong>Gênero</strong> — Masculino, Feminino ou Não definir. O app dá um palpite pelo primeiro
+            nome, mas só vale depois que você salva. Com “Não definir”, a mensagem usa frases neutras:
+            nada de <em>querido</em> ou <em>querida</em>.</li>
+        <li><strong>Como chamo</strong> — o apelido que vai na mensagem no lugar do nome:
+            <em>Bernardão</em>, <em>Aninha</em>.</li>
+        <li><strong>Relação</strong> — Amigo(a), Família, Colega de trabalho ou Outro. Pra Família o app
+            nunca sugere Zoeira nem chama o assistente (dá pra escolher se quiser). Pra colega, o tom
+            sugerido é mais neutro.</li>
+      </ul>
+      Contato antigo, sem gênero, continua funcionando: na próxima cobrança a janela pergunta e a
+      mensagem já sai, neutra, enquanto você não responde.
+    </div>
+    <div class="tela metade"><img src="img/contato_genero.png" alt="Cadastro do contato com gênero, apelido e relação"></div>
+    <div class="nota">
+      <strong>Recebi e novo prazo.</strong> Dois botões discretos no card de Empréstimos, que nunca abrem
+      sozinhos:
+      <ul>
+        <li><strong>📅 avisar novo prazo</strong> — aparece em quem teve o prazo adiado com <em>+1 mês</em>
+            e monta a confirmação da data combinada.</li>
+        <li><strong>💬 mandar “recebi, valeu”</strong> — em <em>Já quitadas</em>, pra quem te pagou.
+            <em>“Caiu aqui, valeu demais! Estamos quites.”</em></li>
+      </ul>
+      Os dois têm as suas próprias variações e não contam como cobrança.
     </div>
     <div class="nota">
       <strong>A mensagem não é enviada sozinha.</strong> Ela chega <em>escrita</em> na caixa de texto do WhatsApp,
@@ -922,12 +982,6 @@
        <strong>quem te deve</strong> e os <strong>boletos que você tem que pagar</strong> (item 8). Chega um
        aviso de cada, com tudo junto. O ícone do app mostra quantas coisas estão vencidas — cobrança e
        boleto.</p>
-      <div class="nota">
-      <strong>Você escolhe o tom da mensagem.</strong> Ao tocar no botão de WhatsApp, o app
-      pergunta como você quer falar dessa vez — <em>zoeira</em> ou <em>neutro</em>. O tom que
-      você usou da última vez com aquela pessoa vem marcado como sugestão, mas quem manda
-      é você: dá pra estar atrasado e querer ir leve, ou faltar uma semana e querer zoar.
-    </div>
     <div class="nota">
       <strong>A cobrança é de um mês por vez.</strong> Se a pessoa tem parcelas espalhadas por
       vários meses, a mensagem pede só o que vence neste mês (mais o que já venceu) — mandar o
@@ -1071,7 +1125,7 @@
     </div>
 
     <h3>Relatório do consultor</h3>
-    <p>No card do período, o botão <strong>📋 Relatório do consultor</strong> monta um retrato das
+    <p>No card do período, o botão <strong>Relatório do consultor</strong> (com o ícone de documento) monta um retrato das
        suas finanças pra levar a um consultor (ou pra você mesmo, uma vez por mês). Ele sai pronto em
        três formatos: <em>Copiar texto</em> (pra colar numa conversa), <em>Compartilhar (.txt)</em> e
        <em>Salvar em PDF</em>.</p>
@@ -1119,8 +1173,9 @@
       não divide espaço com as que já acabaram, e o bloco só aparece quando existe algum grupo
       encerrado. Toque no cabeçalho de cada um pra recolher; fechado, o card mostra quantos grupos
       seguem em aberto.
-      <br><br>O <strong>olho</strong> no cabeçalho esconde os valores, igual ao da aba Faturas —
-      útil pra mostrar a tela pra alguém sem abrir os números.
+      <br><br>Pra esconder os valores (útil pra mostrar a tela pra alguém), use o <strong>olho do
+      Resumo</strong>, no topo da aba Faturas: ele esconde a aba inteira, Grupos inclusive. O card de
+      Grupos não tem mais um olho só dele.
       <br><br>Os botões <strong>Encerrar</strong> e <strong>Reabrir</strong>, ao lado de cada grupo,
       trocaram o cadeado colorido (🔒/🔓) por um traço fino que acompanha a cor do texto ao redor —
       o mesmo peso visual dos outros ícones do app.
@@ -1344,7 +1399,6 @@
   <p class="resumo">Onde você deixa o app com a sua cara.</p>
   <div class="conteudo">
     <ul>
-      <li><strong>Letra, modo e ajuda</strong> — o primeiro card: tamanho da letra, Modo Simples, alto contraste, o gesto de trocar de aba, o tutorial e os passo a passo (veja abaixo).</li>
       <li><strong>Contas e cartões</strong> — cadastre seus bancos, marque quais têm crédito e informe o dia de fechamento e vencimento de cada cartão. Isso é o que faz a fatura cair no mês certo.</li>
       <li><strong>Saldo inicial</strong> — dentro de cada conta. É quanto ela já tinha quando você começou a usar o app. Entra no saldo e em mais lugar nenhum: não vira receita, não aparece em “recebido”, nos gráficos nem nas perguntas. Pode ser negativo.</li>
       <li><strong>Corrigir saldo</strong> — toque na conta em <em>Contas e cartões</em> e escolha <em>Corrigir saldo</em>. Você digita o saldo que o banco mostra agora e o app acerta a diferença sozinho, <strong>sem criar lançamento nenhum</strong>. É o jeito certo de fazer o app bater com a realidade — a antiga “receita de ajuste” mentia em recebido e nos gráficos só pra consertar um número. Também dá pra corrigir direto da aba Faturas: no resumo do mês, cada conta tem um <em>corrigir</em> ao lado (item 5).</li>
@@ -1353,19 +1407,21 @@
           <em>mover para</em> outra categoria (os gastos fixos e consórcios vão junto, então os boletos futuros
           já nascem na nova) ou deixar os antigos com o nome velho no histórico. Categoria apagada
           não volta sozinha — só se você criar de novo com o mesmo nome.</li>
-      <li><strong>Cards da aba Faturas</strong> e <strong>Cards da aba Gráficos</strong> — arraste pelas listrinhas para deixar no topo o que você olha primeiro, e <strong>desmarque o card que você não usa</strong> pra ele sumir da aba. Nada é apagado: marcou de novo, ele volta, com tudo em dia. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro.
+      <li><strong>Letra, modo e ajuda</strong> — tamanho da letra, Modo Simples, alto contraste, o gesto de trocar de aba, o tutorial e os passo a passo (veja abaixo). Fica logo antes de Aparência.</li>
+      <li><strong>Ordem dos cards</strong> — um card só, com a aba escolhida no topo (<em>Faturas | Gráficos</em>). Arraste pelas listrinhas para deixar no topo o que você olha primeiro, e <strong>desmarque o card que você não usa</strong> pra ele sumir da aba. Nada é apagado: marcou de novo, ele volta, com tudo em dia. O card fixo de cada aba (Resumo, Período) não entra: ele é sempre o primeiro. Antes eram dois cards, um por aba; a ordem que você tinha salvo continua a mesma.
       <br><br><em>Investimentos</em> não tem essa tela: os aportes e consórcios são uma lista só (ver capítulo 13), ordenada pela atividade mais recente. Cada item vem <strong>recolhido</strong>, com o valor no cabeçalho; toque pra abrir os detalhes.</li>
       <li><strong>Grupos de investimento</strong> — Tesouro, fundos, poupança, ações: cada grupo vira um card na aba <em>Investim.</em> Fica logo depois de <em>Contas e cartões</em> porque é o mesmo assunto — o cadastro de onde o dinheiro mora.</li>
-      <li><strong>Contatos de cobrança</strong> — a agenda de quem você empresta. Cadastre pelo <em>+ Novo contato</em> (o telefone é opcional: sem ele a pessoa existe igual, só não dá pra abrir o WhatsApp) e depois é só escolher o nome na hora do lançamento. Quem você já emprestou antes aparece aqui sozinho, vindo do histórico.</li>
+      <li><strong>Contatos de cobrança</strong> — a agenda de quem você empresta, com gênero, apelido e relação de cada um (item 9). Cadastre pelo <em>+ Novo contato</em> (o telefone é opcional: sem ele a pessoa existe igual, só não dá pra abrir o WhatsApp) e depois é só escolher o nome na hora do lançamento. Quem você já emprestou antes aparece aqui sozinho, vindo do histórico.</li>
       <li><strong>Travar o zoom</strong> — dentro de <em>Aparência</em>. No iPhone um toque duplo sem querer dá zoom e, com o app instalado na tela inicial, não existe barra de endereço pra desfazer: a tela fica torta até você ajustar com os dedos. Ligando isso, a tela para de dar zoom. Vale só naquele aparelho, e vem desligado — quem usa o zoom pra enxergar melhor não perde nada.</li>
-      <li><strong>Aparência</strong> — nove temas: Escuro, Claro, Índigo (escuro azulado), Sépia (fundo quente), Floresta (verde à noite), Papel (cinza-bege claro), Rosa (suave e claro), Violeta (roxo-azulado) e <strong>Fofo</strong> (creme e lilás, com cantos redondos). Vale só neste aparelho: não entra no backup, então quem receber seus dados continua com o tema dele.</li>
+      <li><strong>Aparência</strong> — dez temas, em duas colunas: os <strong>escuros</strong> à esquerda (Escuro, Índigo, Floresta, Violeta e o novo <strong>Grafite</strong>, cinza-chumbo com destaque âmbar) e os <strong>claros</strong> à direita (Claro, Sépia, Papel, Rosa e Fofo). Vale só neste aparelho: não entra no backup, então quem receber seus dados continua com o tema dele. Atualizar o app não troca o tema que você escolheu.</li>
       <li><strong>Sons</strong> — som ao salvar receita, despesa e transferência. Cada tipo é uma parte recolhida, que mostra no título o que está escolhido (<em>Despesa — Moeda caindo</em>); toque pra abrir (veja abaixo). Ali também fica o <strong>vibrar ao salvar</strong>: um toque seco pra despesa, dois pra transferência, e uma vibração mais longa e oscilante pra receita — dá pra saber o que entrou sem olhar a tela, com o som desligado.</li>
       <li><strong>Lançamentos excluídos</strong> — a lixeira. Tudo que você apaga fica guardado aqui com data e volta inteiro pelo botão <em>restaurar</em>. Guarda os últimos 30.</li>
       <li><strong>Manual e novidades</strong> — este manual em PDF, sempre na versão do app que está no seu celular, e a lista do que mudou em cada atualização (veja abaixo).</li>
       <li><strong>Backup e restauração</strong> — o item mais importante desta lista. Ali também aparece quanto as fotos ocupam.</li>
     </ul>
-    <div class="tela metade"><img src="img/cards_ligar.png" alt="Lista de cards da aba Faturas com um desmarcado"></div>
-    <div class="legenda">Empréstimos desmarcado: some da aba Faturas, sem perder nada.</div>
+    <div class="tela metade"><img src="img/temas.png" alt="Aparência com os temas escuros à esquerda e os claros à direita"></div>
+    <div class="tela metade"><img src="img/cards_ligar.png" alt="Card Ordem dos cards com o seletor de aba e um card desmarcado"></div>
+    <div class="legenda">Os temas em duas colunas, e a Ordem dos cards com Empréstimos desmarcado: some da aba Faturas, sem perder nada.</div>
     <div class="nota">
       <strong>A mesma pessoa cadastrada duas vezes?</strong> É a herança de quando o nome era
       digitado à mão. Abra o contato em <em>Contatos de cobrança</em>, troque o nome pelo da
@@ -1430,7 +1486,7 @@
       ser de 5 MB ou mais.
     </div>
     <h3>Letra, modo e ajuda</h3>
-    <p>O primeiro card de Ajustes. Tudo nele vale só neste aparelho e <strong>não mexe nos seus dados</strong>.</p>
+    <p>Fica entre <em>Contatos de cobrança</em> e <em>Aparência</em>. Tudo nele vale só neste aparelho e <strong>não mexe nos seus dados</strong>.</p>
     <div class="tela metade"><img src="img/acessibilidade.png" alt="Card Letra, modo e ajuda"></div>
     <ul>
       <li><strong>Tamanho da letra</strong> — <em>Normal</em>, <em>Grande</em> (12% maior) ou <em>Extra grande</em>
