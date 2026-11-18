@@ -14,7 +14,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(900);
   // o app instalado do zero começa sem contas; o cenário de demonstração usa
   // as contas de exemplo (Itaú, PicPay...)
-  await page.evaluate(()=>{ localStorage.clear(); localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(CONTAS_PADRAO)); });
+  await page.evaluate(()=>{ localStorage.clear(); localStorage.setItem(STORAGE_KEY_CONTAS, JSON.stringify(CONTAS_PADRAO)); localStorage.setItem('meu_financeiro_tutorial_visto_v1', '1'); });
   await page.reload(); await page.waitForTimeout(900);
 
   // ---- dados de demonstração (fictícios) ----
@@ -192,9 +192,11 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.evaluate(()=>fecharModal('modalPlanejarMes')); await page.waitForTimeout(300);
   await secao('metas', false);
 
-  // 11) grupos
-  await abrir('Grupos');
-  await tiro('grupos', '#abaGrupos > .card');
+  // 11) grupos: agora um card na aba Faturas
+  await abrir('Faturas');
+  await secao('grupos', true);
+  await tiro('grupos', '#abaFaturas > [data-card="grupos"]');
+  await secao('grupos', false);
 
   // 11b) o detalhe do grupo, em pizza
   await page.evaluate(()=>{
@@ -460,8 +462,10 @@ fs.mkdirSync(OUT, { recursive: true });
   await abrir('Ajustes');
   await page.evaluate(()=>{ localStorage.setItem(CONFIG_SOM.despesa.ligado, '1'); renderizarSons(); });
   await secao('sons', true);
+  await secao('som-receita', true);
   await page.evaluate(()=>{ document.getElementById('corpo-sons').closest('.card').id = 'cardSonsTela'; });
   await tiro('sons', '#cardSonsTela');
+  await secao('som-receita', false);
   await secao('sons', false);
   await page.evaluate(()=>{ localStorage.removeItem(CONFIG_SOM.despesa.ligado); });
 
@@ -473,9 +477,134 @@ fs.mkdirSync(OUT, { recursive: true });
   await tiro('resumo_corrigir', '#boxSaldoContasTela');
   await page.evaluate(()=>fecharModal('modalResumoFatura'));
 
-  // 30) primeira vez no app: sem conta nenhuma, o cartão de boas-vindas
+  // ---- FOTOS E MEMÓRIAS (imagens desenhadas aqui mesmo: nenhuma foto real) ----
+  const desenho = async (cena) => Buffer.from((await page.evaluate(cena => {
+    const c = document.createElement('canvas'); c.width = 1600; c.height = 1200;
+    const g = c.getContext('2d');
+    if (cena === 'bolo') {
+      const f = g.createLinearGradient(0, 0, 0, 1200); f.addColorStop(0, '#ffe3ec'); f.addColorStop(1, '#ffd0a8');
+      g.fillStyle = f; g.fillRect(0, 0, 1600, 1200);
+      g.fillStyle = '#f4f1ea'; g.beginPath(); g.ellipse(800, 930, 560, 110, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#8d5a3b'; g.fillRect(380, 560, 840, 340);
+      g.fillStyle = '#f7b7c9'; g.fillRect(380, 520, 840, 90);
+      for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(430 + i * 92, 610, 34, 0, Math.PI); g.fill(); }
+      ['#7cc7e8', '#ffd166', '#a88be6', '#7cc7e8', '#ffd166'].forEach((cor, i) => {
+        const x = 540 + i * 130; g.fillStyle = cor; g.fillRect(x, 360, 34, 160);
+        g.fillStyle = '#ff9f1c'; g.beginPath(); g.ellipse(x + 17, 330, 20, 34, 0, 0, Math.PI * 2); g.fill();
+      });
+    } else {
+      const ceu = g.createLinearGradient(0, 0, 0, 700); ceu.addColorStop(0, '#5fb4f0'); ceu.addColorStop(1, '#bfe6ff');
+      g.fillStyle = ceu; g.fillRect(0, 0, 1600, 700);
+      g.fillStyle = '#ffe08a'; g.beginPath(); g.arc(1220, 230, 120, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#2f86c6'; g.fillRect(0, 640, 1600, 260);
+      g.fillStyle = '#e9d3a3'; g.beginPath(); g.moveTo(0, 860); g.quadraticCurveTo(800, 760, 1600, 880); g.lineTo(1600, 1200); g.lineTo(0, 1200); g.fill();
+      g.strokeStyle = '#ffffff'; g.lineWidth = 10;
+      for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(120 + i * 380, 720); g.quadraticCurveTo(220 + i * 380, 690, 320 + i * 380, 720); g.stroke(); }
+      g.fillStyle = '#6b4f3a'; g.fillRect(300, 560, 30, 380);
+      g.fillStyle = '#3f9b5a'; for (let i = 0; i < 5; i++) { g.beginPath(); g.ellipse(315, 560, 170, 40, -0.6 + i * 0.3, 0, Math.PI * 2); g.fill(); }
+    }
+    return c.toDataURL('image/png');
+  }, cena)).split(',')[1], 'base64');
+  const imgBolo = await desenho('bolo');
+  const imgPraia = await desenho('praia');
+
+  // 31) a janela da observação com as fotos
+  await abrir('Lançamentos');
+  await page.evaluate(()=>{ cancelarEdicao(); alternarTipo('despesa'); document.getElementById('descricao').value = 'Bolo do aniversário';
+    document.getElementById('valor').value = 'R$ 180,00'; abrirModalObs(); document.getElementById('obsTemp').value = 'Festa da Nanda, 7 anos'; });
+  await page.setInputFiles('#inputFotoGaleria', [{ name: 'bolo.png', mimeType: 'image/png', buffer: imgBolo }, { name: 'praia.png', mimeType: 'image/png', buffer: imgPraia }]);
+  await page.waitForFunction(()=>document.querySelectorAll('#miniaturasObs .miniatura-foto').length === 2);
+  await page.waitForTimeout(300);
+  await tiro('obs_fotos', '#modalObs .modal-content');
+  // tira a segunda (era só pra mostrar as duas) e salva o lançamento com o bolo
+  await page.evaluate(()=>{ document.querySelectorAll('#miniaturasObs .tirar-foto')[1].click(); salvarObsModal();
+    document.getElementById('conta').value = 'Itaú'; atualizarVisibilidadeForma();
+    document.getElementById('formaModo').value = 'Crédito à Vista'; document.getElementById('categoria').value = 'Lazer';
+    document.getElementById('dataCompra').value = obterDataBrasilia(); executarSalvarLancamento(180); });
+  await page.waitForFunction(()=>lancamentos.some(l => l.descricao === 'Bolo do aniversário' && temFotos(l)));
+  // e um segundo lançamento com foto, pras Memórias terem dois cards
+  await page.evaluate(()=>{ alternarTipo('despesa'); document.getElementById('descricao').value = 'Quiosque na praia';
+    document.getElementById('valor').value = 'R$ 96,00'; abrirModalObs(); document.getElementById('obsTemp').value = 'Fim de semana em Ubatuba'; });
+  await page.setInputFiles('#inputFotoGaleria', [{ name: 'praia.png', mimeType: 'image/png', buffer: imgPraia }, { name: 'bolo.png', mimeType: 'image/png', buffer: imgBolo }]);
+  await page.waitForFunction(()=>document.querySelectorAll('#miniaturasObs .miniatura-foto').length === 2);
+  await page.evaluate(()=>{ salvarObsModal(); document.getElementById('conta').value = 'PicPay'; atualizarVisibilidadeForma();
+    document.getElementById('formaModo').value = 'Pix'; document.getElementById('categoria').value = 'Alimentação';
+    const d = new Date(obterDataBrasilia() + 'T12:00:00'); d.setDate(d.getDate() - 3);
+    document.getElementById('dataCompra').value = d.toISOString().slice(0, 10); executarSalvarLancamento(96); });
+  await page.waitForFunction(()=>lancamentos.some(l => l.descricao === 'Quiosque na praia' && temFotos(l)));
+  await page.waitForTimeout(300);
+
+  // 32) a ficha com o carrossel
+  await page.evaluate(()=>abrirDetalheLancamentoPorId(lancamentos.find(l => l.descricao === 'Quiosque na praia').id));
+  await page.waitForFunction(()=>document.querySelectorAll('#fotosDaFicha .quadro-foto').length === 2);
+  await page.waitForTimeout(400);
+  await tiro('ficha_fotos', '#modalDetalheCobranca .modal-content');
+  await page.evaluate(()=>fecharModal('modalDetalheCobranca'));
+
+  // 33) a lista com o ícone de câmera e as Memórias
+  await abrir('Faturas');
+  await secao('lancamentosMes', true);
+  await page.evaluate(()=>{ const linha = [...document.querySelectorAll('#listaLancamentos .item-lancamento')].find(d => /Quiosque/.test(d.textContent));
+    linha.id = 'linhaComFotoTela'; });
+  await tiro('lista_foto', '#linhaComFotoTela');
+  await page.evaluate(()=>alternarMemorias());
+  await page.waitForFunction(()=>document.querySelectorAll('#listaLancamentos .capa-memoria img').length === 2);
+  await page.waitForTimeout(300);
+  await tiro('memorias', '[data-card="lancamentosMes"]');
+  await page.evaluate(()=>alternarMemorias());
+
+  // 34) o backup mostrando o espaço das fotos e a opção de levá-las
+  await abrir('Ajustes');
+  await secao('backup', true);
+  await page.evaluate(()=>atualizarInfoFotos());
+  await page.waitForFunction(()=>/Fotos guardadas/.test(document.getElementById('infoFotos').textContent));
+  await page.evaluate(()=>{ document.getElementById('corpo-backup').closest('.card').id = 'cardBackupTela'; });
+  await tiro('backup_fotos', '#cardBackupTela');
+  await secao('backup', false);
+
+  // 35) ligar e desligar cards
+  await secao('ordemFaturas', true);
+  await page.evaluate(()=>{ alternarCardLigado('abaFaturas', 'emprestimos', false);
+    document.getElementById('corpo-ordemFaturas').closest('.card').id = 'cardOrdemTela'; });
+  await page.waitForTimeout(200);
+  await tiro('cards_ligar', '#cardOrdemTela');
+  await page.evaluate(()=>alternarCardLigado('abaFaturas', 'emprestimos', true));
+  await secao('ordemFaturas', false);
+
+  // 36) letra, modo e ajuda
+  await secao('acessibilidade', true);
+  await tiro('acessibilidade', '#cardAcessibilidade');
+
+  // 37) o Modo Simples na aba Faturas (o nome da aba muda pra "Meu mês")
+  await page.evaluate(()=>{ escolherModo(true); mudarAba('abaFaturas', document.querySelector('.nav-tab[onclick*="abaFaturas"]')); window.scrollTo(0, 0); });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: OUT + '/modo_simples.png', clip: { x: 0, y: 0, width: 412, height: 860 } });
+  console.log('✓ modo_simples');
+  await page.evaluate(()=>{ escolherModo(false); });
+
+  // 38) o tema Fofo
+  await page.evaluate(()=>{ aplicarTema('fofo'); mudarAba('abaLancamentos', document.querySelector('.nav-tab[onclick*="abaLancamentos"]')); window.scrollTo(0, 0); });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: OUT + '/tema_fofo.png', clip: { x: 0, y: 0, width: 412, height: 640 } });
+  console.log('✓ tema_fofo');
+  await page.evaluate(()=>aplicarTema('escuro'));
+
+  // 39) o passo a passo do backup e o aviso em linguagem simples
+  await page.evaluate(()=>abrirGuia('backup'));
+  await page.waitForTimeout(300);
+  await tiro('guia_backup', '#modalGuia .modal-content');
+  await page.evaluate(()=>fecharModal('modalGuia'));
+  await page.evaluate(()=>{ localStorage.removeItem(CHAVE_ULTIMO_BACKUP); localStorage.removeItem(CHAVE_ADIAR_BACKUP); atualizarAvisoBackup(); });
+  if (await page.evaluate(()=>!document.getElementById('avisoBackup').classList.contains('escondido'))) await tiro('faixa_backup', '#avisoBackup');
+  else console.log('!! a faixa de backup não apareceu (histórico com menos de 15 dias)');
+  await page.evaluate(()=>{ localStorage.setItem(CHAVE_ULTIMO_BACKUP, obterDataBrasilia()); atualizarAvisoBackup(); });
+
+  // 30) primeira vez no app: o tutorial abre por cima e, embaixo, o cartão de boas-vindas
   await page.evaluate(()=>localStorage.clear());
   await page.reload(); await page.waitForTimeout(900);
+  await tiro('tutorial', '#modalTutorial .modal-content');
+  await page.evaluate(()=>fecharTutorial());
+  await page.waitForTimeout(200);
   await tiro('boas_vindas', '#cartaoBoasVindas');
 
   console.log('\nerros:', erros.length?erros:'nenhum');

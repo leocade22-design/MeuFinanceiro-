@@ -139,6 +139,29 @@
       --acento:#9d6ce8; --acento-claro:#b78ff0; --acento-palido:#dcc7f5;
     }
 
+    /* Fofo: creme quentinho com lilás, cantos mais redondos e sombra macia.
+       Tema claro: o acento-claro e o acento-pálido ficam MAIS escuros que o
+       acento, como no Claro, porque viram texto em cima do creme. */
+    [data-tema="fofo"] {
+      --fundo:#fff5ec; --card:#fffdfa; --campo:#fcefe6;
+      --borda:#f0d9cb; --borda-fraca:#f6e7dd; --borda-forte:#e2bfac;
+      --texto:#3d2b3a; --texto-forte:#523d4f; --texto-medio:#6e5868;
+      --texto-fraco:#806878; --texto-tenue:#937b8b;
+      --verde:#2f8a5c; --verde-claro:#3fa06f; --verde-escuro:#216a45;
+      --vermelho:#c9484f; --vermelho-medio:#ab3a41; --vermelho-escuro:#8b2d33;
+      --amarelo:#a8740e; --amarelo-forte:#c28814; --laranja:#bb6526;
+      --azul:#3b6fc0; --azul-forte:#2f5ca3; --azul-claro:#5287d6;
+      --roxo:#8a55c9; --marrom:#7d5a4c; --turquesa:#1f8078; --bege:#5a4452;
+      --acento:#8a63d2; --acento-claro:#7450bd; --acento-palido:#5c3c9e;
+    }
+    [data-tema="fofo"] .card { border-radius:22px; box-shadow:0 6px 18px rgba(170,120,150,.16); }
+    [data-tema="fofo"] .nav-tabs { border-radius:18px; }
+    [data-tema="fofo"] .nav-tab { border-radius:14px; }
+    [data-tema="fofo"] .nav-tab.ativo { background:#efe5ff; color:#5c3c9e; }
+    [data-tema="fofo"] .btn-backup, [data-tema="fofo"] .btn-salvar { border-radius:16px; }
+    [data-tema="fofo"] .btn-salvar { background:var(--acento); color:#fff; }
+    [data-tema="fofo"] .modal-content { border-radius:24px; }
+
     /* O arraste entre abas empurra a aba atual pra fora da tela. Sem isto o
        navegador entenderia esse deslocamento como conteúdo novo e abriria uma
        barra de rolagem horizontal no meio do gesto. Fica no html (e não no
@@ -306,6 +329,9 @@
     .valor-despesa { color: var(--vermelho); font-weight: bold; white-space: nowrap; }
     .linha-ordem-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--borda-fraca); font-size: 13.5px; background: var(--campo); }
     .linha-ordem-card:last-child { border-bottom: none; }
+    .linha-ordem-card .ligar-card { display:flex; align-items:center; gap:10px; flex:1; min-width:0; cursor:pointer; min-height:36px; }
+    .linha-ordem-card.desligado .ligar-card span { color: var(--texto-tenue); text-decoration: line-through; }
+    .card-desligado { display: none !important; }
     /* Pegador das três listrinhas: área de toque generosa, porque é ele que
        segura o arraste no celular */
     .btn-estrela { padding: 6px 8px; font-size: 17px; line-height: 1; background: transparent; border: none; cursor: pointer; }
@@ -658,10 +684,130 @@
       color:var(--texto-medio); text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
     .card.boas-vindas { border:1px solid rgba(95,153,51,.45); background:linear-gradient(180deg, rgba(95,153,51,.10), transparent 70%), var(--card); }
 
+    /* LETRA, MODO E AJUDA
+       A letra cresce pelo zoom do body: tudo junto (texto, botão, espaço), e a
+       tela se reorganiza na largura que sobra. */
+    body.letra-grande { zoom:1.12; }
+    body.letra-extra { zoom:1.25; }
+    /* Toque de pelo menos 44 px nas abas, em qualquer modo */
+    .nav-tab { min-height:44px; }
+    /* Letra maior: as cinco abas continuam à vista. Na Grande elas apertam um
+       pouco; na Extra grande quebram em duas linhas (3 + 2), em vez de a
+       última sumir pra fora da fileira. */
+    body.letra-grande .nav-tab { min-width:0; font-size:12px; }
+    body.letra-extra .nav-tabs { flex-wrap:wrap; row-gap:4px; }
+    body.letra-extra .nav-tab { min-width:30%; flex:1 1 30%; }
+    .icone-aba { display:none; line-height:0; }
+    .rotulo-aba { display:block; }
+    /* Alto contraste: os cinzas de apoio chegam perto do texto principal, em
+       qualquer tema (a mistura usa as cores do próprio tema). */
+    body.alto-contraste {
+      --texto-medio: color-mix(in srgb, var(--texto) 88%, var(--card));
+      --texto-fraco: color-mix(in srgb, var(--texto) 80%, var(--card));
+      --texto-tenue: color-mix(in srgb, var(--texto) 70%, var(--card));
+      --borda: color-mix(in srgb, var(--texto) 34%, var(--card));
+      --borda-fraca: color-mix(in srgb, var(--texto) 20%, var(--card));
+      --borda-forte: color-mix(in srgb, var(--texto) 48%, var(--card));
+    }
+    /* Modo Simples: abas com ícone grande e botões que cabem o dedo */
+    body.modo-simples .nav-tab { min-height:60px; min-width:64px; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:4px; font-size:12px; padding:8px 3px; }
+    body.modo-simples .icone-aba { display:block; }
+    body.modo-simples .icone-aba svg { width:24px; height:24px; }
+    body.modo-simples .btn-mini { min-height:40px; padding:9px 14px; font-size:13px; }
+    body.modo-simples .btn-tipo { min-height:54px; font-size:17px; }
+    body.modo-simples .btn-salvar, body.modo-simples .btn-backup { min-height:52px; font-size:16px; }
+    body.modo-simples .link-obs { font-size:13px; padding:12px 4px 10px; }
+    body.modo-simples .item-lancamento { padding-top:12px; padding-bottom:12px; }
+    body.modo-simples .card-header-toggle { min-height:48px; }
+    body.modo-simples .btn-olho { min-width:40px; min-height:40px; }
+    body.modo-simples #capFatura { padding:12px 6px !important; font-size:11px !important; }
+    .dica-gesto { display:flex; align-items:center; gap:8px; margin:-8px 2px 12px; font-size:11.5px; color:var(--texto-fraco); line-height:1.4; }
+    .dica-gesto > span { flex:1; min-width:0; }
+    .dica-gesto button { background:none; border:none; color:var(--texto-fraco); font-size:20px; line-height:1;
+      min-width:40px; min-height:40px; margin:-10px -8px -10px 0; cursor:pointer; }
+    .rotulo-opcao { font-size:12px; color:var(--texto-medio); font-weight:600; margin-bottom:6px; }
+    .seletor-opcoes { display:flex; gap:6px; margin-bottom:8px; }
+    .seletor-opcoes button { flex:1; min-height:44px; padding:8px 6px; border-radius:10px; border:1.5px solid var(--borda);
+      background:var(--campo); color:var(--texto-forte); font:inherit; font-size:13px; font-weight:600; cursor:pointer; line-height:1.15; }
+    .seletor-opcoes button[aria-pressed="true"] { border-color:var(--acento); color:var(--texto); background:color-mix(in srgb, var(--acento) 16%, var(--campo)); }
+    .nota-opcao { font-size:11.5px; color:var(--texto-fraco); line-height:1.5; margin:0 0 14px; }
+    .linha-opcao { display:flex; align-items:flex-start; gap:10px; min-height:44px; padding:6px 0; font-size:13px; color:var(--texto-forte); cursor:pointer; }
+    .linha-opcao input { width:20px; height:20px; margin:1px 0 0; flex-shrink:0; accent-color:var(--acento); }
+    .linha-opcao small { display:block; font-size:11.5px; color:var(--texto-fraco); margin-top:2px; line-height:1.4; }
+    .botoes-ajuda { display:flex; flex-direction:column; gap:8px; }
+    .modal-content.tutorial { text-align:center; }
+    .topo-tutorial { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--texto-fraco); margin-bottom:10px; }
+    .topo-tutorial .btn-mini { min-height:40px; }
+    .icone-tutorial { color:var(--acento-claro); margin:10px 0 12px; line-height:0; }
+    .titulo-tutorial { font-size:20px; margin-bottom:10px; text-wrap:balance; }
+    .texto-tutorial { font-size:15px; line-height:1.55; color:var(--texto-medio); margin:0 auto; max-width:34ch; }
+    .texto-tutorial strong { color:var(--texto); }
+    .pontos-tutorial { display:flex; justify-content:center; gap:8px; margin:18px 0 16px; }
+    .pontos-tutorial span { width:9px; height:9px; border-radius:50%; background:var(--borda-forte); }
+    .pontos-tutorial span.atual { background:var(--acento); width:22px; border-radius:5px; }
+    .botoes-tutorial { display:flex; gap:8px; }
+    .botoes-tutorial .btn-backup { flex:1; min-height:48px; font-size:15px; }
+    .invisivel { visibility:hidden; }
+    .corpo-guia { font-size:14px; line-height:1.55; color:var(--texto-medio); }
+    .corpo-guia p { margin:0 0 10px; }
+    .corpo-guia strong { color:var(--texto); }
+    .subtitulo-guia { font-weight:700; color:var(--texto-forte) !important; margin-top:14px !important; }
+    .destaque-guia { color:var(--verde) !important; font-weight:600; }
+    .passos-guia { margin:4px 0 10px; padding-left:22px; }
+    .passos-guia li { margin:6px 0; }
+
+    /* FOTOS E MEMÓRIAS */
+    .fotos-obs { margin:2px 0 12px; }
+    .miniaturas-obs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+    .miniatura-foto { position:relative; width:72px; height:72px; border-radius:10px; overflow:hidden;
+      border:1px solid var(--borda); background:var(--campo); }
+    .miniatura-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+    /* o círculo é pequeno pra não tampar a foto; a área de toque é maior */
+    .miniatura-foto .tirar-foto { position:absolute; top:3px; right:3px; width:26px; height:26px; border-radius:50%;
+      border:none; background:rgba(0,0,0,.62); color:#fff; font-size:17px; line-height:26px; padding:0; cursor:pointer; }
+    .miniatura-foto .tirar-foto::before { content:''; position:absolute; inset:-9px; }
+    .botoes-foto { display:flex; gap:8px; }
+    .btn-foto { flex:1; min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:13px; }
+    .btn-foto:disabled { opacity:.45; cursor:default; }
+    .icone-tem-foto { display:inline-flex; vertical-align:-1px; margin-left:6px; color:var(--texto-tenue); }
+    .carrossel-ficha { margin:0 0 12px; }
+    .trilho-fotos { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; border-radius:12px;
+      background:var(--campo); border:1px solid var(--borda-fraca); scrollbar-width:none; overscroll-behavior-x:contain; }
+    .trilho-fotos::-webkit-scrollbar { display:none; }
+    .quadro-foto { flex:0 0 100%; scroll-snap-align:center; display:flex; align-items:center; justify-content:center;
+      height:min(52vh, 360px); }
+    .quadro-foto img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    .rodape-fotos { display:flex; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--texto-fraco); }
+    .seta-foto { min-width:44px; min-height:40px; border-radius:10px; border:1px solid var(--borda); background:var(--card);
+      color:var(--texto-forte); font-size:22px; line-height:1; cursor:pointer; }
+    .seta-foto:disabled { opacity:.35; cursor:default; }
+    .card.modo-memorias .so-lista { display:none !important; }
+    .card-memoria { display:block; width:100%; text-align:left; padding:0; margin:0 0 12px; font:inherit; color:inherit;
+      background:var(--campo); border:1px solid var(--borda); border-radius:14px; overflow:hidden; cursor:pointer; }
+    .capa-memoria { position:relative; aspect-ratio:4 / 3; max-width:100%; background:var(--borda-fraca); }
+    .capa-memoria img { width:100%; height:100%; object-fit:cover; display:block; }
+    .qtd-fotos-memoria { position:absolute; right:8px; bottom:8px; display:inline-flex; align-items:center; gap:5px;
+      background:rgba(0,0,0,.6); color:#fff; font-size:12px; padding:4px 9px; border-radius:999px; }
+    .texto-memoria { padding:10px 12px 12px; }
+    .linha-memoria { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+    .linha-memoria strong { font-size:15px; color:var(--texto); min-width:0; overflow-wrap:anywhere; }
+    .linha-memoria span { font-weight:700; white-space:nowrap; }
+    .sub-memoria { font-size:12px; color:var(--texto-fraco); margin-top:3px; }
+    .obs-memoria { font-size:12.5px; color:var(--texto-medio); margin-top:6px; line-height:1.45;
+      display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .linha-incluir-fotos { display:flex; align-items:flex-start; gap:10px; font-size:12.5px; color:var(--texto-forte);
+      margin-bottom:12px; line-height:1.45; cursor:pointer; min-height:44px; }
+    .linha-incluir-fotos input { width:20px; height:20px; margin-top:1px; flex-shrink:0; accent-color:var(--acento); }
+
     .grupo-sons { padding-bottom:12px; }
     .grupo-sons + .grupo-sons { padding-top:12px; border-top:1px solid var(--borda-fraca); }
     .titulo-grupo-som { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer;
       color:var(--texto-forte); padding:4px 0 6px; }
+    .subsecao-som { width:100%; min-height:44px; padding:6px 0; }
+    .titulo-subsecao-som { font-size:14px; font-weight:700; color:var(--texto-forte); text-align:left; }
+    .resumo-som { font-weight:500; font-size:12.5px; }
+    .corpo-subsecao-som { padding-top:6px; }
 
     .backup-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .backup-actions .btn-cancelar { flex:1; margin-top:0; }
@@ -684,12 +830,16 @@
   </script>
   <div class="app-container">
     <div class="nav-tabs">
-      <button class="nav-tab ativo" onclick="mudarAba('abaLancamentos', this)">Lançamentos</button>
-      <button class="nav-tab" onclick="mudarAba('abaFaturas', this)">Faturas</button>
-      <button class="nav-tab" onclick="mudarAba('abaGraficos', this)">Gráficos</button>
-      <button class="nav-tab" onclick="mudarAba('abaGrupos', this)">Grupos</button>
-      <button class="nav-tab" onclick="mudarAba('abaInvestimentos', this)">Investim.</button>
-      <button class="nav-tab" onclick="mudarAba('abaConfig', this)">Ajustes</button>
+      <button class="nav-tab ativo" data-simples="Lançar" onclick="mudarAba('abaLancamentos', this)"><span class="icone-aba" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span><span class="rotulo-aba">Lançamentos</span></button>
+      <button class="nav-tab" data-simples="Meu mês" onclick="mudarAba('abaFaturas', this)"><span class="icone-aba" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="rotulo-aba">Faturas</span></button>
+      <button class="nav-tab" data-simples="Gráficos" onclick="mudarAba('abaGraficos', this)"><span class="icone-aba" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="rotulo-aba">Gráficos</span></button>
+      <button class="nav-tab" data-simples="Investir" onclick="mudarAba('abaInvestimentos', this)"><span class="icone-aba" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span><span class="rotulo-aba">Investim.</span></button>
+      <button class="nav-tab" data-simples="Ajustes" onclick="mudarAba('abaConfig', this)"><span class="icone-aba" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span><span class="rotulo-aba">Ajustes</span></button>
+    </div>
+    <!-- Dica do gesto: some na primeira vez que você troca de aba arrastando -->
+    <div id="dicaGesto" class="dica-gesto escondido">
+      <span><span aria-hidden="true">⟵ ⟶</span> Dica: arraste o dedo pro lado na tela pra trocar de aba.</span>
+      <button type="button" onclick="fecharDicaGesto()" aria-label="Fechar a dica">×</button>
     </div>
 
     <div id="abaLancamentos" class="aba-conteudo ativo">
@@ -711,8 +861,8 @@
           <button type="button" class="btn-icone-topo" onclick="abrirModalTransferencia()" title="Transferências pessoais" aria-label="Transferências pessoais">⇄</button>
         </div>
         <div class="tipo-toggle">
-          <button type="button" id="btnDespesa" class="btn-tipo ativo-despesa" onclick="alternarTipo('despesa')">- Despesa</button>
-          <button type="button" id="btnReceita" class="btn-tipo" onclick="alternarTipo('receita')">+ Receita</button>
+          <button type="button" id="btnDespesa" class="btn-tipo ativo-despesa" data-simples="- Gastei" onclick="alternarTipo('despesa')">- Despesa</button>
+          <button type="button" id="btnReceita" class="btn-tipo" data-simples="+ Recebi" onclick="alternarTipo('receita')">+ Receita</button>
         </div>
         <form id="formLancamento" onsubmit="salvarLancamento(event)">
           <input type="hidden" id="idEditando" value="">
@@ -816,11 +966,12 @@
       <!-- Só aparece quando o backup está atrasado. Fora isso não existe. -->
       <div id="avisoBackup" class="escondido faixa-aviso">
         <div style="flex:1;min-width:0;">
-          <strong style="display:block;font-size:13px;margin-bottom:2px;">💾 Faz um backup</strong>
+          <strong style="display:block;font-size:13px;margin-bottom:2px;">💾 Salve uma cópia dos seus dados</strong>
           <span id="textoAvisoBackup" style="font-size:11.5px;color:var(--texto-fraco);line-height:1.45;"></span>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-          <button type="button" class="btn-mini" style="color:var(--amarelo);border-color:rgba(255,209,102,.4);" onclick="irParaBackup()">exportar</button>
+          <button type="button" class="btn-mini" style="color:var(--amarelo);border-color:rgba(255,209,102,.4);" onclick="irParaBackup()">salvar</button>
+          <button type="button" class="btn-mini" onclick="abrirGuia('backup')">como?</button>
           <button type="button" class="btn-mini" onclick="adiarAvisoBackup()">depois</button>
         </div>
       </div>
@@ -934,17 +1085,19 @@
           <!-- Um botão discreto no lugar da fileira de chips: os filtros moram numa
                janela, e só o que está ligado aparece aqui, cada um com o seu ✕. -->
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <button type="button" id="btnFiltrosLanc" class="btn-mini" onclick="abrirFiltrosLanc()"
+            <button type="button" id="btnFiltrosLanc" class="btn-mini so-lista" onclick="abrirFiltrosLanc()"
                     style="display:inline-flex;align-items:center;gap:6px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
               <span id="rotuloFiltrosLanc">Filtrar</span>
             </button>
+            <!-- Memórias: só aparece quando algum lançamento tem foto -->
+            <button type="button" id="btnMemorias" class="btn-mini escondido" style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;" onclick="alternarMemorias()" aria-pressed="false">Memórias</button>
             <span style="flex:1;"></span>
-            <button type="button" id="btnEscopoLanc" class="btn-mini" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
+            <button type="button" id="btnEscopoLanc" class="btn-mini so-lista" style="flex-shrink:0;" onclick="alternarEscopoLancamentos()">ver todos</button>
           </div>
-          <div id="chipsFiltrosAtivos" class="escondido" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
-          <div id="subtotalFormaLanc" style="font-size:11px;color:var(--texto-fraco);margin-bottom:10px;line-height:1.7;"></div>
-          <div class="busca-box">
+          <div id="chipsFiltrosAtivos" class="escondido so-lista" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+          <div id="subtotalFormaLanc" class="so-lista" style="font-size:11px;color:var(--texto-fraco);margin-bottom:10px;line-height:1.7;"></div>
+          <div class="busca-box so-lista">
             <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <input type="text" id="inputBusca" placeholder="Buscar lançamentos (ex: Mercado, Uber...)" oninput="renderizarLancamentos()">
           </div>
@@ -989,6 +1142,48 @@
           <div id="totalFixosCard" class="box-resumo-modal" style="margin-bottom:10px;"></div>
           <div id="listaFixos"></div>
           <button type="button" class="btn-cancelar" style="margin-top:10px;" onclick="abrirFormFixo()">+ novo gasto fixo</button>
+        </div>
+      </div>
+
+      <!-- GRUPOS DE GASTOS (retrátil). Era uma aba só dele; virou card aqui, porque
+           grupo é gasto do mês olhado por outro ângulo, e a fileira de abas
+           ficava apertada. Nasce recolhido; os encerrados continuam dentro dele. -->
+      <div class="card" data-card="grupos" data-card-titulo="Grupos de gastos">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('grupos')">
+            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+              <h3>Grupos de Gastos</h3>
+              <span id="resumoFechado-grupos" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
+            </div>
+            <span class="chevron-sec" id="chevron-grupos">▸</span>
+          </button>
+          <button class="btn-olho" id="btnOlhoGrupos" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
+        </div>
+        <div id="corpo-grupos" class="escondido" style="margin-top:8px;">
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
+          <div class="busca-box">
+            <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
+          </div>
+          <div id="listaGrupos"></div>
+          <button type="button" class="btn-adicionar" onclick="criarGrupoRapido()">+ Novo grupo</button>
+
+          <!-- Grupo encerrado é história: dobra pra dentro do mesmo card, recolhido,
+               pra não competir com a viagem que ainda está rolando — mas continua
+               acessível, um card à parte já não fazia diferença nenhuma. Só aparece
+               quando existe algum encerrado. -->
+          <div class="escondido" id="blocoGruposEncerrados" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borda-fraca);">
+            <button type="button" class="card-header-toggle" style="width:100%;" onclick="alternarSecao('gruposEncerrados')">
+              <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
+                <h3>Grupos encerrados</h3>
+                <span id="qtdGruposEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
+              </div>
+              <span class="chevron-sec" id="chevron-gruposEncerrados">▸</span>
+            </button>
+            <div id="corpo-gruposEncerrados" class="escondido" style="margin-top:12px;">
+              <div id="listaGruposEncerrados"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1299,48 +1494,47 @@
 
     </div>
 
-    <div id="abaGrupos" class="aba-conteudo">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button type="button" class="card-header-toggle" style="flex:1;" onclick="alternarSecao('grupos')">
-            <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-              <h3>Grupos de Gastos</h3>
-              <span id="resumoFechado-grupos" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
-            </div>
-            <span class="chevron-sec" id="chevron-grupos">▾</span>
-          </button>
-          <button class="btn-olho" id="btnOlhoGrupos" onclick="alternarVisibilidade()" aria-label="Mostrar ou ocultar valores" style="line-height:0;padding:2px;"></button>
-        </div>
-        <div id="corpo-grupos" style="margin-top:8px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Viagens, rolês, shows — crie um grupo e vincule os gastos a ele pra ver o total de cada um. Toque num grupo pra ver os lançamentos.</p>
-          <div class="busca-box">
-            <span class="busca-icon" style="line-height:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--texto-tenue)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-            <input type="text" id="inputBuscaGrupo" placeholder="Buscar grupo por nome..." oninput="renderizarGrupos()">
+    <div id="abaConfig" class="aba-conteudo">
+      <!-- LETRA, MODO E AJUDA: no topo de Ajustes, porque é o card que quem
+           enxerga pouco precisa achar primeiro. Tudo vale só neste aparelho. -->
+      <div class="card" id="cardAcessibilidade">
+        <button type="button" class="card-header-toggle" onclick="alternarSecao('acessibilidade')">
+          <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;flex-wrap:wrap;">
+            <h3 style="font-size:16px;">Letra, modo e ajuda</h3>
+            <span id="resumoFechado-acessibilidade" class="escondido" style="font-size:11.5px;color:var(--texto-fraco);"></span>
           </div>
-          <div id="listaGrupos"></div>
-          <button type="button" class="btn-adicionar" onclick="criarGrupoRapido()">+ Novo grupo</button>
-
-          <!-- Grupo encerrado é história: dobra pra dentro do mesmo card, recolhido,
-               pra não competir com a viagem que ainda está rolando — mas continua
-               acessível, um card à parte já não fazia diferença nenhuma. Só aparece
-               quando existe algum encerrado. -->
-          <div class="escondido" id="blocoGruposEncerrados" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--borda-fraca);">
-            <button type="button" class="card-header-toggle" style="width:100%;" onclick="alternarSecao('gruposEncerrados')">
-              <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;">
-                <h3>Grupos encerrados</h3>
-                <span id="qtdGruposEncerrados" style="font-size:11px;color:var(--texto-tenue);"></span>
-              </div>
-              <span class="chevron-sec" id="chevron-gruposEncerrados">▾</span>
-            </button>
-            <div id="corpo-gruposEncerrados" style="margin-top:12px;">
-              <div id="listaGruposEncerrados"></div>
-            </div>
+          <span class="chevron-sec" id="chevron-acessibilidade">▸</span>
+        </button>
+        <div id="corpo-acessibilidade" class="escondido" style="margin-top:12px;">
+          <div class="rotulo-opcao">Modo do app</div>
+          <div class="seletor-opcoes" role="group" aria-label="Modo do app">
+            <button type="button" data-modo="completo" aria-pressed="true" onclick="escolherModo(false)">Completo</button>
+            <button type="button" data-modo="simples" aria-pressed="false" onclick="escolherModo(true)">Simples</button>
+          </div>
+          <p class="nota-opcao">O Simples aumenta a letra e os botões, deixa o contraste mais forte e mostra na frente só o essencial: lançar, o saldo e a fatura do mês. O resto continua no app, só recolhido. Trocar de modo não apaga nada.</p>
+          <div class="rotulo-opcao">Tamanho da letra</div>
+          <div class="seletor-opcoes" role="group" aria-label="Tamanho da letra">
+            <button type="button" data-letra="normal" aria-pressed="true" onclick="escolherTamanhoLetra('normal')">Normal</button>
+            <button type="button" data-letra="grande" aria-pressed="false" onclick="escolherTamanhoLetra('grande')" style="font-size:15px;">Grande</button>
+            <button type="button" data-letra="extra" aria-pressed="false" onclick="escolherTamanhoLetra('extra')" style="font-size:17px;">Extra grande</button>
+          </div>
+          <label class="linha-opcao">
+            <input type="checkbox" id="chkAltoContraste" onchange="alternarAltoContraste(this.checked)">
+            <span>Alto contraste<small>textos e bordas mais fortes, em qualquer tema</small></span>
+          </label>
+          <label class="linha-opcao">
+            <input type="checkbox" id="chkGestoAbas" checked onchange="alternarGestoAbas(this.checked)">
+            <span>Trocar de aba arrastando o dedo<small>desligado, só tocando no nome da aba (vale também pra trocar o mês no Resumo)</small></span>
+          </label>
+          <div class="rotulo-opcao" style="margin-top:16px;">Ajuda</div>
+          <div class="botoes-ajuda">
+            <button type="button" class="btn-backup" onclick="abrirTutorial()">Ver o tutorial de novo</button>
+            <button type="button" class="btn-backup" onclick="abrirGuia('backup')">Como salvar uma cópia dos dados</button>
+            <button type="button" class="btn-backup" onclick="abrirGuia('instalar')">Como pôr o app na tela inicial</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div id="abaConfig" class="aba-conteudo">
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('contasCategorias')">
           <h3 style="font-size:16px;">Contas e categorias</h3>
@@ -1436,7 +1630,7 @@
           <span class="chevron-sec" id="chevron-sons">▸</span>
         </button>
         <div id="corpo-sons" class="escondido" style="margin-top:10px;">
-          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Cada tipo de lançamento tem os seus sons. Toque na linha pra ouvir e no ✓ pra tirar ou botar o som no sorteio: a cada lançamento, um dos marcados daquele tipo toca.</p>
+          <p style="color:var(--texto-medio);font-size:12px;margin-bottom:10px;">Cada tipo de lançamento tem os seus sons. Toque no tipo pra abrir; dentro, toque na linha pra ouvir e no ✓ pra tirar ou botar o som no sorteio: a cada lançamento, um dos marcados daquele tipo toca.</p>
           <div id="listaSons"></div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer;">
             <input type="checkbox" id="chkVibrar" onchange="alternarVibracao()" aria-label="Vibrar ao salvar" style="width:auto;margin:0;">
@@ -1451,22 +1645,22 @@
 
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemFaturas')">
-          <h3 style="font-size:16px;">Ordem dos cards — Faturas</h3>
+          <h3 style="font-size:16px;">Cards da aba Faturas</h3>
           <span class="chevron-sec" id="chevron-ordemFaturas">▸</span>
         </button>
         <div id="corpo-ordemFaturas" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O card Resumo fica sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros, e desmarque o que você não usa pra ele sumir da aba (nada é apagado: marcou de novo, ele volta).</p>
           <div id="ordemCardsAbaFaturas"></div>
         </div>
       </div>
 
       <div class="card">
         <button type="button" class="card-header-toggle" onclick="alternarSecao('ordemGraficos')">
-          <h3 style="font-size:16px;">Ordem dos cards — Gráficos</h3>
+          <h3 style="font-size:16px;">Cards da aba Gráficos</h3>
           <span class="chevron-sec" id="chevron-ordemGraficos">▸</span>
         </button>
         <div id="corpo-ordemGraficos" class="escondido" style="margin-top:10px;">
-          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros.</p>
+          <p style="font-size:12px;color:var(--texto-medio);margin-bottom:10px;">O período e o gráfico principal ficam sempre no topo. Arraste pelas listrinhas pra mudar a ordem dos outros, e desmarque o que você não usa pra ele sumir da aba (nada é apagado: marcou de novo, ele volta).</p>
           <div id="ordemCardsAbaGraficos"></div>
         </div>
       </div>
@@ -1516,6 +1710,12 @@
         </button>
         <div id="corpo-backup" class="escondido" style="margin-top:10px;">
           <p id="textoDestinoBackup" style="color:var(--texto-medio);font-size:12px;margin-bottom:12px;">Exporte um arquivo com tudo ou restaure depois sem perder dados. Ao exportar, o celular abre a folha de compartilhamento pra você escolher o destino — <strong style="color:var(--texto-forte);font-weight:600;">Salvar no Drive</strong>, Arquivos, WhatsApp. No computador, abre o "salvar como" pra apontar a pasta.</p>
+          <!-- Quanto as fotos ocupam e se elas vão no arquivo (só aparece com foto) -->
+          <p id="infoFotos" style="color:var(--texto-fraco);font-size:11.5px;margin-bottom:8px;line-height:1.5;"></p>
+          <label id="linhaIncluirFotos" class="linha-incluir-fotos escondido">
+            <input type="checkbox" id="chkIncluirFotos" checked onchange="alternarIncluirFotos(this.checked)">
+            <span>Incluir as fotos no backup <span id="tamanhoFotosBackup" style="color:var(--texto-tenue);"></span></span>
+          </label>
           <div class="backup-actions">
             <button type="button" class="btn-backup primary" onclick="exportarBackup()">Exportar backup</button>
             <button type="button" class="btn-backup" onclick="document.getElementById('importBackupInput').click()">Importar backup</button>
@@ -2209,6 +2409,34 @@
     </div>
   </div>
 
+  <!-- TUTORIAL DE PRIMEIRO USO (4 telas, dá pra pular) -->
+  <div id="modalTutorial" class="modal-overlay escondido">
+    <div class="modal-content tutorial">
+      <div class="topo-tutorial">
+        <span id="passoTutorial">1 de 4</span>
+        <button type="button" class="btn-mini" id="btnPularTutorial" onclick="fecharTutorial()">Pular</button>
+      </div>
+      <div id="telaTutorial"></div>
+      <div class="pontos-tutorial" id="pontosTutorial" aria-hidden="true"></div>
+      <div class="botoes-tutorial">
+        <button type="button" class="btn-backup" id="btnTutorialVoltar" onclick="passoTutorial(-1)">Voltar</button>
+        <button type="button" class="btn-backup primary" id="btnTutorialSeguir" onclick="passoTutorial(1)">Próximo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUIA PASSO A PASSO (salvar cópia / instalar na tela inicial) -->
+  <div id="modalGuia" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalGuia')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="tituloGuia">Ajuda</h3>
+        <button class="btn-fechar" onclick="fecharModal('modalGuia')" aria-label="Fechar">&times;</button>
+      </div>
+      <div id="corpoGuia" class="corpo-guia"></div>
+      <button type="button" class="btn-backup primary" id="btnAcaoGuia" style="margin-top:14px;">OK</button>
+    </div>
+  </div>
+
   <!-- MODAL DE OBSERVAÇÃO -->
   <div id="modalObs" class="modal-overlay escondido" onclick="if(event.target===this) fecharModal('modalObs')">
     <div class="modal-content">
@@ -2218,6 +2446,24 @@
       </div>
       <div class="form-group">
         <textarea id="obsTemp" rows="3" placeholder="Ex: comprado para festa, dividido com alguém, nota fiscal..."></textarea>
+      </div>
+      <!-- FOTOS: câmera na hora ou da galeria, até 5. A câmera tem o
+           capture (abre direto a câmera no celular); a galeria não, senão o
+           Android pula a escolha do arquivo. -->
+      <div class="fotos-obs">
+        <div style="font-size:12px;color:var(--texto-medio);margin-bottom:8px;">Fotos <span id="contadorFotosObs" style="color:var(--texto-tenue);">até 5</span></div>
+        <div id="miniaturasObs" class="miniaturas-obs escondido"></div>
+        <div class="botoes-foto">
+          <button type="button" class="btn-mini btn-foto" onclick="document.getElementById('inputFotoCamera').click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Tirar foto</button>
+          <button type="button" class="btn-mini btn-foto" onclick="document.getElementById('inputFotoGaleria').click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Da galeria</button>
+        </div>
+        <input type="file" id="inputFotoCamera" class="escondido" accept="image/*" capture="environment" aria-label="Tirar foto" onchange="receberFotos(event)">
+        <input type="file" id="inputFotoGaleria" class="escondido" accept="image/*" multiple aria-label="Escolher fotos da galeria" onchange="receberFotos(event)">
+        <p id="avisoFotosObs" style="font-size:11.5px;color:var(--texto-tenue);margin-top:6px;line-height:1.45;min-height:1em;"></p>
       </div>
       <button type="button" class="btn-salvar" style="margin-top:0;" onclick="salvarObsModal()">OK</button>
     </div>
@@ -3564,17 +3810,19 @@
     // 'aportes' e 'consorcios' também saíram: eram os cards-container de cada
     // bloco, e viraram uma lista única — quem abre e fecha agora é cada item,
     // por 'grupoInv-<tipo>' ou 'consorcio-<id>' (tratado abaixo, por prefixo).
+    // 'grupos' e 'gruposEncerrados' saíram daqui quando Grupos virou card em
+    // Faturas: lá eles nascem recolhidos, como os outros cards da aba.
     const SECOES_ABERTAS_POR_PADRAO = new Set([
-      'consorciosEncerrados', 'grupos', 'gruposEncerrados'
+      'consorciosEncerrados'
     ]);
 
     function secaoEstaAberta(nome) {
       const escolhido = uiPrefs['secao_' + nome];
-      if (escolhido === undefined) {
-        return SECOES_ABERTAS_POR_PADRAO.has(nome)
-        || nome.indexOf('consorcio-') === 0
-        || nome.indexOf('grupoInv-') === 0;
-      }
+      /* Os itens de Investimentos (grupoInv-<tipo>, consorcio-<id>) abriam por
+         padrão. Agora nascem recolhidos como o resto do app: fechado, o
+         cabeçalho já mostra quanto o grupo vale hoje e o selo da parcela do
+         consórcio, e o detalhe abre com um toque. */
+      if (escolhido === undefined) return SECOES_ABERTAS_POR_PADRAO.has(nome);
       return escolhido === true;
     }
 
@@ -3609,6 +3857,18 @@
       });
     }
 
+    /* Grupos era uma aba, e lá o card ficava aberto (era o conteúdo inteiro da
+       aba). Agora ele mora em Faturas, junto de cards recolhidos: na primeira
+       abertura desta versão ele e os encerrados fecham, uma vez só. Dali em
+       diante vale o que você abrir ou fechar. */
+    function migrarGruposParaFaturas() {
+      if (uiPrefs.gruposEmFaturas) return;
+      uiPrefs.secao_grupos = false;
+      uiPrefs.secao_gruposEncerrados = false;
+      uiPrefs.gruposEmFaturas = true;
+      salvarUiPrefs();
+    }
+
     function alternarSecao(nome) {
       uiPrefs['secao_' + nome] = !secaoEstaAberta(nome);
       salvarUiPrefs();
@@ -3635,6 +3895,30 @@
         const el = aba.querySelector(':scope > [data-card="' + chave + '"]');
         if (el) aba.appendChild(el); // mover um filho existente reordena, não duplica
       });
+      // Card desligado em Ajustes some da aba, mas continua montado e atualizado:
+      // ligar de novo mostra na hora, com o conteúdo certo.
+      const desligados = cardsDesligados(idAba);
+      presentes.forEach(chave => {
+        const el = aba.querySelector(':scope > [data-card="' + chave + '"]');
+        if (el) el.classList.toggle('card-desligado', desligados.includes(chave));
+      });
+    }
+
+    /* MOSTRAR OU ESCONDER CADA CARD (Ajustes)
+       Além de reordenar, dá pra desligar o card que você não usa. A lista fica em
+       uiPrefs.cardsDesligados[idAba]; card novo de uma atualização nasce ligado. */
+    function cardsDesligados(idAba) {
+      return ((uiPrefs.cardsDesligados || {})[idAba] || []).slice();
+    }
+
+    function alternarCardLigado(idAba, chave, ligado) {
+      if (!uiPrefs.cardsDesligados) uiPrefs.cardsDesligados = {};
+      const lista = cardsDesligados(idAba).filter(c => c !== chave);
+      if (!ligado) lista.push(chave);
+      uiPrefs.cardsDesligados[idAba] = lista;
+      salvarUiPrefs();
+      aplicarOrdemCards(idAba);
+      renderizarOrdemCards(idAba);
     }
 
     /* ARRASTAR PRA REORDENAR
@@ -3713,10 +3997,15 @@
            perde — o aplicarOrdemCards continua lendo a lista inteira. */
         if (el && el.classList.contains('escondido')) return;
         const titulo = el ? el.dataset.cardTitulo : chave;
+        const ligado = !cardsDesligados(idAba).includes(chave);
         const linha = document.createElement('div');
-        linha.className = 'linha-ordem-card';
+        linha.className = 'linha-ordem-card' + (ligado ? '' : ' desligado');
         linha.dataset.item = chave;
-        linha.innerHTML = `<span>${titulo}</span><button type="button" class="btn-pegador" data-pegador aria-label="Arrastar para reordenar">${SVG_PEGADOR}</button>`;
+        linha.innerHTML = `<label class="ligar-card">
+            <input type="checkbox" ${ligado ? 'checked' : ''} aria-label="Mostrar o card ${esc(titulo)}" style="width:auto;margin:0;">
+            <span>${esc(titulo)}</span>
+          </label><button type="button" class="btn-pegador" data-pegador aria-label="Arrastar para reordenar">${SVG_PEGADOR}</button>`;
+        linha.querySelector('input').onchange = ev => alternarCardLigado(idAba, chave, ev.target.checked);
         container.appendChild(linha);
       });
 
@@ -3731,13 +4020,252 @@
       });
     }
 
+    /* LETRA, MODO E AJUDA (público 55+)
+       Tudo aqui é preferência deste aparelho (uiPrefs): nada mexe nos dados.
+
+       TAMANHO DA LETRA: o app foi todo escrito em pixels, então aumentar a
+       fonte da raiz não mudaria quase nada. O que funciona é o zoom do CSS no
+       body: letra, botão e espaçamento crescem juntos e a tela se reorganiza
+       na largura que sobra, sem rolar pro lado.
+
+       MODO SIMPLES: o mesmo app, com uma classe no body. Letra pelo menos
+       Grande, contraste alto, botões maiores, abas com ícone e palavras mais
+       simples. Na frente fica o essencial (lançar, o Resumo com saldo e
+       fatura, e o card da fatura); os outros cards continuam lá, recolhidos.
+       Ao entrar, o app guarda como você deixou cada card e a letra; ao voltar
+       pro Completo, devolve do jeito que estava. */
+    const ESCALA_LETRA = { normal: 1, grande: 1.12, extra: 1.25 };
+    const SECOES_ABERTAS_NO_SIMPLES = ['pagamentoFatura'];
+    const CHAVE_TUTORIAL = 'meu_financeiro_tutorial_visto_v1';
+
+    function escalaDaTela() {
+      const z = parseFloat(getComputedStyle(document.body).zoom);
+      return z > 0 ? z : 1;
+    }
+    function tamanhoLetra() { return ESCALA_LETRA[uiPrefs.tamanhoLetra] ? uiPrefs.tamanhoLetra : 'normal'; }
+    function modoSimples() { return uiPrefs.modoSimples === true; }
+    function gestoAbasLigado() { return uiPrefs.gestoAbas !== false; }
+
+    function aplicarAcessibilidade() {
+      const b = document.body;
+      const letra = tamanhoLetra();
+      b.classList.toggle('letra-grande', letra === 'grande');
+      b.classList.toggle('letra-extra', letra === 'extra');
+      b.classList.toggle('modo-simples', modoSimples());
+      b.classList.toggle('alto-contraste', uiPrefs.altoContraste === true);
+      // palavras simples: o texto do Completo fica guardado no próprio botão
+      document.querySelectorAll('[data-simples]').forEach(el => {
+        const alvo = el.querySelector('.rotulo-aba') || el;
+        if (alvo.dataset.completo === undefined) alvo.dataset.completo = alvo.textContent;
+        alvo.textContent = modoSimples() ? el.dataset.simples : alvo.dataset.completo;
+      });
+      document.querySelectorAll('[data-letra]').forEach(bt => bt.setAttribute('aria-pressed', bt.dataset.letra === letra ? 'true' : 'false'));
+      document.querySelectorAll('[data-modo]').forEach(bt => bt.setAttribute('aria-pressed', (bt.dataset.modo === 'simples') === modoSimples() ? 'true' : 'false'));
+      const chkC = document.getElementById('chkAltoContraste');
+      if (chkC) chkC.checked = uiPrefs.altoContraste === true;
+      const chkG = document.getElementById('chkGestoAbas');
+      if (chkG) chkG.checked = gestoAbasLigado();
+      const resumo = document.getElementById('resumoFechado-acessibilidade');
+      if (resumo) resumo.textContent = (modoSimples() ? 'Modo Simples' : 'Modo Completo') + ' · letra '
+        + { normal: 'normal', grande: 'grande', extra: 'extra grande' }[letra];
+      aplicarDicaGesto();
+    }
+
+    function escolherTamanhoLetra(v) {
+      if (!ESCALA_LETRA[v]) return;
+      uiPrefs.tamanhoLetra = v;
+      salvarUiPrefs();
+      aplicarAcessibilidade();
+    }
+
+    function alternarAltoContraste(on) {
+      uiPrefs.altoContraste = !!on;
+      salvarUiPrefs();
+      aplicarAcessibilidade();
+    }
+
+    function alternarGestoAbas(on) {
+      uiPrefs.gestoAbas = !!on;
+      salvarUiPrefs();
+      aplicarAcessibilidade();
+    }
+
+    function reaplicarTodasAsSecoes() {
+      document.querySelectorAll('[id^="corpo-"]').forEach(el => aplicarSecao(el.id.slice(6)));
+    }
+
+    function escolherModo(simples) {
+      if (simples === modoSimples()) return;
+      if (simples) {
+        // guarda o jeito do Completo antes de recolher
+        const secoes = {};
+        Object.keys(uiPrefs).filter(k => k.startsWith('secao_')).forEach(k => { secoes[k] = uiPrefs[k]; });
+        uiPrefs.antesDoSimples = { secoes, tamanhoLetra: tamanhoLetra(), altoContraste: uiPrefs.altoContraste === true };
+        document.querySelectorAll('[id^="corpo-"]').forEach(el => { uiPrefs['secao_' + el.id.slice(6)] = false; });
+        SECOES_ABERTAS_NO_SIMPLES.forEach(n => { uiPrefs['secao_' + n] = true; });
+        if (tamanhoLetra() === 'normal') uiPrefs.tamanhoLetra = 'grande';
+        uiPrefs.altoContraste = true;
+        uiPrefs.modoSimples = true;
+      } else {
+        const antes = uiPrefs.antesDoSimples || {};
+        Object.keys(uiPrefs).filter(k => k.startsWith('secao_')).forEach(k => { delete uiPrefs[k]; });
+        Object.assign(uiPrefs, antes.secoes || {});
+        if (antes.tamanhoLetra) uiPrefs.tamanhoLetra = antes.tamanhoLetra;
+        uiPrefs.altoContraste = !!antes.altoContraste;
+        delete uiPrefs.antesDoSimples;
+        uiPrefs.modoSimples = false;
+      }
+      // o card onde você está mexendo continua aberto na sua frente
+      uiPrefs.secao_acessibilidade = true;
+      salvarUiPrefs();
+      aplicarAcessibilidade();
+      reaplicarTodasAsSecoes();
+      atualizarTudo();
+    }
+
+    /* DICA DO GESTO
+       Arrastar o dedo pra trocar de aba é rápido, mas ninguém adivinha que
+       existe. A dica fica embaixo das abas até a primeira vez que você usa o
+       gesto (ou fecha no ×). Com o gesto desligado, ela nem aparece. */
+    function aplicarDicaGesto() {
+      const dica = document.getElementById('dicaGesto');
+      if (!dica) return;
+      dica.classList.toggle('escondido', !gestoAbasLigado() || uiPrefs.dicaGestoVista === true);
+    }
+    function fecharDicaGesto() {
+      uiPrefs.dicaGestoVista = true;
+      salvarUiPrefs();
+      aplicarDicaGesto();
+    }
+
+    /* TUTORIAL DE PRIMEIRO USO
+       Quatro telas, pula quando quiser, e volta em Ajustes → Letra, modo e
+       ajuda. Só abre sozinho em instalação nova (sem nenhum lançamento):
+       quem já usa o app não precisa de aula. */
+    const ICONE_TUTORIAL = d => `<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const TELAS_TUTORIAL = [
+      { icone: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+        titulo: 'Anote o que entra e o que sai',
+        texto: 'Na primeira aba, toque em <strong>Despesa</strong> (gastei) ou <strong>Receita</strong> (recebi). Escreva o valor e o nome, escolha a conta e toque em <strong>Salvar</strong>. Só isso.' },
+      { icone: '<polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/><line x1="3" y1="12" x2="21" y2="12"/>',
+        titulo: 'Troque de aba',
+        texto: 'As abas ficam lá em cima: toque no nome de uma delas. Ou arraste o dedo pro lado na tela, que a aba vizinha vem junto. Se o gesto atrapalhar, dá pra desligar em Ajustes.' },
+      { icone: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+        titulo: 'Salve uma cópia dos seus dados',
+        texto: 'Tudo fica guardado só neste celular. De vez em quando, vá em <strong>Ajustes → Backup → Exportar</strong> e guarde o arquivo no Drive, ou mande pra você mesmo no WhatsApp. O app avisa quando for hora.' },
+      { icone: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+        titulo: 'Do seu jeito',
+        texto: 'Em <strong>Ajustes → Letra, modo e ajuda</strong> você aumenta a letra e liga o <strong>Modo Simples</strong>, com menos coisa na tela. Este tutorial também fica lá, pra ver de novo.' }
+    ];
+    let passoAtualTutorial = 0;
+
+    function deveMostrarTutorial() {
+      try { return !localStorage.getItem(CHAVE_TUTORIAL) && !lancamentos.length; } catch (e) { return false; }
+    }
+
+    function abrirTutorial() {
+      passoAtualTutorial = 0;
+      desenharTutorial();
+      document.getElementById('modalTutorial').classList.remove('escondido');
+    }
+
+    function desenharTutorial() {
+      const tela = TELAS_TUTORIAL[passoAtualTutorial];
+      const ultimo = passoAtualTutorial === TELAS_TUTORIAL.length - 1;
+      document.getElementById('telaTutorial').innerHTML = `
+        <div class="icone-tutorial">${ICONE_TUTORIAL(tela.icone)}</div>
+        <h3 class="titulo-tutorial">${tela.titulo}</h3>
+        <p class="texto-tutorial">${tela.texto}</p>`;
+      document.getElementById('passoTutorial').textContent = (passoAtualTutorial + 1) + ' de ' + TELAS_TUTORIAL.length;
+      document.getElementById('pontosTutorial').innerHTML = TELAS_TUTORIAL
+        .map((_, i) => `<span class="${i === passoAtualTutorial ? 'atual' : ''}"></span>`).join('');
+      document.getElementById('btnTutorialVoltar').classList.toggle('invisivel', passoAtualTutorial === 0);
+      document.getElementById('btnTutorialSeguir').textContent = ultimo ? 'Começar' : 'Próximo';
+      document.getElementById('btnPularTutorial').classList.toggle('invisivel', ultimo);
+    }
+
+    function passoTutorial(d) {
+      const novo = passoAtualTutorial + d;
+      if (novo >= TELAS_TUTORIAL.length) { fecharTutorial(); return; }
+      passoAtualTutorial = Math.max(0, novo);
+      desenharTutorial();
+    }
+
+    function fecharTutorial() {
+      try { localStorage.setItem(CHAVE_TUTORIAL, '1'); } catch (e) { /* modo privado */ }
+      fecharModal('modalTutorial');
+    }
+
+    /* GUIAS PASSO A PASSO: salvar uma cópia e instalar na tela inicial.
+       Linguagem de quem nunca ouviu falar em "backup" nem em "PWA". */
+    let pedidoInstalacao = null;
+    window.addEventListener('beforeinstallprompt', e => { pedidoInstalacao = e; });
+    window.addEventListener('appinstalled', () => { pedidoInstalacao = null; });
+
+    function appInstalado() {
+      try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; }
+    }
+
+    function abrirGuia(qual) {
+      const titulo = document.getElementById('tituloGuia');
+      const corpo = document.getElementById('corpoGuia');
+      const acao = document.getElementById('btnAcaoGuia');
+      if (qual === 'instalar') {
+        titulo.textContent = 'Pôr o app na tela inicial';
+        corpo.innerHTML = (appInstalado()
+          ? '<p class="destaque-guia">O app já está instalado: você abriu ele pela tela inicial. 👍</p>' : '')
+          + `<p>Instalado, o app ganha um ícone junto dos outros, abre sem a barra do navegador e funciona sem internet.</p>
+          <p class="subtitulo-guia">No Android (Chrome)</p>
+          <ol class="passos-guia">
+            <li>Toque nos <strong>três pontinhos ⋮</strong>, no canto de cima da tela.</li>
+            <li>Toque em <strong>Instalar app</strong> (em alguns celulares: <strong>Adicionar à tela inicial</strong>).</li>
+            <li>Confirme. O ícone aparece na tela do celular.</li>
+          </ol>
+          <p class="subtitulo-guia">No iPhone (Safari)</p>
+          <ol class="passos-guia">
+            <li>Toque no botão de <strong>compartilhar</strong> (o quadrado com uma seta pra cima).</li>
+            <li>Role a lista e toque em <strong>Adicionar à Tela de Início</strong>.</li>
+            <li>Toque em <strong>Adicionar</strong>.</li>
+          </ol>`;
+        acao.textContent = 'Instalar agora';
+        acao.classList.toggle('escondido', !pedidoInstalacao || appInstalado());
+        acao.onclick = async () => {
+          if (!pedidoInstalacao) return;
+          try { await pedidoInstalacao.prompt(); } catch (e) { /* o navegador não deixou: os passos acima valem */ }
+          pedidoInstalacao = null;
+          fecharModal('modalGuia');
+        };
+      } else {
+        titulo.textContent = 'Salve uma cópia dos seus dados';
+        corpo.innerHTML = `
+          <p>Tudo o que você anota fica guardado <strong>só neste celular</strong>. Se ele quebrar, for trocado ou se perder, os dados vão junto. Uma cópia guardada fora dele resolve isso.</p>
+          <ol class="passos-guia">
+            <li>Toque em <strong>Salvar cópia agora</strong>, aqui embaixo.</li>
+            <li>O celular pergunta onde guardar. Escolha o <strong>Drive</strong> (ou Arquivos, ou Downloads). Se preferir, mande pra você mesmo no <strong>WhatsApp</strong>.</li>
+            <li>Pronto. O app avisa quando for hora de fazer outra.</li>
+          </ol>
+          <p class="subtitulo-guia">Pra trazer os dados de volta</p>
+          <p>Num celular novo, por exemplo: abra o app, vá em <strong>Ajustes → Backup → Importar backup</strong> e escolha o arquivo que você guardou.</p>`;
+        acao.textContent = 'Salvar cópia agora';
+        acao.classList.remove('escondido');
+        acao.onclick = () => { fecharModal('modalGuia'); exportarBackup(); };
+      }
+      document.getElementById('modalGuia').classList.remove('escondido');
+    }
+
     // OBSERVAÇÃO DISCRETA (link abaixo da descrição + janelinha)
     function atualizarLinkObs() {
       const link = document.getElementById('linkObs');
       if (!link) return;
       const v = document.getElementById('observacao').value.trim();
+      // as fotos moram na mesma janela, então o link conta as duas coisas
+      const n = fotosVisiveisDoFormulario().length;
+      const fotos = n ? n + (n === 1 ? ' foto' : ' fotos') : '';
       if (v) {
-        link.textContent = 'obs: ' + v;
+        link.textContent = 'obs: ' + v + (fotos ? ' · ' + fotos : '');
+        link.classList.add('tem-obs');
+      } else if (fotos) {
+        link.textContent = fotos + ' · adicionar observação';
         link.classList.add('tem-obs');
       } else {
         link.textContent = 'adicionar observação';
@@ -3755,6 +4283,588 @@
       document.getElementById('observacao').value = document.getElementById('obsTemp').value.trim();
       atualizarLinkObs();
       fecharModal('modalObs');
+    }
+
+    /* FOTOS E MEMÓRIAS
+       Até 5 fotos por lançamento, tiradas na hora ou escolhidas da galeria —
+       sempre de dentro da janela de observação, que é onde já mora o "conte
+       mais sobre este gasto". Foto não cabe no localStorage (uns 5 MB pro app
+       inteiro), então ela mora no IndexedDB do navegador: aguenta centenas de
+       megas e guarda o arquivo como ele é, sem virar texto.
+
+       A foto se liga ao lançamento por uma CHAVE: o id dele, ou o grupo das
+       parcelas quando é compra parcelada — a foto é da compra, e aparece igual
+       em todas as parcelas dela.
+
+       Excluir o lançamento não apaga as fotos: ele vai pra lixeira e elas ficam
+       esperando, com a mesma chave. Restaurou, voltaram. Só quando ele sai da
+       lixeira de vez (esvaziar, ou passar do limite de 30) as fotos vão junto. */
+    const BANCO_FOTOS = 'meu_financeiro_fotos';
+    const LOJA_FOTOS = 'fotos';
+    const MAX_FOTOS = 5;
+    const LADO_FOTO = 1280, QUALIDADE_FOTO = 0.7;   // a foto que a ficha mostra
+    const LADO_MINI = 480, QUALIDADE_MINI = 0.6;    // miniatura e capa das memórias
+    const SVG_CAMERA = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+    let bancoFotos = null;
+    // chave → quantas fotos. A lista desenha o ícone na hora, sem esperar o banco.
+    const fotosPorChave = new Map();
+
+    function chaveFotos(l) {
+      if (!l) return '';
+      return l.grupoId ? 'g:' + l.grupoId : 'l:' + l.id;
+    }
+    function temFotos(l) { return (fotosPorChave.get(chaveFotos(l)) || 0) > 0; }
+
+    function abrirBancoFotos() {
+      if (bancoFotos) return bancoFotos;
+      bancoFotos = new Promise((ok, falha) => {
+        if (!window.indexedDB) { falha(new Error('sem IndexedDB')); return; }
+        const req = indexedDB.open(BANCO_FOTOS, 1);
+        req.onupgradeneeded = () => {
+          const loja = req.result.createObjectStore(LOJA_FOTOS, { keyPath: 'id' });
+          loja.createIndex('chave', 'chave', { unique: false });
+        };
+        req.onsuccess = () => ok(req.result);
+        req.onerror = () => falha(req.error);
+        req.onblocked = () => falha(new Error('banco de fotos bloqueado'));
+      });
+      bancoFotos.catch(() => { bancoFotos = null; });   // a próxima tentativa abre de novo
+      return bancoFotos;
+    }
+
+    // Uma transação, uma promessa: só resolve quando o navegador confirma
+    async function comLojaFotos(modo, fn) {
+      const db = await abrirBancoFotos();
+      return new Promise((ok, falha) => {
+        const tx = db.transaction(LOJA_FOTOS, modo);
+        let resultado;
+        fn(tx.objectStore(LOJA_FOTOS), v => { resultado = v; });
+        tx.oncomplete = () => ok(resultado);
+        tx.onerror = () => falha(tx.error);
+        tx.onabort = () => falha(tx.error || new Error('gravação abortada'));
+      });
+    }
+
+    function fotosDaChave(chave) {
+      return comLojaFotos('readonly', (loja, devolver) => {
+        const req = loja.index('chave').getAll(chave);
+        req.onsuccess = () => devolver((req.result || []).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)));
+      });
+    }
+    function todasAsFotos() {
+      return comLojaFotos('readonly', (loja, devolver) => {
+        const req = loja.getAll();
+        req.onsuccess = () => devolver(req.result || []);
+      });
+    }
+    function gravarFotos(registros) {
+      return comLojaFotos('readwrite', loja => { registros.forEach(r => loja.put(r)); });
+    }
+    function apagarFotos(ids) {
+      return comLojaFotos('readwrite', loja => { ids.forEach(id => loja.delete(id)); });
+    }
+    function apagarFotosDasChaves(chaves) {
+      return comLojaFotos('readwrite', loja => {
+        chaves.forEach(ch => {
+          const req = loja.index('chave').openKeyCursor(IDBKeyRange.only(ch));
+          req.onsuccess = () => {
+            const c = req.result;
+            if (!c) return;
+            loja.delete(c.primaryKey);
+            c.continue();
+          };
+        });
+      });
+    }
+
+    // Conta as fotos de cada chave só pelo índice: nenhuma imagem sai do disco
+    async function recontarFotos() {
+      try {
+        const contagem = await comLojaFotos('readonly', (loja, devolver) => {
+          const mapa = new Map();
+          const req = loja.index('chave').openKeyCursor();
+          req.onsuccess = () => {
+            const c = req.result;
+            if (!c) { devolver(mapa); return; }
+            mapa.set(c.key, (mapa.get(c.key) || 0) + 1);
+            c.continue();
+          };
+        });
+        fotosPorChave.clear();
+        (contagem || new Map()).forEach((n, ch) => fotosPorChave.set(ch, n));
+      } catch (e) { /* sem banco de fotos: o app segue igual, só sem fotos */ }
+      atualizarBotaoMemorias();
+    }
+
+    // O navegador pode limpar dados de site quando falta espaço; com isto ele
+    // passa a tratar o que o app guardou como "não apague sem perguntar".
+    function pedirArmazenamentoPersistente() {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+    }
+
+    // Uma URL por arquivo, reaproveitada: abrir a mesma ficha duas vezes não
+    // cria a imagem duas vezes na memória.
+    const urlsDeFoto = new WeakMap();
+    function urlDaFoto(blob) {
+      if (!blob) return '';
+      if (!urlsDeFoto.has(blob)) urlsDeFoto.set(blob, URL.createObjectURL(blob));
+      return urlsDeFoto.get(blob);
+    }
+
+    let ultimoIdFoto = 0;
+    function novoIdFoto() {
+      const agora = Date.now();
+      ultimoIdFoto = agora > ultimoIdFoto ? agora : ultimoIdFoto + 1;
+      return 'f' + ultimoIdFoto + Math.random().toString(36).slice(2, 6);
+    }
+
+    /* COMPRESSÃO
+       A foto do celular sai com 3 a 8 MB. Redesenhada num canvas com o lado
+       maior em 1280 px e JPEG 0,7, ela fica entre 100 e 300 KB e continua nítida
+       na tela do celular. A miniatura (480 px) serve pra lista e pra capa. */
+    function lerImagem(arquivo) {
+      return new Promise((ok, falha) => {
+        const url = URL.createObjectURL(arquivo);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); ok(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); falha(new Error('imagem ilegível')); };
+        img.src = url;
+      });
+    }
+    function reduzirImagem(img, lado, qualidade) {
+      const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      const escala = Math.min(1, lado / Math.max(w, h, 1));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w * escala));
+      c.height = Math.max(1, Math.round(h * escala));
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';   // PNG com fundo transparente ficaria preto no JPEG
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      return new Promise((ok, falha) => c.toBlob(b => (b ? ok(b) : falha(new Error('sem JPEG'))), 'image/jpeg', qualidade));
+    }
+    async function comprimirFoto(arquivo) {
+      const img = await lerImagem(arquivo);
+      const foto = await reduzirImagem(img, LADO_FOTO, QUALIDADE_FOTO);
+      const mini = await reduzirImagem(img, LADO_MINI, QUALIDADE_MINI);
+      return { foto, mini };
+    }
+
+    /* AS FOTOS DO FORMULÁRIO
+       Nada vai pro banco antes do Salvar: desistir da edição desiste das fotos
+       junto, como de qualquer outro campo. Já fechar a janela da observação no
+       ✕ não joga fora a foto que você acabou de tirar — tirar de novo é chato,
+       e a foto continua aparecendo ali pra você apagar se não quiser. */
+    let fotosForm = { chave: '', existentes: [], novas: [], removidas: [] };
+
+    function fotosVisiveisDoFormulario() {
+      return fotosForm.existentes.filter(f => !fotosForm.removidas.includes(f.id)).concat(fotosForm.novas);
+    }
+
+    function limparFotosDoFormulario() {
+      fotosForm = { chave: '', existentes: [], novas: [], removidas: [] };
+      const aviso = document.getElementById('avisoFotosObs');
+      if (aviso) aviso.textContent = '';
+      renderizarFotosDoModalObs();
+    }
+
+    async function carregarFotosDoFormulario(l) {
+      const alvo = { chave: chaveFotos(l), existentes: [], novas: [], removidas: [] };
+      fotosForm = alvo;
+      renderizarFotosDoModalObs();
+      if (!temFotos(l)) return;
+      try { alvo.existentes = await fotosDaChave(alvo.chave); } catch (e) { return; }
+      if (fotosForm !== alvo) return;   // o formulário já mudou de lançamento
+      atualizarLinkObs();
+      renderizarFotosDoModalObs();
+    }
+
+    function renderizarFotosDoModalObs() {
+      const box = document.getElementById('miniaturasObs');
+      if (!box) return;
+      const lista = fotosVisiveisDoFormulario();
+      box.innerHTML = '';
+      lista.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'miniatura-foto';
+        const img = document.createElement('img');
+        img.src = urlDaFoto(f.mini);
+        img.alt = 'Foto do lançamento';
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'tirar-foto';
+        x.setAttribute('aria-label', 'Tirar esta foto');
+        x.textContent = '×';
+        x.onclick = () => tirarFotoDoFormulario(f.id);
+        item.append(img, x);
+        box.appendChild(item);
+      });
+      box.classList.toggle('escondido', !lista.length);
+      const cheio = lista.length >= MAX_FOTOS;
+      document.querySelectorAll('.btn-foto').forEach(b => { b.disabled = cheio; });
+      const cont = document.getElementById('contadorFotosObs');
+      if (cont) cont.textContent = lista.length ? lista.length + ' de ' + MAX_FOTOS : 'até ' + MAX_FOTOS;
+    }
+
+    function tirarFotoDoFormulario(id) {
+      const i = fotosForm.novas.findIndex(f => f.id === id);
+      if (i !== -1) fotosForm.novas.splice(i, 1);
+      else if (!fotosForm.removidas.includes(id)) fotosForm.removidas.push(id);
+      const aviso = document.getElementById('avisoFotosObs');
+      if (aviso) aviso.textContent = '';
+      renderizarFotosDoModalObs();
+      atualizarLinkObs();
+    }
+
+    async function receberFotos(e) {
+      const arquivos = Array.from((e.target && e.target.files) || []);
+      if (e.target) e.target.value = '';   // escolher a mesma foto de novo volta a disparar
+      if (!arquivos.length) return;
+      const alvo = fotosForm;
+      const aviso = document.getElementById('avisoFotosObs');
+      const cabem = MAX_FOTOS - fotosVisiveisDoFormulario().length;
+      if (cabem <= 0) { if (aviso) aviso.textContent = 'Já tem ' + MAX_FOTOS + ' fotos. Tire uma (no ×) pra pôr outra.'; return; }
+      if (aviso) aviso.textContent = arquivos.length > 1 ? 'Preparando as fotos…' : 'Preparando a foto…';
+      let falhas = 0;
+      for (const arq of arquivos.slice(0, cabem)) {
+        try {
+          const { foto, mini } = await comprimirFoto(arq);
+          alvo.novas.push({ id: novoIdFoto(), foto, mini, criadaEm: new Date().toISOString() });
+        } catch (err) { falhas++; }
+        if (fotosForm === alvo) renderizarFotosDoModalObs();
+      }
+      if (fotosForm !== alvo) return;
+      const sobraram = arquivos.length - cabem;
+      const partes = [];
+      if (sobraram > 0) partes.push('Cabem até ' + MAX_FOTOS + ' fotos por lançamento: ' + sobraram + (sobraram === 1 ? ' ficou' : ' ficaram') + ' de fora.');
+      if (falhas) partes.push(falhas === 1 ? 'Uma imagem não abriu.' : falhas + ' imagens não abriram.');
+      if (aviso) aviso.textContent = partes.length ? partes.join(' ') : 'As fotos ficam guardadas quando você salvar o lançamento.';
+      atualizarLinkObs();
+    }
+
+    // Grava o que o formulário juntou, já com a chave do lançamento salvo
+    async function gravarFotosDoFormulario(p, chave) {
+      if (!chave || (!p.novas.length && !p.removidas.length)) return;
+      try {
+        const base = Date.now();
+        if (p.novas.length) {
+          await gravarFotos(p.novas.map((f, i) => ({
+            id: f.id, chave, ordem: base + i, criadaEm: f.criadaEm,
+            foto: f.foto, mini: f.mini, bytes: f.foto.size + f.mini.size
+          })));
+        }
+        if (p.removidas.length) await apagarFotos(p.removidas);
+        if (p.novas.length) pedirArmazenamentoPersistente();
+      } catch (e) {
+        avisar('fotoNaoGravada');
+      }
+      await recontarFotos();
+      renderizarLancamentos();
+    }
+
+    /* Quem sai da lixeira de vez leva as fotos — a não ser que a chave ainda
+       esteja em uso (outra parcela da mesma compra, por exemplo). */
+    function chavesDeFotoEmUso() {
+      const regs = lancamentos.concat(lixeira.filter(r => r && r.__tipoReg !== 'transferencia'));
+      return new Set(regs.map(chaveFotos));
+    }
+    function descartarFotosDe(registros) {
+      const emUso = chavesDeFotoEmUso();
+      const chaves = [...new Set((registros || []).filter(r => r && r.__tipoReg !== 'transferencia').map(chaveFotos))]
+        .filter(ch => ch && fotosPorChave.has(ch) && !emUso.has(ch));
+      if (!chaves.length) return Promise.resolve();
+      return apagarFotosDasChaves(chaves).catch(() => {}).then(recontarFotos);
+    }
+
+    /* A FOTO NA FICHA
+       Carrossel de verdade: arrastar pro lado passa a foto (rolagem com
+       encaixe, a mesma do sistema), e as setas fazem o mesmo pra quem prefere
+       tocar. Apagar uma foto é na hora, com pergunta. */
+    async function mostrarFotosDaFicha(l) {
+      const box = document.getElementById('fotosDaFicha');
+      if (!box || !temFotos(l)) return;
+      const idFicha = l.id;
+      let fotos = [];
+      try { fotos = await fotosDaChave(chaveFotos(l)); } catch (e) { return; }
+      if (lancamentoDetalhado !== idFicha || !fotos.length || !document.getElementById('fotosDaFicha')) return;
+      box.innerHTML = `
+        <div class="trilho-fotos" id="trilhoFotosFicha"></div>
+        <div class="rodape-fotos">
+          <button type="button" class="seta-foto" id="fotoAnterior" aria-label="Foto anterior">‹</button>
+          <span id="posicaoFotoFicha"></span>
+          <button type="button" class="seta-foto" id="fotoSeguinte" aria-label="Próxima foto">›</button>
+          <span style="flex:1;"></span>
+          <button type="button" class="btn-mini" id="btnApagarFotoFicha" style="color:var(--vermelho);">Apagar esta foto</button>
+        </div>`;
+      const trilho = box.querySelector('.trilho-fotos');
+      fotos.forEach((f, i) => {
+        const quadro = document.createElement('div');
+        quadro.className = 'quadro-foto';
+        const img = document.createElement('img');
+        img.src = urlDaFoto(f.foto);
+        img.alt = 'Foto ' + (i + 1) + ' de ' + fotos.length;
+        quadro.appendChild(img);
+        trilho.appendChild(quadro);
+      });
+      const atual = () => Math.max(0, Math.min(fotos.length - 1, Math.round(trilho.scrollLeft / Math.max(1, trilho.clientWidth))));
+      const pos = box.querySelector('#posicaoFotoFicha');
+      const ant = box.querySelector('#fotoAnterior');
+      const seg = box.querySelector('#fotoSeguinte');
+      const marcar = () => {
+        const i = atual();
+        pos.textContent = fotos.length > 1 ? 'foto ' + (i + 1) + ' de ' + fotos.length : '1 foto';
+        ant.disabled = i === 0;
+        seg.disabled = i === fotos.length - 1;
+      };
+      const irPara = i => trilho.scrollTo({ left: i * trilho.clientWidth, behavior: 'smooth' });
+      ant.classList.toggle('escondido', fotos.length < 2);
+      seg.classList.toggle('escondido', fotos.length < 2);
+      ant.onclick = () => irPara(atual() - 1);
+      seg.onclick = () => irPara(atual() + 1);
+      trilho.addEventListener('scroll', marcar, { passive: true });
+      box.querySelector('#btnApagarFotoFicha').onclick = () => apagarFotoDaFicha(l, fotos[atual()]);
+      box.classList.remove('escondido');
+      marcar();
+    }
+
+    async function apagarFotoDaFicha(l, f) {
+      if (!f || !confirm('Apagar esta foto? Ela sai do lançamento e não tem como voltar.')) return;
+      try { await apagarFotos([f.id]); } catch (e) { avisar('fotoNaoGravada'); return; }
+      await recontarFotos();
+      renderizarLancamentos();
+      const box = document.getElementById('fotosDaFicha');
+      if (box) { box.classList.add('escondido'); box.innerHTML = ''; }
+      mostrarFotosDaFicha(l);
+    }
+
+    /* MEMÓRIAS
+       O mesmo card de lançamentos, olhado de outro jeito: só o que tem foto,
+       de todos os meses, um card grande por compra, com a primeira foto de
+       capa. O botão só aparece quando existe alguma foto. */
+    let modoMemorias = false;
+
+    function lancamentosComFoto() {
+      // uma memória por compra: as parcelas dividem as mesmas fotos, e quem
+      // representa a compra é a primeira parcela
+      const vistos = new Set();
+      const itens = [];
+      lancamentos.slice().sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0)).forEach(l => {
+        const ch = chaveFotos(l);
+        if (!temFotos(l) || vistos.has(ch)) return;
+        vistos.add(ch);
+        itens.push(l);
+      });
+      return itens.sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0));
+    }
+
+    function atualizarBotaoMemorias() {
+      const btn = document.getElementById('btnMemorias');
+      if (!btn) return;
+      const tem = lancamentos.some(temFotos);
+      if (!tem && modoMemorias) { modoMemorias = false; renderizarLancamentos(); }
+      btn.classList.toggle('escondido', !tem && !modoMemorias);
+      btn.innerHTML = modoMemorias ? '← voltar à lista' : SVG_CAMERA + ' Memórias';
+      btn.setAttribute('aria-pressed', modoMemorias ? 'true' : 'false');
+      const card = btn.closest('.card');
+      if (card) card.classList.toggle('modo-memorias', modoMemorias);
+    }
+
+    function alternarMemorias() {
+      modoMemorias = !modoMemorias;
+      atualizarBotaoMemorias();
+      renderizarLancamentos();
+    }
+
+    function renderizarMemorias(container) {
+      const titulo = document.getElementById('tituloListaLanc');
+      if (titulo) titulo.textContent = 'Memórias';
+      const itens = lancamentosComFoto();
+      if (!itens.length) {
+        container.innerHTML = '<p style="color:var(--texto-medio);font-size:13px;padding:10px 0;">Nenhum lançamento com foto ainda. Pra guardar uma, toque em "adicionar observação" quando for lançar.</p>';
+        return;
+      }
+      const capas = [];
+      let mesAtual = '';
+      itens.forEach(l => {
+        const mes = (l.data || '').slice(0, 7);
+        if (mes !== mesAtual) {
+          mesAtual = mes;
+          const cab = document.createElement('div');
+          cab.className = 'data-grupo';
+          cab.textContent = NOMES_MESES[parseInt(mes.slice(5, 7), 10) - 1] + ' de ' + mes.slice(0, 4);
+          container.appendChild(cab);
+        }
+        const ch = chaveFotos(l);
+        const qtd = fotosPorChave.get(ch) || 0;
+        const d = new Date(l.data + 'T12:00:00');
+        const eReceita = l.tipo === 'receita';
+        const total = l.grupoId
+          ? lancamentos.filter(x => x.grupoId === l.grupoId).reduce((s, x) => s + parseVal(x.valor), 0)
+          : parseVal(l.valor);
+        const numP = l.grupoId ? lancamentos.filter(x => x.grupoId === l.grupoId).length : 1;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'card-memoria';
+        card.onclick = () => abrirDetalheLancamentoPorId(l.id);
+        card.innerHTML = `
+          <div class="capa-memoria"><span class="qtd-fotos-memoria">${SVG_CAMERA} ${qtd}</span></div>
+          <div class="texto-memoria">
+            <div class="linha-memoria"><strong></strong><span class="${eReceita ? 'valor-receita' : 'valor-despesa'}"></span></div>
+            <div class="sub-memoria"></div>
+            <div class="obs-memoria"></div>
+          </div>`;
+        // o que você digitou entra como texto, nunca como marcação
+        card.querySelector('strong').textContent = descricaoBaseCompra(l.descricao);
+        card.querySelector('.linha-memoria span').textContent = (eReceita ? '+ ' : '- ') + fmtOculto(total);
+        card.querySelector('.sub-memoria').textContent = [
+          DIAS_SEMANA_ABREV[d.getDay()] + ' · ' + String(d.getDate()).padStart(2, '0') + ' ' + MESES_ABREV[d.getMonth()],
+          !eReceita && l.categoria ? l.categoria : '',
+          numP > 1 ? numP + 'x' : ''
+        ].filter(Boolean).join(' · ');
+        const obs = card.querySelector('.obs-memoria');
+        if (l.observacao) obs.textContent = l.observacao; else obs.remove();
+        container.appendChild(card);
+        capas.push({ el: card.querySelector('.capa-memoria'), chave: ch });
+      });
+      carregarCapasDasMemorias(capas);
+    }
+
+    async function carregarCapasDasMemorias(capas) {
+      for (const c of capas) {
+        try {
+          const fotos = await fotosDaChave(c.chave);
+          if (!fotos[0] || !c.el.isConnected) continue;
+          const img = document.createElement('img');
+          img.src = urlDaFoto(fotos[0].mini);
+          img.alt = '';
+          c.el.prepend(img);
+        } catch (e) { /* sem a capa, o card continua com o texto */ }
+      }
+    }
+
+    /* FOTOS NO BACKUP
+       O backup é um arquivo de texto, então a foto vai como texto (base64), uns
+       35% maior que o arquivo dela. Só vai a foto grande: a miniatura nasce de
+       novo dela na hora de importar, e o arquivo fica menor. Vão as fotos dos
+       lançamentos da lista e da lixeira — a foto solta, sem lançamento, fica. */
+    function blobParaTexto(blob) {
+      return new Promise((ok, falha) => {
+        const r = new FileReader();
+        r.onload = () => ok(r.result);
+        r.onerror = () => falha(r.error);
+        r.readAsDataURL(blob);
+      });
+    }
+    function textoParaBlob(url) {
+      const virgula = url.indexOf(',');
+      const cabecalho = url.slice(0, virgula);
+      const tipo = (cabecalho.match(/^data:([^;,]+)/) || [])[1] || 'image/jpeg';
+      const bin = atob(url.slice(virgula + 1));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: tipo });
+    }
+
+    async function fotosDoAparelho() {
+      try { return await todasAsFotos(); } catch (e) { return []; }
+    }
+
+    async function fotosParaBackup() {
+      const emUso = chavesDeFotoEmUso();
+      const todas = (await todasAsFotos()).filter(f => emUso.has(f.chave));
+      const saida = [];
+      for (const f of todas) {
+        saida.push({ id: f.id, chave: f.chave, ordem: f.ordem || 0, criadaEm: f.criadaEm || '', foto: await blobParaTexto(f.foto) });
+      }
+      return saida;
+    }
+
+    async function restaurarFotosDoBackup(lista) {
+      const registros = [];
+      for (const f of lista) {
+        if (!f || typeof f.foto !== 'string' || !f.foto.startsWith('data:') || !f.chave || !f.id) continue;
+        try {
+          const foto = textoParaBlob(f.foto);
+          let mini = typeof f.mini === 'string' && f.mini.startsWith('data:') ? textoParaBlob(f.mini) : null;
+          if (!mini) {
+            try { mini = await reduzirImagem(await lerImagem(foto), LADO_MINI, QUALIDADE_MINI); } catch (e) { mini = foto; }
+          }
+          registros.push({ id: String(f.id), chave: String(f.chave), ordem: Number(f.ordem) || 0,
+            criadaEm: f.criadaEm || '', foto, mini, bytes: foto.size + mini.size });
+        } catch (e) { /* uma foto estragada não derruba as outras */ }
+      }
+      if (registros.length) { await gravarFotos(registros); pedirArmazenamentoPersistente(); }
+      await recontarFotos();
+      return registros.length;
+    }
+
+    function incluirFotosNoBackup() {
+      return uiPrefs.backupSemFotos !== true && [...fotosPorChave.keys()].some(ch => chavesDeFotoEmUso().has(ch));
+    }
+    function alternarIncluirFotos(marcado) {
+      uiPrefs.backupSemFotos = !marcado;
+      salvarUiPrefs();
+    }
+
+    function tamanhoLegivel(bytes) {
+      if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' MB';
+    }
+
+    /* QUANTO AS FOTOS OCUPAM
+       Aparece no card de Backup, junto da escolha de levar as fotos no arquivo
+       — é ali que o tamanho importa. Foto solta é a que perdeu o lançamento
+       (veio de um backup sem ele, por exemplo): ela só ocupa espaço, e dá pra
+       apagar daqui. */
+    async function atualizarInfoFotos() {
+      const info = document.getElementById('infoFotos');
+      const linha = document.getElementById('linhaIncluirFotos');
+      if (!info || !linha) return;
+      const todas = await fotosDoAparelho();
+      const emUso = chavesDeFotoEmUso();
+      const usadas = todas.filter(f => emUso.has(f.chave));
+      const soltas = todas.filter(f => !emUso.has(f.chave));
+      const bytes = l => l.reduce((s, f) => s + (f.bytes || ((f.foto && f.foto.size) || 0) + ((f.mini && f.mini.size) || 0)), 0);
+      if (!todas.length) {
+        info.textContent = 'Nenhuma foto guardada neste aparelho.';
+        linha.classList.add('escondido');
+        return;
+      }
+      const qtdLanc = new Set(usadas.map(f => f.chave)).size;
+      info.innerHTML = '';
+      const texto = document.createElement('span');
+      texto.textContent = 'Fotos guardadas neste aparelho: ' + usadas.length + (usadas.length === 1 ? ' foto' : ' fotos')
+        + (qtdLanc ? ' em ' + qtdLanc + (qtdLanc === 1 ? ' lançamento' : ' lançamentos') : '') + ' · ' + tamanhoLegivel(bytes(usadas)) + '.';
+      info.appendChild(texto);
+      if (soltas.length) {
+        const extra = document.createElement('span');
+        extra.textContent = ' ' + soltas.length + (soltas.length === 1 ? ' foto solta' : ' fotos soltas') + ' (sem lançamento) · ' + tamanhoLegivel(bytes(soltas)) + ' ';
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'link-corrigir';
+        botao.textContent = 'apagar';
+        botao.onclick = apagarFotosSoltas;
+        info.append(extra, botao);
+      }
+      linha.classList.toggle('escondido', !usadas.length);
+      const chk = document.getElementById('chkIncluirFotos');
+      if (chk) chk.checked = uiPrefs.backupSemFotos !== true;
+      // a foto vai como texto: cerca de 4/3 do tamanho dela, mais os dados
+      const semFotos = montarBackup().blob.size;
+      const comFotos = semFotos + Math.round(usadas.reduce((s, f) => s + ((f.foto && f.foto.size) || 0), 0) * 4 / 3);
+      const tam = document.getElementById('tamanhoFotosBackup');
+      if (tam) tam.textContent = '— o arquivo fica com cerca de ' + tamanhoLegivel(comFotos) + ' (sem as fotos, ' + tamanhoLegivel(semFotos) + ')';
+    }
+
+    async function apagarFotosSoltas() {
+      const emUso = chavesDeFotoEmUso();
+      const chaves = [...fotosPorChave.keys()].filter(ch => !emUso.has(ch));
+      if (!chaves.length) return;
+      const qtd = chaves.reduce((s, ch) => s + (fotosPorChave.get(ch) || 0), 0);
+      if (!confirm('Apagar ' + qtd + (qtd === 1 ? ' foto solta' : ' fotos soltas') + '? Elas não estão ligadas a nenhum lançamento, nem na lixeira. Isso não tem volta.')) return;
+      try { await apagarFotosDasChaves(chaves); } catch (e) { avisar('fotoNaoGravada'); }
+      await recontarFotos();
+      atualizarInfoFotos();
     }
 
     // EMPRÉSTIMO DISCRETO (link abaixo da descrição, igual observação): marca a despesa
@@ -5646,13 +6756,17 @@
       const dias = diasSemBackup();
       const nunca = !localStorage.getItem(CHAVE_ULTIMO_BACKUP);
       document.getElementById('textoAvisoBackup').textContent = nunca
-        ? `Você tem ${lancamentos.length} lançamentos e nenhum backup. Se este celular sumir, some tudo junto.`
-        : `Último backup há ${dias} dias. Seus dados moram só neste aparelho.`;
+        ? `Seus ${lancamentos.length} lançamentos estão só neste celular. Se ele quebrar ou sumir, vão junto. Leva um minuto.`
+        : `A última cópia foi há ${dias} dias. Seus dados ficam só neste celular.`;
     }
 
-    function montarBackup() {
+    function nomeDoBackup() { return `backup-meu-financeiro-${obterDataBrasilia()}.json`; }
+
+    /* Versão 4: igual à 3, mais as fotos (quando vão junto). Backup antigo,
+       sem a chave "fotos", continua entrando igual. */
+    function montarBackup(fotos) {
       const payload = {
-        versao: 3,
+        versao: 4,
         exportadoEm: new Date().toISOString(),
         lancamentos,
         fixos,
@@ -5673,7 +6787,8 @@
         lixeira,
         correcoesSaldo
       };
-      const nome = `backup-meu-financeiro-${obterDataBrasilia()}.json`;
+      if (Array.isArray(fotos) && fotos.length) payload.fotos = fotos;
+      const nome = nomeDoBackup();
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       /* Pra COMPARTILHAR, o mesmo conteúdo vai como .txt: o Chrome só deixa
          compartilhar alguns tipos de arquivo (imagem, PDF, texto...) e recusa
@@ -5739,18 +6854,32 @@
       setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
+    // Com fotos, o arquivo leva um instante pra ficar pronto (elas saem do
+    // banco uma a uma). O "Salvar como" abre na hora mesmo assim, porque ele
+    // aceita o conteúdo chegando depois.
+    function prepararBackup() {
+      if (!incluirFotosNoBackup()) return Promise.resolve(montarBackup());
+      return fotosParaBackup().then(fotos => montarBackup(fotos));
+    }
+
     async function exportarBackup() {
-      const { nome, blob, arquivo } = montarBackup();
-      const gravou = await gravarComSalvarComo(nome, blob,
-        { description: 'Backup do MeuFinanceiro', accept: { 'application/json': ['.json'] } }, 'backup');
+      const pronto = prepararBackup();
+      pronto.catch(() => {});
+      let gravou;
+      try {
+        gravou = await gravarComSalvarComo(nomeDoBackup(), pronto.then(b => b.blob),
+          { description: 'Backup do MeuFinanceiro', accept: { 'application/json': ['.json'] } }, 'backup');
+      } catch (e) { avisar('backupFalhou'); return; }
       if (gravou === false) return;               // fechou o "Salvar como" sem salvar
       if (gravou) {
         marcarBackupFeito();
         avisar('backupSalvo');
         return;
       }
-      if (await compartilharBackup(arquivo)) return;
-      baixarArquivo(blob, nome);
+      let b;
+      try { b = await pronto; } catch (e) { avisar('backupFalhou'); return; }
+      if (await compartilharBackup(b.arquivo)) return;
+      baixarArquivo(b.blob, b.nome);
       marcarBackupFeito();
     }
 
@@ -5774,9 +6903,10 @@
     }
 
     async function enviarBackup() {
-      const { nome, blob, arquivo } = montarBackup();
-      if (await compartilharBackup(arquivo)) return;
-      baixarArquivo(blob, nome);
+      let b;
+      try { b = await prepararBackup(); } catch (e) { avisar('backupFalhou'); return; }
+      if (await compartilharBackup(b.arquivo)) return;
+      baixarArquivo(b.blob, b.nome);
       marcarBackupFeito();
     }
 
@@ -5841,7 +6971,7 @@
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         try {
           const data = JSON.parse(reader.result);
           /* Sem a lista de lançamentos não é backup deste app. Antes, qualquer
@@ -5849,7 +6979,10 @@
              errado apagava tudo, sem pergunta. */
           if (!data || typeof data !== 'object' || !Array.isArray(data.lancamentos)) throw new Error('backup inválido');
           const deQuando = data.exportadoEm && !isNaN(new Date(data.exportadoEm)) ? new Date(data.exportadoEm).toLocaleDateString('pt-BR') : 'data desconhecida';
-          if (!confirm(`Restaurar este backup (${data.lancamentos.length} lançamentos, de ${deQuando})?\n\n`
+          const fotosDoBackup = Array.isArray(data.fotos) ? data.fotos : [];
+          if (!confirm(`Restaurar este backup (${data.lancamentos.length} lançamentos`
+            + (fotosDoBackup.length ? `, ${fotosDoBackup.length} ${fotosDoBackup.length === 1 ? 'foto' : 'fotos'}` : '')
+            + `, de ${deQuando})?\n\n`
             + `Tudo o que está no app agora (${lancamentos.length} lançamentos) será substituído por ele.`)) return;
           lancamentos = Array.isArray(data.lancamentos) ? data.lancamentos : [];
           fixos = Array.isArray(data.fixos) ? data.fixos : [];
@@ -5918,7 +7051,15 @@
           renderizarConsorcios();
           renderizarGrupos();
           popularSelectGrupos(document.getElementById('grupoViagem') ? document.getElementById('grupoViagem').value : '');
-          avisar('backupOk');
+          if (!fotosDoBackup.length) { atualizarBotaoMemorias(); avisar('backupOk'); return; }
+          // Os dados já entraram; as fotos vêm por último. Se elas falharem,
+          // o aviso diz isso em vez de chamar o backup inteiro de inválido.
+          let voltaram = 0;
+          try { voltaram = await restaurarFotosDoBackup(fotosDoBackup); } catch (erroFoto) { voltaram = 0; }
+          renderizarLancamentos();
+          avisar('backupOk', voltaram === fotosDoBackup.length
+            ? 'Seus dados voltaram inteiros, com ' + voltaram + (voltaram === 1 ? ' foto.' : ' fotos.')
+            : 'Os dados voltaram, mas só ' + voltaram + ' de ' + fotosDoBackup.length + ' fotos couberam neste aparelho.');
         } catch (err) {
           avisar('backupErro');
         } finally {
@@ -6779,7 +7920,8 @@
       { id: 'floresta', nome: 'Floresta', dica: 'verde à noite',    amostra: ['#0f1a15', '#182a22', '#55d47c'] },
       { id: 'papel',     nome: 'Papel',    dica: 'cinza-bege claro', amostra: ['#ecebe4', '#f8f7f2', '#3f6b2b'] },
       { id: 'rosa',      nome: 'Rosa',     dica: 'suave e claro',    amostra: ['#faf0f2', '#fffbfc', '#c23e83'] },
-      { id: 'violeta',   nome: 'Violeta',  dica: 'roxo-azulado',     amostra: ['#17142b', '#221d3d', '#9d6ce8'] }
+      { id: 'violeta',   nome: 'Violeta',  dica: 'roxo-azulado',     amostra: ['#17142b', '#221d3d', '#9d6ce8'] },
+      { id: 'fofo',      nome: 'Fofo',     dica: 'creme e lilás',    amostra: ['#fff5ec', '#fffdfa', '#8a63d2'] }
     ];
     const CHAVE_TEMA = 'meu_financeiro_tema';
 
@@ -6899,7 +8041,22 @@
     }
 
     const GRUPOS_SOM = ['receita', 'despesa', 'transferencia'];
+    const TITULO_GRUPO_SOM = { receita: 'Receita', despesa: 'Despesa', transferencia: 'Transferência' };
 
+    /* O que aparece no cabeçalho fechado: o som escolhido ("Despesa — Moeda
+       caindo"), ou os dois primeiros e quantos mais, ou "desligado". */
+    function resumoDoSom(tipo) {
+      if (!somLigadoPara(tipo)) return 'desligado';
+      const nomes = sonsAtivos(tipo).map(i => SONS[tipo][i].nome);
+      if (nomes.length === SONS[tipo].length && nomes.length > 2) return 'todos, sorteados';
+      if (nomes.length <= 2) return nomes.join(' e ');
+      return nomes.slice(0, 2).join(', ') + ' +' + (nomes.length - 2);
+    }
+
+    /* SONS EM SUBSEÇÕES
+       Cada tipo é uma subseção própria, fechada por padrão (som-receita,
+       som-despesa, som-transferencia no uiPrefs, como qualquer seção): abrir o
+       card de Sons mostra três linhas, e não as dezessete opções de uma vez. */
     function renderizarSons() {
       const box = document.getElementById('listaSons');
       if (!box) return;
@@ -6912,11 +8069,21 @@
         const bloco = document.createElement('div');
         bloco.className = 'grupo-sons';
         bloco.innerHTML = `
-          <label class="titulo-grupo-som">
-            <input type="checkbox" id="chkSom-${tipo}" ${ligado ? 'checked' : ''} onchange="alternarSomLigado('${tipo}')"
-              aria-label="Tocar som ao salvar ${CONFIG_SOM[tipo].rotulo}" style="width:auto;margin:0;">
-            <span>Tocar som ao salvar ${CONFIG_SOM[tipo].rotulo}</span>
-          </label>`;
+          <button type="button" class="card-header-toggle subsecao-som" onclick="alternarSecao('som-${tipo}')"
+            aria-label="Sons de ${CONFIG_SOM[tipo].rotulo}">
+            <span class="titulo-subsecao-som">${TITULO_GRUPO_SOM[tipo]}
+              <span class="resumo-som" style="color:${ligado ? 'var(--texto-medio)' : 'var(--texto-tenue)'};">— ${esc(resumoDoSom(tipo))}</span>
+            </span>
+            <span class="chevron-sec" id="chevron-som-${tipo}">▸</span>
+          </button>
+          <div id="corpo-som-${tipo}" class="escondido corpo-subsecao-som">
+            <label class="titulo-grupo-som">
+              <input type="checkbox" id="chkSom-${tipo}" ${ligado ? 'checked' : ''} onchange="alternarSomLigado('${tipo}')"
+                aria-label="Tocar som ao salvar ${CONFIG_SOM[tipo].rotulo}" style="width:auto;margin:0;">
+              <span>Tocar som ao salvar ${CONFIG_SOM[tipo].rotulo}</span>
+            </label>
+          </div>`;
+        const corpo = bloco.querySelector('.corpo-subsecao-som');
         SONS[tipo].forEach((s, i) => {
           const marcado = ativos.has(i);
           const linha = document.createElement('div');
@@ -6928,14 +8095,15 @@
           // o tique verde marca quem entra no sorteio daquele tipo
           linha.innerHTML = `
             <div class="item-info" style="display:flex;align-items:center;gap:9px;">
-              <span class="tique-som" style="font-size:14px;line-height:1;cursor:pointer;padding:4px 2px;color:${marcado ? 'var(--verde)' : 'var(--borda-forte)'};">✓</span>
+              <span class="tique-som" style="font-size:14px;line-height:1;cursor:pointer;padding:12px 10px;margin:-12px -6px;color:${marcado ? 'var(--verde)' : 'var(--borda-forte)'};">✓</span>
               <strong style="font-size:13.5px;color:${marcado ? 'var(--texto)' : 'var(--texto-tenue)'};">${s.nome}</strong>
             </div>
             <span style="font-size:11px;color:var(--texto-fraco);">▶ ouvir</span>`;
           linha.querySelector('.tique-som').onclick = ev => { ev.stopPropagation(); alternarSomAtivo(tipo, i); };
-          bloco.appendChild(linha);
+          corpo.appendChild(linha);
         });
         box.appendChild(bloco);
+        aplicarSecao('som-' + tipo);
       });
     }
 
@@ -7078,6 +8246,12 @@
       ] },
       relatorioCopiado: { emoji: '📋', detalhe: 'Cole onde quiser: WhatsApp, e-mail, notas ou uma conversa com o seu consultor.', frases: [
         'Relatório copiado.'
+      ] },
+      fotoNaoGravada: { emoji: '📷', detalhe: 'O navegador não deixou gravar a foto agora. Pode ser falta de espaço no aparelho: libere um pouco e tente de novo.', frases: [
+        'A foto não foi guardada.'
+      ] },
+      backupFalhou: { emoji: '💾', detalhe: 'Não consegui montar o arquivo. Se estiver levando as fotos, desmarque "Incluir as fotos" e tente de novo.', frases: [
+        'O backup não saiu.'
       ] },
       arquivoBancoVazio: { emoji: '📄', detalhe: 'O app lê OFX e CSV com uma data e um valor em cada linha (ex: 24/08/2026;LOJA X;123,45). PDF não dá: exporte a fatura em CSV ou OFX no app ou no site do banco.', frases: [
         'Não achei nenhum lançamento nesse arquivo.',
@@ -7337,7 +8511,8 @@
     /* Ajustes ficava de fora: dava pra passar o dedo pelas cinco primeiras e
        parar na última, e pra chegar em Ajustes só tocando no botão. Agora ele
        fecha o círculo — o rodízio passa por ele e volta pra Lançamentos. */
-    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaGrupos', 'abaInvestimentos', 'abaConfig'];
+    // Grupos deixou de ser aba (virou card em Faturas): são cinco no rodízio
+    const ORDEM_ABAS = ['abaLancamentos', 'abaFaturas', 'abaGraficos', 'abaInvestimentos', 'abaConfig'];
     let toqueIniX = 0, toqueIniY = 0, toqueIniT = 0, toqueValido = false, direcaoTravada = null;
 
     function algumModalAberto() {
@@ -7378,17 +8553,21 @@
       const entraEl = document.getElementById(id);
       if (!entraEl || entraEl === atualEl) return false;
 
+      /* Com a letra maior (zoom no body), a tela mede em pixels de tela e o
+         estilo é escrito em pixels do app: divide pela escala, senão a aba
+         vizinha entraria fora do lugar e andaria mais rápido que o dedo. */
+      const z = escalaDaTela();
       const r = atualEl.getBoundingClientRect();
-      const topo = Math.max(r.top, 0);
-      const largura = r.width || window.innerWidth;
+      const topo = Math.max(r.top, 0) / z;
+      const largura = (r.width || window.innerWidth) / z;
 
       // Visível ANTES de renderizar: com display:none qualquer medida de
       // largura dentro dos gráficos voltaria zero.
       entraEl.classList.add('espiando', 'arrastando');
-      entraEl.style.left = r.left + 'px';
+      entraEl.style.left = r.left / z + 'px';
       entraEl.style.width = largura + 'px';
       entraEl.style.top = topo + 'px';
-      entraEl.style.maxHeight = (window.innerHeight - topo) + 'px';
+      entraEl.style.maxHeight = (window.innerHeight / z - topo) + 'px';
       entraEl.style.transform = 'translateX(' + (-sentido * largura) + 'px)';
       entraEl.style.opacity = '.55';
 
@@ -7398,12 +8577,13 @@
       prepararAba(id);
 
       atualEl.classList.add('arrastando');
-      arraste = { atualEl, entraEl, id, largura, sentido, dx: 0, soltando: false };
+      arraste = { atualEl, entraEl, id, largura, sentido, z, dx: 0, soltando: false };
       return true;
     }
 
     function moverArraste(dx) {
       if (!arraste || arraste.soltando) return;
+      dx = dx / (arraste.z || 1);   // dedo em pixels de tela, aba em pixels do app
       // Preso ao sentido em que o gesto nasceu: voltar o dedo pro outro lado
       // não faz a aba oposta aparecer no meio do caminho.
       const avanco = arraste.sentido < 0 ? Math.min(dx, 0) : Math.max(dx, 0);
@@ -7442,6 +8622,7 @@
         ['transform', 'opacity', 'left', 'top', 'width', 'maxHeight']
           .forEach(p => { a.entraEl.style[p] = ''; });
         if (!trocar) return;
+        if (uiPrefs.dicaGestoVista !== true) fecharDicaGesto();   // aprendeu o gesto: a dica sai
         const btn = document.querySelector(`.nav-tab[onclick*="${a.id}"]`);
         // terceiro argumento: a passagem já aconteceu no dedo, não repete
         mudarAba(a.id, btn, true);
@@ -7457,7 +8638,7 @@
       /* Tudo que rola sozinho pros lados fica de fora: a fileira de abas, as
          colunas dos gráficos, os chips, o trilho de meses. Importa mais agora
          que o arraste segura a rolagem — dentro de um desses o dedo é deles. */
-      toqueValido = e.touches.length === 1 && !algumModalAberto() && !arraste
+      toqueValido = e.touches.length === 1 && gestoAbasLigado() && !algumModalAberto() && !arraste
         && !(alvo && alvo.closest('.nav-tabs, input, select, textarea, #cardResumoFaturas,'
           + ' .colunas, .chips-periodo, .faixa-meses, #chipsContasConsulta, #chipsFormasConsulta'));
       direcaoTravada = null;
@@ -7495,7 +8676,7 @@
       // Duas formas de completar: levar a aba além de um terço da tela, ou dar
       // um peteleco curto e rápido. A segunda é o que o polegar faz sem pensar.
       const peteleco = Date.now() - toqueIniT < 400 && Math.abs(dx) > 28;
-      const passouDoMeio = Math.abs(dx) > arraste.largura * 0.32;
+      const passouDoMeio = Math.abs(dx) / (arraste.z || 1) > arraste.largura * 0.32;
       encerrarArraste(peteleco || passouDoMeio);
     }, { passive: true });
 
@@ -7510,13 +8691,13 @@
        precisa da aba vizinha pronta ANTES de ela aparecer na espiada. */
     function prepararAba(idAba) {
       if (idAba === 'abaGraficos') atualizarResumoEGraficos();
-      if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); }
+      if (idAba === 'abaFaturas') { atualizarFaturas(); renderizarLancamentos(); renderizarGrupos(); }
       if (idAba === 'abaInvestimentos') { renderizarInvestimentos(); renderizarConsorcios(); }
-      if (idAba === 'abaGrupos') renderizarGrupos();
       if (idAba === 'abaLancamentos') popularSelectGrupos(document.getElementById('grupoViagem').value);
       if (idAba === 'abaConfig') {
         renderizarOrdemCards('abaFaturas'); renderizarOrdemCards('abaGraficos');
         renderizarContatos(); renderizarSons(); renderizarLixeira(); renderizarTemas(); aplicarTravaDeZoom();
+        atualizarInfoFotos();
       }
     }
 
@@ -8026,6 +9207,10 @@
       if (!container) return;
       const termo = (document.getElementById('inputBusca')?.value || '').toLowerCase().trim();
       container.innerHTML = '';
+      // o último lançamento com foto saiu: o modo Memórias não tem o que mostrar
+      if (modoMemorias && !lancamentos.some(temFotos)) modoMemorias = false;
+      atualizarBotaoMemorias();
+      if (modoMemorias) { renderizarMemorias(container); return; }
 
       const ref = getMesReferencia(faturaMesOffset);
       const chaveMesSel = chaveMesAno(ref.getFullYear(), ref.getMonth());
@@ -8148,7 +9333,7 @@
 
           div.innerHTML = `
             <div class="item-info">
-              <strong>${item.descricao}</strong>
+              <strong>${item.descricao}${temFotos(item) ? `<span class="icone-tem-foto" title="tem foto" aria-label="tem foto">${SVG_CAMERA}</span>` : ''}</strong>
               <div style="font-size: 11px; color: var(--texto-fraco);">${partes.join(' · ')}</div>
               ${item.observacao ? `<div class="observacao-mini">${item.observacao}</div>` : ''}
               ${parcelasPendentes > 1 ? `<div class="badge-parcelas">${parcelasPendentes} parcelas pendentes</div>` : ''}
@@ -8390,9 +9575,11 @@
         : 'R$ ' + valorTotal.toFixed(2).replace('.', ',');
       // a forma aparece sempre: com Pix e Dinheiro na lista, escondê-la em conta
       // sem cartão deixava a prévia sem a informação que mais muda de lançamento
+      const qtdFotos = fotosVisiveisDoFormulario().length;
       document.getElementById('confirmLancDetalhe').textContent = conta
         + (categoria ? ' • ' + categoria : '')
-        + (tipoAtual === 'despesa' ? ' • ' + formaModo : '');
+        + (tipoAtual === 'despesa' ? ' • ' + formaModo : '')
+        + (qtdFotos ? ' • ' + qtdFotos + (qtdFotos === 1 ? ' foto' : ' fotos') : '');
 
       document.getElementById('modalConfirmarLancamento').classList.remove('escondido');
     }
@@ -8453,10 +9640,16 @@
       limparDestinoInvestimento();   // o próximo lançamento começa sem destino marcado
       const idsAntesDoAporte = destinoInvestimento.startsWith('ativo:') ? new Set(lancamentos.map(l => l.id)) : null;
 
+      // Fotos do formulário: guardadas agora, gravadas com a chave do lançamento
+      // que sair daqui (o novo, a compra parcelada ou o editado)
+      const fotosPendentes = fotosForm;
+      let chaveDasFotos = '';
+
       if (idEditando) {
         const idx = lancamentos.findIndex(l => l.id === parseInt(idEditando, 10));
         if (idx !== -1) {
           const itemOriginal = lancamentos[idx];
+          chaveDasFotos = chaveFotos(itemOriginal);
           // sufixo "(n/N)" da descrição original, se houver, pra poder trocar só a base ao propagar
           const matchSufixo = (itemOriginal.descricao || '').match(/\s\(\d+\/\d+\)$/);
           const descricaoBase = matchSufixo ? descricao.replace(/\s\(\d+\/\d+\)$/, '') : descricao;
@@ -8552,6 +9745,7 @@
       } else if (numParcelas > 1) {
         const grupoId = 'g' + Date.now();
         const valorParcela = valorTotal / numParcelas;
+        chaveDasFotos = 'g:' + grupoId;
 
         /* A 1ª parcela NASCE NA DATA DA COMPRA, sem empurrão nenhum.
            Antes havia aqui um mesOffsetInicial que rolava a primeira parcela pro
@@ -8585,8 +9779,10 @@
           });
         }
       } else {
+        const idNovo = novoIdLancamento();
+        chaveDasFotos = 'l:' + idNovo;
         lancamentos.unshift({
-          id: novoIdLancamento(),
+          id: idNovo,
           tipo: tipoAtual,
           descricao, conta, formaModo,
           numParcelas: '1', categoria, observacao,
@@ -8616,6 +9812,7 @@
       if (!idEditando) vibrar(tipoAtual === 'receita' ? 'receita' : 'despesa');
       cancelarEdicao();
       atualizarTudo();
+      gravarFotosDoFormulario(fotosPendentes, chaveDasFotos);
     }
 
     // Recalcula TODAS as visões (Dashboard, Lançamentos, Faturas, Gráficos, Grupos)
@@ -8645,6 +9842,7 @@
       document.getElementById('conta').value = item.conta;
       document.getElementById('dataCompra').value = item.data;
       document.getElementById('observacao').value = item.observacao || '';
+      carregarFotosDoFormulario(item);
       atualizarLinkObs();
       document.getElementById('emprestimoPara').value = item.emprestimoPara || '';
       document.getElementById('emprestimoVence').value = item.emprestimoVence || '';
@@ -8725,6 +9923,7 @@
       document.getElementById('idEditando').value = '';
       document.getElementById('formLancamento').reset();
       document.getElementById('observacao').value = '';
+      limparFotosDoFormulario();
       atualizarLinkObs();
       document.getElementById('emprestimoPara').value = '';
       document.getElementById('emprestimoVence').value = '';
@@ -8826,8 +10025,10 @@
         __tipoReg: tipoReg
       }));
       // teto pra a lixeira não crescer sem fim dentro do localStorage
+      const saindo = lixeira.slice(LIMITE_LIXEIRA);
       if (lixeira.length > LIMITE_LIXEIRA) lixeira.length = LIMITE_LIXEIRA;
       salvarLixeira();
+      descartarFotosDe(saindo);   // quem saiu de vez leva as fotos junto
     }
 
     // Ao apagar um "Reembolso X", a cobrança original precisa voltar a aparecer:
@@ -8889,8 +10090,10 @@
     function esvaziarLixeira() {
       if (!lixeira.length) return;
       if (!confirm('Apagar de vez os ' + lixeira.length + ' registros da lixeira? Isso não tem volta.')) return;
+      const saindo = lixeira;
       lixeira = [];
       salvarLixeira();
+      descartarFotosDe(saindo);
       renderizarLixeira();
     }
 
@@ -11107,7 +12310,7 @@
       };
 
       card.addEventListener('touchstart', (e) => {
-        if (soltando || e.touches.length !== 1 || algumModalAberto()) return;
+        if (soltando || e.touches.length !== 1 || algumModalAberto() || !gestoAbasLigado()) return;
         // o trilho de meses e os chips têm rolagem própria: ali o dedo é deles
         const alvo = e.target && e.target.closest ? e.target : null;
         if (alvo && alvo.closest('.faixa-meses, .chips-periodo, input, select, textarea')) return;
@@ -11133,7 +12336,7 @@
         // pra lugar nenhum de verdade, então deixar correr solto mentiria
         // sobre o quanto falta.
         const d = Math.max(-largura, Math.min(largura, dx)) * 0.55;
-        card.style.transform = 'translateX(' + d + 'px)';
+        card.style.transform = 'translateX(' + d / escalaDaTela() + 'px)';
         card.style.opacity = String(1 - Math.abs(d) / largura * 0.5);
       }, { passive: false });
 
@@ -11158,7 +12361,7 @@
         const sentido = dx < 0 ? -1 : 1;
         card.classList.remove('arrastando');
         card.classList.add('soltando');
-        card.style.transform = 'translateX(' + (sentido * largura * 0.5) + 'px)';
+        card.style.transform = 'translateX(' + (sentido * largura * 0.5) / escalaDaTela() + 'px)';
         card.style.opacity = '.15';
         setTimeout(() => {
           mudarMesFatura(sentido < 0 ? 1 : -1);
@@ -11626,6 +12829,9 @@
       salvarUiPrefs();
       aplicarSecao('pagamentoFatura');
       const card = document.querySelector('[data-card="pagamentoFatura"]');
+      // Escondido em Ajustes, o atalho levaria pra lugar nenhum: o card aparece
+      // agora (só até o app reabrir), sem mudar a sua escolha de escondê-lo.
+      if (card) card.classList.remove('card-desligado');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -14712,6 +15918,7 @@
         : (eReceita ? 'var(--verde)' : 'var(--vermelho)');
 
       document.getElementById('corpoDetalheCobranca').innerHTML = `
+        <div id="fotosDaFicha" class="carrossel-ficha escondido"></div>
         <div style="margin-bottom:10px;">
           <span style="font-size:11px;color:var(--texto-medio);text-transform:uppercase;">${rotuloTopo}</span>
           <h3 style="color:${corTopo};font-size:23px;">${fmtOculto(valorTopo)}</h3>
@@ -14756,6 +15963,7 @@
       // Depois de a ficha aparecer: escondida, toda medida de altura volta zero
       // e o "ver tudo" nunca apareceria.
       prepararObservacaoDaFicha();
+      mostrarFotosDaFicha(l);   // as fotos chegam do banco logo depois
     }
 
     /* Só oferece "ver tudo" quando de fato houve corte. Medir é o único jeito:
@@ -18751,13 +19959,24 @@ function confirmarLancamentoVoz() {
 
     // Versão do app. Ao publicar, mude aqui E a constante VERSAO no sw.js, e
     // acrescente o que mudou no começo de NOVIDADES (o teste 15 confere).
-    const APP_VERSION = '2026.11.16-1';
+    const APP_VERSION = '2026.11.18-1';
 
     /* NOVIDADES — o que mudou em cada versão, da mais nova pra mais velha. É o
        que aparece em Ajustes → Manual e novidades → O que mudou, e na faixa que
        surge uma vez depois de cada atualização. Escrito pra quem usa o app, sem
        termo técnico. */
     const NOVIDADES = [
+      { versao: '2026.11.18-1', data: '18/11/2026', itens: [
+        'Fotos nos lançamentos: na janela de "adicionar observação", tire uma foto ou escolha da galeria (até 5 por lançamento). Elas ficam menores pra não lotar o celular, aparecem na ficha do lançamento (arraste pro lado pra passar) e um iconezinho de câmera marca na lista quem tem foto.',
+        'Memórias: no card de lançamentos da aba Faturas, o botão Memórias mostra só o que tem foto, em cards grandes, do mais novo pro mais antigo.',
+        'As fotos seguem a lixeira: excluiu, elas esperam junto; restaurou, voltam. O backup leva as fotos (dá pra desmarcar) e mostra antes o tamanho do arquivo. Em Ajustes → Backup aparece quanto as fotos ocupam.',
+        'Grupos de gastos virou um card recolhido no fim da aba Faturas. São cinco abas agora.',
+        'Em Ajustes você escolhe quais cards aparecem em Faturas e em Gráficos, além da ordem. Os itens de Investimentos começam recolhidos, com o valor no cabeçalho.',
+        'Sons: cada tipo (receita, despesa, transferência) fica recolhido e mostra no título o som escolhido.',
+        'Novo card em Ajustes, "Letra, modo e ajuda": letra Normal, Grande ou Extra grande, alto contraste, Modo Simples (letra e botões maiores, só o essencial na frente, nada é apagado), liga/desliga do gesto de trocar de aba e um tutorial de 4 telas.',
+        'Tema novo: Fofo, creme e lilás, com cantos redondos.',
+        'O aviso de backup agora fala "Salve uma cópia dos seus dados" e tem o passo a passo. Também tem o passo a passo pra pôr o app na tela inicial.'
+      ] },
       { versao: '2026.11.16-1', data: '16/11/2026', itens: [
         'Contato da agenda: o número vem certo mesmo com o 0 da discagem, a operadora ou o +55 (antes, 028 98765-4321 virava (89) 8765-4321), e o nome da pessoa vem junto.',
         'Enviar backup agora abre a folha de compartilhamento (WhatsApp, e-mail, Drive). O arquivo vai como .txt, porque o Chrome não compartilha .json, e o Importar backup aceita os dois.',
@@ -18871,6 +20090,8 @@ function confirmarLancamentoVoz() {
     migrarRecorrentesAPagar();
     prepararAvisoEstorno();   // só anota; o saldo só muda se você escolher no aviso
     carregarUiPrefs();
+    migrarGruposParaFaturas();
+    aplicarAcessibilidade();   // letra e modo antes do primeiro desenho: nada pula na tela
     aplicarTravaDeZoom();   // antes de qualquer render: a tela já nasce na escala certa
     equiparCamposComCalculadora();   // todo campo de dinheiro da tela, inclusive os dos modais
     aplicarOrdemCards('abaFaturas');
@@ -18891,6 +20112,7 @@ function confirmarLancamentoVoz() {
     renderizarListaTiposAtivo();
     aplicarSecao('analista');
     aplicarSecao('tema');
+    aplicarSecao('acessibilidade');
     aplicarTema(temaAtual());
     renderizarSugestoesPergunta();
     ativarEmpilhamentoDeModais();
@@ -18935,6 +20157,11 @@ function confirmarLancamentoVoz() {
     atualizarBotaoLembretes();
     avisarCobrancasVencidas(false);
     limparSobrasDoLaboratorio();
+    // as fotos moram no IndexedDB, que responde depois: quando a contagem
+    // chega, a lista ganha o ícone e o botão Memórias aparece
+    recontarFotos().then(() => renderizarLancamentos());
+    // instalação nova: o tutorial de 4 telas abre por cima de tudo, uma vez
+    if (deveMostrarTutorial()) abrirTutorial();
 
     // Botão de emergência: limpa o cache do app e recarrega da rede. Os dados ficam
     // no localStorage, que não é tocado aqui — só o cache de arquivos some.
